@@ -3,17 +3,24 @@
 import { useEffect, useState } from "react";
 
 export default function RankingPage() {
+    const [myName, setMyName] = useState("自分");
     const [myPoints, setMyPoints] = useState(0);
 
     useEffect(() => {
+        const savedName = localStorage.getItem("myName");
         const savedPoints = localStorage.getItem("myPoints");
+
+        if (savedName) {
+            setMyName(savedName);
+        }
+
         if (savedPoints) {
             setMyPoints(Number(savedPoints));
         }
     }, []);
 
     const users = [
-        { name: "自分", points: myPoints },
+        { name: myName, points: myPoints },
         { name: "田中", points: 120 },
         { name: "佐藤", points: 95 },
     ];
