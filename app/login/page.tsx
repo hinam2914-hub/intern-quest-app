@@ -1,6 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 export default function LoginPage() {
+    const router = useRouter();
+
     return (
         <main>
             <h1>ログイン</h1>
@@ -13,7 +17,9 @@ export default function LoginPage() {
                 <input type="password" placeholder="パスワード" />
             </div>
 
-            <button>ログイン</button>
+            <button onClick={() => router.push("/mypage")}>
+                ログイン
+            </button>
         </main>
     );
 }
