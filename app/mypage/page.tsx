@@ -33,6 +33,10 @@ export default function MyPage() {
         localStorage.removeItem("loggedIn");
         router.push("/login");
     };
+    const logout = () => {
+        localStorage.removeItem("loggedIn");
+        router.push("/login");
+    };
     return (
         <main>
             <h1>マイページ</h1>
