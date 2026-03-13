@@ -29,7 +29,10 @@ export default function MyPage() {
         setPoints(newPoints);
         localStorage.setItem("myPoints", String(newPoints));
     };
-
+    const logout = () => {
+        localStorage.removeItem("loggedIn");
+        router.push("/login");
+    };
     return (
         <main>
             <h1>マイページ</h1>
@@ -47,6 +50,8 @@ export default function MyPage() {
             <p>現在ポイント：{points}pt</p>
 
             <button onClick={addPoints}>+10ポイント</button>
+            <button onClick={logout}>ログアウト</button>
         </main>
+
     );
 }
