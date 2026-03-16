@@ -62,7 +62,7 @@ export default function MyPage() {
             </div>
 
             <p>現在ポイント：{points}pt</p>
-
+            <p>連続ログイン：{streak}日</p>
             <button onClick={addPoints} style={{ marginRight: 8 }}>
                 +10ポイント
             </button>
