@@ -1,45 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function ReportPage() {
-    const [report, setReport] = useState("");
-    const [message, setMessage] = useState("");
+type User = {
+    name: string;
+    points: number;
+};
 
-    const submitReport = () => {
-        if (!report) {
-            setMessage("日報を書いてください");
-            return;
+export default function RankingPage() {
+    const [users, setUsers] = useState<User[]>([
+        { name: "田中", points: 120 },
+        { name: "佐藤", points: 95 },
+    ]);
+    const [myName, setMyName] = useState("自分");
+
+    useEffect(() => {
+        const savedName = localStorage.getItem("myName");
+        const savedPoints = localStorage.getItem("myPoints");
+
+        if (savedName) {
+            setMyName(savedName);
         }
 
-        const savedPoints = localStorage.getItem("myPoints");
-        const currentPoints = savedPoints ? Number(savedPoints) : 0;
+        if (savedName && savedPoints) {
+            const me = { name: savedName, points: Number(savedPoints) };
+            const updated = [...users, me].sort((a, b) => b.points - a.points);
+            setUsers(updated);
+        }
+    }, []);
 
-        const newPoints = currentPoints + 10;
-
-        localStorage.setItem("myPoints", String(newPoints));
-
-        setMessage("日報提出完了 +10pt");
-        setReport("");
+    const getMedal = (index: number) => {
+        if (index === 0) return "🥇";
+        if (index === 1) return "🥈";
+        if (index === 2) return "🥉";
+        return "";
     };
 
     return (
         <main>
-            <h1>日報</h1>
+            <h1>ランキング</h1>
 
-            <textarea
-                value={report}
-                onChange={(e) => setReport(e.target.value)}
-                placeholder="今日やったことを書く"
-                rows={6}
-                cols={40}
-            />
-
-            <div>
-                <button onClick={submitReport}>提出</button>
-            </div>
-
-            <p>{message}</p>
+            <ul>
+                {users.map((user, index) => (
+                    <li
+                        key={index}
+                        style={{
+                            fontWeight: user.name === myName ? "bold" : "normal",
+                            color: user.name === myName ? "deepskyblue" : "inherit",
+                        }}
+                    >
+                        {getMedal(index)} {index + 1}位：{user.name}（{user.points}pt）
+                    </li>
+                ))}
+            </ul>
         </main>
     );
 }
