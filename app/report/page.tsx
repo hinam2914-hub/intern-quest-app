@@ -7,7 +7,20 @@ export default function ReportPage() {
     const [message, setMessage] = useState("");
 
     const submitReport = () => {
-        setMessage("日報を提出しました");
+        if (!report) {
+            setMessage("日報を書いてください");
+            return;
+        }
+
+        const savedPoints = localStorage.getItem("myPoints");
+        const currentPoints = savedPoints ? Number(savedPoints) : 0;
+
+        const newPoints = currentPoints + 10;
+
+        localStorage.setItem("myPoints", String(newPoints));
+
+        setMessage("日報提出完了 +10pt");
+        setReport("");
     };
 
     return (
