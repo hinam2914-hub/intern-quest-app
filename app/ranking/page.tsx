@@ -12,13 +12,18 @@ export default function RankingPage() {
         { name: "田中", points: 120 },
         { name: "佐藤", points: 95 },
     ]);
+    const [myName, setMyName] = useState("自分");
 
     useEffect(() => {
-        const myName = localStorage.getItem("myName");
-        const myPoints = localStorage.getItem("myPoints");
+        const savedName = localStorage.getItem("myName");
+        const savedPoints = localStorage.getItem("myPoints");
 
-        if (myName && myPoints) {
-            const me = { name: myName, points: Number(myPoints) };
+        if (savedName) {
+            setMyName(savedName);
+        }
+
+        if (savedName && savedPoints) {
+            const me = { name: savedName, points: Number(savedPoints) };
             const updated = [...users, me].sort((a, b) => b.points - a.points);
             setUsers(updated);
         }
@@ -37,7 +42,13 @@ export default function RankingPage() {
 
             <ul>
                 {users.map((user, index) => (
-                    <li key={index}>
+                    <li
+                        key={index}
+                        style={{
+                            fontWeight: user.name === myName ? "bold" : "normal",
+                            color: user.name === myName ? "deepskyblue" : "inherit",
+                        }}
+                    >
                         {getMedal(index)} {index + 1}位：{user.name}（{user.points}pt）
                     </li>
                 ))}
