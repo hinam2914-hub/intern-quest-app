@@ -12,6 +12,7 @@ export default function RankingPage() {
         { name: "田中", points: 120 },
         { name: "佐藤", points: 95 },
     ]);
+
     const [myName, setMyName] = useState("自分");
 
     useEffect(() => {
@@ -36,9 +37,13 @@ export default function RankingPage() {
         return "";
     };
 
+    const myRank = users.findIndex((user) => user.name === myName) + 1;
+
     return (
         <main>
             <h1>ランキング</h1>
+
+            <p>あなたの順位：{myRank}位</p>
 
             <ul>
                 {users.map((user, index) => (
