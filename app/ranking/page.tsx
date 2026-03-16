@@ -1,58 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-type User = {
-    name: string;
-    points: number;
-};
+export default function ReportPage() {
+    const [report, setReport] = useState("");
+    const [message, setMessage] = useState("");
 
-export default function RankingPage() {
-    const [users, setUsers] = useState<User[]>([
-        { name: "田中", points: 120 },
-        { name: "佐藤", points: 95 },
-    ]);
-    const [myName, setMyName] = useState("自分");
+    const submitReport = () => {
+        if (!report) {
+            setMessage("日報を書いてください");
+            return;
+        }
 
-    useEffect(() => {
-        const savedName = localStorage.getItem("myName");
         const savedPoints = localStorage.getItem("myPoints");
+        const currentPoints = savedPoints ? Number(savedPoints) : 0;
 
-        if (savedName) {
-            setMyName(savedName);
-        }
+        const newPoints = currentPoints + 10;
 
-        if (savedName && savedPoints) {
-            const me = { name: savedName, points: Number(savedPoints) };
-            const updated = [...users, me].sort((a, b) => b.points - a.points);
-            setUsers(updated);
-        }
-    }, []);
+        localStorage.setItem("myPoints", String(newPoints));
 
-    const getMedal = (index: number) => {
-        if (index === 0) return "🥇";
-        if (index === 1) return "🥈";
-        if (index === 2) return "🥉";
-        return "";
+        setMessage("日報提出完了 +10pt");
+        setReport("");
     };
 
     return (
         <main>
-            <h1>ランキング</h1>
+            <h1>日報</h1>
 
-            <ul>
-                {users.map((user, index) => (
-                    <li
-                        key={index}
-                        style={{
-                            fontWeight: user.name === myName ? "bold" : "normal",
-                            color: user.name === myName ? "deepskyblue" : "inherit",
-                        }}
-                    >
-                        {getMedal(index)} {index + 1}位：{user.name}（{user.points}pt）
-                    </li>
-                ))}
-            </ul>
+            <textarea
+                value={report}
+                onChange={(e) => setReport(e.target.value)}
+                placeholder="今日やったことを書く"
+                rows={6}
+                cols={40}
+            />
+
+            <div>
+                <button onClick={submitReport}>提出</button>
+            </div>
+
+            <p>{message}</p>
         </main>
     );
 }
