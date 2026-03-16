@@ -4,10 +4,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function MyPage() {
+    const router = useRouter();
     const [name, setName] = useState("自分");
     const [points, setPoints] = useState(0);
 
     useEffect(() => {
+        const loggedIn = localStorage.getItem("loggedIn");
+        if (!loggedIn) {
+            router.push("/login");
+            return;
+        }
+
         const savedName = localStorage.getItem("myName");
         const savedPoints = localStorage.getItem("myPoints");
 
@@ -18,7 +25,7 @@ export default function MyPage() {
         if (savedPoints) {
             setPoints(Number(savedPoints));
         }
-    }, []);
+    }, [router]);
 
     const saveName = () => {
         localStorage.setItem("myName", name);
@@ -29,14 +36,12 @@ export default function MyPage() {
         setPoints(newPoints);
         localStorage.setItem("myPoints", String(newPoints));
     };
+
     const logout = () => {
         localStorage.removeItem("loggedIn");
         router.push("/login");
     };
-    const logout = () => {
-        localStorage.removeItem("loggedIn");
-        router.push("/login");
-    };
+
     return (
         <main>
             <h1>マイページ</h1>
@@ -53,9 +58,11 @@ export default function MyPage() {
 
             <p>現在ポイント：{points}pt</p>
 
-            <button onClick={addPoints}>+10ポイント</button>
+            <button onClick={addPoints} style={{ marginRight: 8 }}>
+                +10ポイント
+            </button>
+
             <button onClick={logout}>ログアウト</button>
         </main>
-
     );
 }
