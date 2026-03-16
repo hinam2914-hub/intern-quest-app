@@ -8,6 +8,7 @@ export default function MyPage() {
 
     const [name, setName] = useState("自分");
     const [points, setPoints] = useState(0);
+    const [message, setMessage] = useState("");
     const [streak, setStreak] = useState(0);
     const exp = points % 100;
     const level = Math.floor(points / 100) + 1;
@@ -41,9 +42,17 @@ export default function MyPage() {
     };
 
     const addPoints = () => {
+        const oldLevel = Math.floor(points / 100) + 1;
+
         const newPoints = points + 10;
         setPoints(newPoints);
         localStorage.setItem("myPoints", String(newPoints));
+
+        const newLevel = Math.floor(newPoints / 100) + 1;
+
+        if (newLevel > oldLevel) {
+            setMessage("🎉 レベルアップしました！");
+        }
     };
 
     const logout = () => {
@@ -79,6 +88,7 @@ export default function MyPage() {
             <p>Level：{level}</p>
             <p>バッジ：{badge}</p>
             <p>EXP：{exp}/100</p>
+            <p>{message}</p>
             <p>今日のアクション：{nextAction}</p>
 
             <div style={{
