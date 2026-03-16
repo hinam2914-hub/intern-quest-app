@@ -7,12 +7,17 @@ export default function MyPage() {
     const router = useRouter();
     const [name, setName] = useState("自分");
     const [points, setPoints] = useState(0);
+    const [streak, setStreak] = useState(0);
 
     useEffect(() => {
         const loggedIn = localStorage.getItem("loggedIn");
         if (!loggedIn) {
             router.push("/login");
             return;
+        }
+        const savedStreak = localStorage.getItem("loginStreak");
+        if (savedStreak) {
+            setStreak(Number(savedStreak));
         }
 
         const savedName = localStorage.getItem("myName");
