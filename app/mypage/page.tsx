@@ -64,6 +64,9 @@ export default function MyPage() {
             <button onClick={() => router.push("/ranking")}>
                 ランキングを見る
             </button>
+            <button onClick={() => router.push("/report")}>
+                日報を書く
+            </button>
             <button onClick={logout}>ログアウト</button>
         </main>
     );
