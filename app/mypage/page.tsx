@@ -10,6 +10,7 @@ export default function MyPage() {
     const [points, setPoints] = useState(0);
     const [streak, setStreak] = useState(0);
     const exp = points % 100;
+    const level = Math.floor(points / 100) + 1;
 
     useEffect(() => {
         const loggedIn = localStorage.getItem("loggedIn");
@@ -66,6 +67,8 @@ export default function MyPage() {
             <p>現在ポイント：{points}pt</p>
 
             <p>連続ログイン：{streak}日</p>
+
+            <p>Level：{level}</p>
             <p>EXP：{exp}/100</p>
 
             <div style={{
