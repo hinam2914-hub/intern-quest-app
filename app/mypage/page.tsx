@@ -51,6 +51,12 @@ export default function MyPage() {
         router.push("/login");
     };
 
+    const badge =
+        points >= 300 ? "🏆 上級者" :
+            points >= 200 ? "🥇 成長中" :
+                points >= 100 ? "🥈 継続力あり" :
+                    "🥉 これから";
+
     return (
         <main>
             <h1>マイページ</h1>
@@ -67,8 +73,8 @@ export default function MyPage() {
             <p>現在ポイント：{points}pt</p>
 
             <p>連続ログイン：{streak}日</p>
-
             <p>Level：{level}</p>
+            <p>バッジ：{badge}</p>
             <p>EXP：{exp}/100</p>
 
             <div style={{
