@@ -8,6 +8,7 @@ export default function Page() {
         <a href="/login">ログイン画面へ</a>
         <a href="/mypage">マイページへ</a>
         <a href="/ranking">ランキングへ</a>
+        <a href="/report">日報ページへ</a>
       </div>
     </main>
   );
