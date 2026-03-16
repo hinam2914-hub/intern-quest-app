@@ -56,7 +56,10 @@ export default function MyPage() {
             points >= 200 ? "🥇 成長中" :
                 points >= 100 ? "🥈 継続力あり" :
                     "🥉 これから";
-
+    const nextAction =
+        points < 50 ? "日報を書いてみましょう" :
+            points < 100 ? "ランキングを確認しましょう" :
+                "学習コンテンツを進めましょう";
     return (
         <main>
             <h1>マイページ</h1>
@@ -76,6 +79,7 @@ export default function MyPage() {
             <p>Level：{level}</p>
             <p>バッジ：{badge}</p>
             <p>EXP：{exp}/100</p>
+            <p>今日のアクション：{nextAction}</p>
 
             <div style={{
                 width: "200px",
