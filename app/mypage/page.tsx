@@ -61,7 +61,9 @@ export default function MyPage() {
             <button onClick={addPoints} style={{ marginRight: 8 }}>
                 +10ポイント
             </button>
-
+            <button onClick={() => router.push("/ranking")}>
+                ランキングを見る
+            </button>
             <button onClick={logout}>ログアウト</button>
         </main>
     );
