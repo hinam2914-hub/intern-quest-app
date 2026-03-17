@@ -147,12 +147,12 @@ export default function MyPage() {
 
     const badge =
         points >= 300
-            ? "上級者"
+            ? "🏆 上級者"
             : points >= 200
-                ? "成長中"
+                ? "🥇 成長中"
                 : points >= 100
-                    ? "継続力あり"
-                    : "これから";
+                    ? "🥈 継続力あり"
+                    : "🥉 これから";
 
     const nextAction =
         points < 50
@@ -191,32 +191,50 @@ export default function MyPage() {
 
             <p>連続ログイン：{streak}日</p>
 
-            <p>Level：{level}</p>
+            <p style={{ fontWeight: "bold", fontSize: 18 }}>
+                Level：{level}
+            </p>
 
-            <p>バッジ：{badge}</p>
+            <p style={{ marginTop: 8 }}>
+                バッジ：
+                <span
+                    style={{
+                        marginLeft: 8,
+                        padding: "4px 10px",
+                        background: "#111827",
+                        color: "#ffffff",
+                        borderRadius: "999px",
+                        fontSize: 12,
+                        display: "inline-block",
+                    }}
+                >
+                    {badge}
+                </span>
+            </p>
 
             <p>EXP：{exp}/100</p>
 
             <div
                 style={{
                     width: "100%",
-                    background: "#ddd",
-                    height: 20,
-                    borderRadius: 10,
+                    background: "#e5e7eb",
+                    height: 12,
+                    borderRadius: 999,
                     overflow: "hidden",
-                    marginBottom: 12,
+                    marginTop: 8,
+                    marginBottom: 16,
                 }}
             >
                 <div
                     style={{
                         width: `${exp}%`,
-                        background: "skyblue",
+                        background: "linear-gradient(90deg, #6366f1, #a78bfa)",
                         height: "100%",
                         transition: "width 0.5s ease",
+                        borderRadius: 999,
                     }}
                 />
             </div>
-
             {levelUpMessage && (
                 <p style={{ color: "orange", fontWeight: "bold" }}>
                     {levelUpMessage}
