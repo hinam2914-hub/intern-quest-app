@@ -11,6 +11,7 @@ export default function MyPage() {
     const [message, setMessage] = useState("");
     const [streak, setStreak] = useState(0);
     const [reportDone, setReportDone] = useState(false);
+    const [rank, setRank] = useState(0);
     const exp = points % 100;
     const level = Math.floor(points / 100) + 1;
 
@@ -26,6 +27,16 @@ export default function MyPage() {
         const savedStreak = localStorage.getItem("loginStreak");
         const today = new Date().toISOString().slice(0, 10);
         const lastSubmit = localStorage.getItem("lastReportDate");
+        const rankingUsers = [
+            { name: savedName || "自分", points: savedPoints ? Number(savedPoints) : 0 },
+            { name: "田中", points: 120 },
+            { name: "佐藤", points: 95 },
+        ].sort((a, b) => b.points - a.points);
+
+        const myRank =
+            rankingUsers.findIndex((user) => user.name === (savedName || "自分")) + 1;
+
+        setRank(myRank);
 
         if (lastSubmit === today) {
             setReportDone(true);
@@ -90,7 +101,7 @@ export default function MyPage() {
             </div>
 
             <p>現在ポイント：{points}pt</p>
-
+            <p>現在順位：{rank}位</p>
             <p>連続ログイン：{streak}日</p>
             <p>Level：{level}</p>
             <p>バッジ：{badge}</p>
