@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { supabase } from "@/app/lib/supabase";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -10,7 +11,17 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) {
+            setMessage("ログインに失敗しました");
+            return;
+        }
+
         const today = new Date().toISOString().slice(0, 10);
         const lastLoginBonusDate = localStorage.getItem("lastLoginBonusDate");
 
@@ -24,8 +35,6 @@ export default function LoginPage() {
         } else {
             setMessage("本日のログインボーナスは受取済みです");
         }
-
-        localStorage.setItem("loggedIn", "true");
 
         setTimeout(() => {
             router.push("/mypage");
