@@ -88,71 +88,77 @@ export default function MyPage() {
             <button onClick={saveName}>名前を保存</button>
 
             <p style={{ marginTop: 20 }}>現在ポイント：{points}pt</p>
+
             <p>
-                今日のログインボーナス：
-                <span
-                    style={{
-                        color: loginBonusDone ? "green" : "red",
-                        fontWeight: "bold",
-                    }}
-                >
-                    {loginBonusDone ? "受取済み" : "未受取"}
-                </span>
-            </p>
+                <p>現在ポイント：{points}pt</p>
 
-            <p>Level：{level}</p>
-            <p>バッジ：{getBadge()}</p>
-            <p>EXP：{exp}/100</p>
-
-            {/* EXPバー */}
-            <div style={{ width: "100%", background: "#ddd", height: 10 }}>
-                <div
-                    style={{
-                        width: `${exp}%`,
-                        background: "skyblue",
-                        height: "100%",
-                        transition: "width 0.5s ease",
-                    }}
-                />
-            </div>
-
-            {/* レベルアップ表示 */}
-            {levelUpMessage && (
-                <p style={{ color: "orange", fontWeight: "bold" }}>
-                    {levelUpMessage}
+                <p>
+                    今日のログインボーナス：
+                    <span
+                        style={{
+                            color: loginBonusDone ? "green" : "red",
+                            fontWeight: "bold",
+                        }}
+                    >
+                        {loginBonusDone ? "受取済み" : "未受取"}
+                    </span>
                 </p>
-            )}
 
-            <p style={{ marginTop: 20 }}>
-                今日の日報：
-                <span style={{ color: reportDone ? "green" : "red", fontWeight: "bold" }}>
-                    {reportDone ? "提出済み" : "未提出"}
-                </span>
-            </p>
+                <p>今日の日報：{reportDone ? "提出済み" : "未提出"}</p>
 
-            <button onClick={addPoints}>+10ポイント</button>
+                <p>Level：{level}</p>
+                <p>バッジ：{getBadge()}</p>
+                <p>EXP：{exp}/100</p>
 
-            <div style={{ marginTop: 20 }}>
-                <button onClick={() => router.push("/ranking")}>
-                    ランキングを見る
-                </button>
+                {/* EXPバー */}
+                <div style={{ width: "100%", background: "#ddd", height: 10 }}>
+                    <div
+                        style={{
+                            width: `${exp}%`,
+                            background: "skyblue",
+                            height: "100%",
+                            transition: "width 0.5s ease",
+                        }}
+                    />
+                </div>
 
-                <button
-                    onClick={() => router.push("/report")}
-                    disabled={reportDone}
-                    style={{
-                        background: reportDone ? "#ccc" : "red",
-                        color: reportDone ? "black" : "white",
-                        marginLeft: 10,
-                    }}
-                >
-                    日報を書く
-                </button>
-            </div>
+                {/* レベルアップ表示 */}
+                {levelUpMessage && (
+                    <p style={{ color: "orange", fontWeight: "bold" }}>
+                        {levelUpMessage}
+                    </p>
+                )}
 
-            <div style={{ marginTop: 20 }}>
-                <button onClick={logout}>ログアウト</button>
-            </div>
+                <p style={{ marginTop: 20 }}>
+                    今日の日報：
+                    <span style={{ color: reportDone ? "green" : "red", fontWeight: "bold" }}>
+                        {reportDone ? "提出済み" : "未提出"}
+                    </span>
+                </p>
+
+                <button onClick={addPoints}>+10ポイント</button>
+
+                <div style={{ marginTop: 20 }}>
+                    <button onClick={() => router.push("/ranking")}>
+                        ランキングを見る
+                    </button>
+
+                    <button
+                        onClick={() => router.push("/report")}
+                        disabled={reportDone}
+                        style={{
+                            background: reportDone ? "#ccc" : "red",
+                            color: reportDone ? "black" : "white",
+                            marginLeft: 10,
+                        }}
+                    >
+                        日報を書く
+                    </button>
+                </div>
+
+                <div style={{ marginTop: 20 }}>
+                    <button onClick={logout}>ログアウト</button>
+                </div>
         </main>
     );
 }
