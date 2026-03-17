@@ -186,102 +186,112 @@ export default function MyPage() {
                     {loginBonusDone ? "受取済み" : "未受取"}
                 </span>
             </p>
-
-            <p>現在順位：{rank}位</p>
-
-            <p>連続ログイン：{streak}日</p>
-
-            <p style={{ fontWeight: "bold", fontSize: 18 }}>
-                Level：{level}
-            </p>
-
-            <p style={{ marginTop: 8 }}>
-                バッジ：
-                <span
-                    style={{
-                        marginLeft: 8,
-                        padding: "4px 10px",
-                        background: "#111827",
-                        color: "#ffffff",
-                        borderRadius: "999px",
-                        fontSize: 12,
-                        display: "inline-block",
-                    }}
-                >
-                    {badge}
-                </span>
-            </p>
-
-            <p>EXP：{exp}/100</p>
-
             <div
                 style={{
-                    width: "100%",
-                    background: "#e5e7eb",
-                    height: 12,
-                    borderRadius: 999,
-                    overflow: "hidden",
-                    marginTop: 8,
-                    marginBottom: 16,
+                    background: "#ffffff",
+                    borderRadius: 16,
+                    padding: 20,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    marginTop: 20,
                 }}
             >
+                <p>現在順位：{rank}位</p>
+
+                <p>連続ログイン：{streak}日</p>
+
+                <p style={{ fontWeight: "bold", fontSize: 18 }}>
+                    Level：{level}
+                </p>
+
+                <p style={{ marginTop: 8 }}>
+                    バッジ：
+                    <span
+                        style={{
+                            marginLeft: 8,
+                            padding: "4px 10px",
+                            background: "#111827",
+                            color: "#ffffff",
+                            borderRadius: "999px",
+                            fontSize: 12,
+                            display: "inline-block",
+                        }}
+                    >
+                        {badge}
+                    </span>
+                </p>
+
+                <p>EXP：{exp}/100</p>
+
                 <div
                     style={{
-                        width: `${exp}%`,
-                        background: "linear-gradient(90deg, #6366f1, #a78bfa)",
-                        height: "100%",
-                        transition: "width 0.5s ease",
+                        width: "100%",
+                        background: "#e5e7eb",
+                        height: 12,
                         borderRadius: 999,
-                    }}
-                />
-            </div>
-            {levelUpMessage && (
-                <p style={{ color: "orange", fontWeight: "bold" }}>
-                    {levelUpMessage}
-                </p>
-            )}
-
-            <p>今日のアクション：{nextAction}</p>
-
-            <p
-                style={{
-                    color: reportDone ? "green" : "red",
-                    fontWeight: "bold",
-                }}
-            >
-                今日の日報：{reportDone ? "提出済み" : "未提出"}
-            </p>
-
-            <button onClick={addPoints}>+10ポイント</button>
-
-            <div style={{ marginTop: 20 }}>
-                <button onClick={() => router.push("/ranking")}>
-                    ランキングを見る
-                </button>
-
-                <button
-                    onClick={() => router.push("/report")}
-                    disabled={reportDone}
-                    style={{
-                        background: reportDone ? "#ccc" : "red",
-                        color: reportDone ? "black" : "white",
-                        fontWeight: "bold",
-                        padding: "8px 12px",
-                        border: "none",
-                        borderRadius: "5px",
-                        marginTop: "10px",
-                        marginLeft: "10px",
-                        cursor: reportDone ? "not-allowed" : "pointer",
-                        opacity: reportDone ? 0.7 : 1,
+                        overflow: "hidden",
+                        marginTop: 8,
+                        marginBottom: 16,
                     }}
                 >
-                    日報を書く
-                </button>
-            </div>
+                    <div
+                        style={{
+                            width: `${exp}%`,
+                            background: "linear-gradient(90deg, #6366f1, #a78bfa)",
+                            height: "100%",
+                            transition: "width 0.5s ease",
+                            borderRadius: 999,
+                        }}
+                    />
+                </div>
+                {
+                    levelUpMessage && (
+                        <p style={{ color: "orange", fontWeight: "bold" }}>
+                            {levelUpMessage}
+                        </p>
+                    )
+                }
 
-            <div style={{ marginTop: 20 }}>
-                <button onClick={logout}>ログアウト</button>
-            </div>
-        </main>
+                <p>今日のアクション：{nextAction}</p>
+
+                <p
+                    style={{
+                        color: reportDone ? "green" : "red",
+                        fontWeight: "bold",
+                    }}
+                >
+                    今日の日報：{reportDone ? "提出済み" : "未提出"}
+                </p>
+
+                <button onClick={addPoints}>+10ポイント</button>
+
+                <div style={{ marginTop: 20 }}>
+                    <button onClick={() => router.push("/ranking")}>
+                        ランキングを見る
+                    </button>
+
+                    <button
+                        onClick={() => router.push("/report")}
+                        disabled={reportDone}
+                        style={{
+                            background: reportDone ? "#ccc" : "red",
+                            color: reportDone ? "black" : "white",
+                            fontWeight: "bold",
+                            padding: "8px 12px",
+                            border: "none",
+                            borderRadius: "5px",
+                            marginTop: "10px",
+                            marginLeft: "10px",
+                            cursor: reportDone ? "not-allowed" : "pointer",
+                            opacity: reportDone ? 0.7 : 1,
+                        }}
+                    >
+                        日報を書く
+                    </button>
+                </div>
+
+                <div style={{ marginTop: 20 }}>
+                    <button onClick={logout}>ログアウト</button>
+                </div>
+        </main >
     );
 }
