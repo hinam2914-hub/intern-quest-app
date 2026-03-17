@@ -97,7 +97,12 @@ export default function MyPage() {
             <p>EXP：{exp}/100</p>
             <p>{message}</p>
             <p>今日のアクション：{nextAction}</p>
-            <p>今日の日報：{reportDone ? "提出済み" : "未提出"}</p>
+            <p style={{
+                color: reportDone ? "green" : "red",
+                fontWeight: "bold"
+            }}>
+                今日の日報：{reportDone ? "提出済み" : "未提出"}
+            </p>
 
             <div style={{
                 width: "200px",
