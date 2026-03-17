@@ -6,28 +6,20 @@ export default function LoginPage() {
     const router = useRouter();
 
     const handleLogin = () => {
-        const today = new Date().toLocaleDateString();
-        const lastLoginDate = localStorage.getItem("lastLoginDate");
-        const streak = Number(localStorage.getItem("loginStreak") || "0");
+        const today = new Date().toISOString().slice(0, 10);
+        const lastLoginBonusDate = localStorage.getItem("lastLoginBonusDate");
 
-        if (lastLoginDate !== today) {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayText = yesterday.toLocaleDateString();
+        if (lastLoginBonusDate !== today) {
+            const currentPoints = Number(localStorage.getItem("myPoints") || "0");
+            const newPoints = currentPoints + 5;
 
-            if (lastLoginDate === yesterdayText) {
-                localStorage.setItem("loginStreak", String(streak + 1));
-            } else {
-                localStorage.setItem("loginStreak", "1");
-            }
-
-            localStorage.setItem("lastLoginDate", today);
+            localStorage.setItem("myPoints", String(newPoints));
+            localStorage.setItem("lastLoginBonusDate", today);
         }
 
         localStorage.setItem("loggedIn", "true");
         router.push("/mypage");
     };
-
     return (
         <main>
             <h1>ログイン</h1>
