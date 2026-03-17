@@ -12,10 +12,20 @@ export default function ReportPage() {
             return;
         }
 
+        const today = new Date().toISOString().slice(0, 10);
+        const lastSubmit = localStorage.getItem("lastReportDate");
+
+        if (lastSubmit === today) {
+            setMessage("今日はすでに提出済みです");
+            return;
+        }
+
         const currentPoints = Number(localStorage.getItem("myPoints") || "0");
         const newPoints = currentPoints + 20;
 
         localStorage.setItem("myPoints", String(newPoints));
+        localStorage.setItem("lastReportDate", today);
+
         setMessage("日報提出完了！ +20pt");
         setText("");
     };
