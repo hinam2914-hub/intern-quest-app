@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function LoginPage() {
     const router = useRouter();
+    const [message, setMessage] = useState("");
 
     const handleLogin = () => {
         const today = new Date().toISOString().slice(0, 10);
@@ -15,10 +17,16 @@ export default function LoginPage() {
 
             localStorage.setItem("myPoints", String(newPoints));
             localStorage.setItem("lastLoginBonusDate", today);
+            setMessage("本日のログインボーナス +5pt");
+        } else {
+            setMessage("本日のログインボーナスは受取済みです");
         }
 
         localStorage.setItem("loggedIn", "true");
-        router.push("/mypage");
+
+        setTimeout(() => {
+            router.push("/mypage");
+        }, 1000);
     };
     return (
         <main>
@@ -33,6 +41,7 @@ export default function LoginPage() {
             </div>
 
             <button onClick={handleLogin}>ログイン</button>
+            <p>{message}</p>
         </main>
     );
 }
