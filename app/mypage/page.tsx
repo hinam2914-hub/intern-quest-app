@@ -10,6 +10,7 @@ export default function MyPage() {
     const [points, setPoints] = useState(0);
     const [message, setMessage] = useState("");
     const [streak, setStreak] = useState(0);
+    const [reportDone, setReportDone] = useState(false);
     const exp = points % 100;
     const level = Math.floor(points / 100) + 1;
 
@@ -23,6 +24,12 @@ export default function MyPage() {
         const savedName = localStorage.getItem("myName");
         const savedPoints = localStorage.getItem("myPoints");
         const savedStreak = localStorage.getItem("loginStreak");
+        const today = new Date().toISOString().slice(0, 10);
+        const lastSubmit = localStorage.getItem("lastReportDate");
+
+        if (lastSubmit === today) {
+            setReportDone(true);
+        }
 
         if (savedName) {
             setName(savedName);
@@ -90,6 +97,7 @@ export default function MyPage() {
             <p>EXP：{exp}/100</p>
             <p>{message}</p>
             <p>今日のアクション：{nextAction}</p>
+            <p>今日の日報：{reportDone ? "提出済み" : "未提出"}</p>
 
             <div style={{
                 width: "200px",
