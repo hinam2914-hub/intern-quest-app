@@ -12,6 +12,7 @@ export default function MyPage() {
     const [streak, setStreak] = useState(0);
     const [reportDone, setReportDone] = useState(false);
     const [rank, setRank] = useState(0);
+    const [levelUpMessage, setLevelUpMessage] = useState("");
     const exp = points % 100;
     const level = Math.floor(points / 100) + 1;
 
@@ -60,16 +61,15 @@ export default function MyPage() {
     };
 
     const addPoints = () => {
-        const oldLevel = Math.floor(points / 100) + 1;
-
         const newPoints = points + 10;
         setPoints(newPoints);
         localStorage.setItem("myPoints", String(newPoints));
 
         const newLevel = Math.floor(newPoints / 100) + 1;
+        const oldLevel = Math.floor(points / 100) + 1;
 
         if (newLevel > oldLevel) {
-            setMessage("🎉 レベルアップしました！");
+            setLevelUpMessage("🎉 Level Up!");
         }
     };
 
@@ -106,6 +106,11 @@ export default function MyPage() {
             <p>Level：{level}</p>
             <p>バッジ：{badge}</p>
             <p>EXP：{exp}/100</p>
+            {levelUpMessage && (
+                <p style={{ color: "orange", fontWeight: "bold" }}>
+                    {levelUpMessage}
+                </p>
+            )}
             <p>{message}</p>
             <p>今日のアクション：{nextAction}</p>
             <p style={{
