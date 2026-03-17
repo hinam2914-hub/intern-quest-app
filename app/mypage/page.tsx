@@ -10,6 +10,7 @@ export default function MyPage() {
     const [points, setPoints] = useState(0);
     const [reportDone, setReportDone] = useState(false);
     const [levelUpMessage, setLevelUpMessage] = useState("");
+    const [loginBonusDone, setLoginBonusDone] = useState(false);
 
     // 初期読み込み
     useEffect(() => {
@@ -24,6 +25,11 @@ export default function MyPage() {
 
         if (lastSubmit === today) {
             setReportDone(true);
+            const lastLoginBonusDate = localStorage.getItem("lastLoginBonusDate");
+
+            if (lastLoginBonusDate === today) {
+                setLoginBonusDone(true);
+            }
         }
     }, []);
 
@@ -82,6 +88,17 @@ export default function MyPage() {
             <button onClick={saveName}>名前を保存</button>
 
             <p style={{ marginTop: 20 }}>現在ポイント：{points}pt</p>
+            <p>
+                今日のログインボーナス：
+                <span
+                    style={{
+                        color: loginBonusDone ? "green" : "red",
+                        fontWeight: "bold",
+                    }}
+                >
+                    {loginBonusDone ? "受取済み" : "未受取"}
+                </span>
+            </p>
 
             <p>Level：{level}</p>
             <p>バッジ：{getBadge()}</p>
