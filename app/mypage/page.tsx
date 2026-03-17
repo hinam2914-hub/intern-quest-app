@@ -127,7 +127,21 @@ export default function MyPage() {
                 ランキングを見る
             </button>
 
-            <button onClick={() => router.push("/report")}>
+            <button
+                onClick={() => router.push("/report")}
+                disabled={reportDone}
+                style={{
+                    background: reportDone ? "#ccc" : "red",
+                    color: reportDone ? "black" : "white",
+                    fontWeight: "bold",
+                    padding: "8px 12px",
+                    border: "none",
+                    borderRadius: "5px",
+                    marginTop: "10px",
+                    cursor: reportDone ? "not-allowed" : "pointer",
+                    opacity: reportDone ? 0.7 : 1,
+                }}
+            >
                 日報を書く
             </button>
 
