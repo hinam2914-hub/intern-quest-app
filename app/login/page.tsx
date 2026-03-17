@@ -5,7 +5,10 @@ import { useState } from "react";
 
 export default function LoginPage() {
     const router = useRouter();
+
     const [message, setMessage] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
     const handleLogin = () => {
         const today = new Date().toISOString().slice(0, 10);
@@ -28,19 +31,30 @@ export default function LoginPage() {
             router.push("/mypage");
         }, 1000);
     };
+
     return (
-        <main>
+        <main style={{ padding: 20 }}>
             <h1>ログイン</h1>
 
-            <div>
-                <input placeholder="メールアドレス" />
+            <div style={{ marginBottom: 12 }}>
+                <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="メールアドレス"
+                />
             </div>
 
-            <div>
-                <input type="password" placeholder="パスワード" />
+            <div style={{ marginBottom: 12 }}>
+                <input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    type="password"
+                    placeholder="パスワード"
+                />
             </div>
 
             <button onClick={handleLogin}>ログイン</button>
+
             <p>{message}</p>
         </main>
     );
