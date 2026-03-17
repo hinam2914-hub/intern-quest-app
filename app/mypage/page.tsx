@@ -123,6 +123,11 @@ export default function MyPage() {
             <button onClick={logout}>
                 ログアウト
             </button>
+            <div style={{ marginTop: 20 }}>
+                <a href="/ranking">ランキングを見る</a>
+                <br />
+                <a href="/report">日報を書く</a>
+            </div>
         </main>
     );
 }

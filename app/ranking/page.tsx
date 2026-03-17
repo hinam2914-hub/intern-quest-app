@@ -58,6 +58,9 @@ export default function RankingPage() {
                     </li>
                 ))}
             </ul>
+            <div style={{ marginTop: 20 }}>
+                <a href="/mypage">マイページへ戻る</a>
+            </div>
         </main>
     );
 }
