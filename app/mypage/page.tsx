@@ -54,12 +54,12 @@ export default function MyPage() {
                 .eq("created_at", today)
                 .maybeSingle();
 
-            if (submission) {
-                setReportDone(true);
-            }
+            setReportDone(!!submission);
 
             if (lastLoginBonusDate === today) {
                 setLoginBonusDone(true);
+            } else {
+                setLoginBonusDone(false);
             }
 
             const rankingUsers = [
@@ -162,7 +162,13 @@ export default function MyPage() {
                 : "学習コンテンツを進めましょう";
 
     return (
-        <main style={{ padding: 20, maxWidth: 600 }}>
+        <main
+            style={{
+                padding: 20,
+                maxWidth: 500,
+                margin: "0 auto",
+            }}
+        >
             <h1>マイページ</h1>
 
             <p>名前</p>
@@ -200,9 +206,7 @@ export default function MyPage() {
 
                 <p>連続ログイン：{streak}日</p>
 
-                <p style={{ fontWeight: "bold", fontSize: 18 }}>
-                    Level：{level}
-                </p>
+                <p style={{ fontWeight: "bold", fontSize: 18 }}>Level：{level}</p>
 
                 <p style={{ marginTop: 8 }}>
                     バッジ：
@@ -263,12 +267,41 @@ export default function MyPage() {
                 </p>
             </div>
 
-            <button onClick={addPoints} style={{ marginTop: 20 }}>
-                +10ポイント
-            </button>
+            <div
+                style={{
+                    marginTop: 20,
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                }}
+            >
+                <button
+                    onClick={addPoints}
+                    style={{
+                        background: "#6366f1",
+                        color: "#fff",
+                        fontWeight: "bold",
+                        padding: "10px 14px",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                    }}
+                >
+                    +10ポイント
+                </button>
 
-            <div style={{ marginTop: 20 }}>
-                <button onClick={() => router.push("/ranking")}>
+                <button
+                    onClick={() => router.push("/ranking")}
+                    style={{
+                        background: "#111827",
+                        color: "#fff",
+                        fontWeight: "bold",
+                        padding: "10px 14px",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                    }}
+                >
                     ランキングを見る
                 </button>
 
@@ -276,24 +309,33 @@ export default function MyPage() {
                     onClick={() => router.push("/report")}
                     disabled={reportDone}
                     style={{
-                        background: reportDone ? "#ccc" : "red",
-                        color: reportDone ? "black" : "white",
+                        background: reportDone ? "#ccc" : "#ef4444",
+                        color: "#fff",
                         fontWeight: "bold",
-                        padding: "8px 12px",
+                        padding: "10px 14px",
                         border: "none",
-                        borderRadius: "5px",
-                        marginTop: "10px",
-                        marginLeft: "10px",
+                        borderRadius: "8px",
                         cursor: reportDone ? "not-allowed" : "pointer",
                         opacity: reportDone ? 0.7 : 1,
                     }}
                 >
                     日報を書く
                 </button>
-            </div>
 
-            <div style={{ marginTop: 20 }}>
-                <button onClick={logout}>ログアウト</button>
+                <button
+                    onClick={logout}
+                    style={{
+                        background: "#fff",
+                        color: "#111827",
+                        fontWeight: "bold",
+                        padding: "10px 14px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                    }}
+                >
+                    ログアウト
+                </button>
             </div>
         </main>
     );
