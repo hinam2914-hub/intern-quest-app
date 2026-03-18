@@ -180,30 +180,6 @@ export default function MyPage() {
                         {loginBonusDone ? "受取済み" : "未受取"}
                     </span>
                 </p>
-                {!loginBonusDone && (
-                    <button
-                        onClick={() => {
-                            const today = new Date().toISOString().slice(0, 10);
-                            const newPoints = points + 20;
-
-                            setPoints(newPoints);
-                            localStorage.setItem("myPoints", String(newPoints));
-                            localStorage.setItem("lastLoginBonusDate", today);
-                            setLoginBonusDone(true);
-                        }}
-                        style={{
-                            marginTop: 10,
-                            background: "#10b981",
-                            color: "#fff",
-                            padding: "8px 12px",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                        }}
-                    >
-                        ログインボーナス受取（+20pt）
-                    </button>
-                )}
 
                 {!loginBonusDone && (
                     <button
@@ -225,31 +201,6 @@ export default function MyPage() {
                             border: "none",
                             borderRadius: "6px",
                             cursor: "pointer",
-                        }}
-                    >
-                        ログインボーナス受取（+20pt）
-                    </button>
-                )}
-
-                {!loginBonusDone && (
-                    <button
-                        onClick={() => {
-                            const today = new Date().toISOString().slice(0, 10);
-                            const newPoints = points + 20;
-
-                            setPoints(newPoints);
-                            localStorage.setItem("myPoints", String(newPoints));
-
-                            localStorage.setItem("lastLoginBonusDate", today);
-                            setLoginBonusDone(true);
-                        }}
-                        style={{
-                            marginTop: 10,
-                            background: "#10b981",
-                            color: "#fff",
-                            padding: "8px 12px",
-                            border: "none",
-                            borderRadius: "6px",
                         }}
                     >
                         ログインボーナス受取（+20pt）
