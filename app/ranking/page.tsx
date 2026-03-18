@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/supabase";
+import { supabase } from "../lib/supabase";
 
-type User = {
+type RankingUser = {
+    id: string;
     name: string;
     points: number;
 };
@@ -12,9 +13,8 @@ type User = {
 export default function RankingPage() {
     const router = useRouter();
 
-    const [users, setUsers] = useState<User[]>([]);
-    const [myName, setMyName] = useState("自分");
-    const [myRank, setMyRank] = useState(0);
+    const [users, setUsers] = useState<RankingUser[]>([]);
+    const [myId, setMyId] = useState("");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -27,40 +27,45 @@ export default function RankingPage() {
                 return;
             }
 
-            const { data: profile } = await supabase
+            setMyId(user.id);
+
+            const { data: pointRows, error: pointError } = await supabase
+                .from("user_points")
+                .select("id, points")
+                .order("points", { ascending: false });
+
+            if (pointError || !pointRows) {
+                console.error(pointError);
+                return;
+            }
+
+            const ids = pointRows.map((row) => row.id);
+
+            const { data: profileRows, error: profileError } = await supabase
                 .from("profiles")
-                .select("name")
-                .eq("id", user.id)
-                .single();
+                .select("id, name")
+                .in("id", ids);
 
-            const currentName = profile?.name || "自分";
-            const currentPoints = Number(localStorage.getItem("myPoints") || "0");
+            if (profileError) {
+                console.error(profileError);
+                return;
+            }
 
-            const rankingUsers: User[] = [
-                { name: currentName, points: currentPoints },
-                { name: "田中", points: 120 },
-                { name: "佐藤", points: 95 },
-                { name: "鈴木", points: 80 },
-                { name: "高橋", points: 60 },
-            ].sort((a, b) => b.points - a.points);
+            const mergedUsers: RankingUser[] = pointRows.map((pointRow) => {
+                const profile = profileRows?.find((p) => p.id === pointRow.id);
 
-            setUsers(rankingUsers);
-            setMyName(currentName);
+                return {
+                    id: pointRow.id,
+                    name: profile?.name || "名前未設定",
+                    points: pointRow.points || 0,
+                };
+            });
 
-            const rank =
-                rankingUsers.findIndex((userItem) => userItem.name === currentName) + 1;
-            setMyRank(rank);
+            setUsers(mergedUsers);
         };
 
         loadRanking();
     }, [router]);
-
-    const getMedal = (index: number) => {
-        if (index === 0) return "1";
-        if (index === 1) return "2";
-        if (index === 2) return "3";
-        return index + 1;
-    };
 
     return (
         <main
@@ -74,21 +79,7 @@ export default function RankingPage() {
 
             <div
                 style={{
-                    background: "#ffffff",
-                    borderRadius: 16,
-                    padding: 20,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                     marginTop: 20,
-                    marginBottom: 20,
-                }}
-            >
-                <p style={{ margin: 0, fontWeight: "bold", fontSize: 18 }}>
-                    あなたの順位：{myRank}位
-                </p>
-            </div>
-
-            <div
-                style={{
                     display: "flex",
                     flexDirection: "column",
                     gap: 12,
@@ -96,13 +87,13 @@ export default function RankingPage() {
             >
                 {users.map((user, index) => (
                     <div
-                        key={index}
+                        key={user.id}
                         style={{
-                            background: user.name === myName ? "#eef2ff" : "#ffffff",
-                            border: user.name === myName ? "2px solid #6366f1" : "1px solid #e5e7eb",
-                            borderRadius: 14,
+                            background: user.id === myId ? "#eef2ff" : "#ffffff",
+                            border: user.id === myId ? "2px solid #6366f1" : "1px solid #e5e7eb",
+                            borderRadius: 12,
                             padding: 16,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
@@ -116,7 +107,7 @@ export default function RankingPage() {
                                     color: "#6b7280",
                                 }}
                             >
-                                {getMedal(index)}位
+                                {index + 1}位
                             </p>
 
                             <p
@@ -124,7 +115,7 @@ export default function RankingPage() {
                                     margin: "6px 0 0 0",
                                     fontWeight: "bold",
                                     fontSize: 18,
-                                    color: user.name === myName ? "#4338ca" : "#111827",
+                                    color: user.id === myId ? "#4338ca" : "#111827",
                                 }}
                             >
                                 {user.name}
@@ -135,7 +126,6 @@ export default function RankingPage() {
                             style={{
                                 fontWeight: "bold",
                                 fontSize: 18,
-                                color: "#111827",
                             }}
                         >
                             {user.points}pt
@@ -156,7 +146,7 @@ export default function RankingPage() {
                     onClick={() => router.push("/mypage")}
                     style={{
                         background: "#111827",
-                        color: "#ffffff",
+                        color: "#fff",
                         fontWeight: "bold",
                         padding: "10px 14px",
                         border: "none",
@@ -171,7 +161,7 @@ export default function RankingPage() {
                     onClick={() => router.push("/report")}
                     style={{
                         background: "#ef4444",
-                        color: "#ffffff",
+                        color: "#fff",
                         fontWeight: "bold",
                         padding: "10px 14px",
                         border: "none",
