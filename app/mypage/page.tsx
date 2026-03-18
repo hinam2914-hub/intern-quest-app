@@ -35,6 +35,26 @@ export default function MyPage() {
             const currentName = profile?.name || "自分";
             const savedPoints = localStorage.getItem("myPoints");
             const savedStreak = localStorage.getItem("loginStreak");
+            const lastLoginDate = localStorage.getItem("lastLoginDate");
+            const loginToday = new Date().toISOString().slice(0, 10);
+
+            let newStreak = 1;
+
+            if (lastLoginDate) {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+                if (lastLoginDate === yesterdayStr) {
+                    newStreak = Number(savedStreak || "0") + 1;
+                } else if (lastLoginDate === loginToday) {
+                    newStreak = Number(savedStreak || "1");
+                }
+            }
+
+            setStreak(newStreak);
+            localStorage.setItem("loginStreak", String(newStreak));
+            localStorage.setItem("lastLoginDate", loginToday);
             const lastLoginBonusDate = localStorage.getItem("lastLoginBonusDate");
 
             const today = new Date().toISOString().slice(0, 10);
@@ -184,6 +204,7 @@ export default function MyPage() {
                         ログインボーナス受取（+20pt）
                     </button>
                 )}
+
                 {!loginBonusDone && (
                     <button
                         onClick={() => {
