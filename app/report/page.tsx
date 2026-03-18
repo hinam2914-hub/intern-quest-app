@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/app/lib/supabase";
+import { useRouter } from "next/navigation";
+import { supabase } from "../lib/supabase";
 
 export default function ReportPage() {
+    const router = useRouter();
     const [text, setText] = useState("");
     const [message, setMessage] = useState("");
 
@@ -18,7 +20,7 @@ export default function ReportPage() {
         } = await supabase.auth.getUser();
 
         if (!user) {
-            setMessage("ログイン情報がありません");
+            router.push("/login");
             return;
         }
 
@@ -42,16 +44,26 @@ export default function ReportPage() {
             created_at: today,
         });
 
-        const currentPoints = Number(localStorage.getItem("myPoints") || "0");
-        const newPoints = currentPoints + 20;
-        localStorage.setItem("myPoints", String(newPoints));
+        const { data: pointRow } = await supabase
+            .from("user_points")
+            .select("points")
+            .eq("id", user.id)
+            .single();
 
-        setMessage("日報提出完了！ +20pt");
+        const currentPoints = pointRow?.points || 0;
+        const newPoints = currentPoints + 20;
+
+        await supabase
+            .from("user_points")
+            .update({ points: newPoints })
+            .eq("id", user.id);
+
+        setMessage("日報提出完了 +20pt");
         setText("");
     };
 
     return (
-        <main>
+        <main style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
             <h1>日報</h1>
 
             <textarea
@@ -60,17 +72,42 @@ export default function ReportPage() {
                 placeholder="今日やったことを書く"
                 rows={6}
                 cols={40}
+                style={{ width: "100%", padding: 12, borderRadius: 8 }}
             />
 
-            <div>
-                <button onClick={handleSubmit}>提出</button>
+            <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
+                <button
+                    onClick={handleSubmit}
+                    style={{
+                        background: "#111827",
+                        color: "#fff",
+                        fontWeight: "bold",
+                        padding: "10px 14px",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                    }}
+                >
+                    提出
+                </button>
+
+                <button
+                    onClick={() => router.push("/mypage")}
+                    style={{
+                        background: "#fff",
+                        color: "#111827",
+                        fontWeight: "bold",
+                        padding: "10px 14px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                    }}
+                >
+                    マイページへ戻る
+                </button>
             </div>
 
-            <p>{message}</p>
-
-            <div style={{ marginTop: 20 }}>
-                <a href="/mypage">マイページへ戻る</a>
-            </div>
+            <p style={{ marginTop: 12 }}>{message}</p>
         </main>
     );
 }
