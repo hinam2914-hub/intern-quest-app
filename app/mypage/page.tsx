@@ -51,7 +51,6 @@ export default function MyPage() {
                 .from("submissions")
                 .select("id")
                 .eq("user_id", user.id)
-                .eq("created_at", today)
                 .maybeSingle();
 
             setReportDone(!!submission);
@@ -77,16 +76,6 @@ export default function MyPage() {
         loadPage();
     }, [router]);
 
-    useEffect(() => {
-        if (levelUpMessage) {
-            const timer = setTimeout(() => {
-                setLevelUpMessage("");
-            }, 2000);
-
-            return () => clearTimeout(timer);
-        }
-    }, [levelUpMessage]);
-
     const saveName = async () => {
         const {
             data: { user },
@@ -98,19 +87,6 @@ export default function MyPage() {
             id: user.id,
             name: name,
         });
-
-        const currentPoints = Number(localStorage.getItem("myPoints") || "0");
-
-        const rankingUsers = [
-            { name, points: currentPoints },
-            { name: "田中", points: 120 },
-            { name: "佐藤", points: 95 },
-        ].sort((a, b) => b.points - a.points);
-
-        const myRank =
-            rankingUsers.findIndex((userItem) => userItem.name === name) + 1;
-
-        setRank(myRank);
     };
 
     const addPoints = () => {
@@ -123,18 +99,8 @@ export default function MyPage() {
 
         if (newLevel > oldLevel) {
             setLevelUpMessage("レベルアップしました");
+            setTimeout(() => setLevelUpMessage(""), 2000);
         }
-
-        const rankingUsers = [
-            { name, points: newPoints },
-            { name: "田中", points: 120 },
-            { name: "佐藤", points: 95 },
-        ].sort((a, b) => b.points - a.points);
-
-        const myRank =
-            rankingUsers.findIndex((userItem) => userItem.name === name) + 1;
-
-        setRank(myRank);
     };
 
     const logout = async () => {
@@ -153,13 +119,6 @@ export default function MyPage() {
                 : points >= 100
                     ? "🥈 継続力あり"
                     : "🥉 これから";
-
-    const nextAction =
-        points < 50
-            ? "日報を書いてみましょう"
-            : points < 100
-                ? "ランキングを確認しましょう"
-                : "学習コンテンツを進めましょう";
 
     return (
         <main
@@ -188,7 +147,7 @@ export default function MyPage() {
                     marginTop: 20,
                 }}
             >
-                <p style={{ marginTop: 0 }}>現在ポイント：{points}pt</p>
+                <p>現在ポイント：{points}pt</p>
 
                 <p>
                     今日のログインボーナス：
@@ -201,24 +160,95 @@ export default function MyPage() {
                         {loginBonusDone ? "受取済み" : "未受取"}
                     </span>
                 </p>
+                {!loginBonusDone && (
+                    <button
+                        onClick={() => {
+                            const today = new Date().toISOString().slice(0, 10);
+                            const newPoints = points + 20;
+
+                            setPoints(newPoints);
+                            localStorage.setItem("myPoints", String(newPoints));
+                            localStorage.setItem("lastLoginBonusDate", today);
+                            setLoginBonusDone(true);
+                        }}
+                        style={{
+                            marginTop: 10,
+                            background: "#10b981",
+                            color: "#fff",
+                            padding: "8px 12px",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                        }}
+                    >
+                        ログインボーナス受取（+20pt）
+                    </button>
+                )}
+                {!loginBonusDone && (
+                    <button
+                        onClick={() => {
+                            const today = new Date().toISOString().slice(0, 10);
+                            const newPoints = points + 20;
+
+                            setPoints(newPoints);
+                            localStorage.setItem("myPoints", String(newPoints));
+
+                            localStorage.setItem("lastLoginBonusDate", today);
+                            setLoginBonusDone(true);
+                        }}
+                        style={{
+                            marginTop: 10,
+                            background: "#10b981",
+                            color: "#fff",
+                            padding: "8px 12px",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                        }}
+                    >
+                        ログインボーナス受取（+20pt）
+                    </button>
+                )}
+
+                {!loginBonusDone && (
+                    <button
+                        onClick={() => {
+                            const today = new Date().toISOString().slice(0, 10);
+                            const newPoints = points + 20;
+
+                            setPoints(newPoints);
+                            localStorage.setItem("myPoints", String(newPoints));
+
+                            localStorage.setItem("lastLoginBonusDate", today);
+                            setLoginBonusDone(true);
+                        }}
+                        style={{
+                            marginTop: 10,
+                            background: "#10b981",
+                            color: "#fff",
+                            padding: "8px 12px",
+                            border: "none",
+                            borderRadius: "6px",
+                        }}
+                    >
+                        ログインボーナス受取（+20pt）
+                    </button>
+                )}
 
                 <p>現在順位：{rank}位</p>
-
                 <p>連続ログイン：{streak}日</p>
 
-                <p style={{ fontWeight: "bold", fontSize: 18 }}>Level：{level}</p>
+                <p style={{ fontWeight: "bold" }}>Level：{level}</p>
 
-                <p style={{ marginTop: 8 }}>
+                <p>
                     バッジ：
                     <span
                         style={{
                             marginLeft: 8,
                             padding: "4px 10px",
                             background: "#111827",
-                            color: "#ffffff",
+                            color: "#fff",
                             borderRadius: "999px",
-                            fontSize: 12,
-                            display: "inline-block",
                         }}
                     >
                         {badge}
@@ -234,108 +264,33 @@ export default function MyPage() {
                         height: 12,
                         borderRadius: 999,
                         overflow: "hidden",
-                        marginTop: 8,
-                        marginBottom: 16,
                     }}
                 >
                     <div
                         style={{
                             width: `${exp}%`,
-                            background: "linear-gradient(90deg, #6366f1, #a78bfa)",
+                            background: "#6366f1",
                             height: "100%",
-                            transition: "width 0.5s ease",
-                            borderRadius: 999,
                         }}
                     />
                 </div>
 
-                {levelUpMessage && (
-                    <p style={{ color: "orange", fontWeight: "bold" }}>
-                        {levelUpMessage}
-                    </p>
-                )}
+                {levelUpMessage && <p>{levelUpMessage}</p>}
 
-                <p>今日のアクション：{nextAction}</p>
-
-                <p
-                    style={{
-                        color: reportDone ? "green" : "red",
-                        fontWeight: "bold",
-                    }}
-                >
+                <p style={{ marginTop: 10 }}>
                     今日の日報：{reportDone ? "提出済み" : "未提出"}
                 </p>
             </div>
 
-            <div
-                style={{
-                    marginTop: 20,
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                }}
-            >
-                <button
-                    onClick={addPoints}
-                    style={{
-                        background: "#6366f1",
-                        color: "#fff",
-                        fontWeight: "bold",
-                        padding: "10px 14px",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                    }}
-                >
-                    +10ポイント
+            <div style={{ marginTop: 20 }}>
+                <button onClick={addPoints}>+10ポイント</button>
+                <button onClick={() => router.push("/ranking")}>
+                    ランキング
                 </button>
-
-                <button
-                    onClick={() => router.push("/ranking")}
-                    style={{
-                        background: "#111827",
-                        color: "#fff",
-                        fontWeight: "bold",
-                        padding: "10px 14px",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                    }}
-                >
-                    ランキングを見る
-                </button>
-
-                <button
-                    onClick={() => router.push("/report")}
-                    disabled={reportDone}
-                    style={{
-                        background: reportDone ? "#ccc" : "#ef4444",
-                        color: "#fff",
-                        fontWeight: "bold",
-                        padding: "10px 14px",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: reportDone ? "not-allowed" : "pointer",
-                        opacity: reportDone ? 0.7 : 1,
-                    }}
-                >
+                <button onClick={() => router.push("/report")}>
                     日報を書く
                 </button>
-
-                <button
-                    onClick={logout}
-                    style={{
-                        background: "#fff",
-                        color: "#111827",
-                        fontWeight: "bold",
-                        padding: "10px 14px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                    }}
-                >
-                    ログアウト
-                </button>
+                <button onClick={logout}>ログアウト</button>
             </div>
         </main>
     );
