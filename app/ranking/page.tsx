@@ -70,19 +70,26 @@ export default function RankingPage() {
     return (
         <main
             style={{
-                padding: 20,
-                maxWidth: 600,
+                padding: 24,
+                maxWidth: 720,
                 margin: "0 auto",
             }}
         >
-            <h1>ランキング</h1>
+            <h1
+                style={{
+                    fontSize: 48,
+                    fontWeight: "bold",
+                    marginBottom: 32,
+                }}
+            >
+                ランキング
+            </h1>
 
             <div
                 style={{
-                    marginTop: 20,
                     display: "flex",
                     flexDirection: "column",
-                    gap: 12,
+                    gap: 14,
                 }}
             >
                 {users.map((user, index) => (
@@ -90,10 +97,13 @@ export default function RankingPage() {
                         key={user.id}
                         style={{
                             background: user.id === myId ? "#eef2ff" : "#ffffff",
-                            border: user.id === myId ? "2px solid #6366f1" : "1px solid #e5e7eb",
-                            borderRadius: 12,
-                            padding: 16,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                            border:
+                                user.id === myId
+                                    ? "2px solid #6366f1"
+                                    : "1px solid #e5e7eb",
+                            borderRadius: 16,
+                            padding: 18,
+                            boxShadow: "0 6px 16px rgba(0,0,0,0.06)",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
@@ -114,7 +124,7 @@ export default function RankingPage() {
                                 style={{
                                     margin: "6px 0 0 0",
                                     fontWeight: "bold",
-                                    fontSize: 18,
+                                    fontSize: 24,
                                     color: user.id === myId ? "#4338ca" : "#111827",
                                 }}
                             >
@@ -125,7 +135,8 @@ export default function RankingPage() {
                         <div
                             style={{
                                 fontWeight: "bold",
-                                fontSize: 18,
+                                fontSize: 28,
+                                color: "#111827",
                             }}
                         >
                             {user.points}pt
@@ -136,21 +147,21 @@ export default function RankingPage() {
 
             <div
                 style={{
-                    marginTop: 20,
+                    marginTop: 24,
                     display: "flex",
-                    gap: 10,
+                    gap: 12,
                     flexWrap: "wrap",
                 }}
             >
                 <button
                     onClick={() => router.push("/mypage")}
                     style={{
-                        background: "#111827",
-                        color: "#fff",
+                        background: "#0f172a",
+                        color: "#ffffff",
                         fontWeight: "bold",
-                        padding: "10px 14px",
+                        padding: "12px 18px",
                         border: "none",
-                        borderRadius: "8px",
+                        borderRadius: 12,
                         cursor: "pointer",
                     }}
                 >
@@ -160,12 +171,12 @@ export default function RankingPage() {
                 <button
                     onClick={() => router.push("/report")}
                     style={{
-                        background: "#ef4444",
-                        color: "#fff",
+                        background: "#e85b52",
+                        color: "#ffffff",
                         fontWeight: "bold",
-                        padding: "10px 14px",
+                        padding: "12px 18px",
                         border: "none",
-                        borderRadius: "8px",
+                        borderRadius: 12,
                         cursor: "pointer",
                     }}
                 >

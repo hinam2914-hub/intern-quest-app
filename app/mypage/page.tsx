@@ -4,13 +4,23 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useRouter } from "next/navigation";
 
+const getTodayJST = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+};
+
 export default function MyPage() {
     const router = useRouter();
 
     const [name, setName] = useState("");
     const [points, setPoints] = useState(0);
+    const [rank, setRank] = useState(0);
     const [streak, setStreak] = useState(1);
     const [loginBonusDone, setLoginBonusDone] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
 
     useEffect(() => {
         const loadPage = async () => {
@@ -23,28 +33,41 @@ export default function MyPage() {
                 return;
             }
 
+            const today = getTodayJST();
+
+            // 名前
             const { data: profile } = await supabase
                 .from("profiles")
                 .select("name")
                 .eq("id", user.id)
                 .single();
 
+            setName(profile?.name || "自分");
+
+            // ポイント
             const { data: pointData } = await supabase
                 .from("user_points")
                 .select("points")
                 .eq("id", user.id)
                 .single();
 
-            const currentName = profile?.name || "自分";
             const currentPoints = pointData?.points || 0;
-
-            setName(currentName);
             setPoints(currentPoints);
 
+            // 順位
+            const { data: rankingRows } = await supabase
+                .from("user_points")
+                .select("id, points")
+                .order("points", { ascending: false });
+
+            if (rankingRows) {
+                const myRank = rankingRows.findIndex((row) => row.id === user.id) + 1;
+                setRank(myRank);
+            }
+
+            // 連続ログイン
             const savedStreak = localStorage.getItem("loginStreak");
             const lastLoginDate = localStorage.getItem("lastLoginDate");
-            const lastBonusDate = localStorage.getItem("lastLoginBonusDate");
-            const today = new Date().toISOString().slice(0, 10);
 
             let newStreak = 1;
 
@@ -64,11 +87,19 @@ export default function MyPage() {
             localStorage.setItem("loginStreak", String(newStreak));
             localStorage.setItem("lastLoginDate", today);
 
-            if (lastBonusDate === today) {
-                setLoginBonusDone(true);
-            } else {
-                setLoginBonusDone(false);
-            }
+            // ログインボーナス
+            const lastBonusDate = localStorage.getItem("lastLoginBonusDate");
+            setLoginBonusDone(lastBonusDate === today);
+
+            // 今日の日報
+            const { data: report } = await supabase
+                .from("submissions")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("created_at", today)
+                .maybeSingle();
+
+            setIsSubmitted(!!report);
         };
 
         loadPage();
@@ -234,7 +265,7 @@ export default function MyPage() {
                     </button>
                 )}
 
-                <p style={{ marginTop: 26 }}>現在順位：3位</p>
+                <p style={{ marginTop: 26 }}>現在順位：{rank}位</p>
 
                 <p style={{ marginTop: 22 }}>連続ログイン：{streak}日</p>
 
@@ -294,12 +325,12 @@ export default function MyPage() {
                 <p
                     style={{
                         marginTop: 24,
-                        color: "#ef4444",
+                        color: isSubmitted ? "#2e7d32" : "#ef4444",
                         fontWeight: "bold",
                         fontSize: 18,
                     }}
                 >
-                    今日の日報：未提出
+                    今日の日報：{isSubmitted ? "提出済み" : "未提出"}
                 </p>
             </div>
 
