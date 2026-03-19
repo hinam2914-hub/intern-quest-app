@@ -35,7 +35,7 @@ export default function MyPage() {
 
             const today = getTodayJST();
 
-            // 名前
+            // 名前取得
             const { data: profile } = await supabase
                 .from("profiles")
                 .select("name")
@@ -44,7 +44,7 @@ export default function MyPage() {
 
             setName(profile?.name || "自分");
 
-            // ポイント
+            // ポイント取得
             const { data: pointData } = await supabase
                 .from("user_points")
                 .select("points")
@@ -54,7 +54,7 @@ export default function MyPage() {
             const currentPoints = pointData?.points || 0;
             setPoints(currentPoints);
 
-            // 順位
+            // 順位取得
             const { data: rankingRows } = await supabase
                 .from("user_points")
                 .select("id, points")
@@ -74,7 +74,10 @@ export default function MyPage() {
             if (lastLoginDate) {
                 const yesterday = new Date();
                 yesterday.setDate(yesterday.getDate() - 1);
-                const yesterdayStr = yesterday.toISOString().slice(0, 10);
+                const y = yesterday.getFullYear();
+                const m = String(yesterday.getMonth() + 1).padStart(2, "0");
+                const d = String(yesterday.getDate()).padStart(2, "0");
+                const yesterdayStr = `${y}-${m}-${d}`;
 
                 if (lastLoginDate === yesterdayStr) {
                     newStreak = Number(savedStreak || "0") + 1;
@@ -91,7 +94,7 @@ export default function MyPage() {
             const lastBonusDate = localStorage.getItem("lastLoginBonusDate");
             setLoginBonusDone(lastBonusDate === today);
 
-            // 今日の日報
+            // 今日の日報提出判定
             const { data: report } = await supabase
                 .from("submissions")
                 .select("id")
@@ -119,7 +122,7 @@ export default function MyPage() {
     };
 
     const handleLoginBonus = async () => {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getTodayJST();
         const newPoints = points + 20;
 
         setPoints(newPoints);
@@ -135,17 +138,16 @@ export default function MyPage() {
             .update({ points: newPoints })
             .eq("id", user.id);
 
-        await supabase
-            .from("user_points")
-            .update({ points: newPoints })
-            .eq("id", user.id);
-
-        // ↓これを追加
-        await supabase.from("points_history").insert({
+        const { error: historyError } = await supabase.from("points_history").insert({
             user_id: user.id,
-            amount: 20,
+            change: 20,
             reason: "login_bonus",
         });
+
+        if (historyError) {
+            console.error(historyError);
+        }
+
         localStorage.setItem("lastLoginBonusDate", today);
         setLoginBonusDone(true);
     };
@@ -164,17 +166,16 @@ export default function MyPage() {
             .from("user_points")
             .update({ points: newPoints })
             .eq("id", user.id);
-        await supabase
-            .from("user_points")
-            .update({ points: newPoints })
-            .eq("id", user.id);
 
-        // ↓これを追加
-        await supabase.from("points_history").insert({
+        const { error: historyError } = await supabase.from("points_history").insert({
             user_id: user.id,
-            amount: 10,
+            change: 10,
             reason: "manual_add",
         });
+
+        if (historyError) {
+            console.error(historyError);
+        }
     };
 
     const handleLogout = async () => {

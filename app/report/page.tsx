@@ -75,21 +75,19 @@ export default function ReportPage() {
             .update({ points: currentPoints + 10 })
             .eq("id", user.id);
 
-        await supabase
-            .from("user_points")
-            .update({ points: currentPoints + 10 })
-            .eq("id", user.id);
-
-        // ↓これを追加
-        await supabase.from("points_history").insert({
-            user_id: user.id,
-            amount: 10,
-            reason: "report_submit",
-        });
-
         if (updateError) {
             setMessage("ポイント更新に失敗しました");
             return;
+        }
+
+        const { error: historyError } = await supabase.from("points_history").insert({
+            user_id: user.id,
+            change: 10,
+            reason: "report_submit",
+        });
+
+        if (historyError) {
+            console.error(historyError);
         }
 
         router.push("/mypage");
@@ -104,7 +102,7 @@ export default function ReportPage() {
             }}
         >
             <h1 style={{ fontSize: 40, fontWeight: "bold", marginBottom: 24 }}>
-                日報を書く
+                日報
             </h1>
 
             <textarea
