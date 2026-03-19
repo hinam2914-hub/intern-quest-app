@@ -12,7 +12,6 @@ type RankingUser = {
 
 export default function RankingPage() {
     const router = useRouter();
-
     const [users, setUsers] = useState<RankingUser[]>([]);
     const [myId, setMyId] = useState("");
 

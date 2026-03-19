@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useRouter } from "next/navigation";
 
+type PointHistory = {
+    id: string;
+    user_id: string;
+    change: number;
+    reason: string;
+    created_at: string;
+};
+
 const getTodayJST = () => {
     const now = new Date();
     const y = now.getFullYear();
@@ -21,6 +29,7 @@ export default function MyPage() {
     const [streak, setStreak] = useState(1);
     const [loginBonusDone, setLoginBonusDone] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [history, setHistory] = useState<PointHistory[]>([]);
 
     useEffect(() => {
         const loadPage = async () => {
@@ -35,7 +44,6 @@ export default function MyPage() {
 
             const today = getTodayJST();
 
-            // 名前取得
             const { data: profile } = await supabase
                 .from("profiles")
                 .select("name")
@@ -44,7 +52,6 @@ export default function MyPage() {
 
             setName(profile?.name || "自分");
 
-            // ポイント取得
             const { data: pointData } = await supabase
                 .from("user_points")
                 .select("points")
@@ -54,7 +61,6 @@ export default function MyPage() {
             const currentPoints = pointData?.points || 0;
             setPoints(currentPoints);
 
-            // 順位取得
             const { data: rankingRows } = await supabase
                 .from("user_points")
                 .select("id, points")
@@ -65,7 +71,15 @@ export default function MyPage() {
                 setRank(myRank);
             }
 
-            // 連続ログイン
+            const { data: historyData } = await supabase
+                .from("points_history")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(5);
+
+            setHistory(historyData || []);
+
             const savedStreak = localStorage.getItem("loginStreak");
             const lastLoginDate = localStorage.getItem("lastLoginDate");
 
@@ -90,11 +104,9 @@ export default function MyPage() {
             localStorage.setItem("loginStreak", String(newStreak));
             localStorage.setItem("lastLoginDate", today);
 
-            // ログインボーナス
             const lastBonusDate = localStorage.getItem("lastLoginBonusDate");
             setLoginBonusDone(lastBonusDate === today);
 
-            // 今日の日報提出判定
             const { data: report } = await supabase
                 .from("submissions")
                 .select("id")
@@ -138,18 +150,25 @@ export default function MyPage() {
             .update({ points: newPoints })
             .eq("id", user.id);
 
-        const { error: historyError } = await supabase.from("points_history").insert({
+        await supabase.from("points_history").insert({
             user_id: user.id,
             change: 20,
             reason: "login_bonus",
         });
 
-        if (historyError) {
-            console.error(historyError);
-        }
-
         localStorage.setItem("lastLoginBonusDate", today);
         setLoginBonusDone(true);
+
+        setHistory((prev) => [
+            {
+                id: crypto.randomUUID(),
+                user_id: user.id,
+                change: 20,
+                reason: "login_bonus",
+                created_at: new Date().toISOString(),
+            },
+            ...prev,
+        ].slice(0, 5));
     };
 
     const handleAddPoint = async () => {
@@ -167,15 +186,22 @@ export default function MyPage() {
             .update({ points: newPoints })
             .eq("id", user.id);
 
-        const { error: historyError } = await supabase.from("points_history").insert({
+        await supabase.from("points_history").insert({
             user_id: user.id,
             change: 10,
             reason: "manual_add",
         });
 
-        if (historyError) {
-            console.error(historyError);
-        }
+        setHistory((prev) => [
+            {
+                id: crypto.randomUUID(),
+                user_id: user.id,
+                change: 10,
+                reason: "manual_add",
+                created_at: new Date().toISOString(),
+            },
+            ...prev,
+        ].slice(0, 5));
     };
 
     const handleLogout = async () => {
@@ -188,12 +214,12 @@ export default function MyPage() {
 
     const badge =
         points >= 300
-            ? "🏆 上級者"
+            ? "上級者"
             : points >= 200
-                ? "🥇 成長中"
+                ? "成長中"
                 : points >= 100
-                    ? "🥈 継続力あり"
-                    : "🥉 これから";
+                    ? "継続力あり"
+                    : "これから";
 
     const nextAction =
         points < 50
@@ -201,6 +227,19 @@ export default function MyPage() {
             : points < 100
                 ? "ランキングを確認しましょう"
                 : "学習コンテンツを進めましょう";
+
+    const formatReason = (reason: string) => {
+        switch (reason) {
+            case "login_bonus":
+                return "ログインボーナス";
+            case "manual_add":
+                return "手動追加";
+            case "report_submit":
+                return "日報提出";
+            default:
+                return reason;
+        }
+    };
 
     return (
         <main
@@ -289,7 +328,6 @@ export default function MyPage() {
                 )}
 
                 <p style={{ marginTop: 26 }}>現在順位：{rank}位</p>
-
                 <p style={{ marginTop: 22 }}>連続ログイン：{streak}日</p>
 
                 <p
@@ -424,6 +462,52 @@ export default function MyPage() {
                 >
                     ログアウト
                 </button>
+            </div>
+
+            <div style={{ marginTop: 32 }}>
+                <h2 style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
+                    ポイント履歴
+                </h2>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {history.map((item, index) => (
+                        <div
+                            key={index}
+                            style={{
+                                background: "#ffffff",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: 12,
+                                padding: 12,
+                                display: "flex",
+                                justifyContent: "space-between",
+                            }}
+                        >
+                            <div>
+                                <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
+                                    {formatReason(item.reason)}
+                                </p>
+                            </div>
+
+                            <div style={{ fontWeight: "bold" }}>
+                                {item.change > 0 ? `+${item.change}` : item.change}pt
+                            </div>
+                        </div>
+                    ))}
+
+                    {history.length === 0 && (
+                        <div
+                            style={{
+                                background: "#ffffff",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: 12,
+                                padding: 12,
+                                color: "#6b7280",
+                            }}
+                        >
+                            まだ履歴がありません
+                        </div>
+                    )}
+                </div>
             </div>
         </main>
     );
