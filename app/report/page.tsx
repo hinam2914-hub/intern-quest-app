@@ -75,6 +75,18 @@ export default function ReportPage() {
             .update({ points: currentPoints + 10 })
             .eq("id", user.id);
 
+        await supabase
+            .from("user_points")
+            .update({ points: currentPoints + 10 })
+            .eq("id", user.id);
+
+        // ↓これを追加
+        await supabase.from("points_history").insert({
+            user_id: user.id,
+            amount: 10,
+            reason: "report_submit",
+        });
+
         if (updateError) {
             setMessage("ポイント更新に失敗しました");
             return;

@@ -135,6 +135,17 @@ export default function MyPage() {
             .update({ points: newPoints })
             .eq("id", user.id);
 
+        await supabase
+            .from("user_points")
+            .update({ points: newPoints })
+            .eq("id", user.id);
+
+        // ↓これを追加
+        await supabase.from("points_history").insert({
+            user_id: user.id,
+            amount: 20,
+            reason: "login_bonus",
+        });
         localStorage.setItem("lastLoginBonusDate", today);
         setLoginBonusDone(true);
     };
@@ -153,6 +164,17 @@ export default function MyPage() {
             .from("user_points")
             .update({ points: newPoints })
             .eq("id", user.id);
+        await supabase
+            .from("user_points")
+            .update({ points: newPoints })
+            .eq("id", user.id);
+
+        // ↓これを追加
+        await supabase.from("points_history").insert({
+            user_id: user.id,
+            amount: 10,
+            reason: "manual_add",
+        });
     };
 
     const handleLogout = async () => {
