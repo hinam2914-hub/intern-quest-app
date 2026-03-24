@@ -485,9 +485,10 @@ export default function MyPage() {
                             <div>
                                 <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
                                     {formatReason(item.reason)}
-                                    <p style={{ fontSize: 12, color: "#9ca3af" }}>
-                                        {new Date(item.created_at).toLocaleDateString()}
-                                    </p>
+                                </p>
+
+                                <p style={{ margin: "4px 0 0 0", fontSize: 12, color: "#9ca3af" }}>
+                                    {new Date(item.created_at).toLocaleString("ja-JP")}
                                 </p>
                             </div>
 
