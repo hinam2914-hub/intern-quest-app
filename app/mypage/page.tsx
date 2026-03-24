@@ -44,6 +44,7 @@ export default function MyPage() {
 
             const today = getTodayJST();
 
+            // 名前取得
             const { data: profile } = await supabase
                 .from("profiles")
                 .select("name")
@@ -52,6 +53,7 @@ export default function MyPage() {
 
             setName(profile?.name || "自分");
 
+            // ポイント取得
             const { data: pointData } = await supabase
                 .from("user_points")
                 .select("points")
@@ -61,6 +63,7 @@ export default function MyPage() {
             const currentPoints = pointData?.points || 0;
             setPoints(currentPoints);
 
+            // 順位取得
             const { data: rankingRows } = await supabase
                 .from("user_points")
                 .select("id, points")
@@ -71,6 +74,7 @@ export default function MyPage() {
                 setRank(myRank);
             }
 
+            // 履歴取得
             const { data: historyData } = await supabase
                 .from("points_history")
                 .select("*")
@@ -80,6 +84,7 @@ export default function MyPage() {
 
             setHistory(historyData || []);
 
+            // 連続ログイン
             const savedStreak = localStorage.getItem("loginStreak");
             const lastLoginDate = localStorage.getItem("lastLoginDate");
 
@@ -104,9 +109,11 @@ export default function MyPage() {
             localStorage.setItem("loginStreak", String(newStreak));
             localStorage.setItem("lastLoginDate", today);
 
+            // ログインボーナス受取済み判定
             const lastBonusDate = localStorage.getItem("lastLoginBonusDate");
             setLoginBonusDone(lastBonusDate === today);
 
+            // 日報提出済み判定
             const { data: report } = await supabase
                 .from("submissions")
                 .select("id")
@@ -159,16 +166,18 @@ export default function MyPage() {
         localStorage.setItem("lastLoginBonusDate", today);
         setLoginBonusDone(true);
 
-        setHistory((prev) => [
-            {
-                id: crypto.randomUUID(),
-                user_id: user.id,
-                change: 20,
-                reason: "login_bonus",
-                created_at: new Date().toISOString(),
-            },
-            ...prev,
-        ].slice(0, 5));
+        setHistory((prev) =>
+            [
+                {
+                    id: crypto.randomUUID(),
+                    user_id: user.id,
+                    change: 20,
+                    reason: "login_bonus",
+                    created_at: new Date().toISOString(),
+                },
+                ...prev,
+            ].slice(0, 5)
+        );
     };
 
     const handleAddPoint = async () => {
@@ -192,16 +201,18 @@ export default function MyPage() {
             reason: "manual_add",
         });
 
-        setHistory((prev) => [
-            {
-                id: crypto.randomUUID(),
-                user_id: user.id,
-                change: 10,
-                reason: "manual_add",
-                created_at: new Date().toISOString(),
-            },
-            ...prev,
-        ].slice(0, 5));
+        setHistory((prev) =>
+            [
+                {
+                    id: crypto.randomUUID(),
+                    user_id: user.id,
+                    change: 10,
+                    reason: "manual_add",
+                    created_at: new Date().toISOString(),
+                },
+                ...prev,
+            ].slice(0, 5)
+        );
     };
 
     const handleLogout = async () => {
@@ -446,6 +457,21 @@ export default function MyPage() {
                     }}
                 >
                     日報を書く
+                </button>
+
+                <button
+                    onClick={() => router.push("/history")}
+                    style={{
+                        background: "#ffffff",
+                        color: "#111827",
+                        fontWeight: "bold",
+                        padding: "12px 18px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: 12,
+                        cursor: "pointer",
+                    }}
+                >
+                    履歴を見る
                 </button>
 
                 <button
