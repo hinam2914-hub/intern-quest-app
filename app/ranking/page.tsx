@@ -12,6 +12,7 @@ type RankingUser = {
 
 export default function RankingPage() {
     const router = useRouter();
+
     const [users, setUsers] = useState<RankingUser[]>([]);
     const [myId, setMyId] = useState("");
 
@@ -28,27 +29,19 @@ export default function RankingPage() {
 
             setMyId(user.id);
 
-            const { data: pointRows, error: pointError } = await supabase
+            const { data: pointRows } = await supabase
                 .from("user_points")
                 .select("id, points")
                 .order("points", { ascending: false });
 
-            if (pointError || !pointRows) {
-                console.error(pointError);
-                return;
-            }
+            if (!pointRows) return;
 
             const ids = pointRows.map((row) => row.id);
 
-            const { data: profileRows, error: profileError } = await supabase
+            const { data: profileRows } = await supabase
                 .from("profiles")
                 .select("id, name")
                 .in("id", ids);
-
-            if (profileError) {
-                console.error(profileError);
-                return;
-            }
 
             const mergedUsers: RankingUser[] = pointRows.map((pointRow) => {
                 const profile = profileRows?.find((p) => p.id === pointRow.id);
@@ -127,6 +120,7 @@ export default function RankingPage() {
                                     color: user.id === myId ? "#4338ca" : "#111827",
                                 }}
                             >
+                                {index === 0 ? "🥇 " : index === 1 ? "🥈 " : index === 2 ? "🥉 " : ""}
                                 {user.name}
                             </p>
                         </div>
