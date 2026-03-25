@@ -36,7 +36,7 @@ export default function RankingPage() {
 
             setMyId(user.id);
 
-            // 累計ランキング
+            // ===== 累計ランキング =====
             const { data: pointRows, error: pointError } = await supabase
                 .from("user_points")
                 .select("id, points")
@@ -71,13 +71,15 @@ export default function RankingPage() {
 
             setUsers(mergedUsers);
 
-            // 今週ランキング用データ取得
-            // まずは確実に取るため直近50件を取得
+            // ===== 今週ランキング =====
+            const now = new Date();
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(now.getDate() - 7);
+
             const { data: weeklyData, error: weeklyError } = await supabase
                 .from("points_history")
                 .select("*")
-                .order("created_at", { ascending: false })
-                .limit(50);
+                .gte("created_at", oneWeekAgo.toISOString());
 
             if (weeklyError) {
                 console.error(weeklyError);
@@ -93,24 +95,24 @@ export default function RankingPage() {
                 weeklyTotals[item.user_id] += item.change;
             });
 
-            const weeklyRankingBase = Object.entries(weeklyTotals)
-                .map(([id, points]) => ({
-                    id,
-                    points,
-                }))
-                .sort((a, b) => b.points - a.points);
+            const weeklyIds = Object.keys(weeklyTotals);
 
-            const weeklyMergedUsers: WeeklyRankingUser[] = weeklyRankingBase.map(
-                (row) => {
-                    const profile = profileRows?.find((p) => p.id === row.id);
+            const { data: weeklyProfiles } = await supabase
+                .from("profiles")
+                .select("id, name")
+                .in("id", weeklyIds);
+
+            const weeklyMergedUsers: WeeklyRankingUser[] = weeklyIds
+                .map((id) => {
+                    const profile = weeklyProfiles?.find((p) => p.id === id);
 
                     return {
-                        id: row.id,
+                        id,
                         name: profile?.name || "名前未設定",
-                        points: row.points,
+                        points: weeklyTotals[id],
                     };
-                }
-            );
+                })
+                .sort((a, b) => b.points - a.points);
 
             setWeeklyUsers(weeklyMergedUsers);
         };
@@ -119,204 +121,49 @@ export default function RankingPage() {
     }, [router]);
 
     return (
-        <main
-            style={{
-                padding: 24,
-                maxWidth: 720,
-                margin: "0 auto",
-            }}
-        >
-            <h1
-                style={{
-                    fontSize: 48,
-                    fontWeight: "bold",
-                    marginBottom: 32,
-                }}
-            >
+        <main style={{ padding: 24, maxWidth: 720, margin: "0 auto" }}>
+            <h1 style={{ fontSize: 40, fontWeight: "bold", marginBottom: 24 }}>
                 ランキング
             </h1>
 
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 14,
-                }}
-            >
-                {users.map((user, index) => (
-                    <div
-                        key={user.id}
-                        style={{
-                            background: user.id === myId ? "#eef2ff" : "#ffffff",
-                            border:
-                                user.id === myId
-                                    ? "2px solid #6366f1"
-                                    : "1px solid #e5e7eb",
-                            borderRadius: 16,
-                            padding: 18,
-                            boxShadow: "0 6px 16px rgba(0,0,0,0.06)",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                        }}
-                    >
-                        <div>
-                            <p
-                                style={{
-                                    margin: 0,
-                                    fontSize: 14,
-                                    color: "#6b7280",
-                                }}
-                            >
-                                {index + 1}位
-                            </p>
-
-                            <p
-                                style={{
-                                    margin: "6px 0 0 0",
-                                    fontWeight: "bold",
-                                    fontSize: 24,
-                                    color: user.id === myId ? "#4338ca" : "#111827",
-                                }}
-                            >
-                                {index === 0 ? "1位 " : index === 1 ? "2位 " : index === 2 ? "3位 " : ""}
-                                {user.name}
-                            </p>
-                        </div>
-
-                        <div
-                            style={{
-                                fontWeight: "bold",
-                                fontSize: 28,
-                                color: "#111827",
-                            }}
-                        >
-                            {user.points}pt
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <h2
-                style={{
-                    fontSize: 32,
-                    fontWeight: "bold",
-                    marginTop: 40,
-                    marginBottom: 20,
-                }}
-            >
-                今週ランキング
-            </h2>
-
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 12,
-                }}
-            >
-                {weeklyUsers.map((user, index) => (
-                    <div
-                        key={user.id}
-                        style={{
-                            background: "#ffffff",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: 16,
-                            padding: 16,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                        }}
-                    >
-                        <div>
-                            <p
-                                style={{
-                                    margin: 0,
-                                    fontSize: 14,
-                                    color: "#6b7280",
-                                }}
-                            >
-                                {index + 1}位
-                            </p>
-
-                            <p
-                                style={{
-                                    margin: "6px 0 0 0",
-                                    fontWeight: "bold",
-                                    fontSize: 22,
-                                    color: "#111827",
-                                }}
-                            >
-                                {user.name}
-                            </p>
-                        </div>
-
-                        <div
-                            style={{
-                                fontWeight: "bold",
-                                fontSize: 22,
-                                color: "#111827",
-                            }}
-                        >
-                            {user.points}pt
-                        </div>
-                    </div>
-                ))}
-
-                {weeklyUsers.length === 0 && (
-                    <div
-                        style={{
-                            background: "#ffffff",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: 16,
-                            padding: 16,
-                            color: "#6b7280",
-                        }}
-                    >
-                        今週ランキングのデータがありません
-                    </div>
-                )}
-            </div>
-
-            <div
-                style={{
-                    marginTop: 24,
-                    display: "flex",
-                    gap: 12,
-                    flexWrap: "wrap",
-                }}
-            >
-                <button
-                    onClick={() => router.push("/mypage")}
+            {/* 累計 */}
+            <h2 style={{ marginTop: 24 }}>累計ランキング</h2>
+            {users.map((user, index) => (
+                <div
+                    key={user.id}
                     style={{
-                        background: "#0f172a",
-                        color: "#ffffff",
-                        fontWeight: "bold",
-                        padding: "12px 18px",
-                        border: "none",
-                        borderRadius: 12,
-                        cursor: "pointer",
+                        padding: 12,
+                        border: "1px solid #ddd",
+                        marginTop: 8,
+                        background: user.id === myId ? "#eef2ff" : "#fff",
                     }}
                 >
-                    マイページに戻る
-                </button>
+                    {index + 1}位：{user.name}（{user.points}pt）
+                </div>
+            ))}
 
-                <button
-                    onClick={() => router.push("/report")}
+            {/* 今週 */}
+            <h2 style={{ marginTop: 32 }}>今週ランキング</h2>
+            {weeklyUsers.map((user, index) => (
+                <div
+                    key={user.id}
                     style={{
-                        background: "#e85b52",
-                        color: "#ffffff",
-                        fontWeight: "bold",
-                        padding: "12px 18px",
-                        border: "none",
-                        borderRadius: 12,
-                        cursor: "pointer",
+                        padding: 12,
+                        border: "1px solid #ddd",
+                        marginTop: 8,
+                        background: user.id === myId ? "#eef2ff" : "#fff",
                     }}
                 >
-                    日報を書く
-                </button>
-            </div>
+                    {index + 1}位：{user.name}（{user.points}pt）
+                </div>
+            ))}
+
+            <button
+                onClick={() => router.push("/mypage")}
+                style={{ marginTop: 24 }}
+            >
+                マイページに戻る
+            </button>
         </main>
     );
 }
