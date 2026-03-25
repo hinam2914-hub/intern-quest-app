@@ -14,7 +14,9 @@ const getTodayJST = () => {
 
 export default function ReportPage() {
     const router = useRouter();
+
     const [text, setText] = useState("");
+    const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
 
     const handleSubmit = async () => {
@@ -23,17 +25,40 @@ export default function ReportPage() {
             return;
         }
 
+        setLoading(true);
+
         const {
             data: { user },
         } = await supabase.auth.getUser();
 
         if (!user) {
-            setMessage("ログイン情報がありません");
+            setMessage("ログインエラー");
+            setLoading(false);
             return;
         }
 
         const today = getTodayJST();
 
+        // 連続提出用
+        const lastReportDate = localStorage.getItem("lastReportDate") ?? "";
+        const reportStreak = Number(localStorage.getItem("reportStreak") ?? "0");
+
+        let newStreak = 1;
+
+        if (lastReportDate) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const y = yesterday.toISOString().slice(0, 10);
+
+            if (lastReportDate === y) {
+                newStreak = reportStreak + 1;
+            } else {
+                newStreak = 1;
+            }
+        }
+
+        // 同日提出チェック
         const { data: existing } = await supabase
             .from("submissions")
             .select("id")
@@ -43,9 +68,11 @@ export default function ReportPage() {
 
         if (existing) {
             setMessage("今日はすでに提出済みです");
+            setLoading(false);
             return;
         }
 
+        // 日報保存
         const { error: insertError } = await supabase.from("submissions").insert({
             user_id: user.id,
             content: text,
@@ -53,10 +80,12 @@ export default function ReportPage() {
         });
 
         if (insertError) {
-            setMessage("日報の保存に失敗しました");
+            setMessage("日報保存失敗");
+            setLoading(false);
             return;
         }
 
+        // 現在ポイント取得
         const { data: userPoint, error: pointError } = await supabase
             .from("user_points")
             .select("points")
@@ -64,32 +93,44 @@ export default function ReportPage() {
             .single();
 
         if (pointError) {
-            setMessage("ポイント取得に失敗しました");
+            setMessage("ポイント取得失敗");
+            setLoading(false);
             return;
         }
 
-        const currentPoints = userPoint?.points || 0;
+        let bonus = 10;
 
+        if (newStreak === 2) bonus += 20;
+        if (newStreak === 3) bonus += 30;
+        if (newStreak === 5) bonus += 50;
+
+        const currentPoints = userPoint?.points || 0;
+        const newPoints = currentPoints + bonus;
+
+        // ポイント更新
         const { error: updateError } = await supabase
             .from("user_points")
-            .update({ points: currentPoints + 10 })
+            .update({ points: newPoints })
             .eq("id", user.id);
 
         if (updateError) {
-            setMessage("ポイント更新に失敗しました");
+            setMessage("ポイント更新失敗");
+            setLoading(false);
             return;
         }
 
-        const { error: historyError } = await supabase.from("points_history").insert({
+        // 履歴保存
+        await supabase.from("points_history").insert({
             user_id: user.id,
-            change: 10,
+            change: bonus,
             reason: "report_submit",
         });
 
-        if (historyError) {
-            console.error(historyError);
-        }
+        // 連続提出記録
+        localStorage.setItem("lastReportDate", today);
+        localStorage.setItem("reportStreak", String(newStreak));
 
+        setLoading(false);
         router.push("/mypage");
     };
 
@@ -102,7 +143,7 @@ export default function ReportPage() {
             }}
         >
             <h1 style={{ fontSize: 40, fontWeight: "bold", marginBottom: 24 }}>
-                日報
+                日報提出
             </h1>
 
             <textarea
@@ -116,20 +157,13 @@ export default function ReportPage() {
                     borderRadius: 12,
                     border: "1px solid #d1d5db",
                     fontSize: 16,
-                    resize: "vertical",
                 }}
             />
 
-            <div
-                style={{
-                    marginTop: 12,
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                }}
-            >
+            <div style={{ marginTop: 16 }}>
                 <button
                     onClick={handleSubmit}
+                    disabled={loading}
                     style={{
                         background: "#111827",
                         color: "#ffffff",
@@ -140,12 +174,13 @@ export default function ReportPage() {
                         cursor: "pointer",
                     }}
                 >
-                    提出
+                    {loading ? "送信中..." : "提出する"}
                 </button>
 
                 <button
                     onClick={() => router.push("/mypage")}
                     style={{
+                        marginLeft: 10,
                         background: "#ffffff",
                         color: "#111827",
                         fontWeight: "bold",
@@ -155,12 +190,12 @@ export default function ReportPage() {
                         cursor: "pointer",
                     }}
                 >
-                    マイページへ戻る
+                    戻る
                 </button>
             </div>
 
             {message && (
-                <p style={{ marginTop: 14, fontWeight: "bold" }}>
+                <p style={{ marginTop: 14, fontWeight: "bold", color: "#ef4444" }}>
                     {message}
                 </p>
             )}

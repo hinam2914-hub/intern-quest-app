@@ -109,11 +109,11 @@ export default function MyPage() {
             localStorage.setItem("loginStreak", String(newStreak));
             localStorage.setItem("lastLoginDate", today);
 
-            // ログインボーナス受取済み判定
+            // ログインボーナス判定
             const lastBonusDate = localStorage.getItem("lastLoginBonusDate");
             setLoginBonusDone(lastBonusDate === today);
 
-            // 日報提出済み判定
+            // 日報提出判定
             const { data: report } = await supabase
                 .from("submissions")
                 .select("id")
@@ -142,15 +142,21 @@ export default function MyPage() {
 
     const handleLoginBonus = async () => {
         const today = getTodayJST();
-        const newPoints = points + 20;
-
-        setPoints(newPoints);
 
         const {
             data: { user },
         } = await supabase.auth.getUser();
 
         if (!user) return;
+
+        let bonus = 20;
+
+        // ▼連続ボーナス
+        if (streak === 3) bonus += 30;
+        if (streak === 7) bonus += 100;
+
+        const newPoints = points + bonus;
+        setPoints(newPoints);
 
         await supabase
             .from("user_points")
@@ -159,19 +165,20 @@ export default function MyPage() {
 
         await supabase.from("points_history").insert({
             user_id: user.id,
-            change: 20,
+            change: bonus,
             reason: "login_bonus",
         });
 
         localStorage.setItem("lastLoginBonusDate", today);
         setLoginBonusDone(true);
 
+        // 履歴即反映
         setHistory((prev) =>
             [
                 {
                     id: crypto.randomUUID(),
                     user_id: user.id,
-                    change: 20,
+                    change: bonus,
                     reason: "login_bonus",
                     created_at: new Date().toISOString(),
                 },
@@ -339,7 +346,11 @@ export default function MyPage() {
                 )}
 
                 <p style={{ marginTop: 26 }}>現在順位：{rank}位</p>
-                <p style={{ marginTop: 22 }}>連続ログイン：{streak}日</p>
+                <p style={{ marginTop: 22 }}>
+                    連続ログイン：{streak}日
+                    {streak === 3 && "（+30ボーナス）"}
+                    {streak === 7 && "（+100ボーナス）"}
+                </p>
 
                 <p
                     style={{
