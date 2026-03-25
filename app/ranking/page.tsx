@@ -36,7 +36,7 @@ export default function RankingPage() {
 
             setMyId(user.id);
 
-            // ===== 累計ランキング =====
+            // 累計ランキング
             const { data: pointRows, error: pointError } = await supabase
                 .from("user_points")
                 .select("id, points")
@@ -71,7 +71,7 @@ export default function RankingPage() {
 
             setUsers(mergedUsers);
 
-            // ===== 今週ランキング =====
+            // 今週ランキング
             const now = new Date();
             const oneWeekAgo = new Date();
             oneWeekAgo.setDate(now.getDate() - 7);
@@ -120,50 +120,207 @@ export default function RankingPage() {
         loadRanking();
     }, [router]);
 
+    const getRankLabel = (index: number) => {
+        if (index === 0) return "1位";
+        if (index === 1) return "2位";
+        if (index === 2) return "3位";
+        return `${index + 1}位`;
+    };
+
+    const getRankIcon = (index: number) => {
+        if (index === 0) return "1";
+        if (index === 1) return "2";
+        if (index === 2) return "3";
+        return null;
+    };
+
+    const renderRankingCard = (
+        user: { id: string; name: string; points: number },
+        index: number,
+        highlightMine = false
+    ) => (
+        <div
+            key={user.id}
+            style={{
+                background: highlightMine ? "#eef2ff" : "#ffffff",
+                border: highlightMine ? "2px solid #6366f1" : "1px solid #e5e7eb",
+                borderRadius: 18,
+                padding: 18,
+                boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+            }}
+        >
+            <div>
+                <p
+                    style={{
+                        margin: 0,
+                        fontSize: 14,
+                        color: "#6b7280",
+                    }}
+                >
+                    {getRankLabel(index)}
+                </p>
+
+                <div
+                    style={{
+                        marginTop: 8,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                    }}
+                >
+                    {getRankIcon(index) && (
+                        <span
+                            style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 999,
+                                background: "#0f172a",
+                                color: "#ffffff",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                            }}
+                        >
+                            {getRankIcon(index)}
+                        </span>
+                    )}
+
+                    <p
+                        style={{
+                            margin: 0,
+                            fontWeight: "bold",
+                            fontSize: 28,
+                            color: highlightMine ? "#4338ca" : "#111827",
+                        }}
+                    >
+                        {user.name}
+                    </p>
+                </div>
+            </div>
+
+            <div
+                style={{
+                    fontWeight: "bold",
+                    fontSize: 28,
+                    color: "#111827",
+                }}
+            >
+                {user.points}pt
+            </div>
+        </div>
+    );
+
     return (
-        <main style={{ padding: 24, maxWidth: 720, margin: "0 auto" }}>
-            <h1 style={{ fontSize: 40, fontWeight: "bold", marginBottom: 24 }}>
+        <main
+            style={{
+                padding: 24,
+                maxWidth: 760,
+                margin: "0 auto",
+            }}
+        >
+            <h1
+                style={{
+                    fontSize: 52,
+                    fontWeight: "bold",
+                    marginBottom: 28,
+                }}
+            >
                 ランキング
             </h1>
 
-            {/* 累計 */}
-            <h2 style={{ marginTop: 24 }}>累計ランキング</h2>
-            {users.map((user, index) => (
-                <div
-                    key={user.id}
+            <section style={{ marginTop: 12 }}>
+                <h2
                     style={{
-                        padding: 12,
-                        border: "1px solid #ddd",
-                        marginTop: 8,
-                        background: user.id === myId ? "#eef2ff" : "#fff",
+                        fontSize: 32,
+                        fontWeight: "bold",
+                        marginBottom: 16,
                     }}
                 >
-                    {index + 1}位：{user.name}（{user.points}pt）
-                </div>
-            ))}
+                    累計ランキング
+                </h2>
 
-            {/* 今週 */}
-            <h2 style={{ marginTop: 32 }}>今週ランキング</h2>
-            {weeklyUsers.map((user, index) => (
-                <div
-                    key={user.id}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {users.map((user, index) =>
+                        renderRankingCard(user, index, user.id === myId)
+                    )}
+                </div>
+            </section>
+
+            <section style={{ marginTop: 42 }}>
+                <h2
                     style={{
-                        padding: 12,
-                        border: "1px solid #ddd",
-                        marginTop: 8,
-                        background: user.id === myId ? "#eef2ff" : "#fff",
+                        fontSize: 32,
+                        fontWeight: "bold",
+                        marginBottom: 16,
                     }}
                 >
-                    {index + 1}位：{user.name}（{user.points}pt）
-                </div>
-            ))}
+                    今週ランキング
+                </h2>
 
-            <button
-                onClick={() => router.push("/mypage")}
-                style={{ marginTop: 24 }}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {weeklyUsers.length > 0 ? (
+                        weeklyUsers.map((user, index) =>
+                            renderRankingCard(user, index, user.id === myId)
+                        )
+                    ) : (
+                        <div
+                            style={{
+                                background: "#ffffff",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: 16,
+                                padding: 18,
+                                color: "#6b7280",
+                            }}
+                        >
+                            今週ランキングのデータがありません
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            <div
+                style={{
+                    marginTop: 28,
+                    display: "flex",
+                    gap: 12,
+                    flexWrap: "wrap",
+                }}
             >
-                マイページに戻る
-            </button>
+                <button
+                    onClick={() => router.push("/mypage")}
+                    style={{
+                        background: "#0f172a",
+                        color: "#ffffff",
+                        fontWeight: "bold",
+                        padding: "12px 18px",
+                        border: "none",
+                        borderRadius: 12,
+                        cursor: "pointer",
+                    }}
+                >
+                    マイページに戻る
+                </button>
+
+                <button
+                    onClick={() => router.push("/report")}
+                    style={{
+                        background: "#e85b52",
+                        color: "#ffffff",
+                        fontWeight: "bold",
+                        padding: "12px 18px",
+                        border: "none",
+                        borderRadius: 12,
+                        cursor: "pointer",
+                    }}
+                >
+                    日報を書く
+                </button>
+            </div>
         </main>
     );
 }
