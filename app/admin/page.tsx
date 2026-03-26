@@ -168,6 +168,12 @@ export default function AdminPage() {
                         <p style={labelStyle}>{periodLabel}提出率</p>
                         <p style={{ ...valueStyle, color: submitRateColor }}>{submitRate}%</p>
                     </div>
+                    <div style={cardStyle}>
+                        <p style={labelStyle}>未提出者数</p>
+                        <p style={{ ...valueStyle, color: "#dc2626" }}>
+                            {notSubmittedUsers.length}
+                        </p>
+                    </div>
                 </div>
 
                 <div style={{ marginTop: 28, marginBottom: 28 }}>
