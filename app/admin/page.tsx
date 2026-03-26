@@ -8,34 +8,50 @@ export default function AdminPage() {
     const [todayReports, setTodayReports] = useState(0);
     const [submitRate, setSubmitRate] = useState(0);
     const [topUsers, setTopUsers] = useState<any[]>([]);
+    const [notSubmittedUsers, setNotSubmittedUsers] = useState<any[]>([]);
 
     useEffect(() => {
         const load = async () => {
-            // ユーザー数
-            const { count: users } = await supabase
+            // ■全ユーザー取得
+            const { data: allUsers } = await supabase
                 .from("profiles")
-                .select("*", { count: "exact", head: true });
+                .select("id, name");
 
-            // 今日の日報
+            const users = allUsers || [];
+
+            setUserCount(users.length);
+
+            // ■今日の日報
             const today = new Date().toISOString().slice(0, 10);
 
-            const { count: reports } = await supabase
+            const { data: reports } = await supabase
                 .from("submissions")
-                .select("*", { count: "exact", head: true })
+                .select("user_id")
                 .eq("created_at", today);
 
-            setUserCount(users || 0);
-            setTodayReports(reports || 0);
+            const reportList = reports || [];
 
-            // 提出率（ここが今回の追加）
+            setTodayReports(reportList.length);
+
+            // ■提出率
             const rate =
-                (users || 0) === 0
+                users.length === 0
                     ? 0
-                    : Math.round(((reports || 0) / (users || 0)) * 100);
+                    : Math.round((reportList.length / users.length) * 100);
 
             setSubmitRate(rate);
 
-            // 上位3人
+            // ■提出済みユーザーID
+            const submittedIds = reportList.map((r) => r.user_id);
+
+            // ■未提出者
+            const notSubmitted = users.filter(
+                (u) => !submittedIds.includes(u.id)
+            );
+
+            setNotSubmittedUsers(notSubmitted);
+
+            // ■上位3人
             const { data: pointRows } = await supabase
                 .from("user_points")
                 .select("id, points")
@@ -71,12 +87,29 @@ export default function AdminPage() {
                 管理ダッシュボード
             </h1>
 
+            {/* KPI */}
             <div style={{ marginBottom: 24 }}>
                 <p>総ユーザー数：{userCount}人</p>
                 <p>今日の日報提出数：{todayReports}件</p>
                 <p>日報提出率：{submitRate}%</p>
             </div>
 
+            {/* 未提出者 */}
+            <div style={{ marginBottom: 24 }}>
+                <h2>未提出者</h2>
+
+                {notSubmittedUsers.length > 0 ? (
+                    notSubmittedUsers.map((u) => (
+                        <div key={u.id}>
+                            ・{u.name || "名前未設定"}
+                        </div>
+                    ))
+                ) : (
+                    <p>全員提出済み</p>
+                )}
+            </div>
+
+            {/* TOP3 */}
             <div>
                 <h2 style={{ marginBottom: 12 }}>ポイント上位</h2>
 
