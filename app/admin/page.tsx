@@ -78,7 +78,9 @@ export default function AdminPage() {
                 .select("id, points")
                 .order("points", { ascending: false })
                 .limit(3);
-
+            const copyText = notSubmittedUsers
+                .map((u) => u.name || "名前未設定")
+                .join("\n");
             if (!pointRows) return;
 
             const ids = pointRows.map((u) => u.id);
@@ -128,6 +130,27 @@ export default function AdminPage() {
                         : period === "week"
                             ? "今週の未提出者"
                             : "今月の未提出者"}
+                    <button
+                        onClick={async () => {
+                            await navigator.clipboard.writeText(copyText);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 1500);
+                        }}
+                        style={{
+                            marginTop: 12,
+                            background: "#ffffff",
+                            color: "#111827",
+                            fontWeight: "bold",
+                            padding: "10px 14px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: 10,
+                            cursor: "pointer",
+                        }}
+                    >
+                        未提出者をコピー
+                    </button>
+
+                    {copied && <p style={{ marginTop: 8 }}>コピーしました</p>}
                 </h2>
 
                 {notSubmittedUsers.length > 0 ? (
