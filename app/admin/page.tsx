@@ -24,6 +24,8 @@ export default function AdminPage() {
                 .select("id, name");
 
             const users = allUsers || [];
+            const [period, setPeriod] = useState<"today" | "week" | "month">("today");
+
 
             setUserCount(users.length);
 
@@ -78,6 +80,11 @@ export default function AdminPage() {
                 return {
                     name: p?.name || "名前未設定",
                     points: row.points,
+
+                    const { data: reports } = await supabase
+                        .from("submissions")
+                        .select("user_id")
+                        .gte("created_at", from.toISOString());
                 };
             });
 
@@ -165,6 +172,11 @@ export default function AdminPage() {
                     </a>
                 </div>
             ))}
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                <button onClick={() => setPeriod("today")}>今日</button>
+                <button onClick={() => setPeriod("week")}>今週</button>
+                <button onClick={() => setPeriod("month")}>今月</button>
+            </div>
         </main>
     );
 }

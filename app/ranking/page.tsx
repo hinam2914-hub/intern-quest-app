@@ -36,7 +36,6 @@ export default function RankingPage() {
 
             setMyId(user.id);
 
-            // 累計ランキング
             const { data: pointRows, error: pointError } = await supabase
                 .from("user_points")
                 .select("id, points")
@@ -71,7 +70,6 @@ export default function RankingPage() {
 
             setUsers(mergedUsers);
 
-            // 今週ランキング
             const now = new Date();
             const oneWeekAgo = new Date();
             oneWeekAgo.setDate(now.getDate() - 7);
@@ -97,10 +95,15 @@ export default function RankingPage() {
 
             const weeklyIds = Object.keys(weeklyTotals);
 
-            const { data: weeklyProfiles } = await supabase
+            const { data: weeklyProfiles, error: weeklyProfileError } = await supabase
                 .from("profiles")
                 .select("id, name")
                 .in("id", weeklyIds);
+
+            if (weeklyProfileError) {
+                console.error(weeklyProfileError);
+                return;
+            }
 
             const weeklyMergedUsers: WeeklyRankingUser[] = weeklyIds
                 .map((id) => {
@@ -127,13 +130,6 @@ export default function RankingPage() {
         return `${index + 1}位`;
     };
 
-    const getRankIcon = (index: number) => {
-        if (index === 0) return "1";
-        if (index === 1) return "2";
-        if (index === 2) return "3";
-        return null;
-    };
-
     const renderRankingCard = (
         user: { id: string; name: string; points: number },
         index: number,
@@ -144,9 +140,9 @@ export default function RankingPage() {
             style={{
                 background: highlightMine ? "#eef2ff" : "#ffffff",
                 border: highlightMine ? "2px solid #6366f1" : "1px solid #e5e7eb",
-                borderRadius: 18,
+                borderRadius: 16,
                 padding: 18,
-                boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+                boxShadow: "0 6px 16px rgba(0,0,0,0.06)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -163,44 +159,16 @@ export default function RankingPage() {
                     {getRankLabel(index)}
                 </p>
 
-                <div
+                <p
                     style={{
-                        marginTop: 8,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
+                        margin: "6px 0 0 0",
+                        fontWeight: "bold",
+                        fontSize: 24,
+                        color: highlightMine ? "#4338ca" : "#111827",
                     }}
                 >
-                    {getRankIcon(index) && (
-                        <span
-                            style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 999,
-                                background: "#0f172a",
-                                color: "#ffffff",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: 14,
-                                fontWeight: "bold",
-                            }}
-                        >
-                            {getRankIcon(index)}
-                        </span>
-                    )}
-
-                    <p
-                        style={{
-                            margin: 0,
-                            fontWeight: "bold",
-                            fontSize: 28,
-                            color: highlightMine ? "#4338ca" : "#111827",
-                        }}
-                    >
-                        {user.name}
-                    </p>
-                </div>
+                    {user.name}
+                </p>
             </div>
 
             <div
@@ -219,19 +187,18 @@ export default function RankingPage() {
         <main
             style={{
                 padding: 24,
-                maxWidth: 760,
+                maxWidth: 720,
                 margin: "0 auto",
             }}
         >
             <h1
                 style={{
-                    fontSize: 52,
+                    fontSize: 48,
                     fontWeight: "bold",
-                    marginBottom: 28,
-                    color: "red",
+                    marginBottom: 32,
                 }}
             >
-                ランキング TEST
+                ランキング
             </h1>
 
             <section style={{ marginTop: 12 }}>
@@ -274,7 +241,7 @@ export default function RankingPage() {
                                 background: "#ffffff",
                                 border: "1px solid #e5e7eb",
                                 borderRadius: 16,
-                                padding: 18,
+                                padding: 16,
                                 color: "#6b7280",
                             }}
                         >
@@ -286,7 +253,7 @@ export default function RankingPage() {
 
             <div
                 style={{
-                    marginTop: 28,
+                    marginTop: 24,
                     display: "flex",
                     gap: 12,
                     flexWrap: "wrap",
