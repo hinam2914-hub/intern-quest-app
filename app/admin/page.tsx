@@ -9,7 +9,13 @@ export default function AdminPage() {
     const [submitRate, setSubmitRate] = useState(0);
     const [topUsers, setTopUsers] = useState<any[]>([]);
     const [notSubmittedUsers, setNotSubmittedUsers] = useState<any[]>([]);
-
+    const [copied, setCopied] = useState(false);
+    const copyText = notSubmittedUsers
+        .map((u) => u.name || "名前未設定")
+        .join("\n");
+    const sortedNotSubmitted = [...notSubmittedUsers].sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "")
+    );
     useEffect(() => {
         const load = async () => {
             // ■全ユーザー取得
@@ -119,6 +125,46 @@ export default function AdminPage() {
                     </div>
                 ))}
             </div>
+            <button
+                onClick={async () => {
+                    await navigator.clipboard.writeText(copyText);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                }}
+                style={{
+                    marginTop: 8,
+                    padding: "8px 12px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                }}
+            >
+                未提出者をコピー
+            </button>
+
+            {copied && <p style={{ fontSize: 12 }}>コピーしました</p>}
+            {notSubmittedUsers.map((u) => (
+                <div
+                    key={u.id}
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: 6,
+                    }}
+                >
+                    <span>・{u.name || "名前未設定"}</span>
+
+                    <a
+                        href={`https://line.me/R/msg/text/?${encodeURIComponent(
+                            `${u.name || ""}さん、日報の提出をお願いします。`
+                        )}`}
+                        target="_blank"
+                        style={{ fontSize: 12 }}
+                    >
+                        連絡
+                    </a>
+                </div>
+            ))}
         </main>
     );
 }
