@@ -184,50 +184,52 @@ ${notSubmittedUsers
                 </div>
 
                 <div style={{ marginTop: 28, marginBottom: 28 }}>
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 12,
-                            marginBottom: 12,
-                            flexWrap: "wrap",
-                        }}
-                    >
-                        <h2 style={{ margin: 0 }}>{periodLabel}の未提出者</h2>
+                    <div style={{ marginBottom: 16 }}>
+                        <h2 style={{ margin: "0 0 12px 0" }}>{periodLabel}の未提出者</h2>
 
-                        <button
-                            onClick={async () => {
-                                await navigator.clipboard.writeText(copyText);
-                                setCopied(true);
-                                setTimeout(() => setCopied(false), 1500);
-                            }}
+                        <div
                             style={{
-                                background: "#ffffff",
-                                color: "#111827",
-                                fontWeight: "bold",
-                                padding: "10px 14px",
-                                border: "1px solid #d1d5db",
-                                borderRadius: 10,
-                                cursor: "pointer",
+                                display: "flex",
+                                gap: 10,
+                                flexWrap: "wrap",
                             }}
                         >
-                            未提出者をコピー
+                            <button
+                                onClick={async () => {
+                                    await navigator.clipboard.writeText(copyText);
+                                    setCopied(true);
+                                    setTimeout(() => setCopied(false), 1500);
+                                }}
+                                style={{
+                                    background: "#ffffff",
+                                    color: "#111827",
+                                    fontWeight: "bold",
+                                    padding: "10px 14px",
+                                    border: "1px solid #d1d5db",
+                                    borderRadius: 10,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                未提出者をコピー
+                            </button>
+
                             <button
                                 onClick={async () => {
                                     await navigator.clipboard.writeText(reminderText);
                                 }}
                                 style={{
-                                    marginTop: 8,
                                     background: "#0f172a",
                                     color: "#ffffff",
+                                    fontWeight: "bold",
                                     padding: "10px 14px",
+                                    border: "none",
                                     borderRadius: 10,
                                     cursor: "pointer",
                                 }}
                             >
                                 リマインド文をコピー
                             </button>
-                        </button>
+                        </div>
                     </div>
 
                     {copied && <p style={{ marginTop: 8 }}>コピーしました</p>}
