@@ -213,25 +213,22 @@ export default function AdminPage() {
                                         display: "flex",
                                         justifyContent: "space-between",
                                         alignItems: "center",
-                                        background: "#fff",
-                                        border: "1px solid #e5e7eb",
+                                        background: "#fef2f2",      // 薄い赤
+                                        border: "1px solid #dc2626", // 赤枠
                                         borderRadius: 10,
                                         padding: "10px 12px",
                                         marginBottom: 8,
                                     }}
                                 >
-                                    <span>{u.name || "名前未設定"}</span>
+                                    <span style={{ fontWeight: "bold", color: "#7f1d1d" }}>
+                                        {u.name || "名前未設定"}
+                                    </span>
 
                                     <a
                                         href={`https://line.me/R/msg/text/?${encodeURIComponent(
                                             `${u.name || ""}さん、日報の提出をお願いします。`
                                         )}`}
                                         target="_blank"
-                                        style={{
-                                            fontSize: 12,
-                                            color: "#2563eb",
-                                            textDecoration: "underline",
-                                        }}
                                     >
                                         連絡
                                     </a>
