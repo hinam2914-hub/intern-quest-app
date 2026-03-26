@@ -13,6 +13,7 @@ export default function AdminPage() {
     const copyText = notSubmittedUsers
         .map((u) => u.name || "名前未設定")
         .join("\n");
+    const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const sortedNotSubmitted = [...notSubmittedUsers].sort((a, b) =>
         (a.name || "").localeCompare(b.name || "")
     );
@@ -26,16 +27,28 @@ export default function AdminPage() {
             const users = allUsers || [];
             const [period, setPeriod] = useState<"today" | "week" | "month">("today");
 
-
             setUserCount(users.length);
 
             // ■今日の日報
-            const today = new Date().toISOString().slice(0, 10);
+            const now = new Date();
+            let from = new Date();
 
-            const { data: reports } = await supabase
-                .from("submissions")
-                .select("user_id")
-                .eq("created_at", today);
+            if (period === "week") {
+                from.setDate(now.getDate() - 7);
+            } else if (period === "month") {
+                from.setMonth(now.getMonth() - 1);
+            }
+
+            const { data: reports } =
+                period === "today"
+                    ? await supabase
+                        .from("submissions")
+                        .select("user_id")
+                        .eq("created_at", now.toISOString().slice(0, 10))
+                    : await supabase
+                        .from("submissions")
+                        .select("user_id")
+                        .gte("created_at", from.toISOString());
 
             const reportList = reports || [];
 
@@ -80,11 +93,6 @@ export default function AdminPage() {
                 return {
                     name: p?.name || "名前未設定",
                     points: row.points,
-
-                    const { data: reports } = await supabase
-                        .from("submissions")
-                        .select("user_id")
-                        .gte("created_at", from.toISOString());
                 };
             });
 
@@ -99,6 +107,11 @@ export default function AdminPage() {
             <h1 style={{ fontSize: 40, fontWeight: "bold", marginBottom: 24 }}>
                 管理ダッシュボード
             </h1>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                <button onClick={() => setPeriod("today")}>今日</button>
+                <button onClick={() => setPeriod("week")}>今週</button>
+                <button onClick={() => setPeriod("month")}>今月</button>
+            </div>
 
             {/* KPI */}
             <div style={{ marginBottom: 24 }}>
@@ -172,11 +185,7 @@ export default function AdminPage() {
                     </a>
                 </div>
             ))}
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                <button onClick={() => setPeriod("today")}>今日</button>
-                <button onClick={() => setPeriod("week")}>今週</button>
-                <button onClick={() => setPeriod("month")}>今月</button>
-            </div>
+
         </main>
     );
 }
