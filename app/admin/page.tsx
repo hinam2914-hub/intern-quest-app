@@ -127,6 +127,13 @@ export default function AdminPage() {
     };
     const submitRateColor =
         submitRate >= 80 ? "#16a34a" : submitRate >= 50 ? "#f59e0b" : "#dc2626";
+    const reminderText = `本日の日報が未提出の方へ
+
+${notSubmittedUsers
+            .map((u) => `・${u.name || "名前未設定"}`)
+            .join("\n")}
+
+本日中に提出をお願いします。`;
     return (
         <main
             style={{
@@ -205,6 +212,21 @@ export default function AdminPage() {
                             }}
                         >
                             未提出者をコピー
+                            <button
+                                onClick={async () => {
+                                    await navigator.clipboard.writeText(reminderText);
+                                }}
+                                style={{
+                                    marginTop: 8,
+                                    background: "#0f172a",
+                                    color: "#ffffff",
+                                    padding: "10px 14px",
+                                    borderRadius: 10,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                リマインド文をコピー
+                            </button>
                         </button>
                     </div>
 
