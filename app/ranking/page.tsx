@@ -228,9 +228,10 @@ export default function RankingPage() {
                     fontSize: 52,
                     fontWeight: "bold",
                     marginBottom: 28,
+                    color: "red",
                 }}
             >
-                ランキング
+                ランキング TEST
             </h1>
 
             <section style={{ marginTop: 12 }}>
