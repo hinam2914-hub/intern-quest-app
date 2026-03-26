@@ -209,6 +209,9 @@ export default function AdminPage() {
                                 <div
                                     key={u.id}
                                     style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
                                         background: "#fff",
                                         border: "1px solid #e5e7eb",
                                         borderRadius: 10,
@@ -216,7 +219,21 @@ export default function AdminPage() {
                                         marginBottom: 8,
                                     }}
                                 >
-                                    {u.name || "名前未設定"}
+                                    <span>{u.name || "名前未設定"}</span>
+
+                                    <a
+                                        href={`https://line.me/R/msg/text/?${encodeURIComponent(
+                                            `${u.name || ""}さん、日報の提出をお願いします。`
+                                        )}`}
+                                        target="_blank"
+                                        style={{
+                                            fontSize: 12,
+                                            color: "#2563eb",
+                                            textDecoration: "underline",
+                                        }}
+                                    >
+                                        連絡
+                                    </a>
                                 </div>
                             ))
                         ) : (
