@@ -103,10 +103,17 @@ export default function AdminPage() {
 
         load();
     }, []);
-
-    return (
+    <div
+        style={{
+            background: "#ffffff",
+            padding: 28,
+            borderRadius: 16,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+        }}
+    >
+        return (
         <main style={{ padding: 24, maxWidth: 600, margin: "0 auto" }}>
-            <h1 style={{ fontSize: 40, fontWeight: "bold", marginBottom: 24 }}>
+            <h1 style={{ fontSize: 42, fontWeight: "bold", marginBottom: 20 }}>
                 管理ダッシュボード
             </h1>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -117,54 +124,60 @@ export default function AdminPage() {
 
             {/* KPI */}
             <div style={{ marginBottom: 24 }}>
-                <p>総ユーザー数：{userCount}人</p>
-                <p>今日の日報提出数：{todayReports}件</p>
-                <p>日報提出率：{submitRate}%</p>
+                <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+                    <div style={cardStyle}>
+                        <p style={labelStyle}>総ユーザー</p>
+                        <p style={valueStyle}>{userCount}</p>
+                    </div>
+
+                    <div style={cardStyle}>
+                        <p style={labelStyle}>提出数</p>
+                        <p style={valueStyle}>{todayReports}</p>
+                    </div>
+
+                    <div style={cardStyle}>
+                        <p style={labelStyle}>提出率</p>
+                        <p style={valueStyle}>{submitRate}%</p>
+                    </div>
+                </div>
             </div>
+            const cardStyle = {
+                flex: 1,
+            background: "#f9fafb",
+            borderRadius: 12,
+            padding: 16,
+};
 
+            const labelStyle = {
+                fontSize: 12,
+            color: "#6b7280",
+            margin: 0,
+};
+
+            const valueStyle = {
+                fontSize: 24,
+            fontWeight: "bold",
+            margin: "6px 0 0 0",
+};
             {/* 未提出者 */}
-            <div style={{ marginBottom: 24 }}>
-                <h2>
-                    {period === "today"
-                        ? "今日の未提出者"
-                        : period === "week"
-                            ? "今週の未提出者"
-                            : "今月の未提出者"}
-                    <button
-                        onClick={async () => {
-                            await navigator.clipboard.writeText(copyText);
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 1500);
-                        }}
-                        style={{
-                            marginTop: 12,
-                            background: "#ffffff",
-                            color: "#111827",
-                            fontWeight: "bold",
-                            padding: "10px 14px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: 10,
-                            cursor: "pointer",
-                        }}
-                    >
-                        未提出者をコピー
-                    </button>
-
-                    {copied && <p style={{ marginTop: 8 }}>コピーしました</p>}
-                </h2>
-
+            <div style={{ marginTop: 20 }}>
                 {notSubmittedUsers.length > 0 ? (
                     notSubmittedUsers.map((u) => (
-                        <div key={u.id}>・{u.name || "名前未設定"}</div>
+                        <div
+                            key={u.id}
+                            style={{
+                                background: "#fff",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: 10,
+                                padding: "10px 12px",
+                                marginBottom: 8,
+                            }}
+                        >
+                            {u.name || "名前未設定"}
+                        </div>
                     ))
                 ) : (
-                    <p>
-                        {period === "today"
-                            ? "全員提出済み（今日）"
-                            : period === "week"
-                                ? "全員提出済み（今週）"
-                                : "全員提出済み（今月）"}
-                    </p>
+                    <p style={{ color: "#6b7280" }}>全員提出済み</p>
                 )}
             </div>
 
@@ -220,5 +233,7 @@ export default function AdminPage() {
             ))}
 
         </main>
-    );
+        );
+    </div>
+
 }
