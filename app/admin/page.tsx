@@ -63,7 +63,7 @@ export default function AdminPage() {
             setSubmitRate(rate);
 
             // ■提出済みユーザーID
-            const submittedIds = reportList.map((r) => r.user_id);
+            const submittedIds = (reports || []).map((r) => r.user_id);
 
             // ■未提出者
             const notSubmitted = users.filter(
@@ -122,16 +122,26 @@ export default function AdminPage() {
 
             {/* 未提出者 */}
             <div style={{ marginBottom: 24 }}>
-                <h2>未提出者</h2>
+                <h2>
+                    {period === "today"
+                        ? "今日の未提出者"
+                        : period === "week"
+                            ? "今週の未提出者"
+                            : "今月の未提出者"}
+                </h2>
 
                 {notSubmittedUsers.length > 0 ? (
                     notSubmittedUsers.map((u) => (
-                        <div key={u.id}>
-                            ・{u.name || "名前未設定"}
-                        </div>
+                        <div key={u.id}>・{u.name || "名前未設定"}</div>
                     ))
                 ) : (
-                    <p>全員提出済み</p>
+                    <p>
+                        {period === "today"
+                            ? "全員提出済み（今日）"
+                            : period === "week"
+                                ? "全員提出済み（今週）"
+                                : "全員提出済み（今月）"}
+                    </p>
                 )}
             </div>
 
