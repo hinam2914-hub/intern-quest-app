@@ -125,7 +125,8 @@ export default function AdminPage() {
         fontWeight: "bold",
         margin: "6px 0 0 0",
     };
-
+    const submitRateColor =
+        submitRate >= 80 ? "#16a34a" : submitRate >= 50 ? "#f59e0b" : "#dc2626";
     return (
         <main
             style={{
@@ -165,7 +166,7 @@ export default function AdminPage() {
 
                     <div style={cardStyle}>
                         <p style={labelStyle}>{periodLabel}提出率</p>
-                        <p style={valueStyle}>{submitRate}%</p>
+                        <p style={{ ...valueStyle, color: submitRateColor }}>{submitRate}%</p>
                     </div>
                 </div>
 
