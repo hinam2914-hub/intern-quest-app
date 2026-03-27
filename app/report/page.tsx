@@ -1,6 +1,5 @@
 "use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
@@ -14,6 +13,20 @@ const getTodayJST = () => {
 
 export default function ReportPage() {
     const router = useRouter();
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (!user) {
+                router.push("/login");
+            }
+        };
+
+        checkUser();
+    }, []);
 
     const [text, setText] = useState("");
     const [loading, setLoading] = useState(false);

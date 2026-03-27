@@ -19,6 +19,21 @@ type WeeklyRankingUser = {
 export default function RankingPage() {
     const router = useRouter();
 
+    useEffect(() => {
+        const checkUser = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (!user) {
+                router.push("/login");
+                return;
+            }
+        };
+
+        checkUser();
+    }, [router]);
+
     const [users, setUsers] = useState<RankingUser[]>([]);
     const [weeklyUsers, setWeeklyUsers] = useState<WeeklyRankingUser[]>([]);
     const [myId, setMyId] = useState("");
