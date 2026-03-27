@@ -34,6 +34,12 @@ export default function AdminPage() {
                 router.push("/login");
                 return;
             }
+            const adminEmails = ["hinam2914@gmail.com"];
+
+            if (!user.email || !adminEmails.includes(user.email)) {
+                router.push("/mypage");
+                return;
+            }
             const { data: allUsers } = await supabase
                 .from("profiles")
                 .select("id, name");
