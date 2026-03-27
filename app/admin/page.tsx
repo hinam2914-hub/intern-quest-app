@@ -337,17 +337,17 @@ ${notSubmittedUsers
                 </div>
             </div>
             <button
-                onClick={() => window.location.href = "/admin"}
+                onClick={() => window.location.href = "/ranking"}
                 style={{
                     marginTop: 24,
-                    background: "#e5e7eb",
-                    color: "#111827",
+                    background: "#0f172a",
+                    color: "#ffffff",
                     padding: "12px 18px",
                     borderRadius: 10,
                     cursor: "pointer",
                 }}
             >
-                管理画面に戻る
+                ランキングを見る
             </button>
         </main>
     );
