@@ -91,6 +91,16 @@ export default function AdminPage() {
                     name: profile?.name || "名前未設定",
                     points: row.points || 0,
                 };
+                const now = new Date();
+                let targetDate = new Date();
+
+                if (period === "week") {
+                    targetDate.setDate(now.getDate() - 7);
+                }
+
+                if (period === "month") {
+                    targetDate.setMonth(now.getMonth() - 1);
+                }
             });
 
             setTopUsers(merged);
@@ -155,9 +165,47 @@ ${notSubmittedUsers
                 </h1>
 
                 <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                    <button onClick={() => setPeriod("today")}>今日</button>
-                    <button onClick={() => setPeriod("week")}>今週</button>
-                    <button onClick={() => setPeriod("month")}>今月</button>
+                    <button
+                        onClick={() => setPeriod("today")}
+                        style={{
+                            padding: "8px 12px",
+                            borderRadius: 8,
+                            border: "1px solid #e5e7eb",
+                            background: period === "today" ? "#0f172a" : "#ffffff",
+                            color: period === "today" ? "#ffffff" : "#111827",
+                            cursor: "pointer",
+                        }}
+                    >
+                        今日
+                    </button>
+
+                    <button
+                        onClick={() => setPeriod("week")}
+                        style={{
+                            padding: "8px 12px",
+                            borderRadius: 8,
+                            border: "1px solid #e5e7eb",
+                            background: period === "week" ? "#0f172a" : "#ffffff",
+                            color: period === "week" ? "#ffffff" : "#111827",
+                            cursor: "pointer",
+                        }}
+                    >
+                        今週
+                    </button>
+
+                    <button
+                        onClick={() => setPeriod("month")}
+                        style={{
+                            padding: "8px 12px",
+                            borderRadius: 8,
+                            border: "1px solid #e5e7eb",
+                            background: period === "month" ? "#0f172a" : "#ffffff",
+                            color: period === "month" ? "#ffffff" : "#111827",
+                            cursor: "pointer",
+                        }}
+                    >
+                        今月
+                    </button>
                 </div>
 
                 <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
@@ -234,7 +282,7 @@ ${notSubmittedUsers
 
                     {copied && <p style={{ marginTop: 8 }}>コピーしました</p>}
 
-                    <div style={{ marginTop: 16 }}>
+                    <div style={{ marginTop: 20 }}>
                         {notSubmittedUsers.length > 0 ? (
                             notSubmittedUsers.map((u) => (
                                 <div
