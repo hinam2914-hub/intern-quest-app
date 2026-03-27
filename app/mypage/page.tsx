@@ -23,20 +23,6 @@ const getTodayJST = () => {
 export default function MyPage() {
     const router = useRouter();
 
-    useEffect(() => {
-        const checkUser = async () => {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-
-            if (!user) {
-                router.push("/login");
-            }
-        };
-
-        checkUser();
-    }, []);
-
     const [name, setName] = useState("");
     const [points, setPoints] = useState(0);
     const [rank, setRank] = useState(0);

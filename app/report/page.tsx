@@ -14,20 +14,6 @@ const getTodayJST = () => {
 export default function ReportPage() {
     const router = useRouter();
 
-    useEffect(() => {
-        const checkUser = async () => {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-
-            if (!user) {
-                router.push("/login");
-            }
-        };
-
-        checkUser();
-    }, []);
-
     const [text, setText] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
@@ -39,11 +25,19 @@ export default function ReportPage() {
         }
 
         setLoading(true);
-
+        // ユーザー取得
         const {
             data: { user },
         } = await supabase.auth.getUser();
 
+        if (!user) return;
+
+        // 今日の日付
+        await supabase.from("points_history").insert({
+            user_id: user.id,
+            change: 10,
+            created_at: new Date().toISOString(),
+        });
         if (!user) {
             setMessage("ログインエラー");
             setLoading(false);

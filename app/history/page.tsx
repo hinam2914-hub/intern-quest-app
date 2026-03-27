@@ -14,21 +14,6 @@ type PointHistory = {
 
 export default function HistoryPage() {
     const router = useRouter();
-
-    useEffect(() => {
-        const checkUser = async () => {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-
-            if (!user) {
-                router.push("/login");
-                return;
-            }
-        };
-
-        checkUser();
-    }, [router]);
     const [history, setHistory] = useState<PointHistory[]>([]);
     const [loading, setLoading] = useState(true);
 
