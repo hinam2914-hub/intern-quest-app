@@ -23,6 +23,20 @@ const getTodayJST = () => {
 export default function MyPage() {
     const router = useRouter();
 
+    useEffect(() => {
+        const checkUser = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (!user) {
+                router.push("/login");
+            }
+        };
+
+        checkUser();
+    }, []);
+
     const [name, setName] = useState("");
     const [points, setPoints] = useState(0);
     const [rank, setRank] = useState(0);
@@ -221,7 +235,6 @@ export default function MyPage() {
             ].slice(0, 5)
         );
     };
-
     const handleLogout = async () => {
         await supabase.auth.signOut();
         router.push("/login");
