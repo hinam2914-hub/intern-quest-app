@@ -22,6 +22,9 @@ export default function AdminPage() {
     const [submitRate, setSubmitRate] = useState(0);
     const [topUsers, setTopUsers] = useState<TopUser[]>([]);
     const [notSubmittedUsers, setNotSubmittedUsers] = useState<UserRow[]>([]);
+    const [topSubmitters, setTopSubmitters] = useState<
+        { name: string; count: number }[]
+    >([]);
     const [copied, setCopied] = useState(false);
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
 
@@ -113,6 +116,35 @@ export default function AdminPage() {
             });
 
             setTopUsers(merged);
+            const { data: submissionRows } = await supabase
+                .from("submissions")
+                .select("user_id");
+
+            if (submissionRows) {
+                const countMap: Record<string, number> = {};
+
+                submissionRows.forEach((row) => {
+                    countMap[row.user_id] = (countMap[row.user_id] || 0) + 1;
+                });
+
+                const sorted = Object.entries(countMap)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
+
+                const [topSubmitters, setTopSubmitters] = useState<
+                    { name: string; count: number }[]
+                >([]);
+
+                const result = sorted.map(([id, count]) => {
+                    const profile = users.find((u) => u.id === id);
+                    return {
+                        name: profile?.name || "名前未設定",
+                        count,
+                    };
+                });
+
+                setTopSubmitters(result);
+            }
         };
 
         load();
@@ -365,8 +397,25 @@ ${notSubmittedUsers
                             {i + 1}位：{u.name}（{u.points}pt）
                         </div>
                     ))}
-                </div>
+                    <div style={{ marginTop: 24 }}>
+                        <h2 style={{ marginBottom: 12 }}>提出数ランキング</h2>
 
+                        {topSubmitters.map((u, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    background: "#fff",
+                                    border: "1px solid #e5e7eb",
+                                    borderRadius: 10,
+                                    padding: "10px 12px",
+                                    marginBottom: 8,
+                                }}
+                            >
+                                {i + 1}位：{u.name}（{u.count}回）
+                            </div>
+                        ))}
+                    </div>
+                </div>
                 <button
                     onClick={() => router.push("/ranking")}
                     style={{
