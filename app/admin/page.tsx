@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { useRouter } from "next/navigation";
 
 type UserRow = {
     id: string;
@@ -21,9 +22,18 @@ export default function AdminPage() {
     const [notSubmittedUsers, setNotSubmittedUsers] = useState<UserRow[]>([]);
     const [copied, setCopied] = useState(false);
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
+    const router = useRouter();
 
     useEffect(() => {
         const load = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (!user) {
+                router.push("/login");
+                return;
+            }
             const { data: allUsers } = await supabase
                 .from("profiles")
                 .select("id, name");
