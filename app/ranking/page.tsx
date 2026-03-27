@@ -289,6 +289,19 @@ export default function RankingPage() {
                     日報を書く
                 </button>
             </div>
+            <button
+                onClick={() => window.location.href = "/admin"}
+                style={{
+                    marginTop: 24,
+                    background: "#e5e7eb",
+                    color: "#111827",
+                    padding: "12px 18px",
+                    borderRadius: 10,
+                    cursor: "pointer",
+                }}
+            >
+                管理画面に戻る
+            </button>
         </main>
     );
 }
