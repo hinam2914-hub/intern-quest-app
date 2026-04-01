@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
@@ -19,20 +19,32 @@ type TopSubmitter = {
     count: number;
 };
 
+function getTodayJST(): string {
+    const now = new Date();
+    const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const y = jst.getUTCFullYear();
+    const m = String(jst.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(jst.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+}
+
 export default function AdminPage() {
     const router = useRouter();
 
     const [userCount, setUserCount] = useState(0);
-    const [todayReports, setTodayReports] = useState(0);
+    const [reportCount, setReportCount] = useState(0);
     const [submitRate, setSubmitRate] = useState(0);
     const [topUsers, setTopUsers] = useState<TopUser[]>([]);
     const [topSubmitters, setTopSubmitters] = useState<TopSubmitter[]>([]);
     const [notSubmittedUsers, setNotSubmittedUsers] = useState<UserRow[]>([]);
     const [copied, setCopied] = useState(false);
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const load = async () => {
+            setLoading(true);
+
             const {
                 data: { user },
             } = await supabase.auth.getUser();
@@ -49,16 +61,17 @@ export default function AdminPage() {
                 return;
             }
 
-            const { data: allUsers, error: usersError } = await supabase
+            const { data: profileRows, error: profileError } = await supabase
                 .from("profiles")
                 .select("id, name");
 
-            if (usersError) {
-                console.error(usersError);
+            if (profileError) {
+                console.error(profileError);
+                setLoading(false);
                 return;
             }
 
-            const users = (allUsers || []) as UserRow[];
+            const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
             const now = new Date();
@@ -70,35 +83,35 @@ export default function AdminPage() {
                 from.setMonth(now.getMonth() - 1);
             }
 
-            const today = now.toISOString().slice(0, 10);
+            const todayYmd = getTodayJST();
 
-            const { data: reports, error: reportsError } =
+            const { data: submissionRows, error: submissionError } =
                 period === "today"
                     ? await supabase
                         .from("submissions")
-                        .select("user_id")
-                        .eq("created_at", today)
+                        .select("user_id, created_at")
+                        .gte("created_at", `${todayYmd}T00:00:00`)
                     : await supabase
                         .from("submissions")
-                        .select("user_id")
+                        .select("user_id, created_at")
                         .gte("created_at", from.toISOString());
 
-            if (reportsError) {
-                console.error(reportsError);
+            if (submissionError) {
+                console.error(submissionError);
+                setLoading(false);
                 return;
             }
 
-            const reportList = reports || [];
-            setTodayReports(reportList.length);
+            const submissions = submissionRows || [];
+            const submittedIds = [...new Set(submissions.map((row) => row.user_id))];
+
+            setReportCount(submittedIds.length);
 
             const rate =
-                users.length === 0
-                    ? 0
-                    : Math.round((reportList.length / users.length) * 100);
+                users.length === 0 ? 0 : Math.round((submittedIds.length / users.length) * 100);
 
             setSubmitRate(rate);
 
-            const submittedIds = reportList.map((r) => r.user_id);
             const notSubmitted = users.filter((u) => !submittedIds.includes(u.id));
             setNotSubmittedUsers(notSubmitted);
 
@@ -110,26 +123,26 @@ export default function AdminPage() {
 
             if (pointError) {
                 console.error(pointError);
+                setLoading(false);
                 return;
             }
 
-            if (!pointRows) {
-                setTopUsers([]);
-            } else {
+            if (pointRows && pointRows.length > 0) {
                 const ids = pointRows.map((u) => u.id);
 
-                const { data: profiles, error: profileError } = await supabase
+                const { data: pointProfiles, error: pointProfilesError } = await supabase
                     .from("profiles")
                     .select("id, name")
                     .in("id", ids);
 
-                if (profileError) {
-                    console.error(profileError);
+                if (pointProfilesError) {
+                    console.error(pointProfilesError);
+                    setLoading(false);
                     return;
                 }
 
                 const merged: TopUser[] = pointRows.map((row) => {
-                    const profile = profiles?.find((p) => p.id === row.id);
+                    const profile = pointProfiles?.find((p) => p.id === row.id);
                     return {
                         name: profile?.name || "名前未設定",
                         points: row.points || 0,
@@ -137,56 +150,33 @@ export default function AdminPage() {
                 });
 
                 setTopUsers(merged);
-            }
-
-            const { data: submissionRows, error: submissionError } = await supabase
-                .from("submissions")
-                .select("user_id");
-
-            if (submissionError) {
-                console.error(submissionError);
-                return;
-            }
-
-            if (submissionRows) {
-                const countMap: Record<string, number> = {};
-
-                submissionRows.forEach((row) => {
-                    countMap[row.user_id] = (countMap[row.user_id] || 0) + 1;
-                });
-
-                const sorted = Object.entries(countMap)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3);
-
-                const result: TopSubmitter[] = sorted.map(([id, count]) => {
-                    const profile = users.find((u) => u.id === id);
-                    return {
-                        name: profile?.name || "名前未設定",
-                        count,
-                    };
-                });
-
-                setTopSubmitters(result);
             } else {
-                setTopSubmitters([]);
+                setTopUsers([]);
             }
+
+            const countMap: Record<string, number> = {};
+            submissions.forEach((row) => {
+                countMap[row.user_id] = (countMap[row.user_id] || 0) + 1;
+            });
+
+            const sortedSubmitters = Object.entries(countMap)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3);
+
+            const submitterResult: TopSubmitter[] = sortedSubmitters.map(([id, count]) => {
+                const profile = users.find((u) => u.id === id);
+                return {
+                    name: profile?.name || "名前未設定",
+                    count,
+                };
+            });
+
+            setTopSubmitters(submitterResult);
+            setLoading(false);
         };
 
         load();
     }, [period, router]);
-
-    const copyText = notSubmittedUsers
-        .map((u) => u.name || "名前未設定")
-        .join("\n");
-
-    const reminderText = `${period === "today" ? "本日" : period === "week" ? "今週" : "今月"}の日報が未提出の方へ
-
-${notSubmittedUsers
-            .map((u) => `・${u.name || "名前未設定"}`)
-            .join("\n")}
-
-提出をお願いします。`;
 
     const periodLabel =
         period === "today" ? "今日" : period === "week" ? "今週" : "今月";
@@ -194,32 +184,32 @@ ${notSubmittedUsers
     const submitRateColor =
         submitRate >= 80 ? "#16a34a" : submitRate >= 50 ? "#f59e0b" : "#dc2626";
 
+    const copyText = useMemo(() => {
+        return notSubmittedUsers.map((u) => u.name || "名前未設定").join("\n");
+    }, [notSubmittedUsers]);
+
+    const reminderText = useMemo(() => {
+        return `${periodLabel}の日報が未提出の方へ
+
+${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}
+
+確認のうえ、ご対応をお願いいたします。`;
+    }, [notSubmittedUsers, periodLabel]);
+
     const pageStyle: React.CSSProperties = {
         minHeight: "100vh",
         background: "#f3f4f6",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        paddingTop: 60,
-        paddingBottom: 60,
-        paddingLeft: 24,
-        paddingRight: 24,
+        padding: "48px 24px 64px",
     };
 
     const containerStyle: React.CSSProperties = {
+        maxWidth: 980,
+        margin: "0 auto",
         background: "#ffffff",
+        borderRadius: 24,
         padding: 32,
-        borderRadius: 20,
-        width: "100%",
-        maxWidth: 960,
         boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
-    };
-
-    const headingStyle: React.CSSProperties = {
-        fontSize: 36,
-        fontWeight: 700,
-        marginBottom: 24,
-        color: "#111827",
+        border: "1px solid #e5e7eb",
     };
 
     const sectionStyle: React.CSSProperties = {
@@ -227,35 +217,25 @@ ${notSubmittedUsers
     };
 
     const cardStyle: React.CSSProperties = {
-        flex: 1,
         background: "#ffffff",
         borderRadius: 16,
         padding: 20,
         border: "1px solid #e5e7eb",
         boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
-        minWidth: 140,
     };
 
     const labelStyle: React.CSSProperties = {
         fontSize: 12,
         color: "#6b7280",
         margin: 0,
+        fontWeight: 600,
     };
 
     const valueStyle: React.CSSProperties = {
-        fontSize: 24,
-        fontWeight: "bold",
-        margin: "6px 0 0 0",
+        fontSize: 28,
+        fontWeight: 700,
+        margin: "8px 0 0 0",
         color: "#111827",
-    };
-
-    const basePeriodButtonStyle: React.CSSProperties = {
-        padding: "8px 12px",
-        borderRadius: 10,
-        border: "1px solid #e5e7eb",
-        cursor: "pointer",
-        fontWeight: 600,
-        transition: "all 0.2s ease",
     };
 
     const primaryButton: React.CSSProperties = {
@@ -278,25 +258,51 @@ ${notSubmittedUsers
         fontWeight: 600,
     };
 
-    const listCardStyle: React.CSSProperties = {
-        background: "#fff",
+    const periodButtonBase: React.CSSProperties = {
+        padding: "8px 12px",
+        borderRadius: 10,
         border: "1px solid #e5e7eb",
-        borderRadius: 12,
-        padding: "12px 14px",
-        marginBottom: 10,
+        cursor: "pointer",
+        fontWeight: 600,
     };
+
+    if (loading) {
+        return (
+            <main
+                style={{
+                    minHeight: "100vh",
+                    background: "#f3f4f6",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    color: "#6b7280",
+                }}
+            >
+                読み込み中...
+            </main>
+        );
+    }
 
     return (
         <main style={pageStyle}>
             <div style={containerStyle}>
-                <h1 style={headingStyle}>管理ダッシュボード</h1>
+                <h1
+                    style={{
+                        margin: 0,
+                        fontSize: 36,
+                        fontWeight: 700,
+                        color: "#111827",
+                    }}
+                >
+                    管理ダッシュボード
+                </h1>
 
-                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
                     <button
                         onClick={() => setPeriod("today")}
                         style={{
-                            ...basePeriodButtonStyle,
-                            background: period === "today" ? "#0f172a" : "#ffffff",
+                            ...periodButtonBase,
+                            background: period === "today" ? "#111827" : "#ffffff",
                             color: period === "today" ? "#ffffff" : "#111827",
                         }}
                     >
@@ -306,8 +312,8 @@ ${notSubmittedUsers
                     <button
                         onClick={() => setPeriod("week")}
                         style={{
-                            ...basePeriodButtonStyle,
-                            background: period === "week" ? "#0f172a" : "#ffffff",
+                            ...periodButtonBase,
+                            background: period === "week" ? "#111827" : "#ffffff",
                             color: period === "week" ? "#ffffff" : "#111827",
                         }}
                     >
@@ -317,8 +323,8 @@ ${notSubmittedUsers
                     <button
                         onClick={() => setPeriod("month")}
                         style={{
-                            ...basePeriodButtonStyle,
-                            background: period === "month" ? "#0f172a" : "#ffffff",
+                            ...periodButtonBase,
+                            background: period === "month" ? "#111827" : "#ffffff",
                             color: period === "month" ? "#ffffff" : "#111827",
                         }}
                     >
@@ -329,9 +335,9 @@ ${notSubmittedUsers
                 <div
                     style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(4, 1fr)",
+                        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
                         gap: 16,
-                        marginTop: 20,
+                        marginTop: 24,
                     }}
                 >
                     <div style={cardStyle}>
@@ -341,14 +347,12 @@ ${notSubmittedUsers
 
                     <div style={cardStyle}>
                         <p style={labelStyle}>提出数</p>
-                        <p style={valueStyle}>{todayReports}</p>
+                        <p style={valueStyle}>{reportCount}</p>
                     </div>
 
                     <div style={cardStyle}>
                         <p style={labelStyle}>{periodLabel}提出率</p>
-                        <p style={{ ...valueStyle, color: submitRateColor }}>
-                            {submitRate}%
-                        </p>
+                        <p style={{ ...valueStyle, color: submitRateColor }}>{submitRate}%</p>
                     </div>
 
                     <div style={cardStyle}>
@@ -360,52 +364,44 @@ ${notSubmittedUsers
                 </div>
 
                 <div style={sectionStyle}>
-                    <div style={{ marginBottom: 16 }}>
-                        <h2
-                            style={{
-                                margin: "0 0 12px 0",
-                                fontSize: 28,
-                                fontWeight: 700,
-                                color: "#111827",
-                            }}
-                        >
-                            {periodLabel}の未提出者
-                        </h2>
+                    <h2
+                        style={{
+                            margin: "0 0 12px 0",
+                            fontSize: 28,
+                            fontWeight: 700,
+                            color: "#111827",
+                        }}
+                    >
+                        {periodLabel}の未提出者
+                    </h2>
 
-                        <div
-                            style={{
-                                display: "flex",
-                                gap: 10,
-                                flexWrap: "wrap",
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <button
+                            onClick={async () => {
+                                await navigator.clipboard.writeText(copyText);
+                                setCopied(true);
+                                setTimeout(() => setCopied(false), 1500);
                             }}
+                            style={secondaryButton}
                         >
-                            <button
-                                onClick={async () => {
-                                    await navigator.clipboard.writeText(copyText);
-                                    setCopied(true);
-                                    setTimeout(() => setCopied(false), 1500);
-                                }}
-                                style={secondaryButton}
-                            >
-                                未提出者をコピー
-                            </button>
+                            未提出者をコピー
+                        </button>
 
-                            <button
-                                onClick={async () => {
-                                    await navigator.clipboard.writeText(reminderText);
-                                }}
-                                style={primaryButton}
-                            >
-                                リマインド文をコピー
-                            </button>
-                        </div>
+                        <button
+                            onClick={async () => {
+                                await navigator.clipboard.writeText(reminderText);
+                            }}
+                            style={primaryButton}
+                        >
+                            リマインド文をコピー
+                        </button>
                     </div>
 
                     {copied && (
-                        <p style={{ marginTop: 8, color: "#6b7280" }}>コピーしました</p>
+                        <p style={{ marginTop: 10, color: "#6b7280" }}>コピーしました</p>
                     )}
 
-                    <div style={{ marginTop: 20 }}>
+                    <div style={{ marginTop: 18 }}>
                         {notSubmittedUsers.length > 0 ? (
                             notSubmittedUsers.map((u) => (
                                 <div
@@ -447,7 +443,17 @@ ${notSubmittedUsers
                                 </div>
                             ))
                         ) : (
-                            <p style={{ color: "#6b7280" }}>全員提出済み（{periodLabel}）</p>
+                            <div
+                                style={{
+                                    padding: 16,
+                                    borderRadius: 12,
+                                    background: "#f9fafb",
+                                    color: "#6b7280",
+                                    border: "1px solid #e5e7eb",
+                                }}
+                            >
+                                全員提出済み（{periodLabel}）
+                            </div>
                         )}
                     </div>
                 </div>
@@ -455,7 +461,7 @@ ${notSubmittedUsers
                 <div style={sectionStyle}>
                     <h2
                         style={{
-                            marginBottom: 12,
+                            margin: "0 0 12px 0",
                             fontSize: 28,
                             fontWeight: 700,
                             color: "#111827",
@@ -466,19 +472,38 @@ ${notSubmittedUsers
 
                     {topUsers.length > 0 ? (
                         topUsers.map((u, i) => (
-                            <div key={i} style={listCardStyle}>
+                            <div
+                                key={i}
+                                style={{
+                                    padding: "12px 14px",
+                                    borderRadius: 12,
+                                    border: "1px solid #e5e7eb",
+                                    background: "#ffffff",
+                                    marginBottom: 10,
+                                }}
+                            >
                                 {i + 1}位：{u.name}（{u.points}pt）
                             </div>
                         ))
                     ) : (
-                        <p style={{ color: "#6b7280" }}>データがありません</p>
+                        <div
+                            style={{
+                                padding: 16,
+                                borderRadius: 12,
+                                background: "#f9fafb",
+                                color: "#6b7280",
+                                border: "1px solid #e5e7eb",
+                            }}
+                        >
+                            データがありません
+                        </div>
                     )}
                 </div>
 
                 <div style={sectionStyle}>
                     <h2
                         style={{
-                            marginBottom: 12,
+                            margin: "0 0 12px 0",
                             fontSize: 28,
                             fontWeight: 700,
                             color: "#111827",
@@ -489,20 +514,36 @@ ${notSubmittedUsers
 
                     {topSubmitters.length > 0 ? (
                         topSubmitters.map((u, i) => (
-                            <div key={i} style={listCardStyle}>
+                            <div
+                                key={i}
+                                style={{
+                                    padding: "12px 14px",
+                                    borderRadius: 12,
+                                    border: "1px solid #e5e7eb",
+                                    background: "#ffffff",
+                                    marginBottom: 10,
+                                }}
+                            >
                                 {i + 1}位：{u.name}（{u.count}回）
                             </div>
                         ))
                     ) : (
-                        <p style={{ color: "#6b7280" }}>データがありません</p>
+                        <div
+                            style={{
+                                padding: 16,
+                                borderRadius: 12,
+                                background: "#f9fafb",
+                                color: "#6b7280",
+                                border: "1px solid #e5e7eb",
+                            }}
+                        >
+                            データがありません
+                        </div>
                     )}
                 </div>
 
                 <div style={sectionStyle}>
-                    <button
-                        onClick={() => router.push("/ranking")}
-                        style={primaryButton}
-                    >
+                    <button onClick={() => router.push("/ranking")} style={primaryButton}>
                         ランキングを見る
                     </button>
                 </div>
