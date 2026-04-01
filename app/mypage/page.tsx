@@ -352,8 +352,8 @@ export default function MyPage() {
                     maxWidth: 1200,
                     margin: "0 auto",
                     display: "grid",
-                    gridTemplateColumns: "240px 1fr 300px",
-                    gap: 24,
+                    gridTemplateColumns: "260px 1fr 280px",
+                    gap: 32,
                     alignItems: "start",
                 }}
             >
@@ -376,6 +376,7 @@ export default function MyPage() {
                         padding: "10px 12px",
                         borderRadius: 10,
                         border: "1px solid #e5e7eb",
+                        transition: "all 0.2s ease",
                         background: "#ffffff",
                         cursor: "pointer",
                         fontWeight: 600,
@@ -385,10 +386,11 @@ export default function MyPage() {
                 </button> <div
                     style={{
                         background: "#ffffff",
-                        borderRadius: 16,
-                        padding: 20,
-                        height: "fit-content",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+                        borderRadius: 20,
+                        padding: 24,
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                        border: "1px solid #f1f5f9",
+                        transition: "all 0.2s ease",
                     }}
                 >
                     <div style={{ fontSize: 14, color: "#6b7280" }}>名前</div>
@@ -399,10 +401,11 @@ export default function MyPage() {
                 <div
                     style={{
                         background: "#ffffff",
-                        borderRadius: 24,
-                        padding: 32,
-                        boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
-                        border: "1px solid #e5e7eb",
+                        borderRadius: 20,
+                        padding: 24,
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                        border: "1px solid #f1f5f9",
+                        transition: "all 0.2s ease",
                     }}
                 >
                     <div
@@ -498,6 +501,7 @@ export default function MyPage() {
                                     padding: "12px 18px",
                                     borderRadius: 12,
                                     border: "1px solid #d1d5db",
+                                    transition: "all 0.2s ease",
                                     cursor: "pointer",
                                     fontWeight: 700,
                                 }}
@@ -513,6 +517,7 @@ export default function MyPage() {
                                     padding: "12px 18px",
                                     borderRadius: 12,
                                     border: "1px solid #d1d5db",
+                                    transition: "all 0.2s ease",
                                     cursor: "pointer",
                                     fontWeight: 700,
                                 }}
@@ -537,6 +542,7 @@ export default function MyPage() {
                                 borderRadius: 16,
                                 padding: 18,
                                 border: "1px solid #e5e7eb",
+                                transition: "all 0.2s ease",
                             }}
                         >
                             <p
@@ -559,6 +565,7 @@ export default function MyPage() {
                                     padding: "12px 14px",
                                     borderRadius: 12,
                                     border: "1px solid #d1d5db",
+                                    transition: "all 0.2s ease",
                                     fontSize: 15,
                                     outline: "none",
                                     boxSizing: "border-box",
@@ -575,6 +582,7 @@ export default function MyPage() {
                                     padding: "12px 14px",
                                     borderRadius: 12,
                                     border: "1px solid #d1d5db",
+                                    transition: "all 0.2s ease",
                                     cursor: "pointer",
                                     fontWeight: 700,
                                 }}
@@ -586,10 +594,11 @@ export default function MyPage() {
                         <div
                             style={{
                                 background: "#ffffff",
-                                borderRadius: 16,
-                                padding: 24,
-                                border: "1px solid #e5e7eb",
-                                boxShadow: "0 6px 20px rgba(0,0,0,0.04)",
+                                borderRadius: 20,
+                                padding: 32, // ←ここ重要（他より大きい）
+                                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                                border: "1px solid #f1f5f9",
+                                transition: "all 0.2s ease",
                             }}
                         >
                             <div
@@ -606,6 +615,7 @@ export default function MyPage() {
                                         borderRadius: 14,
                                         padding: 16,
                                         border: "1px solid #e5e7eb",
+                                        transition: "all 0.2s ease",
                                     }}
                                 >
                                     <p
@@ -617,6 +627,20 @@ export default function MyPage() {
                                     >
                                         現在ポイント
                                     </p>
+                                    <div style={{ marginTop: 16 }}>
+                                        <div style={{ fontSize: 14, color: "#6b7280" }}>
+                                            今日のログインボーナス
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: 16,
+                                                fontWeight: 700,
+                                                color: loginBonusDone ? "#10b981" : "#ef4444",
+                                            }}
+                                        >
+                                            {loginBonusDone ? "受取済み" : "未受取"}
+                                        </div>
+                                    </div>
                                     <p
                                         style={{
                                             margin: "8px 0 0 0",
@@ -635,6 +659,7 @@ export default function MyPage() {
                                         borderRadius: 14,
                                         padding: 16,
                                         border: "1px solid #e5e7eb",
+                                        transition: "all 0.2s ease",
                                     }}
                                 >
                                     <p
@@ -683,14 +708,14 @@ export default function MyPage() {
                                     <button
                                         onClick={handleLoginBonus}
                                         style={{
-                                            marginTop: 12,
-                                            background: "#4ade80",
-                                            color: "#ffffff",
+                                            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                                            color: "#fff",
                                             padding: "12px 18px",
                                             borderRadius: 12,
                                             border: "none",
                                             cursor: "pointer",
                                             fontWeight: 700,
+                                            boxShadow: "0 10px 20px rgba(99,102,241,0.25)",
                                         }}
                                     >
                                         ログインボーナス受取（+20pt）
@@ -712,6 +737,7 @@ export default function MyPage() {
                                         borderRadius: 14,
                                         padding: 16,
                                         border: "1px solid #e5e7eb",
+                                        transition: "all 0.2s ease",
                                     }}
                                 >
                                     <p
@@ -741,6 +767,7 @@ export default function MyPage() {
                                         borderRadius: 14,
                                         padding: 16,
                                         border: "1px solid #e5e7eb",
+                                        transition: "all 0.2s ease",
                                     }}
                                 >
                                     <p
@@ -792,7 +819,23 @@ export default function MyPage() {
                                 >
                                     EXP : {exp}/100
                                 </p>
-
+                                <div
+                                    style={{
+                                        marginTop: 8,
+                                        height: 8,
+                                        background: "#e5e7eb",
+                                        borderRadius: 999,
+                                        overflow: "hidden",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            width: `${exp}%`,
+                                            height: "100%",
+                                            background: "#4f46e5",
+                                        }}
+                                    />
+                                </div>
                                 <div
                                     style={{
                                         width: "100%",
@@ -820,6 +863,7 @@ export default function MyPage() {
                                     borderRadius: 14,
                                     padding: 18,
                                     border: "1px solid #e5e7eb",
+                                    transition: "all 0.2s ease",
                                 }}
                             >
                                 <p
@@ -866,6 +910,7 @@ export default function MyPage() {
                                 borderRadius: 12,
                                 background: "#eff6ff",
                                 border: "1px solid #bfdbfe",
+                                transition: "all 0.2s ease",
                                 color: "#1d4ed8",
                                 fontWeight: 600,
                             }}
@@ -882,6 +927,7 @@ export default function MyPage() {
                         padding: 28,
                         boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
                         border: "1px solid #e5e7eb",
+                        transition: "all 0.2s ease",
                     }}
                 >
                     <h2
@@ -903,6 +949,7 @@ export default function MyPage() {
                                     style={{
                                         background: "#ffffff",
                                         border: "1px solid #e5e7eb",
+                                        transition: "all 0.2s ease",
                                         borderRadius: 16,
                                         padding: 18,
                                         marginBottom: 12,
@@ -959,6 +1006,7 @@ export default function MyPage() {
                                 style={{
                                     background: "#f9fafb",
                                     border: "1px solid #e5e7eb",
+                                    transition: "all 0.2s ease",
                                     borderRadius: 16,
                                     padding: 18,
                                     color: "#6b7280",
