@@ -117,6 +117,11 @@ export default function MyPage() {
             return;
         }
 
+        if (!user) {
+            router.push("/login");
+            return;
+        }
+
         setUserId(user.id);
 
         const { data: profileData, error: profileError } = await supabase
@@ -341,16 +346,56 @@ export default function MyPage() {
                 padding: "48px 24px 64px",
             }}
         >
+
             <div
                 style={{
                     maxWidth: 1200,
                     margin: "0 auto",
                     display: "grid",
-                    gridTemplateColumns: "minmax(0, 2fr) minmax(320px, 1fr)",
+                    gridTemplateColumns: "240px 1fr 300px",
                     gap: 24,
                     alignItems: "start",
                 }}
             >
+                <div
+                    style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        marginBottom: 16,
+                        color: "#111827",
+                    }}
+                >
+                    マイページ
+                </div>
+                {/* 左カラム */}
+                <button
+                    onClick={handleSaveName}
+                    style={{
+                        marginTop: 12,
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        border: "1px solid #e5e7eb",
+                        background: "#ffffff",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                    }}
+                >
+                    名前を保存
+                </button> <div
+                    style={{
+                        background: "#ffffff",
+                        borderRadius: 16,
+                        padding: 20,
+                        height: "fit-content",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+                    }}
+                >
+                    <div style={{ fontSize: 14, color: "#6b7280" }}>名前</div>
+                    <div style={{ fontSize: 18, fontWeight: 700 }}>
+                        {name || "未設定"}
+                    </div>
+                </div>
                 <div
                     style={{
                         background: "#ffffff",
@@ -484,6 +529,7 @@ export default function MyPage() {
                             gap: 16,
                             marginBottom: 20,
                         }}
+
                     >
                         <div
                             style={{
