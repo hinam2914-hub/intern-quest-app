@@ -86,6 +86,10 @@ export default function MyPage() {
     const [name, setName] = useState("");
     const [inputName, setInputName] = useState("");
     const [points, setPoints] = useState(0);
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push("/login");
+    };
     const [rank, setRank] = useState<number | null>(null);
     const [streak, setStreak] = useState(1);
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -254,40 +258,80 @@ export default function MyPage() {
     };
 
     const handleLoginBonus = async () => {
-        if (loginBonusDone) {
+        if (!userId) return;
+
+        setMessage("");
+
+        const todayYmd = getTodayJST();
+
+        // ① 今日ログボ済みか確認
+        const { data: historyRows, error: historyError } = await supabase
+            .from("points_history")
+            .select("created_at, reason")
+            .eq("user_id", userId)
+            .eq("reason", "login_bonus");
+
+        if (historyError) {
+            setMessage("履歴確認に失敗しました");
+            return;
+        }
+
+        const alreadyReceived =
+            historyRows?.some(
+                (row) => isSameJSTDay(row.created_at, todayYmd)
+            ) || false;
+
+        if (alreadyReceived) {
             setMessage("今日のログインボーナスは受取済みです");
             return;
         }
 
-        const ok = await addPointWithHistory(20, "login_bonus");
-        if (!ok) return;
+        // ② 現在ポイント取得
+        const { data: pointRow, error: pointError } = await supabase
+            .from("user_points")
+            .select("points")
+            .eq("id", userId)
+            .single();
 
-        setMessage("ログインボーナスを受け取りました");
+        if (pointError) {
+            setMessage("ポイント取得に失敗しました");
+            return;
+        }
+
+        const currentPoints = pointRow?.points || 0;
+        const add = 20;
+
+        // ③ user_points 更新
+        const { error: updateError } = await supabase
+            .from("user_points")
+            .update({ points: currentPoints + add })
+            .eq("id", userId);
+
+        if (updateError) {
+            setMessage("ポイント更新に失敗しました");
+            return;
+        }
+
+        // ④ 履歴保存
+        const { error: insertError } = await supabase
+            .from("points_history")
+            .insert({
+                user_id: userId,
+                change: add,
+                reason: "login_bonus",
+                created_at: new Date().toISOString(),
+            });
+
+        if (insertError) {
+            setMessage("履歴保存に失敗しました");
+            return;
+        }
+
+        setMessage("ログインボーナス +20pt 獲得しました");
+
+        // ⑤ 再読み込み（UI反映）
         await loadPage();
     };
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.push("/login");
-    };
-
-    if (loading) {
-        return (
-            <main
-                style={{
-                    minHeight: "100vh",
-                    background: "#f3f4f6",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    color: "#6b7280",
-                    fontSize: 16,
-                }}
-            >
-                読み込み中...
-            </main>
-        );
-    }
 
     return (
         <main
