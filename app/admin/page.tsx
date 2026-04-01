@@ -14,6 +14,11 @@ type TopUser = {
     points: number;
 };
 
+type TopSubmitter = {
+    name: string;
+    count: number;
+};
+
 export default function AdminPage() {
     const router = useRouter();
 
@@ -21,10 +26,8 @@ export default function AdminPage() {
     const [todayReports, setTodayReports] = useState(0);
     const [submitRate, setSubmitRate] = useState(0);
     const [topUsers, setTopUsers] = useState<TopUser[]>([]);
+    const [topSubmitters, setTopSubmitters] = useState<TopSubmitter[]>([]);
     const [notSubmittedUsers, setNotSubmittedUsers] = useState<UserRow[]>([]);
-    const [topSubmitters, setTopSubmitters] = useState<
-        { name: string; count: number }[]
-    >([]);
     const [copied, setCopied] = useState(false);
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
 
@@ -46,9 +49,14 @@ export default function AdminPage() {
                 return;
             }
 
-            const { data: allUsers } = await supabase
+            const { data: allUsers, error: usersError } = await supabase
                 .from("profiles")
                 .select("id, name");
+
+            if (usersError) {
+                console.error(usersError);
+                return;
+            }
 
             const users = (allUsers || []) as UserRow[];
             setUserCount(users.length);
@@ -64,7 +72,7 @@ export default function AdminPage() {
 
             const today = now.toISOString().slice(0, 10);
 
-            const { data: reports } =
+            const { data: reports, error: reportsError } =
                 period === "today"
                     ? await supabase
                         .from("submissions")
@@ -74,6 +82,11 @@ export default function AdminPage() {
                         .from("submissions")
                         .select("user_id")
                         .gte("created_at", from.toISOString());
+
+            if (reportsError) {
+                console.error(reportsError);
+                return;
+            }
 
             const reportList = reports || [];
             setTodayReports(reportList.length);
@@ -89,36 +102,51 @@ export default function AdminPage() {
             const notSubmitted = users.filter((u) => !submittedIds.includes(u.id));
             setNotSubmittedUsers(notSubmitted);
 
-            const { data: pointRows } = await supabase
+            const { data: pointRows, error: pointError } = await supabase
                 .from("user_points")
                 .select("id, points")
                 .order("points", { ascending: false })
                 .limit(3);
 
-            if (!pointRows) {
-                setTopUsers([]);
+            if (pointError) {
+                console.error(pointError);
                 return;
             }
 
-            const ids = pointRows.map((u) => u.id);
+            if (!pointRows) {
+                setTopUsers([]);
+            } else {
+                const ids = pointRows.map((u) => u.id);
 
-            const { data: profiles } = await supabase
-                .from("profiles")
-                .select("id, name")
-                .in("id", ids);
+                const { data: profiles, error: profileError } = await supabase
+                    .from("profiles")
+                    .select("id, name")
+                    .in("id", ids);
 
-            const merged: TopUser[] = pointRows.map((row) => {
-                const profile = profiles?.find((p) => p.id === row.id);
-                return {
-                    name: profile?.name || "名前未設定",
-                    points: row.points || 0,
-                };
-            });
+                if (profileError) {
+                    console.error(profileError);
+                    return;
+                }
 
-            setTopUsers(merged);
-            const { data: submissionRows } = await supabase
+                const merged: TopUser[] = pointRows.map((row) => {
+                    const profile = profiles?.find((p) => p.id === row.id);
+                    return {
+                        name: profile?.name || "名前未設定",
+                        points: row.points || 0,
+                    };
+                });
+
+                setTopUsers(merged);
+            }
+
+            const { data: submissionRows, error: submissionError } = await supabase
                 .from("submissions")
                 .select("user_id");
+
+            if (submissionError) {
+                console.error(submissionError);
+                return;
+            }
 
             if (submissionRows) {
                 const countMap: Record<string, number> = {};
@@ -131,11 +159,7 @@ export default function AdminPage() {
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 3);
 
-                const [topSubmitters, setTopSubmitters] = useState<
-                    { name: string; count: number }[]
-                >([]);
-
-                const result = sorted.map(([id, count]) => {
+                const result: TopSubmitter[] = sorted.map(([id, count]) => {
                     const profile = users.find((u) => u.id === id);
                     return {
                         name: profile?.name || "名前未設定",
@@ -144,6 +168,8 @@ export default function AdminPage() {
                 });
 
                 setTopSubmitters(result);
+            } else {
+                setTopSubmitters([]);
             }
         };
 
@@ -168,13 +194,46 @@ ${notSubmittedUsers
     const submitRateColor =
         submitRate >= 80 ? "#16a34a" : submitRate >= 50 ? "#f59e0b" : "#dc2626";
 
+    const pageStyle: React.CSSProperties = {
+        minHeight: "100vh",
+        background: "#f3f4f6",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        paddingTop: 60,
+        paddingBottom: 60,
+        paddingLeft: 24,
+        paddingRight: 24,
+    };
+
+    const containerStyle: React.CSSProperties = {
+        background: "#ffffff",
+        padding: 32,
+        borderRadius: 20,
+        width: "100%",
+        maxWidth: 960,
+        boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
+    };
+
+    const headingStyle: React.CSSProperties = {
+        fontSize: 36,
+        fontWeight: 700,
+        marginBottom: 24,
+        color: "#111827",
+    };
+
+    const sectionStyle: React.CSSProperties = {
+        marginTop: 32,
+    };
+
     const cardStyle: React.CSSProperties = {
         flex: 1,
-        background: "#f9fafb",
-        borderRadius: 12,
-        padding: 16,
+        background: "#ffffff",
+        borderRadius: 16,
+        padding: 20,
         border: "1px solid #e5e7eb",
-        minWidth: 120,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+        minWidth: 140,
     };
 
     const labelStyle: React.CSSProperties = {
@@ -187,35 +246,50 @@ ${notSubmittedUsers
         fontSize: 24,
         fontWeight: "bold",
         margin: "6px 0 0 0",
+        color: "#111827",
     };
 
     const basePeriodButtonStyle: React.CSSProperties = {
         padding: "8px 12px",
-        borderRadius: 8,
+        borderRadius: 10,
         border: "1px solid #e5e7eb",
         cursor: "pointer",
-        fontWeight: "bold",
+        fontWeight: 600,
+        transition: "all 0.2s ease",
+    };
+
+    const primaryButton: React.CSSProperties = {
+        background: "#111827",
+        color: "#ffffff",
+        padding: "10px 16px",
+        borderRadius: 10,
+        border: "none",
+        cursor: "pointer",
+        fontWeight: 600,
+    };
+
+    const secondaryButton: React.CSSProperties = {
+        background: "#ffffff",
+        color: "#111827",
+        padding: "10px 16px",
+        borderRadius: 10,
+        border: "1px solid #e5e7eb",
+        cursor: "pointer",
+        fontWeight: 600,
+    };
+
+    const listCardStyle: React.CSSProperties = {
+        background: "#fff",
+        border: "1px solid #e5e7eb",
+        borderRadius: 12,
+        padding: "12px 14px",
+        marginBottom: 10,
     };
 
     return (
-        <main
-            style={{
-                padding: 24,
-                maxWidth: 820,
-                margin: "0 auto",
-            }}
-        >
-            <div
-                style={{
-                    background: "#ffffff",
-                    padding: 28,
-                    borderRadius: 16,
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-                }}
-            >
-                <h1 style={{ fontSize: 42, fontWeight: "bold", marginBottom: 20 }}>
-                    管理ダッシュボード
-                </h1>
+        <main style={pageStyle}>
+            <div style={containerStyle}>
+                <h1 style={headingStyle}>管理ダッシュボード</h1>
 
                 <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                     <button
@@ -254,10 +328,10 @@ ${notSubmittedUsers
 
                 <div
                     style={{
-                        display: "flex",
-                        gap: 12,
-                        marginTop: 16,
-                        flexWrap: "wrap",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(4, 1fr)",
+                        gap: 16,
+                        marginTop: 20,
                     }}
                 >
                     <div style={cardStyle}>
@@ -285,9 +359,18 @@ ${notSubmittedUsers
                     </div>
                 </div>
 
-                <div style={{ marginTop: 28, marginBottom: 28 }}>
+                <div style={sectionStyle}>
                     <div style={{ marginBottom: 16 }}>
-                        <h2 style={{ margin: "0 0 12px 0" }}>{periodLabel}の未提出者</h2>
+                        <h2
+                            style={{
+                                margin: "0 0 12px 0",
+                                fontSize: 28,
+                                fontWeight: 700,
+                                color: "#111827",
+                            }}
+                        >
+                            {periodLabel}の未提出者
+                        </h2>
 
                         <div
                             style={{
@@ -302,15 +385,7 @@ ${notSubmittedUsers
                                     setCopied(true);
                                     setTimeout(() => setCopied(false), 1500);
                                 }}
-                                style={{
-                                    background: "#ffffff",
-                                    color: "#111827",
-                                    fontWeight: "bold",
-                                    padding: "10px 14px",
-                                    border: "1px solid #d1d5db",
-                                    borderRadius: 10,
-                                    cursor: "pointer",
-                                }}
+                                style={secondaryButton}
                             >
                                 未提出者をコピー
                             </button>
@@ -319,22 +394,16 @@ ${notSubmittedUsers
                                 onClick={async () => {
                                     await navigator.clipboard.writeText(reminderText);
                                 }}
-                                style={{
-                                    background: "#0f172a",
-                                    color: "#ffffff",
-                                    fontWeight: "bold",
-                                    padding: "10px 14px",
-                                    border: "none",
-                                    borderRadius: 10,
-                                    cursor: "pointer",
-                                }}
+                                style={primaryButton}
                             >
                                 リマインド文をコピー
                             </button>
                         </div>
                     </div>
 
-                    {copied && <p style={{ marginTop: 8 }}>コピーしました</p>}
+                    {copied && (
+                        <p style={{ marginTop: 8, color: "#6b7280" }}>コピーしました</p>
+                    )}
 
                     <div style={{ marginTop: 20 }}>
                         {notSubmittedUsers.length > 0 ? (
@@ -345,14 +414,19 @@ ${notSubmittedUsers
                                         display: "flex",
                                         justifyContent: "space-between",
                                         alignItems: "center",
-                                        background: "#fef2f2",
-                                        border: "1px solid #dc2626",
-                                        borderRadius: 10,
-                                        padding: "10px 12px",
-                                        marginBottom: 8,
+                                        padding: "12px 14px",
+                                        borderRadius: 12,
+                                        border: "1px solid #fca5a5",
+                                        background: "#fff5f5",
+                                        marginBottom: 10,
                                     }}
                                 >
-                                    <span style={{ fontWeight: "bold", color: "#7f1d1d" }}>
+                                    <span
+                                        style={{
+                                            fontWeight: 600,
+                                            color: "#7f1d1d",
+                                        }}
+                                    >
                                         {u.name || "名前未設定"}
                                     </span>
 
@@ -373,64 +447,65 @@ ${notSubmittedUsers
                                 </div>
                             ))
                         ) : (
-                            <p style={{ color: "#6b7280" }}>
-                                全員提出済み（{periodLabel}）
-                            </p>
+                            <p style={{ color: "#6b7280" }}>全員提出済み（{periodLabel}）</p>
                         )}
                     </div>
                 </div>
 
-                <div>
-                    <h2 style={{ marginBottom: 12 }}>ポイント上位</h2>
+                <div style={sectionStyle}>
+                    <h2
+                        style={{
+                            marginBottom: 12,
+                            fontSize: 28,
+                            fontWeight: 700,
+                            color: "#111827",
+                        }}
+                    >
+                        ポイント上位
+                    </h2>
 
-                    {topUsers.map((u, i) => (
-                        <div
-                            key={i}
-                            style={{
-                                background: "#fff",
-                                border: "1px solid #e5e7eb",
-                                borderRadius: 10,
-                                padding: "10px 12px",
-                                marginBottom: 8,
-                            }}
-                        >
-                            {i + 1}位：{u.name}（{u.points}pt）
-                        </div>
-                    ))}
-                    <div style={{ marginTop: 24 }}>
-                        <h2 style={{ marginBottom: 12 }}>提出数ランキング</h2>
+                    {topUsers.length > 0 ? (
+                        topUsers.map((u, i) => (
+                            <div key={i} style={listCardStyle}>
+                                {i + 1}位：{u.name}（{u.points}pt）
+                            </div>
+                        ))
+                    ) : (
+                        <p style={{ color: "#6b7280" }}>データがありません</p>
+                    )}
+                </div>
 
-                        {topSubmitters.map((u, i) => (
-                            <div
-                                key={i}
-                                style={{
-                                    background: "#fff",
-                                    border: "1px solid #e5e7eb",
-                                    borderRadius: 10,
-                                    padding: "10px 12px",
-                                    marginBottom: 8,
-                                }}
-                            >
+                <div style={sectionStyle}>
+                    <h2
+                        style={{
+                            marginBottom: 12,
+                            fontSize: 28,
+                            fontWeight: 700,
+                            color: "#111827",
+                        }}
+                    >
+                        提出数ランキング
+                    </h2>
+
+                    {topSubmitters.length > 0 ? (
+                        topSubmitters.map((u, i) => (
+                            <div key={i} style={listCardStyle}>
                                 {i + 1}位：{u.name}（{u.count}回）
                             </div>
-                        ))}
-                    </div>
+                        ))
+                    ) : (
+                        <p style={{ color: "#6b7280" }}>データがありません</p>
+                    )}
                 </div>
-                <button
-                    onClick={() => router.push("/ranking")}
-                    style={{
-                        marginTop: 24,
-                        background: "#0f172a",
-                        color: "#ffffff",
-                        padding: "12px 18px",
-                        borderRadius: 10,
-                        border: "none",
-                        cursor: "pointer",
-                        fontWeight: "bold",
-                    }}
-                >
-                    ランキングを見る
-                </button>
+
+                <div style={sectionStyle}>
+                    <button
+                        onClick={() => router.push("/ranking")}
+                        style={primaryButton}
+                    >
+                        ランキングを見る
+                    </button>
+                </div>
             </div>
         </main>
     );

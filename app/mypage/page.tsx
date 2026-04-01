@@ -261,9 +261,12 @@ export default function MyPage() {
     return (
         <main
             style={{
-                padding: 24,
-                maxWidth: 520,
-                margin: "0 auto",
+                minHeight: "100vh",
+                background: "#f3f4f6",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "flex-start",
+                paddingTop: 60,
             }}
         >
             <h1 style={{ fontSize: 48, fontWeight: "bold", marginBottom: 32 }}>
@@ -303,10 +306,11 @@ export default function MyPage() {
             <div
                 style={{
                     background: "#ffffff",
+                    padding: 32,
                     borderRadius: 20,
-                    padding: 28,
-                    boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-                    marginTop: 12,
+                    width: "100%",
+                    maxWidth: 900,
+                    boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
                 }}
             >
                 <p style={{ fontSize: 20, fontWeight: "bold", marginTop: 0 }}>
