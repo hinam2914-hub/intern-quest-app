@@ -499,6 +499,21 @@ export default function MyPage() {
                         >
                             ログアウト
                         </button>
+
+                        <button
+                            onClick={() => router.push("/admin")}
+                            style={{
+                                background: "#111827",
+                                color: "#fff",
+                                padding: "10px 16px",
+                                borderRadius: 10,
+                                border: "none",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                            }}
+                        >
+                            管理画面
+                        </button>
                     </div>
 
                     <div
@@ -518,7 +533,6 @@ export default function MyPage() {
                                 boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
                             }}
                         >
-
                             <div>
                                 <div style={{ fontSize: 12, color: "#6b7280" }}>ポイント</div>
                                 <div style={{ fontSize: 28, fontWeight: 700 }}>
