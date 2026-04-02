@@ -359,10 +359,9 @@ export default function MyPage() {
                 <div
                     style={{
                         display: "flex",
-                        flexDirection: "column",
-                        gap: 16,
-                        position: "sticky",
-                        top: 24,
+                        gap: 10,
+                        flexWrap: "wrap",
+                        marginTop: 24,
                     }}
                 >
                     <div
@@ -406,20 +405,110 @@ export default function MyPage() {
                 </div>
 
                 {/* 中央 */}
-                <div>
-                    <h1 style={{ fontSize: 32, fontWeight: 700 }}>
+                <div
+                    style={{
+                        background: "#ffffff",
+                        borderRadius: 20,
+                        padding: 32,
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                    }}
+                >
+                    <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 16 }}>
                         {name || "名前未設定"}
                     </h1>
 
-                    <div style={{ marginTop: 20 }}>
-                        <button onClick={handleAddPoint}>+10pt</button>
-                        <button onClick={() => router.push("/ranking")}>ランキング</button>
-                        <button onClick={() => router.push("/report")}>日報</button>
-                        <button onClick={() => router.push("/history")}>履歴</button>
-                        <button onClick={handleLogout}>ログアウト</button>
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: 10,
+                            flexWrap: "wrap",
+                            marginTop: 24,
+                        }}
+                    >
+                        <button
+                            onClick={handleAddPoint}
+                            style={{
+                                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                                color: "#fff",
+                                padding: "10px 16px",
+                                borderRadius: 10,
+                                border: "none",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                            }}
+                        >
+                            +10pt
+                        </button>
+
+                        <button
+                            onClick={() => router.push("/ranking")}
+                            style={{
+                                background: "#0f172a",
+                                color: "#fff",
+                                padding: "10px 16px",
+                                borderRadius: 10,
+                                border: "none",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                            }}
+                        >
+                            ランキング
+                        </button>
+
+                        <button
+                            onClick={() => router.push("/report")}
+                            style={{
+                                background: "#ef4444",
+                                color: "#fff",
+                                padding: "10px 16px",
+                                borderRadius: 10,
+                                border: "none",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                            }}
+                        >
+                            日報
+                        </button>
+
+                        <button
+                            onClick={() => router.push("/history")}
+                            style={{
+                                background: "#ffffff",
+                                color: "#111827",
+                                padding: "10px 16px",
+                                borderRadius: 10,
+                                border: "1px solid #d1d5db",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                            }}
+                        >
+                            履歴
+                        </button>
+
+                        <button
+                            onClick={handleLogout}
+                            style={{
+                                background: "#ffffff",
+                                color: "#111827",
+                                padding: "10px 16px",
+                                borderRadius: 10,
+                                border: "1px solid #d1d5db",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                            }}
+                        >
+                            ログアウト
+                        </button>
                     </div>
 
-                    <div style={{ marginTop: 20 }}>
+                    <div
+                        style={{
+                            marginTop: 24,
+                            background: "#f9fafb",
+                            padding: 16,
+                            borderRadius: 12,
+                        }}
+                    >
                         <p>ポイント: {points}</p>
                         <p>順位: {rank || "-"}</p>
                         <p>連続提出: {streak}日</p>
@@ -466,9 +555,9 @@ export default function MyPage() {
                     <div
                         style={{
                             display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            gap: 12,
+                            gap: 10,
+                            flexWrap: "wrap",
+                            marginTop: 24,
                         }}
                     >
                         <div>
