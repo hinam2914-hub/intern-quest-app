@@ -352,8 +352,8 @@ export default function MyPage() {
                     maxWidth: 1200,
                     margin: "0 auto",
                     display: "grid",
-                    gridTemplateColumns: "260px 1fr 280px",
-                    gap: 32,
+                    gridTemplateColumns: "280px 1fr 320px",
+                    gap: 24,
                     alignItems: "start",
                 }}
             >
@@ -386,11 +386,13 @@ export default function MyPage() {
                 </button> <div
                     style={{
                         background: "#ffffff",
-                        borderRadius: 20,
-                        padding: 24,
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-                        border: "1px solid #f1f5f9",
-                        transition: "all 0.2s ease",
+                        borderRadius: 16,
+                        padding: 20,
+                        width: "100%",
+                        minWidth: 260,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 16,
                     }}
                 >
                     <div style={{ fontSize: 14, color: "#6b7280" }}>名前</div>
@@ -948,12 +950,10 @@ export default function MyPage() {
                                     key={`${item.created_at}-${index}`}
                                     style={{
                                         background: "#ffffff",
+                                        borderRadius: 24,
+                                        padding: 32,
+                                        boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
                                         border: "1px solid #e5e7eb",
-                                        transition: "all 0.2s ease",
-                                        borderRadius: 16,
-                                        padding: 18,
-                                        marginBottom: 12,
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
                                     }}
                                 >
                                     <div
