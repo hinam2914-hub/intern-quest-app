@@ -509,9 +509,37 @@ export default function MyPage() {
                             borderRadius: 12,
                         }}
                     >
-                        <p>ポイント: {points}</p>
-                        <p>順位: {rank || "-"}</p>
-                        <p>連続提出: {streak}日</p>
+                        <div
+                            style={{
+                                marginTop: 20,
+                                background: "#ffffff",
+                                padding: 20,
+                                borderRadius: 16,
+                                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                            }}
+                        >
+
+                            <div>
+                                <div style={{ fontSize: 12, color: "#6b7280" }}>ポイント</div>
+                                <div style={{ fontSize: 28, fontWeight: 700 }}>
+                                    {points}pt
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 12 }}>
+                                <div style={{ fontSize: 12, color: "#6b7280" }}>順位</div>
+                                <div style={{ fontSize: 24, fontWeight: 700 }}>
+                                    {rank || "-"}
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 12 }}>
+                                <div style={{ fontSize: 12, color: "#6b7280" }}>連続提出</div>
+                                <div style={{ fontSize: 24, fontWeight: 700 }}>
+                                    {streak}日
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {message && <p>{message}</p>}
