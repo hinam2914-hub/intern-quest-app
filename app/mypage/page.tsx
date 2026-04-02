@@ -337,7 +337,6 @@ export default function MyPage() {
         // ⑤ 再読み込み（UI反映）
         await loadPage();
     };
-
     return (
         <main
             style={{
@@ -346,7 +345,6 @@ export default function MyPage() {
                 padding: "48px 24px 64px",
             }}
         >
-
             <div
                 style={{
                     maxWidth: 1200,
@@ -357,667 +355,172 @@ export default function MyPage() {
                     alignItems: "start",
                 }}
             >
+                {/* 左カラム */}
                 <div
                     style={{
-                        fontSize: 24,
-                        fontWeight: 700,
-                        marginBottom: 16,
-                        color: "#111827",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 16,
+                        position: "sticky",
+                        top: 24,
                     }}
                 >
-                    マイページ
+                    <div
+                        style={{
+                            fontSize: 24,
+                            fontWeight: 700,
+                            color: "#111827",
+                        }}
+                    >
+                        マイページ
+                    </div>
+
+                    <div
+                        style={{
+                            background: "#ffffff",
+                            borderRadius: 16,
+                            padding: 20,
+                        }}
+                    >
+                        <div style={{ fontSize: 14, color: "#6b7280" }}>名前</div>
+                        <div style={{ fontSize: 18, fontWeight: 700 }}>
+                            {name || "未設定"}
+                        </div>
+
+                        <button
+                            onClick={handleSaveName}
+                            style={{
+                                marginTop: 12,
+                                width: "100%",
+                                padding: "10px 12px",
+                                borderRadius: 10,
+                                border: "1px solid #e5e7eb",
+                                background: "#fff",
+                                cursor: "pointer",
+                                fontWeight: 600,
+                            }}
+                        >
+                            名前を保存
+                        </button>
+                    </div>
                 </div>
-                {/* 左カラム */}
-                <button
-                    onClick={handleSaveName}
-                    style={{
-                        marginTop: 12,
-                        width: "100%",
-                        padding: "10px 12px",
-                        borderRadius: 10,
-                        border: "1px solid #e5e7eb",
-                        transition: "all 0.2s ease",
-                        background: "#ffffff",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                    }}
-                >
-                    名前を保存
-                </button> <div
+
+                {/* 中央 */}
+                <div>
+                    <h1 style={{ fontSize: 32, fontWeight: 700 }}>
+                        {name || "名前未設定"}
+                    </h1>
+
+                    <div style={{ marginTop: 20 }}>
+                        <button onClick={handleAddPoint}>+10pt</button>
+                        <button onClick={() => router.push("/ranking")}>ランキング</button>
+                        <button onClick={() => router.push("/report")}>日報</button>
+                        <button onClick={() => router.push("/history")}>履歴</button>
+                        <button onClick={handleLogout}>ログアウト</button>
+                    </div>
+
+                    <div style={{ marginTop: 20 }}>
+                        <p>ポイント: {points}</p>
+                        <p>順位: {rank || "-"}</p>
+                        <p>連続提出: {streak}日</p>
+                    </div>
+
+                    {message && <p>{message}</p>}
+                </div>
+
+                {/* 右カラム */}
+                <div
                     style={{
                         background: "#ffffff",
                         borderRadius: 16,
                         padding: 20,
-                        width: "100%",
-                        minWidth: 260,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 16,
                     }}
                 >
-                    <div style={{ fontSize: 14, color: "#6b7280" }}>名前</div>
-                    <div style={{ fontSize: 18, fontWeight: 700 }}>
-                        {name || "未設定"}
-                    </div>
+                    <h2>ポイント履歴</h2>
+
+                    {history.map((item, i) => (
+                        <div key={i} style={{ marginTop: 10 }}>
+                            <div>{formatReason(item.reason)}</div>
+                            <div>{formatDateTimeJST(item.created_at)}</div>
+                            <div>{item.change}pt</div>
+                        </div>
+                    ))}
                 </div>
+            </div>
+        </main>
+    );
+
+    <div style={{ marginTop: 18 }}>
+        {history.length > 0 ? (
+            history.map((item, index) => (
                 <div
+                    key={`${item.created_at}-${index}`}
                     style={{
                         background: "#ffffff",
-                        borderRadius: 20,
-                        padding: 24,
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-                        border: "1px solid #f1f5f9",
-                        transition: "all 0.2s ease",
+                        borderRadius: 24,
+                        padding: 32,
+                        boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
+                        border: "1px solid #e5e7eb",
                     }}
                 >
                     <div
                         style={{
                             display: "flex",
                             justifyContent: "space-between",
-                            gap: 16,
                             alignItems: "flex-start",
-                            flexWrap: "wrap",
-                            marginBottom: 28,
+                            gap: 12,
                         }}
                     >
                         <div>
                             <p
                                 style={{
                                     margin: 0,
-                                    fontSize: 14,
-                                    color: "#6b7280",
+                                    fontSize: 15,
+                                    fontWeight: 700,
+                                    color: "#111827",
                                 }}
                             >
-                                マイページ
+                                {formatReason(item.reason)}
                             </p>
-                            <h1
-                                style={{
-                                    margin: "8px 0 0 0",
-                                    fontSize: 40,
-                                    fontWeight: 700,
-                                    color: "#111827",
-                                }}
-                            >
-                                {name || "名前未設定"}
-                            </h1>
-                        </div>
-
-                        <div
-                            style={{
-                                display: "flex",
-                                gap: 10,
-                                flexWrap: "wrap",
-                                justifyContent: "flex-end",
-                            }}
-                        >
-                            <button
-                                onClick={handleAddPoint}
-                                style={{
-                                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                                    color: "#ffffff",
-                                    padding: "12px 18px",
-                                    borderRadius: 12,
-                                    border: "none",
-                                    cursor: "pointer",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                +10ポイント
-                            </button>
-
-                            <button
-                                onClick={() => router.push("/ranking")}
-                                style={{
-                                    background: "#0f172a",
-                                    color: "#ffffff",
-                                    padding: "12px 18px",
-                                    borderRadius: 12,
-                                    border: "none",
-                                    cursor: "pointer",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                ランキングを見る
-                            </button>
-
-                            <button
-                                onClick={() => router.push("/report")}
-                                style={{
-                                    background: "#ef5b4d",
-                                    color: "#ffffff",
-                                    padding: "12px 18px",
-                                    borderRadius: 12,
-                                    border: "none",
-                                    cursor: "pointer",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                日報を書く
-                            </button>
-
-                            <button
-                                onClick={() => router.push("/history")}
-                                style={{
-                                    background: "#ffffff",
-                                    color: "#111827",
-                                    padding: "12px 18px",
-                                    borderRadius: 12,
-                                    border: "1px solid #d1d5db",
-                                    transition: "all 0.2s ease",
-                                    cursor: "pointer",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                履歴を見る
-                            </button>
-
-                            <button
-                                onClick={handleLogout}
-                                style={{
-                                    background: "#ffffff",
-                                    color: "#111827",
-                                    padding: "12px 18px",
-                                    borderRadius: 12,
-                                    border: "1px solid #d1d5db",
-                                    transition: "all 0.2s ease",
-                                    cursor: "pointer",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                ログアウト
-                            </button>
-                        </div>
-                    </div>
-
-                    <div
-                        style={{
-                            display: "grid",
-                            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr)",
-                            gap: 16,
-                            marginBottom: 20,
-                        }}
-
-                    >
-                        <div
-                            style={{
-                                background: "#f9fafb",
-                                borderRadius: 16,
-                                padding: 18,
-                                border: "1px solid #e5e7eb",
-                                transition: "all 0.2s ease",
-                            }}
-                        >
                             <p
                                 style={{
-                                    margin: "0 0 8px 0",
+                                    margin: "8px 0 0 0",
                                     fontSize: 13,
                                     color: "#6b7280",
-                                    fontWeight: 600,
+                                    lineHeight: 1.5,
                                 }}
                             >
-                                名前
+                                {formatDateTimeJST(item.created_at)}
                             </p>
-
-                            <input
-                                value={inputName}
-                                onChange={(e) => setInputName(e.target.value)}
-                                placeholder="名前を入力"
-                                style={{
-                                    width: "100%",
-                                    padding: "12px 14px",
-                                    borderRadius: 12,
-                                    border: "1px solid #d1d5db",
-                                    transition: "all 0.2s ease",
-                                    fontSize: 15,
-                                    outline: "none",
-                                    boxSizing: "border-box",
-                                }}
-                            />
-
-                            <button
-                                onClick={handleSaveName}
-                                style={{
-                                    marginTop: 10,
-                                    width: "100%",
-                                    background: "#ffffff",
-                                    color: "#111827",
-                                    padding: "12px 14px",
-                                    borderRadius: 12,
-                                    border: "1px solid #d1d5db",
-                                    transition: "all 0.2s ease",
-                                    cursor: "pointer",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                名前を保存
-                            </button>
                         </div>
 
-                        <div
+                        <p
                             style={{
-                                background: "#ffffff",
-                                borderRadius: 20,
-                                padding: 32, // ←ここ重要（他より大きい）
-                                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-                                border: "1px solid #f1f5f9",
-                                transition: "all 0.2s ease",
+                                margin: 0,
+                                fontSize: 28,
+                                fontWeight: 700,
+                                color: item.change >= 0 ? "#111827" : "#dc2626",
+                                whiteSpace: "nowrap",
                             }}
                         >
-                            <div
-                                style={{
-                                    display: "grid",
-                                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                                    gap: 14,
-                                    marginBottom: 20,
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        background: "#f9fafb",
-                                        borderRadius: 14,
-                                        padding: 16,
-                                        border: "1px solid #e5e7eb",
-                                        transition: "all 0.2s ease",
-                                    }}
-                                >
-                                    <p
-                                        style={{
-                                            margin: 0,
-                                            fontSize: 12,
-                                            color: "#6b7280",
-                                        }}
-                                    >
-                                        現在ポイント
-                                    </p>
-                                    <div style={{ marginTop: 16 }}>
-                                        <div style={{ fontSize: 14, color: "#6b7280" }}>
-                                            今日のログインボーナス
-                                        </div>
-                                        <div
-                                            style={{
-                                                fontSize: 16,
-                                                fontWeight: 700,
-                                                color: loginBonusDone ? "#10b981" : "#ef4444",
-                                            }}
-                                        >
-                                            {loginBonusDone ? "受取済み" : "未受取"}
-                                        </div>
-                                    </div>
-                                    <p
-                                        style={{
-                                            margin: "8px 0 0 0",
-                                            fontSize: 34,
-                                            fontWeight: 700,
-                                            color: "#111827",
-                                        }}
-                                    >
-                                        {points}pt
-                                    </p>
-                                </div>
-
-                                <div
-                                    style={{
-                                        background: "#f9fafb",
-                                        borderRadius: 14,
-                                        padding: 16,
-                                        border: "1px solid #e5e7eb",
-                                        transition: "all 0.2s ease",
-                                    }}
-                                >
-                                    <p
-                                        style={{
-                                            margin: 0,
-                                            fontSize: 12,
-                                            color: "#6b7280",
-                                        }}
-                                    >
-                                        現在順位
-                                    </p>
-                                    <p
-                                        style={{
-                                            margin: "8px 0 0 0",
-                                            fontSize: 34,
-                                            fontWeight: 700,
-                                            color: "#111827",
-                                        }}
-                                    >
-                                        {rank ? `${rank}位` : "-"}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div style={{ marginBottom: 18 }}>
-                                <p
-                                    style={{
-                                        margin: 0,
-                                        fontSize: 15,
-                                        color: "#111827",
-                                        fontWeight: 600,
-                                    }}
-                                >
-                                    今日のログインボーナス：
-                                    <span
-                                        style={{
-                                            marginLeft: 8,
-                                            color: loginBonusDone ? "#16a34a" : "#dc2626",
-                                        }}
-                                    >
-                                        {loginBonusDone ? "受取済み" : "未受取"}
-                                    </span>
-                                </p>
-
-                                {!loginBonusDone && (
-                                    <button
-                                        onClick={handleLoginBonus}
-                                        style={{
-                                            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                                            color: "#fff",
-                                            padding: "12px 18px",
-                                            borderRadius: 12,
-                                            border: "none",
-                                            cursor: "pointer",
-                                            fontWeight: 700,
-                                            boxShadow: "0 10px 20px rgba(99,102,241,0.25)",
-                                        }}
-                                    >
-                                        ログインボーナス受取（+20pt）
-                                    </button>
-                                )}
-                            </div>
-
-                            <div
-                                style={{
-                                    display: "grid",
-                                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                                    gap: 14,
-                                    marginBottom: 22,
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        background: "#f9fafb",
-                                        borderRadius: 14,
-                                        padding: 16,
-                                        border: "1px solid #e5e7eb",
-                                        transition: "all 0.2s ease",
-                                    }}
-                                >
-                                    <p
-                                        style={{
-                                            margin: 0,
-                                            fontSize: 12,
-                                            color: "#6b7280",
-                                        }}
-                                    >
-                                        連続提出
-                                    </p>
-                                    <p
-                                        style={{
-                                            margin: "8px 0 0 0",
-                                            fontSize: 30,
-                                            fontWeight: 700,
-                                            color: "#111827",
-                                        }}
-                                    >
-                                        {streak}日
-                                    </p>
-                                </div>
-
-                                <div
-                                    style={{
-                                        background: "#f9fafb",
-                                        borderRadius: 14,
-                                        padding: 16,
-                                        border: "1px solid #e5e7eb",
-                                        transition: "all 0.2s ease",
-                                    }}
-                                >
-                                    <p
-                                        style={{
-                                            margin: 0,
-                                            fontSize: 12,
-                                            color: "#6b7280",
-                                        }}
-                                    >
-                                        バッジ
-                                    </p>
-                                    <div style={{ marginTop: 8 }}>
-                                        <span
-                                            style={{
-                                                display: "inline-block",
-                                                background: "#0f172a",
-                                                color: "#ffffff",
-                                                padding: "8px 14px",
-                                                borderRadius: 999,
-                                                fontWeight: 700,
-                                                fontSize: 14,
-                                            }}
-                                        >
-                                            {badge}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style={{ marginBottom: 18 }}>
-                                <p
-                                    style={{
-                                        margin: 0,
-                                        fontSize: 18,
-                                        fontWeight: 700,
-                                        color: "#111827",
-                                    }}
-                                >
-                                    Level : {level}
-                                </p>
-
-                                <p
-                                    style={{
-                                        margin: "14px 0 8px 0",
-                                        fontSize: 15,
-                                        color: "#111827",
-                                        fontWeight: 600,
-                                    }}
-                                >
-                                    EXP : {exp}/100
-                                </p>
-                                <div
-                                    style={{
-                                        marginTop: 8,
-                                        height: 8,
-                                        background: "#e5e7eb",
-                                        borderRadius: 999,
-                                        overflow: "hidden",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            width: `${exp}%`,
-                                            height: "100%",
-                                            background: "#4f46e5",
-                                        }}
-                                    />
-                                </div>
-                                <div
-                                    style={{
-                                        width: "100%",
-                                        height: 14,
-                                        background: "#e5e7eb",
-                                        borderRadius: 999,
-                                        overflow: "hidden",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            width: `${exp}%`,
-                                            height: "100%",
-                                            background:
-                                                "linear-gradient(90deg, #6366f1 0%, #a78bfa 100%)",
-                                            borderRadius: 999,
-                                        }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div
-                                style={{
-                                    background: "#f9fafb",
-                                    borderRadius: 14,
-                                    padding: 18,
-                                    border: "1px solid #e5e7eb",
-                                    transition: "all 0.2s ease",
-                                }}
-                            >
-                                <p
-                                    style={{
-                                        margin: 0,
-                                        fontSize: 14,
-                                        color: "#6b7280",
-                                        fontWeight: 600,
-                                    }}
-                                >
-                                    今日のアクション
-                                </p>
-                                <p
-                                    style={{
-                                        margin: "10px 0 0 0",
-                                        fontSize: 28,
-                                        lineHeight: 1.5,
-                                        fontWeight: 700,
-                                        color: "#111827",
-                                    }}
-                                >
-                                    {actionMessage}
-                                </p>
-
-                                <p
-                                    style={{
-                                        margin: "18px 0 0 0",
-                                        fontSize: 15,
-                                        fontWeight: 700,
-                                        color: isSubmitted ? "#16a34a" : "#ef4444",
-                                    }}
-                                >
-                                    今日の日報：{isSubmitted ? "提出済み" : "未提出"}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {message && (
-                        <div
-                            style={{
-                                marginTop: 18,
-                                padding: "14px 16px",
-                                borderRadius: 12,
-                                background: "#eff6ff",
-                                border: "1px solid #bfdbfe",
-                                transition: "all 0.2s ease",
-                                color: "#1d4ed8",
-                                fontWeight: 600,
-                            }}
-                        >
-                            {message}
-                        </div>
-                    )}
-                </div>
-
-                <div
-                    style={{
-                        background: "#ffffff",
-                        borderRadius: 24,
-                        padding: 28,
-                        boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
-                        border: "1px solid #e5e7eb",
-                        transition: "all 0.2s ease",
-                    }}
-                >
-                    <h2
-                        style={{
-                            margin: 0,
-                            fontSize: 30,
-                            fontWeight: 700,
-                            color: "#111827",
-                        }}
-                    >
-                        ポイント履歴
-                    </h2>
-
-                    <div style={{ marginTop: 18 }}>
-                        {history.length > 0 ? (
-                            history.map((item, index) => (
-                                <div
-                                    key={`${item.created_at}-${index}`}
-                                    style={{
-                                        background: "#ffffff",
-                                        borderRadius: 24,
-                                        padding: 32,
-                                        boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
-                                        border: "1px solid #e5e7eb",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "flex-start",
-                                            gap: 12,
-                                        }}
-                                    >
-                                        <div>
-                                            <p
-                                                style={{
-                                                    margin: 0,
-                                                    fontSize: 15,
-                                                    fontWeight: 700,
-                                                    color: "#111827",
-                                                }}
-                                            >
-                                                {formatReason(item.reason)}
-                                            </p>
-                                            <p
-                                                style={{
-                                                    margin: "8px 0 0 0",
-                                                    fontSize: 13,
-                                                    color: "#6b7280",
-                                                    lineHeight: 1.5,
-                                                }}
-                                            >
-                                                {formatDateTimeJST(item.created_at)}
-                                            </p>
-                                        </div>
-
-                                        <p
-                                            style={{
-                                                margin: 0,
-                                                fontSize: 28,
-                                                fontWeight: 700,
-                                                color: item.change >= 0 ? "#111827" : "#dc2626",
-                                                whiteSpace: "nowrap",
-                                            }}
-                                        >
-                                            {item.change > 0 ? `+${item.change}` : item.change}pt
-                                        </p>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div
-                                style={{
-                                    background: "#f9fafb",
-                                    border: "1px solid #e5e7eb",
-                                    transition: "all 0.2s ease",
-                                    borderRadius: 16,
-                                    padding: 18,
-                                    color: "#6b7280",
-                                }}
-                            >
-                                履歴がありません
-                            </div>
-                        )}
+                            {item.change > 0 ? `+${item.change}` : item.change}pt
+                        </p>
                     </div>
                 </div>
+            ))
+        ) : (
+            <div
+                style={{
+                    background: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    transition: "all 0.2s ease",
+                    borderRadius: 16,
+                    padding: 18,
+                    color: "#6b7280",
+                }}
+            >
+                履歴がありません
             </div>
-        </main>
-    );
+        )}
+    </div>
 }
