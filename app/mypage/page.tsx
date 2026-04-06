@@ -75,6 +75,51 @@ function getBadgeColor(level: number): string {
     if (level >= 5) return "linear-gradient(135deg, #06b6d4, #3b82f6)";
     return "linear-gradient(135deg, #374151, #6b7280)";
 }
+function getRank(score: number): string {
+    if (score >= 90) return "SS";
+    if (score >= 80) return "S";
+    if (score >= 70) return "A";
+    if (score >= 60) return "B";
+    if (score >= 50) return "C";
+    return "D";
+}
+
+function getRankColor(rank: string): string {
+    if (rank === "SS") return "linear-gradient(135deg, #f59e0b, #ef4444)";
+    if (rank === "S") return "linear-gradient(135deg, #a855f7, #ec4899)";
+    if (rank === "A") return "linear-gradient(135deg, #6366f1, #3b82f6)";
+    if (rank === "B") return "linear-gradient(135deg, #06b6d4, #10b981)";
+    if (rank === "C") return "linear-gradient(135deg, #84cc16, #22c55e)";
+    return "linear-gradient(135deg, #374151, #6b7280)";
+}
+
+function getRankScore(params: {
+    level: number;
+    streak: number;
+    points: number;
+    isSubmitted: boolean;
+}): number {
+    const { level, streak, points, isSubmitted } = params;
+    let score = 0;
+    // レベル（最大40点）
+    score += Math.min(level * 2.5, 40);
+    // ポイント（最大30点）
+    score += Math.min(points / 50, 30);
+    // 連続提出（最大20点）
+    score += Math.min(streak * 2, 20);
+    // 今日提出済み（10点）
+    score += isSubmitted ? 10 : 0;
+    return Math.min(Math.round(score), 100);
+}
+
+function getNextRankInfo(rank: string): string {
+    if (rank === "SS") return "最高ランク到達！";
+    if (rank === "S") return "あと少しでSS到達";
+    if (rank === "A") return "Sランクを目指そう";
+    if (rank === "B") return "Aランクを目指そう";
+    if (rank === "C") return "Bランクを目指そう";
+    return "Cランクを目指そう";
+}
 
 function getActionMessage(isSubmitted: boolean, streak: number): string {
     if (!isSubmitted) return "📋 日報を提出してポイントを獲得しましょう";
@@ -102,6 +147,10 @@ export default function MyPage() {
     const badge = getBadge(level);
     const badgeColor = getBadgeColor(level);
     const actionMessage = getActionMessage(isSubmitted, streak);
+    const rankScore = getRankScore({ level, streak, points, isSubmitted });
+    const rank2 = getRank(rankScore);
+    const rankColor = getRankColor(rank2);
+    const nextRankInfo = getNextRankInfo(rank2);
 
     const loadPage = async () => {
         setLoading(true);
@@ -202,7 +251,7 @@ export default function MyPage() {
                 )}
 
                 {/* メイングリッド */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
 
                     {/* ポイントカード */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
@@ -231,7 +280,32 @@ export default function MyPage() {
                             </div>
                         </div>
                     </div>
-
+                    {/* ランクカード */}
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>MARKET RANK</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                            <div style={{
+                                width: 72, height: 72, borderRadius: 16,
+                                background: rankColor,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: 28, fontWeight: 900, color: "#fff",
+                                boxShadow: `0 0 24px rgba(99,102,241,0.4)`
+                            }}>
+                                {rank2}
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 4 }}>スコア</div>
+                                <div style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb" }}>{rankScore}</div>
+                                <div style={{ fontSize: 11, color: "#6b7280" }}>/100</div>
+                            </div>
+                        </div>
+                        <div style={{ marginTop: 16 }}>
+                            <div style={{ height: 4, borderRadius: 999, background: "rgba(255,255,255,0.08)" }}>
+                                <div style={{ height: "100%", width: `${rankScore}%`, background: rankColor, borderRadius: 999, transition: "width 0.6s ease" }} />
+                            </div>
+                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>{nextRankInfo}</div>
+                        </div>
+                    </div>
                     {/* 連続提出カード */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>STREAK</div>
