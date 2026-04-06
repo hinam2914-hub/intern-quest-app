@@ -75,6 +75,7 @@ function getBadgeColor(level: number): string {
     if (level >= 5) return "linear-gradient(135deg, #06b6d4, #3b82f6)";
     return "linear-gradient(135deg, #374151, #6b7280)";
 }
+
 function getRank(score: number): string {
     if (score >= 90) return "SS";
     if (score >= 80) return "S";
@@ -94,20 +95,13 @@ function getRankColor(rank: string): string {
 }
 
 function getRankScore(params: {
-    level: number;
-    streak: number;
-    points: number;
-    isSubmitted: boolean;
+    level: number; streak: number; points: number; isSubmitted: boolean;
 }): number {
     const { level, streak, points, isSubmitted } = params;
     let score = 0;
-    // レベル（最大40点）
     score += Math.min(level * 2.5, 40);
-    // ポイント（最大30点）
     score += Math.min(points / 50, 30);
-    // 連続提出（最大20点）
     score += Math.min(streak * 2, 20);
-    // 今日提出済み（10点）
     score += isSubmitted ? 10 : 0;
     return Math.min(Math.round(score), 100);
 }
@@ -126,6 +120,32 @@ function getActionMessage(isSubmitted: boolean, streak: number): string {
     if (streak >= 7) return "🔥 連続提出が素晴らしい。この調子で継続しましょう";
     if (streak >= 3) return "⚡ 継続できています。次は上位を狙いましょう";
     return "📚 学習コンテンツを進めましょう";
+}
+
+function generateAIComment(params: {
+    name: string; level: number; rank2: string; rankScore: number;
+    streak: number; isSubmitted: boolean; points: number;
+}): string {
+    const { name, level, rank2, streak, isSubmitted, points } = params;
+    if (!isSubmitted && streak <= 1) {
+        return `${name}さん、今日はまだ日報が未提出です。小さな一歩でも記録することで成長が加速します。今すぐ提出しましょう！`;
+    }
+    if (streak >= 7) {
+        return `${name}さん、${streak}日連続提出は本物の習慣力の証です。この継続力こそが市場価値を高める最大の武器。ランク${rank2}はあなたの実力を正しく示しています。`;
+    }
+    if (streak >= 3) {
+        return `${name}さん、${streak}日連続で素晴らしい！継続は最強のスキルです。このペースを維持すればランクアップも近いです。`;
+    }
+    if (rank2 === "SS" || rank2 === "S") {
+        return `${name}さん、ランク${rank2}到達おめでとうございます！トップクラスの成長速度です。この調子でインターン業界をリードしていきましょう。`;
+    }
+    if (level >= 10) {
+        return `${name}さん、Lv.${level}まで成長しました。${points}ptという実績はあなたの努力の証。次はランクアップを狙いましょう！`;
+    }
+    if (points < 100) {
+        return `${name}さん、まだ始まったばかりです。毎日の日報提出を続けることで、一気に成長できます。今日から習慣にしましょう！`;
+    }
+    return `${name}さん、着実に成長しています。日報の継続とKPI達成を意識することで、さらに上のランクが見えてきます。`;
 }
 
 export default function MyPage() {
@@ -151,6 +171,7 @@ export default function MyPage() {
     const rank2 = getRank(rankScore);
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
+    const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
 
     const loadPage = async () => {
         setLoading(true);
@@ -158,8 +179,7 @@ export default function MyPage() {
         if (!user) { router.push("/login"); return; }
         setUserId(user.id);
 
-        const { data: profileData } = await supabase
-            .from("profiles").select("*").eq("id", user.id).single();
+        const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).single();
         if (profileData) {
             const profile = profileData as ProfileRow;
             setName(profile.name || "");
@@ -167,25 +187,19 @@ export default function MyPage() {
             setStreak(profile.streak || 1);
         }
 
-        const { data: pointRow } = await supabase
-            .from("user_points").select("points").eq("id", user.id).single();
+        const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
         setPoints(pointRow?.points || 0);
 
-        const { data: rankingRows } = await supabase
-            .from("user_points").select("id, points").order("points", { ascending: false });
+        const { data: rankingRows } = await supabase.from("user_points").select("id, points").order("points", { ascending: false });
         if (rankingRows) {
             const myRank = rankingRows.findIndex((row) => row.id === user.id);
             setRank(myRank >= 0 ? myRank + 1 : null);
         }
 
-        const { data: historyRows } = await supabase
-            .from("points_history").select("*").eq("user_id", user.id)
-            .order("created_at", { ascending: false }).limit(20);
+        const { data: historyRows } = await supabase.from("points_history").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setHistory((historyRows || []) as PointHistory[]);
 
-        const { data: submissionRows } = await supabase
-            .from("submissions").select("created_at").eq("user_id", user.id)
-            .order("created_at", { ascending: false }).limit(20);
+        const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
         setLoading(false);
     };
@@ -225,7 +239,6 @@ export default function MyPage() {
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
 
-            {/* 背景グロー */}
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
@@ -280,17 +293,12 @@ export default function MyPage() {
                             </div>
                         </div>
                     </div>
+
                     {/* ランクカード */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>MARKET RANK</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                            <div style={{
-                                width: 72, height: 72, borderRadius: 16,
-                                background: rankColor,
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                fontSize: 28, fontWeight: 900, color: "#fff",
-                                boxShadow: `0 0 24px rgba(99,102,241,0.4)`
-                            }}>
+                            <div style={{ width: 72, height: 72, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", boxShadow: "0 0 24px rgba(99,102,241,0.4)" }}>
                                 {rank2}
                             </div>
                             <div>
@@ -306,6 +314,7 @@ export default function MyPage() {
                             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>{nextRankInfo}</div>
                         </div>
                     </div>
+
                     {/* 連続提出カード */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>STREAK</div>
@@ -315,34 +324,30 @@ export default function MyPage() {
                     </div>
                 </div>
 
-                {/* 下段：名前編集 + ポイント履歴 + アクション */}
+                {/* AIメタ認知コメント */}
+                <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🤖</div>
+                        <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>AI METACOGNITION</div>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>
+                        {aiComment}
+                    </p>
+                </div>
+
+                {/* 下段 */}
                 <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 16 }}>
 
-                    {/* 左：名前編集 + ボタン */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
-                            <input
-                                value={inputName}
-                                onChange={(e) => setInputName(e.target.value)}
-                                placeholder="名前を入力"
-                                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-                            />
-                            <button onClick={handleSaveName} style={{ marginTop: 10, width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-                                保存
-                            </button>
+                            <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            <button onClick={handleSaveName} style={{ marginTop: 10, width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>保存</button>
                         </div>
-
-                        <button onClick={handleAddPoint} style={{ padding: "14px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>
-                            ⚡ +10pt 追加
-                        </button>
-
-                        <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
-                            履歴を見る →
-                        </button>
+                        <button onClick={handleAddPoint} style={{ padding: "14px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>⚡ +10pt 追加</button>
+                        <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
                     </div>
 
-                    {/* 右：ポイント履歴 */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RECENT ACTIVITY</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
