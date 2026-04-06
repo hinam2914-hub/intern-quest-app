@@ -4,20 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
-type UserRow = {
-    id: string;
-    name: string | null;
-};
-
-type TopUser = {
-    name: string;
-    points: number;
-};
-
-type TopSubmitter = {
-    name: string;
-    count: number;
-};
+type UserRow = { id: string; name: string | null };
+type TopUser = { name: string; points: number };
+type TopSubmitter = { name: string; count: number };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -30,7 +19,6 @@ function getTodayJST(): string {
 
 export default function AdminPage() {
     const router = useRouter();
-
     const [userCount, setUserCount] = useState(0);
     const [reportCount, setReportCount] = useState(0);
     const [submitRate, setSubmitRate] = useState(0);
@@ -44,508 +32,165 @@ export default function AdminPage() {
     useEffect(() => {
         const load = async () => {
             setLoading(true);
-
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-
-            if (!user) {
-                router.push("/login");
-                return;
-            }
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) { router.push("/login"); return; }
 
             const adminEmails = ["hinam2914@gmail.com"];
+            if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
-            if (!user.email || !adminEmails.includes(user.email)) {
-                router.push("/mypage");
-                return;
-            }
-
-            const { data: profileRows, error: profileError } = await supabase
-                .from("profiles")
-                .select("id, name");
-
-            if (profileError) {
-                console.error(profileError);
-                setLoading(false);
-                return;
-            }
-
+            const { data: profileRows } = await supabase.from("profiles").select("id, name");
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
             const now = new Date();
-            let from = new Date();
-
-            if (period === "week") {
-                from.setDate(now.getDate() - 7);
-            } else if (period === "month") {
-                from.setMonth(now.getMonth() - 1);
-            }
-
+            const from = new Date();
+            if (period === "week") from.setDate(now.getDate() - 7);
+            else if (period === "month") from.setMonth(now.getMonth() - 1);
             const todayYmd = getTodayJST();
 
-            const { data: submissionRows, error: submissionError } =
-                period === "today"
-                    ? await supabase
-                        .from("submissions")
-                        .select("user_id, created_at")
-                        .gte("created_at", `${todayYmd}T00:00:00`)
-                    : await supabase
-                        .from("submissions")
-                        .select("user_id, created_at")
-                        .gte("created_at", from.toISOString());
-
-            if (submissionError) {
-                console.error(submissionError);
-                setLoading(false);
-                return;
-            }
+            const { data: submissionRows } = period === "today"
+                ? await supabase.from("submissions").select("user_id, created_at").gte("created_at", `${todayYmd}T00:00:00`)
+                : await supabase.from("submissions").select("user_id, created_at").gte("created_at", from.toISOString());
 
             const submissions = submissionRows || [];
             const submittedIds = [...new Set(submissions.map((row) => row.user_id))];
-
             setReportCount(submittedIds.length);
+            setSubmitRate(users.length === 0 ? 0 : Math.round((submittedIds.length / users.length) * 100));
+            setNotSubmittedUsers(users.filter((u) => !submittedIds.includes(u.id)));
 
-            const rate =
-                users.length === 0 ? 0 : Math.round((submittedIds.length / users.length) * 100);
-
-            setSubmitRate(rate);
-
-            const notSubmitted = users.filter((u) => !submittedIds.includes(u.id));
-            setNotSubmittedUsers(notSubmitted);
-
-            const { data: pointRows, error: pointError } = await supabase
-                .from("user_points")
-                .select("id, points")
-                .order("points", { ascending: false })
-                .limit(3);
-
-            if (pointError) {
-                console.error(pointError);
-                setLoading(false);
-                return;
-            }
-
+            const { data: pointRows } = await supabase.from("user_points").select("id, points").order("points", { ascending: false }).limit(3);
             if (pointRows && pointRows.length > 0) {
-                const ids = pointRows.map((u) => u.id);
-
-                const { data: pointProfiles, error: pointProfilesError } = await supabase
-                    .from("profiles")
-                    .select("id, name")
-                    .in("id", ids);
-
-                if (pointProfilesError) {
-                    console.error(pointProfilesError);
-                    setLoading(false);
-                    return;
-                }
-
-                const merged: TopUser[] = pointRows.map((row) => {
-                    const profile = pointProfiles?.find((p) => p.id === row.id);
-                    return {
-                        name: profile?.name || "名前未設定",
-                        points: row.points || 0,
-                    };
-                });
-
-                setTopUsers(merged);
-            } else {
-                setTopUsers([]);
+                const { data: pointProfiles } = await supabase.from("profiles").select("id, name").in("id", pointRows.map((u) => u.id));
+                setTopUsers(pointRows.map((row) => ({ name: pointProfiles?.find((p) => p.id === row.id)?.name || "名前未設定", points: row.points || 0 })));
             }
 
             const countMap: Record<string, number> = {};
-            submissions.forEach((row) => {
-                countMap[row.user_id] = (countMap[row.user_id] || 0) + 1;
-            });
-
-            const sortedSubmitters = Object.entries(countMap)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3);
-
-            const submitterResult: TopSubmitter[] = sortedSubmitters.map(([id, count]) => {
-                const profile = users.find((u) => u.id === id);
-                return {
-                    name: profile?.name || "名前未設定",
-                    count,
-                };
-            });
-
-            setTopSubmitters(submitterResult);
+            submissions.forEach((row) => { countMap[row.user_id] = (countMap[row.user_id] || 0) + 1; });
+            setTopSubmitters(Object.entries(countMap).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, count]) => ({ name: users.find((u) => u.id === id)?.name || "名前未設定", count })));
             setLoading(false);
         };
-
         load();
     }, [period, router]);
 
-    const periodLabel =
-        period === "today" ? "今日" : period === "week" ? "今週" : "今月";
+    const periodLabel = period === "today" ? "今日" : period === "week" ? "今週" : "今月";
 
-    const submitRateColor =
-        submitRate >= 80 ? "#16a34a" : submitRate >= 50 ? "#f59e0b" : "#dc2626";
+    const copyText = useMemo(() => notSubmittedUsers.map((u) => u.name || "名前未設定").join("\n"), [notSubmittedUsers]);
+    const reminderText = useMemo(() => `${periodLabel}の日報が未提出の方へ\n\n${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}\n\n確認のうえ、ご対応をお願いいたします。`, [notSubmittedUsers, periodLabel]);
 
-    const copyText = useMemo(() => {
-        return notSubmittedUsers.map((u) => u.name || "名前未設定").join("\n");
-    }, [notSubmittedUsers]);
-
-    const reminderText = useMemo(() => {
-        return `${periodLabel}の日報が未提出の方へ
-
-${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}
-
-確認のうえ、ご対応をお願いいたします。`;
-    }, [notSubmittedUsers, periodLabel]);
-
-    const pageStyle: React.CSSProperties = {
-        minHeight: "100vh",
-        background: "#f3f4f6",
-        padding: "48px 24px 64px",
-    };
-
-    const containerStyle: React.CSSProperties = {
-        maxWidth: 980,
-        margin: "0 auto",
-        background: "#ffffff",
-        borderRadius: 24,
-        padding: 32,
-        boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
-        border: "1px solid #e5e7eb",
-    };
-
-    const sectionStyle: React.CSSProperties = {
-        marginTop: 32,
-    };
-
-    const cardStyle: React.CSSProperties = {
-        background: "#ffffff",
-        borderRadius: 16,
-        padding: 20,
-        border: "1px solid #e5e7eb",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
-    };
-
-    const labelStyle: React.CSSProperties = {
-        fontSize: 12,
-        color: "#6b7280",
-        margin: 0,
-        fontWeight: 600,
-    };
-
-    const valueStyle: React.CSSProperties = {
-        fontSize: 28,
-        fontWeight: 700,
-        margin: "8px 0 0 0",
-        color: "#111827",
-    };
-
-    const primaryButton: React.CSSProperties = {
-        background: "#111827",
-        color: "#ffffff",
-        padding: "10px 16px",
-        borderRadius: 10,
-        border: "none",
-        cursor: "pointer",
-        fontWeight: 600,
-    };
-
-    const secondaryButton: React.CSSProperties = {
-        background: "#ffffff",
-        color: "#111827",
-        padding: "10px 16px",
-        borderRadius: 10,
-        border: "1px solid #e5e7eb",
-        cursor: "pointer",
-        fontWeight: 600,
-    };
-
-    const periodButtonBase: React.CSSProperties = {
-        padding: "8px 12px",
-        borderRadius: 10,
-        border: "1px solid #e5e7eb",
-        cursor: "pointer",
-        fontWeight: 600,
-    };
+    const rankMedals = ["🥇", "🥈", "🥉"];
 
     if (loading) {
         return (
-            <main
-                style={{
-                    minHeight: "100vh",
-                    background: "#f3f4f6",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    color: "#6b7280",
-                }}
-            >
-                読み込み中...
+            <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ color: "#6366f1", fontSize: 18, fontWeight: 700 }}>Loading...</div>
             </main>
         );
     }
 
     return (
-        <main style={pageStyle}>
-            <div style={containerStyle}>
-                <h1
-                    style={{
-                        margin: 0,
-                        fontSize: 36,
-                        fontWeight: 700,
-                        color: "#111827",
-                    }}
-                >
-                    管理ダッシュボード
-                </h1>
+        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
 
-                <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-                    <button
-                        onClick={() => setPeriod("today")}
-                        style={{
-                            ...periodButtonBase,
-                            background: period === "today" ? "#111827" : "#ffffff",
-                            color: period === "today" ? "#ffffff" : "#111827",
-                        }}
-                    >
-                        今日
-                    </button>
+            {/* 背景グロー */}
+            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
-                    <button
-                        onClick={() => setPeriod("week")}
-                        style={{
-                            ...periodButtonBase,
-                            background: period === "week" ? "#111827" : "#ffffff",
-                            color: period === "week" ? "#ffffff" : "#111827",
-                        }}
-                    >
-                        今週
-                    </button>
+            <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
-                    <button
-                        onClick={() => setPeriod("month")}
-                        style={{
-                            ...periodButtonBase,
-                            background: period === "month" ? "#111827" : "#ffffff",
-                            color: period === "month" ? "#ffffff" : "#111827",
-                        }}
-                    >
-                        今月
-                    </button>
-                </div>
-
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-                        gap: 16,
-                        marginTop: 24,
-                    }}
-                >
-                    <div style={cardStyle}>
-                        <p style={labelStyle}>総ユーザー</p>
-                        <p style={valueStyle}>{userCount}</p>
+                {/* ヘッダー */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+                    <div>
+                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
+                        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>管理ダッシュボード</h1>
                     </div>
-
-                    <div style={cardStyle}>
-                        <p style={labelStyle}>提出数</p>
-                        <p style={valueStyle}>{reportCount}</p>
-                    </div>
-
-                    <div style={cardStyle}>
-                        <p style={labelStyle}>{periodLabel}提出率</p>
-                        <p style={{ ...valueStyle, color: submitRateColor }}>{submitRate}%</p>
-                    </div>
-
-                    <div style={cardStyle}>
-                        <p style={labelStyle}>未提出者数</p>
-                        <p style={{ ...valueStyle, color: "#dc2626" }}>
-                            {notSubmittedUsers.length}
-                        </p>
+                    <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => router.push("/mypage")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>マイページ</button>
+                        <button onClick={() => router.push("/ranking")} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>ランキング</button>
                     </div>
                 </div>
 
-                <div style={sectionStyle}>
-                    <h2
-                        style={{
-                            margin: "0 0 12px 0",
-                            fontSize: 28,
-                            fontWeight: 700,
-                            color: "#111827",
-                        }}
-                    >
-                        {periodLabel}の未提出者
-                    </h2>
-
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        <button
-                            onClick={async () => {
-                                await navigator.clipboard.writeText(copyText);
-                                setCopied(true);
-                                setTimeout(() => setCopied(false), 1500);
-                            }}
-                            style={secondaryButton}
-                        >
-                            未提出者をコピー
+                {/* 期間タブ */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+                    {(["today", "week", "month"] as const).map((p) => (
+                        <button key={p} onClick={() => setPeriod(p)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: period === p ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: period === p ? "#fff" : "#9ca3af" }}>
+                            {p === "today" ? "今日" : p === "week" ? "今週" : "今月"}
                         </button>
+                    ))}
+                </div>
 
-                        <button
-                            onClick={async () => {
-                                await navigator.clipboard.writeText(reminderText);
-                            }}
-                            style={primaryButton}
-                        >
-                            リマインド文をコピー
-                        </button>
-                    </div>
+                {/* KPIカード */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+                    {[
+                        { label: "TOTAL USERS", value: userCount, unit: "人", color: "#818cf8" },
+                        { label: "SUBMISSIONS", value: reportCount, unit: "件", color: "#34d399" },
+                        { label: `${periodLabel.toUpperCase()} RATE`, value: `${submitRate}%`, unit: "", color: submitRate >= 80 ? "#34d399" : submitRate >= 50 ? "#f59e0b" : "#f87171" },
+                        { label: "NOT SUBMITTED", value: notSubmittedUsers.length, unit: "人", color: "#f87171" },
+                    ].map((card, i) => (
+                        <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>{card.label}</div>
+                            <div style={{ fontSize: 40, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.value}</div>
+                            {card.unit && <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>{card.unit}</div>}
+                        </div>
+                    ))}
+                </div>
 
-                    {copied && (
-                        <p style={{ marginTop: 10, color: "#6b7280" }}>コピーしました</p>
-                    )}
+                {/* 下段グリッド */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
 
-                    <div style={{ marginTop: 18 }}>
-                        {notSubmittedUsers.length > 0 ? (
-                            notSubmittedUsers.map((u) => (
-                                <div
-                                    key={u.id}
-                                    style={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                        padding: "12px 14px",
-                                        borderRadius: 12,
-                                        border: "1px solid #fca5a5",
-                                        background: "#fff5f5",
-                                        marginBottom: 10,
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            fontWeight: 600,
-                                            color: "#7f1d1d",
-                                        }}
-                                    >
-                                        {u.name || "名前未設定"}
-                                    </span>
-
-                                    <a
-                                        href={`https://line.me/R/msg/text/?${encodeURIComponent(
-                                            `${u.name || ""}さん、日報の提出をお願いします。`
-                                        )}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        style={{
-                                            fontSize: 12,
-                                            color: "#2563eb",
-                                            textDecoration: "underline",
-                                        }}
-                                    >
-                                        連絡
-                                    </a>
+                    {/* 未提出者 */}
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>MISSING REPORTS</div>
+                            <div style={{ display: "flex", gap: 8 }}>
+                                <button onClick={async () => { await navigator.clipboard.writeText(copyText); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
+                                    {copied ? "✅ コピー済" : "名前コピー"}
+                                </button>
+                                <button onClick={async () => { await navigator.clipboard.writeText(reminderText); }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
+                                    リマインド文
+                                </button>
+                            </div>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            {notSubmittedUsers.length > 0 ? notSubmittedUsers.map((u) => (
+                                <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+                                    <span style={{ fontWeight: 600, color: "#fca5a5", fontSize: 14 }}>{u.name || "名前未設定"}</span>
+                                    <a href={`https://line.me/R/msg/text/?${encodeURIComponent(`${u.name || ""}さん、日報の提出をお願いします。`)}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#818cf8", textDecoration: "none", fontWeight: 600 }}>連絡 →</a>
                                 </div>
-                            ))
-                        ) : (
-                            <div
-                                style={{
-                                    padding: 16,
-                                    borderRadius: 12,
-                                    background: "#f9fafb",
-                                    color: "#6b7280",
-                                    border: "1px solid #e5e7eb",
-                                }}
-                            >
-                                全員提出済み（{periodLabel}）
-                            </div>
-                        )}
+                            )) : (
+                                <div style={{ padding: 16, borderRadius: 10, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#34d399", fontSize: 14, fontWeight: 600 }}>
+                                    ✅ 全員提出済み（{periodLabel}）
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                <div style={sectionStyle}>
-                    <h2
-                        style={{
-                            margin: "0 0 12px 0",
-                            fontSize: 28,
-                            fontWeight: 700,
-                            color: "#111827",
-                        }}
-                    >
-                        ポイント上位
-                    </h2>
+                    {/* ランキング */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-                    {topUsers.length > 0 ? (
-                        topUsers.map((u, i) => (
-                            <div
-                                key={i}
-                                style={{
-                                    padding: "12px 14px",
-                                    borderRadius: 12,
-                                    border: "1px solid #e5e7eb",
-                                    background: "#ffffff",
-                                    marginBottom: 10,
-                                }}
-                            >
-                                {i + 1}位：{u.name}（{u.points}pt）
+                        {/* ポイントランキング */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>POINT RANKING</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {topUsers.length > 0 ? topUsers.map((u, i) => (
+                                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                        <span style={{ fontSize: 14, color: "#d1d5db", fontWeight: 600 }}>{rankMedals[i]} {u.name}</span>
+                                        <span style={{ fontSize: 16, fontWeight: 700, color: "#818cf8" }}>{u.points.toLocaleString()}pt</span>
+                                    </div>
+                                )) : <div style={{ color: "#6b7280", fontSize: 14 }}>データがありません</div>}
                             </div>
-                        ))
-                    ) : (
-                        <div
-                            style={{
-                                padding: 16,
-                                borderRadius: 12,
-                                background: "#f9fafb",
-                                color: "#6b7280",
-                                border: "1px solid #e5e7eb",
-                            }}
-                        >
-                            データがありません
                         </div>
-                    )}
-                </div>
 
-                <div style={sectionStyle}>
-                    <h2
-                        style={{
-                            margin: "0 0 12px 0",
-                            fontSize: 28,
-                            fontWeight: 700,
-                            color: "#111827",
-                        }}
-                    >
-                        提出数ランキング
-                    </h2>
-
-                    {topSubmitters.length > 0 ? (
-                        topSubmitters.map((u, i) => (
-                            <div
-                                key={i}
-                                style={{
-                                    padding: "12px 14px",
-                                    borderRadius: 12,
-                                    border: "1px solid #e5e7eb",
-                                    background: "#ffffff",
-                                    marginBottom: 10,
-                                }}
-                            >
-                                {i + 1}位：{u.name}（{u.count}回）
+                        {/* 提出数ランキング */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SUBMISSION RANKING</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {topSubmitters.length > 0 ? topSubmitters.map((u, i) => (
+                                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                        <span style={{ fontSize: 14, color: "#d1d5db", fontWeight: 600 }}>{rankMedals[i]} {u.name}</span>
+                                        <span style={{ fontSize: 16, fontWeight: 700, color: "#34d399" }}>{u.count}回</span>
+                                    </div>
+                                )) : <div style={{ color: "#6b7280", fontSize: 14 }}>データがありません</div>}
                             </div>
-                        ))
-                    ) : (
-                        <div
-                            style={{
-                                padding: 16,
-                                borderRadius: 12,
-                                background: "#f9fafb",
-                                color: "#6b7280",
-                                border: "1px solid #e5e7eb",
-                            }}
-                        >
-                            データがありません
                         </div>
-                    )}
-                </div>
-
-                <div style={sectionStyle}>
-                    <button onClick={() => router.push("/ranking")} style={primaryButton}>
-                        ランキングを見る
-                    </button>
+                    </div>
                 </div>
             </div>
         </main>
