@@ -553,6 +553,45 @@ export default function MyPage() {
                                     {streak}日
                                 </div>
                             </div>
+                            {/* レベル・EXP・バッジ */}
+                            <div style={{ marginTop: 20 }}>
+                                <div style={{ fontSize: 12, color: "#6b7280" }}>レベル</div>
+                                <div style={{ fontSize: 28, fontWeight: 700 }}>
+                                    Lv.{level}　<span style={{ fontSize: 14, background: "#6366f1", color: "#fff", borderRadius: 8, padding: "2px 10px" }}>{badge}</span>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 16 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6b7280" }}>
+                                    <span>EXP</span>
+                                    <span>{exp} / 100</span>
+                                </div>
+                                <div style={{
+                                    marginTop: 6,
+                                    height: 12,
+                                    borderRadius: 999,
+                                    background: "#e5e7eb",
+                                    overflow: "hidden"
+                                }}>
+                                    <div style={{
+                                        height: "100%",
+                                        width: `${exp}%`,
+                                        background: "linear-gradient(90deg, #6366f1, #8b5cf6)",
+                                        borderRadius: 999,
+                                        transition: "width 0.5s ease"
+                                    }} />
+                                </div>
+                                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                                    次のレベルまで {100 - exp}EXP
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 16 }}>
+                                <div style={{ fontSize: 12, color: "#6b7280" }}>今日のアクション</div>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginTop: 4 }}>
+                                    {actionMessage}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
