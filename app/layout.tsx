@@ -1,35 +1,15 @@
-"use client";
+import type { Metadata } from "next";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "./lib/supabase";
+export const metadata: Metadata = {
+  title: "Intern Quest",
+  description: "成長が可視化されるゲームOS",
+};
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push("/login");
-      } else {
-        setLoading(false);
-      }
-    };
-
-    checkUser();
-  }, []);
-
-  if (loading) return null;
-
   return (
     <html lang="ja">
       <body>{children}</body>
