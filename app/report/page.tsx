@@ -27,312 +27,149 @@ export default function ReportPage() {
     const [text, setText] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
+    const [success, setSuccess] = useState(false);
 
     const handleSubmit = async () => {
-        if (!text.trim()) {
-            setMessage("日報を書いてください");
-            return;
-        }
-
+        if (!text.trim()) { setMessage("日報を書いてください"); return; }
         setLoading(true);
         setMessage("");
 
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-            setMessage("ログインエラー");
-            setLoading(false);
-            return;
-        }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setMessage("ログインエラー"); setLoading(false); return; }
 
         const todayYmd = getTodayJST();
         const nowIso = new Date().toISOString();
 
-        // 1. 今日すでに提出済みか確認
-        const { data: todaySubmissionRows, error: todaySubmissionError } =
-            await supabase
-                .from("submissions")
-                .select("id, created_at")
-                .eq("user_id", user.id)
-                .order("created_at", { ascending: false });
+        const { data: todaySubmissionRows } = await supabase
+            .from("submissions").select("id, created_at").eq("user_id", user.id).order("created_at", { ascending: false });
 
-        if (todaySubmissionError) {
-            setMessage("提出状況の確認に失敗しました");
-            setLoading(false);
-            return;
-        }
-
-        const alreadySubmittedToday =
-            todaySubmissionRows?.some(
-                (row) => toJSTDateOnly(row.created_at) === todayYmd
-            ) || false;
-
-        if (alreadySubmittedToday) {
+        if (todaySubmissionRows?.some((row) => toJSTDateOnly(row.created_at) === todayYmd)) {
             setMessage("今日はすでに提出済みです");
             setLoading(false);
             return;
         }
 
-        // 2. submissions に保存
-        const { error: submissionError } = await supabase.from("submissions").insert({
-            user_id: user.id,
-            content: text.trim(),
-            created_at: nowIso,
-        });
+        const { error: submissionError } = await supabase.from("submissions").insert({ user_id: user.id, content: text.trim(), created_at: nowIso });
+        if (submissionError) { setMessage("日報の保存に失敗しました"); setLoading(false); return; }
 
-        if (submissionError) {
-            setMessage("日報の保存に失敗しました");
-            setLoading(false);
-            return;
-        }
-
-        // 3. 現在ポイント取得
-        const { data: pointRow, error: pointFetchError } = await supabase
-            .from("user_points")
-            .select("points")
-            .eq("id", user.id)
-            .single();
-
-        if (pointFetchError) {
-            setMessage("ポイント取得に失敗しました");
-            setLoading(false);
-            return;
-        }
-
-        let addPoints = 10;
+        const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
         const currentPoints = pointRow?.points || 0;
 
-        // 4. streak 計算
-        const { data: profileRow, error: profileError } = await supabase
-            .from("profiles")
-            .select("streak, last_report_date")
-            .eq("id", user.id)
-            .single();
-
-        if (profileError) {
-            setMessage("プロフィール取得に失敗しました");
-            setLoading(false);
-            return;
-        }
+        const { data: profileRow } = await supabase.from("profiles").select("streak, last_report_date").eq("id", user.id).single();
 
         let newStreak = 1;
         let bonus = 0;
-
         if (profileRow?.last_report_date) {
             const lastYmd = toJSTDateOnly(profileRow.last_report_date);
-
             const todayDate = new Date(todayYmd);
             const yesterdayDate = new Date(todayDate);
             yesterdayDate.setDate(todayDate.getDate() - 1);
-
-            const yesterdayYmd = `${yesterdayDate.getFullYear()}-${String(
-                yesterdayDate.getMonth() + 1
-            ).padStart(2, "0")}-${String(yesterdayDate.getDate()).padStart(2, "0")}`;
-
-            if (lastYmd === yesterdayYmd) {
-                newStreak = (profileRow.streak || 0) + 1;
-            } else {
-                newStreak = 1;
-            }
+            const yesterdayYmd = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, "0")}-${String(yesterdayDate.getDate()).padStart(2, "0")}`;
+            newStreak = lastYmd === yesterdayYmd ? (profileRow.streak || 0) + 1 : 1;
         }
-
         if (newStreak === 3) bonus = 20;
         if (newStreak === 7) bonus = 50;
+        const addPoints = 10 + bonus;
 
-        addPoints += bonus;
+        await supabase.from("user_points").update({ points: currentPoints + addPoints }).eq("id", user.id);
 
-        // 5. user_points 更新
-        const { error: pointUpdateError } = await supabase
-            .from("user_points")
-            .update({
-                points: currentPoints + addPoints,
-            })
-            .eq("id", user.id);
+        const historyInserts = [{ user_id: user.id, change: 10, created_at: nowIso, reason: "report_submit" }];
+        if (bonus > 0) historyInserts.push({ user_id: user.id, change: bonus, created_at: nowIso, reason: "streak_bonus" });
+        await supabase.from("points_history").insert(historyInserts);
+        await supabase.from("profiles").update({ streak: newStreak, last_report_date: nowIso }).eq("id", user.id);
 
-        if (pointUpdateError) {
-            setMessage("ポイント更新に失敗しました");
-            setLoading(false);
-            return;
-        }
-
-        // 6. points_history に通常ポイント追加
-        const historyInserts: {
-            user_id: string;
-            change: number;
-            created_at: string;
-            reason: string;
-        }[] = [
-                {
-                    user_id: user.id,
-                    change: 10,
-                    created_at: nowIso,
-                    reason: "report_submit",
-                },
-            ];
-
-        if (bonus > 0) {
-            historyInserts.push({
-                user_id: user.id,
-                change: bonus,
-                created_at: nowIso,
-                reason: "streak_bonus",
-            });
-        }
-
-        const { error: historyError } = await supabase
-            .from("points_history")
-            .insert(historyInserts);
-
-        if (historyError) {
-            setMessage("ポイント履歴の保存に失敗しました");
-            setLoading(false);
-            return;
-        }
-
-        // 7. profiles の streak 更新
-        const { error: profileUpdateError } = await supabase
-            .from("profiles")
-            .update({
-                streak: newStreak,
-                last_report_date: nowIso,
-            })
-            .eq("id", user.id);
-
-        if (profileUpdateError) {
-            setMessage("連続提出情報の更新に失敗しました");
-            setLoading(false);
-            return;
-        }
-
-        // 8. 完了メッセージ
-        if (bonus > 0) {
-            setMessage(
-                `日報を提出しました。+10pt、連続提出ボーナス +${bonus}pt を獲得しました`
-            );
-        } else {
-            setMessage("日報を提出しました。+10pt 獲得しました");
-        }
-
+        setSuccess(true);
+        setMessage(bonus > 0 ? `+10pt 獲得！連続提出ボーナス +${bonus}pt も獲得しました 🎉` : "+10pt 獲得しました！");
         setText("");
         setLoading(false);
     };
 
     return (
-        <main
-            style={{
-                minHeight: "100vh",
-                background: "#f3f4f6",
-                padding: "48px 24px",
-            }}
-        >
-            <div
-                style={{
-                    maxWidth: 760,
-                    margin: "0 auto",
-                    background: "#ffffff",
-                    borderRadius: 24,
-                    padding: 32,
-                    boxShadow: "0 20px 50px rgba(0,0,0,0.08)",
-                    border: "1px solid #e5e7eb",
-                }}
-            >
-                <h1
-                    style={{
-                        margin: 0,
-                        fontSize: 36,
-                        fontWeight: 700,
-                        color: "#111827",
-                    }}
-                >
-                    日報提出
-                </h1>
+        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
 
-                <p
-                    style={{
-                        margin: "10px 0 0 0",
-                        color: "#6b7280",
-                        fontSize: 15,
-                    }}
-                >
-                    今日やったことを記録してください
-                </p>
+            {/* 背景グロー */}
+            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 30% 40%, rgba(99,102,241,0.1) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
-                <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="今日やったことを書いてください"
-                    style={{
-                        width: "100%",
-                        height: 220,
-                        marginTop: 20,
-                        padding: 16,
-                        borderRadius: 16,
-                        border: "1px solid #d1d5db",
-                        fontSize: 15,
-                        lineHeight: 1.7,
-                        outline: "none",
-                        resize: "vertical",
-                        boxSizing: "border-box",
-                    }}
-                />
+            <div style={{ position: "relative", zIndex: 1, maxWidth: 760, margin: "0 auto" }}>
 
-                <div
-                    style={{
-                        display: "flex",
-                        gap: 12,
-                        marginTop: 20,
-                        flexWrap: "wrap",
-                    }}
-                >
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        style={{
-                            background: "#ef5b4d",
-                            color: "#ffffff",
-                            padding: "12px 18px",
-                            borderRadius: 12,
-                            border: "none",
-                            cursor: "pointer",
-                            fontWeight: 700,
-                        }}
-                    >
-                        {loading ? "送信中..." : "日報を送信"}
-                    </button>
-
-                    <button
-                        onClick={() => router.push("/mypage")}
-                        style={{
-                            background: "#ffffff",
-                            color: "#111827",
-                            padding: "12px 18px",
-                            borderRadius: 12,
-                            border: "1px solid #d1d5db",
-                            cursor: "pointer",
-                            fontWeight: 700,
-                        }}
-                    >
-                        マイページに戻る
-                    </button>
+                {/* ヘッダー */}
+                <div style={{ marginBottom: 32 }}>
+                    <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
+                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>日報提出</h1>
+                    <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14 }}>今日の活動を記録してポイントを獲得しましょう</p>
                 </div>
 
-                {message && (
-                    <div
+                {/* ポイント獲得インフォ */}
+                <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+                    {[
+                        { label: "日報提出", pt: "+10pt", color: "#818cf8" },
+                        { label: "3日連続", pt: "+20pt", color: "#34d399" },
+                        { label: "7日連続", pt: "+50pt", color: "#f59e0b" },
+                    ].map((item, i) => (
+                        <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 12, color: "#9ca3af" }}>{item.label}</span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: item.color }}>{item.pt}</span>
+                        </div>
+                    ))}
+                </div>
+
+                {/* メインカード */}
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, backdropFilter: "blur(10px)" }}>
+
+                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TODAY'S REPORT</div>
+
+                    <textarea
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder="今日やったこと、学んだこと、気づきを書いてください..."
                         style={{
-                            marginTop: 18,
-                            padding: "14px 16px",
-                            borderRadius: 12,
-                            background: "#eff6ff",
-                            border: "1px solid #bfdbfe",
-                            color: "#1d4ed8",
-                            fontWeight: 600,
+                            width: "100%", height: 240, padding: 16, borderRadius: 12,
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            background: "rgba(255,255,255,0.05)",
+                            color: "#f9fafb", fontSize: 15, lineHeight: 1.7,
+                            outline: "none", resize: "vertical",
+                            boxSizing: "border-box", fontFamily: "inherit",
                         }}
-                    >
-                        {message}
+                    />
+
+                    <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            style={{
+                                flex: 1, padding: "14px", borderRadius: 12, border: "none",
+                                background: loading ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                                color: "#fff", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontSize: 15,
+                            }}
+                        >
+                            {loading ? "送信中..." : "⚡ 日報を送信"}
+                        </button>
+
+                        <button
+                            onClick={() => router.push("/mypage")}
+                            style={{ padding: "14px 24px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}
+                        >
+                            戻る
+                        </button>
                     </div>
-                )}
+
+                    {message && (
+                        <div style={{
+                            marginTop: 20, padding: "16px 20px", borderRadius: 12,
+                            background: success ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)",
+                            border: `1px solid ${success ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`,
+                            color: success ? "#34d399" : "#f87171",
+                            fontWeight: 600, fontSize: 14,
+                        }}>
+                            {message}
+                            {success && (
+                                <button onClick={() => router.push("/mypage")} style={{ marginLeft: 16, padding: "4px 12px", borderRadius: 6, border: "none", background: "rgba(52,211,153,0.2)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
+                                    マイページで確認 →
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </main>
     );
