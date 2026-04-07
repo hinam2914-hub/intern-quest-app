@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+
+type KpiItem = { id: string; title: string; unit: string; target_value: number };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -28,6 +30,16 @@ export default function ReportPage() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [success, setSuccess] = useState(false);
+    const [kpiItems, setKpiItems] = useState<KpiItem[]>([]);
+    const [kpiValues, setKpiValues] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        const load = async () => {
+            const { data } = await supabase.from("kpi_items").select("*").eq("is_active", true).order("created_at");
+            setKpiItems((data || []) as KpiItem[]);
+        };
+        load();
+    }, []);
 
     const handleSubmit = async () => {
         if (!text.trim()) { setMessage("日報を書いてください"); return; }
@@ -52,6 +64,14 @@ export default function ReportPage() {
         const { error: submissionError } = await supabase.from("submissions").insert({ user_id: user.id, content: text.trim(), created_at: nowIso });
         if (submissionError) { setMessage("日報の保存に失敗しました"); setLoading(false); return; }
 
+        // KPIログを保存
+        const kpiLogs = Object.entries(kpiValues)
+            .filter(([, v]) => v > 0)
+            .map(([kpi_item_id, value]) => ({ user_id: user.id, kpi_item_id, value, created_at: nowIso }));
+        if (kpiLogs.length > 0) {
+            await supabase.from("kpi_logs").insert(kpiLogs);
+        }
+
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
         const currentPoints = pointRow?.points || 0;
 
@@ -73,33 +93,29 @@ export default function ReportPage() {
 
         await supabase.from("user_points").update({ points: currentPoints + addPoints }).eq("id", user.id);
 
-        const historyInserts = [{ user_id: user.id, change: 10, created_at: nowIso, reason: "report_submit" }];
+        const historyInserts = [{ user_id: user.id, change: 2, created_at: nowIso, reason: "report_submit" }];
         if (bonus > 0) historyInserts.push({ user_id: user.id, change: bonus, created_at: nowIso, reason: "streak_bonus" });
         await supabase.from("points_history").insert(historyInserts);
         await supabase.from("profiles").update({ streak: newStreak, last_report_date: nowIso }).eq("id", user.id);
 
         setSuccess(true);
-        setMessage(bonus > 0 ? `+10pt 獲得！連続提出ボーナス +${bonus}pt も獲得しました 🎉` : "+10pt 獲得しました！");
+        setMessage(bonus > 0 ? `+${addPoints}pt 獲得！連続提出ボーナス +${bonus}pt も獲得しました 🎉` : `+${addPoints}pt 獲得しました！`);
         setText("");
         setLoading(false);
     };
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
-
-            {/* 背景グロー */}
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 30% 40%, rgba(99,102,241,0.1) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 760, margin: "0 auto" }}>
 
-                {/* ヘッダー */}
                 <div style={{ marginBottom: 32 }}>
                     <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>日報提出</h1>
                     <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14 }}>今日の活動を記録してポイントを獲得しましょう</p>
                 </div>
 
-                {/* ポイント獲得インフォ */}
                 <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
                     {[
                         { label: "日報提出", pt: "+2pt", color: "#818cf8" },
@@ -113,54 +129,59 @@ export default function ReportPage() {
                     ))}
                 </div>
 
-                {/* メインカード */}
+                {/* KPI入力フォーム */}
+                {kpiItems.length > 0 && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 24, marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📊 KPI入力</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            {kpiItems.map((item) => (
+                                <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                    <div>
+                                        <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb" }}>{item.title}</div>
+                                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>目標: {item.target_value}{item.unit}</div>
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            value={kpiValues[item.id] ?? ""}
+                                            onChange={(e) => setKpiValues(prev => ({ ...prev, [item.id]: Number(e.target.value) }))}
+                                            placeholder="0"
+                                            style={{ width: 80, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none", textAlign: "right" }}
+                                        />
+                                        <span style={{ fontSize: 13, color: "#6b7280" }}>{item.unit}</span>
+                                        {kpiValues[item.id] > 0 && kpiValues[item.id] >= item.target_value && (
+                                            <span style={{ fontSize: 12, color: "#34d399", fontWeight: 700 }}>✅ 達成！</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, backdropFilter: "blur(10px)" }}>
-
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TODAY'S REPORT</div>
-
                     <textarea
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         placeholder="今日やったこと、学んだこと、気づきを書いてください..."
-                        style={{
-                            width: "100%", height: 240, padding: 16, borderRadius: 12,
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            background: "rgba(255,255,255,0.05)",
-                            color: "#f9fafb", fontSize: 15, lineHeight: 1.7,
-                            outline: "none", resize: "vertical",
-                            boxSizing: "border-box", fontFamily: "inherit",
-                        }}
+                        style={{ width: "100%", height: 240, padding: 16, borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, lineHeight: 1.7, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }}
                     />
-
                     <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
                         <button
                             onClick={handleSubmit}
                             disabled={loading}
-                            style={{
-                                flex: 1, padding: "14px", borderRadius: 12, border: "none",
-                                background: loading ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                                color: "#fff", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontSize: 15,
-                            }}
+                            style={{ flex: 1, padding: "14px", borderRadius: 12, border: "none", background: loading ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontSize: 15 }}
                         >
                             {loading ? "送信中..." : "⚡ 日報を送信"}
                         </button>
-
-                        <button
-                            onClick={() => router.push("/mypage")}
-                            style={{ padding: "14px 24px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}
-                        >
+                        <button onClick={() => router.push("/mypage")} style={{ padding: "14px 24px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
                             戻る
                         </button>
                     </div>
-
                     {message && (
-                        <div style={{
-                            marginTop: 20, padding: "16px 20px", borderRadius: 12,
-                            background: success ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)",
-                            border: `1px solid ${success ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`,
-                            color: success ? "#34d399" : "#f87171",
-                            fontWeight: 600, fontSize: 14,
-                        }}>
+                        <div style={{ marginTop: 20, padding: "16px 20px", borderRadius: 12, background: success ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", border: `1px solid ${success ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`, color: success ? "#34d399" : "#f87171", fontWeight: 600, fontSize: 14 }}>
                             {message}
                             {success && (
                                 <button onClick={() => router.push("/mypage")} style={{ marginLeft: 16, padding: "4px 12px", borderRadius: 6, border: "none", background: "rgba(52,211,153,0.2)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
