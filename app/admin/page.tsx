@@ -14,6 +14,9 @@ type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
 type AnnounceRow = { id: string; title: string; content: string; created_at: string; is_active: boolean };
 type RequestRow = { id: string; user_id: string; shop_item_id: string; cost: number; status: string; note: string | null; created_at: string; userName?: string; itemTitle?: string };
+type KpiStatus = { userId: string; userName: string; kpiId: string; kpiTitle: string; unit: string; target: number; value: number };
+type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
+type ContentCompletion = { userId: string; userName: string; contentId: string; contentTitle: string; created_at: string };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -70,6 +73,9 @@ export default function AdminPage() {
     const [contentMessage, setContentMessage] = useState("");
     const [requestsList, setRequestsList] = useState<RequestRow[]>([]);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+    const [kpiStatuses, setKpiStatuses] = useState<KpiStatus[]>([]);
+    const [thanksList, setThanksList] = useState<ThanksRow[]>([]);
+    const [contentCompletions, setContentCompletions] = useState<ContentCompletion[]>([]);
 
     useEffect(() => {
         const load = async () => {
@@ -155,6 +161,43 @@ export default function AdminPage() {
                 itemTitle: shopItems?.find((s: any) => s.id === r.shop_item_id)?.title || "不明",
             })));
 
+            // KPI達成状況
+            const { data: kpiLogs } = await supabase.from("kpi_logs").select("*").order("created_at", { ascending: false });
+            if (kpiLogs && kpiRows) {
+                const statuses: KpiStatus[] = kpiLogs.map((log: any) => ({
+                    userId: log.user_id,
+                    userName: users.find(u => u.id === log.user_id)?.name || "名前未設定",
+                    kpiId: log.kpi_item_id,
+                    kpiTitle: kpiRows.find((k: any) => k.id === log.kpi_item_id)?.title || "不明",
+                    unit: kpiRows.find((k: any) => k.id === log.kpi_item_id)?.unit || "件",
+                    target: kpiRows.find((k: any) => k.id === log.kpi_item_id)?.target_value || 0,
+                    value: log.value,
+                }));
+                setKpiStatuses(statuses);
+            }
+
+            // サンキュー履歴
+            const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(20);
+            if (thanksRows) {
+                setThanksList(thanksRows.map((r: any) => ({
+                    ...r,
+                    fromName: users.find(u => u.id === r.from_user_id)?.name || "名前未設定",
+                    toName: users.find(u => u.id === r.to_user_id)?.name || "名前未設定",
+                })));
+            }
+
+            // 学習完了状況
+            const { data: completionRows } = await supabase.from("content_completions").select("*").order("created_at", { ascending: false });
+            if (completionRows && contentsRows) {
+                setContentCompletions(completionRows.map((r: any) => ({
+                    userId: r.user_id,
+                    userName: users.find(u => u.id === r.user_id)?.name || "名前未設定",
+                    contentId: r.content_id,
+                    contentTitle: contentsRows.find((c: any) => c.id === r.content_id)?.title || "不明",
+                    created_at: r.created_at,
+                })));
+            }
+
             setLoading(false);
         };
         load();
@@ -200,14 +243,12 @@ export default function AdminPage() {
         setProcessingRequest(req.id);
         const nowIso = new Date().toISOString();
         await supabase.from("point_requests").update({ status: approve ? "approved" : "rejected", updated_at: nowIso }).eq("id", req.id);
-
         if (approve) {
             const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", req.user_id).single();
             const current = pointRow?.points || 0;
             await supabase.from("user_points").update({ points: current - req.cost }).eq("id", req.user_id);
             await supabase.from("points_history").insert({ user_id: req.user_id, change: -req.cost, reason: "shop_purchase", created_at: nowIso });
         }
-
         setRequestsList(prev => prev.map(r => r.id === req.id ? { ...r, status: approve ? "approved" : "rejected" } : r));
         setProcessingRequest(null);
     };
@@ -290,11 +331,12 @@ export default function AdminPage() {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                     <div style={{ textAlign: "right" }}>
                                                         <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
                                                         <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
                                                     </div>
+                                                    <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
                                                     <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
                                                 </div>
                                             )}
@@ -488,12 +530,8 @@ export default function AdminPage() {
                                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                 {req.status === "pending" ? (
                                                     <>
-                                                        <button onClick={() => handleApproveRequest(req, true)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                                                            ✅ 承認
-                                                        </button>
-                                                        <button onClick={() => handleApproveRequest(req, false)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                                                            ❌ 却下
-                                                        </button>
+                                                        <button onClick={() => handleApproveRequest(req, true)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認</button>
+                                                        <button onClick={() => handleApproveRequest(req, false)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
                                                     </>
                                                 ) : (
                                                     <div style={{ padding: "6px 14px", borderRadius: 8, background: req.status === "approved" ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)", color: req.status === "approved" ? "#34d399" : "#f87171", fontSize: 13, fontWeight: 700 }}>
@@ -519,6 +557,7 @@ export default function AdminPage() {
                                 </button>
                             ))}
                         </div>
+
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
                             {[
                                 { label: "TOTAL USERS", value: userCount, unit: "人", color: "#818cf8" },
@@ -533,6 +572,7 @@ export default function AdminPage() {
                                 </div>
                             ))}
                         </div>
+
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TOTAL POINT GROWTH</div>
@@ -561,6 +601,67 @@ export default function AdminPage() {
                                 ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
                             </div>
                         </div>
+
+                        {/* KPI達成状況 */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI ACHIEVEMENT</div>
+                            {kpiStatuses.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPIデータがありません</div> : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {kpiStatuses.slice(0, 10).map((s, i) => (
+                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${s.value >= s.target ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.05)"}` }}>
+                                            <div>
+                                                <span style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{s.userName}</span>
+                                                <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 8 }}>- {s.kpiTitle}</span>
+                                            </div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                <span style={{ fontSize: 14, fontWeight: 700, color: s.value >= s.target ? "#34d399" : "#f9fafb" }}>{s.value}{s.unit}</span>
+                                                <span style={{ fontSize: 12, color: "#6b7280" }}>/ {s.target}{s.unit}</span>
+                                                {s.value >= s.target && <span style={{ fontSize: 11, color: "#34d399", fontWeight: 700 }}>✅ 達成</span>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 学習完了状況 & サンキュー履歴 */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>LEARNING COMPLETIONS</div>
+                                {contentCompletions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>完了記録がありません</div> : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {contentCompletions.slice(0, 8).map((c, i) => (
+                                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                                                <div>
+                                                    <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{c.userName}</div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>{c.contentTitle}</div>
+                                                </div>
+                                                <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700 }}>✅ 完了</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>THANKS HISTORY</div>
+                                {thanksList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>サンキューはありません</div> : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {thanksList.slice(0, 8).map((t) => (
+                                            <div key={t.id} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.15)" }}>
+                                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 2 }}>
+                                                    <span style={{ color: "#818cf8", fontWeight: 600 }}>{t.fromName}</span>
+                                                    <span> → </span>
+                                                    <span style={{ color: "#fbbf24", fontWeight: 600 }}>{t.toName}</span>
+                                                </div>
+                                                <div style={{ fontSize: 13, color: "#d1d5db" }}>{t.message}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>REPORT CONTENTS</div>
                             {reports.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>{periodLabel}の日報はまだありません</div> : (
@@ -590,6 +691,7 @@ export default function AdminPage() {
                                 </div>
                             )}
                         </div>
+
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
