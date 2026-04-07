@@ -139,7 +139,10 @@ export default function LoginPage() {
                     >
                         {loading ? "ログイン中..." : "ログイン →"}
                     </button>
-
+                    <div style={{ marginTop: 20, textAlign: "center" }}>
+                        <span style={{ fontSize: 13, color: "#6b7280" }}>アカウントをお持ちでない方は </span>
+                        <button onClick={() => router.push("/register")} style={{ background: "none", border: "none", color: "#818cf8", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>新規登録</button>
+                    </div>
                     {message && (
                         <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: bonus ? "rgba(99,102,241,0.15)" : message.includes("✅") ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", border: `1px solid ${bonus ? "rgba(99,102,241,0.3)" : message.includes("✅") ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`, color: bonus ? "#a5b4fc" : message.includes("✅") ? "#34d399" : "#f87171", fontSize: 14, fontWeight: 600 }}>
                             {message}
