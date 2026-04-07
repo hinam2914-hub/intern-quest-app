@@ -67,9 +67,9 @@ export default function ReportPage() {
             const yesterdayYmd = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, "0")}-${String(yesterdayDate.getDate()).padStart(2, "0")}`;
             newStreak = lastYmd === yesterdayYmd ? (profileRow.streak || 0) + 1 : 1;
         }
-        if (newStreak === 3) bonus = 20;
-        if (newStreak === 7) bonus = 50;
-        const addPoints = 10 + bonus;
+        if (newStreak === 3) bonus = 5;
+        if (newStreak === 7) bonus = 10;
+        const addPoints = 2 + bonus;
 
         await supabase.from("user_points").update({ points: currentPoints + addPoints }).eq("id", user.id);
 
@@ -102,9 +102,9 @@ export default function ReportPage() {
                 {/* ポイント獲得インフォ */}
                 <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
                     {[
-                        { label: "日報提出", pt: "+10pt", color: "#818cf8" },
-                        { label: "3日連続", pt: "+20pt", color: "#34d399" },
-                        { label: "7日連続", pt: "+50pt", color: "#f59e0b" },
+                        { label: "日報提出", pt: "+2pt", color: "#818cf8" },
+                        { label: "3日連続", pt: "+5pt", color: "#34d399" },
+                        { label: "7日連続", pt: "+10pt", color: "#f59e0b" },
                     ].map((item, i) => (
                         <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <span style={{ fontSize: 12, color: "#9ca3af" }}>{item.label}</span>

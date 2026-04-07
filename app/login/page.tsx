@@ -64,13 +64,13 @@ export default function LoginPage() {
 
             // ポイント更新
             await supabase.from("user_points")
-                .update({ points: current + 10 })
+                .update({ points: current + 1 })
                 .eq("id", user.id);
 
             // 履歴保存
             await supabase.from("points_history").insert({
                 user_id: user.id,
-                change: 10,
+                change: 1,
                 reason: "login_bonus",
                 created_at: nowIso,
             });
