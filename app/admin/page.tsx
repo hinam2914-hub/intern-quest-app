@@ -12,6 +12,7 @@ type ReportRow = { id: string; user_id: string; content: string; created_at: str
 type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string };
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
+type AnnounceRow = { id: string; title: string; content: string; created_at: string; is_active: boolean };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -43,10 +44,15 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
+    const [announceTitle, setAnnounceTitle] = useState("");
+    const [announceContent, setAnnounceContent] = useState("");
+    const [announceList, setAnnounceList] = useState<AnnounceRow[]>([]);
+    const [announceSending, setAnnounceSending] = useState(false);
+    const [announceMessage, setAnnounceMessage] = useState("");
 
     useEffect(() => {
         const load = async () => {
@@ -115,6 +121,10 @@ export default function AdminPage() {
             const countMap: Record<string, number> = {};
             submissions.forEach((row) => { countMap[row.user_id] = (countMap[row.user_id] || 0) + 1; });
             setTopSubmitters(Object.entries(countMap).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, count]) => ({ name: users.find((u) => u.id === id)?.name || "名前未設定", count })));
+
+            const { data: announceRows } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
+            setAnnounceList((announceRows || []) as AnnounceRow[]);
+
             setLoading(false);
         };
         load();
@@ -131,6 +141,19 @@ export default function AdminPage() {
         setUserDetails((prev) => prev.map((u2) => u2.id === userId ? { ...u2, name: newName, points: editingPoints } : u2));
         setEditingUser(null);
         setSavingUser(null);
+    };
+
+    const handlePostAnnounce = async () => {
+        if (!announceTitle.trim() || !announceContent.trim()) { setAnnounceMessage("タイトルと内容を入力してください"); return; }
+        setAnnounceSending(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from("announcements").insert({ title: announceTitle.trim(), content: announceContent.trim(), created_by: user?.id, is_active: true });
+        const { data: rows } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
+        setAnnounceList((rows || []) as AnnounceRow[]);
+        setAnnounceTitle("");
+        setAnnounceContent("");
+        setAnnounceMessage("✅ 投稿しました！");
+        setAnnounceSending(false);
     };
 
     const periodLabel = period === "today" ? "今日" : period === "week" ? "今週" : "今月";
@@ -163,9 +186,17 @@ export default function AdminPage() {
                     </div>
                 </div>
 
+                {/* タブ */}
                 <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-                    <button onClick={() => setActiveTab("dashboard")} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === "dashboard" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === "dashboard" ? "#fff" : "#9ca3af" }}>ダッシュボード</button>
-                    <button onClick={() => setActiveTab("users")} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === "users" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === "users" ? "#fff" : "#9ca3af" }}>ユーザー一覧</button>
+                    {[
+                        { key: "dashboard", label: "ダッシュボード" },
+                        { key: "users", label: "ユーザー一覧" },
+                        { key: "announce", label: "📢 お知らせ" },
+                    ].map((tab) => (
+                        <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : "#9ca3af" }}>
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* ユーザー一覧タブ */}
@@ -188,26 +219,14 @@ export default function AdminPage() {
                                                 <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                         <span style={{ fontSize: 12, color: "#6b7280" }}>名前:</span>
-                                                        <input
-                                                            type="text"
-                                                            value={u.editingName ?? u.name}
-                                                            onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))}
-                                                            style={{ width: 160, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }}
-                                                        />
+                                                        <input type="text" value={u.editingName ?? u.name} onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))} style={{ width: 160, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
                                                     </div>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                         <span style={{ fontSize: 12, color: "#6b7280" }}>ポイント:</span>
-                                                        <input
-                                                            type="number"
-                                                            value={editingPoints}
-                                                            onChange={(e) => setEditingPoints(Number(e.target.value))}
-                                                            style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }}
-                                                        />
+                                                        <input type="number" value={editingPoints} onChange={(e) => setEditingPoints(Number(e.target.value))} style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
                                                     </div>
                                                     <div style={{ display: "flex", gap: 8 }}>
-                                                        <button onClick={() => handleSaveUser(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                                                            {savingUser === u.id ? "保存中..." : "保存"}
-                                                        </button>
+                                                        <button onClick={() => handleSaveUser(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{savingUser === u.id ? "保存中..." : "保存"}</button>
                                                         <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>キャンセル</button>
                                                     </div>
                                                 </div>
@@ -224,6 +243,57 @@ export default function AdminPage() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* お知らせタブ */}
+                {activeTab === "announce" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>NEW ANNOUNCEMENT</div>
+                            <div style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>タイトル</div>
+                                <input value={announceTitle} onChange={(e) => setAnnounceTitle(e.target.value)} placeholder="例：今週のMTGについて" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>内容</div>
+                                <textarea value={announceContent} onChange={(e) => setAnnounceContent(e.target.value)} placeholder="お知らせの内容を入力してください..." style={{ width: "100%", height: 120, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                            </div>
+                            <button onClick={handlePostAnnounce} disabled={announceSending} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                {announceSending ? "投稿中..." : "📢 投稿する"}
+                            </button>
+                            {announceMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399" }}>{announceMessage}</div>}
+                        </div>
+
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>ANNOUNCEMENTS</div>
+                            {announceList.length === 0 ? (
+                                <div style={{ color: "#6b7280", fontSize: 14 }}>お知らせはありません</div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {announceList.map((item) => (
+                                        <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${item.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}` }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: 14, fontWeight: 700, color: item.is_active ? "#f9fafb" : "#6b7280", marginBottom: 4 }}>{item.title}</div>
+                                                    <div style={{ fontSize: 13, color: item.is_active ? "#9ca3af" : "#4b5563", lineHeight: 1.6 }}>{item.content}</div>
+                                                    <div style={{ fontSize: 11, color: "#4b5563", marginTop: 6 }}>{formatDateTime(item.created_at)}</div>
+                                                </div>
+                                                <button
+                                                    onClick={async () => {
+                                                        await supabase.from("announcements").update({ is_active: !item.is_active }).eq("id", item.id);
+                                                        setAnnounceList(prev => prev.map(a => a.id === item.id ? { ...a, is_active: !a.is_active } : a));
+                                                    }}
+                                                    style={{ marginLeft: 12, padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}
+                                                >
+                                                    {item.is_active ? "非表示" : "表示する"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -268,7 +338,6 @@ export default function AdminPage() {
                                     </ResponsiveContainer>
                                 ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
                             </div>
-
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>DAILY SUBMISSIONS</div>
                                 {submitGraphData.length > 0 ? (
