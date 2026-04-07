@@ -65,7 +65,6 @@ export default function AdminPage() {
             setLoading(true);
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
-
             const adminEmails = ["hinam2914@gmail.com"];
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
@@ -130,8 +129,10 @@ export default function AdminPage() {
 
             const { data: announceRows } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
             setAnnounceList((announceRows || []) as AnnounceRow[]);
+
             const { data: kpiRows } = await supabase.from("kpi_items").select("*").order("created_at", { ascending: false });
             setKpiItems(kpiRows || []);
+
             setLoading(false);
         };
         load();
@@ -157,10 +158,20 @@ export default function AdminPage() {
         await supabase.from("announcements").insert({ title: announceTitle.trim(), content: announceContent.trim(), created_by: user?.id, is_active: true });
         const { data: rows } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
         setAnnounceList((rows || []) as AnnounceRow[]);
-        setAnnounceTitle("");
-        setAnnounceContent("");
+        setAnnounceTitle(""); setAnnounceContent("");
         setAnnounceMessage("✅ 投稿しました！");
         setAnnounceSending(false);
+    };
+
+    const handlePostKpi = async () => {
+        if (!kpiTitle.trim()) { setKpiMessage("KPI名を入力してください"); return; }
+        setKpiSaving(true);
+        await supabase.from("kpi_items").insert({ title: kpiTitle.trim(), unit: kpiUnit || "件", target_value: kpiTarget, is_active: true });
+        const { data: rows } = await supabase.from("kpi_items").select("*").order("created_at", { ascending: false });
+        setKpiItems(rows || []);
+        setKpiTitle(""); setKpiUnit("件"); setKpiTarget(0);
+        setKpiMessage("✅ KPI項目を追加しました！");
+        setKpiSaving(false);
     };
 
     const periodLabel = period === "today" ? "今日" : period === "week" ? "今週" : "今月";
@@ -179,7 +190,6 @@ export default function AdminPage() {
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
-
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
@@ -273,7 +283,6 @@ export default function AdminPage() {
                             </button>
                             {announceMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399" }}>{announceMessage}</div>}
                         </div>
-
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>ANNOUNCEMENTS</div>
                             {announceList.length === 0 ? (
@@ -288,13 +297,7 @@ export default function AdminPage() {
                                                     <div style={{ fontSize: 13, color: item.is_active ? "#9ca3af" : "#4b5563", lineHeight: 1.6 }}>{item.content}</div>
                                                     <div style={{ fontSize: 11, color: "#4b5563", marginTop: 6 }}>{formatDateTime(item.created_at)}</div>
                                                 </div>
-                                                <button
-                                                    onClick={async () => {
-                                                        await supabase.from("announcements").update({ is_active: !item.is_active }).eq("id", item.id);
-                                                        setAnnounceList(prev => prev.map(a => a.id === item.id ? { ...a, is_active: !a.is_active } : a));
-                                                    }}
-                                                    style={{ marginLeft: 12, padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}
-                                                >
+                                                <button onClick={async () => { await supabase.from("announcements").update({ is_active: !item.is_active }).eq("id", item.id); setAnnounceList(prev => prev.map(a => a.id === item.id ? { ...a, is_active: !a.is_active } : a)); }} style={{ marginLeft: 12, padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
                                                     {item.is_active ? "非表示" : "表示する"}
                                                 </button>
                                             </div>
@@ -304,7 +307,9 @@ export default function AdminPage() {
                             )}
                         </div>
                     </div>
-                    {/* KPI設定タブ */}
+                )}
+
+                {/* KPI設定タブ */}
                 {activeTab === "kpi" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
@@ -323,25 +328,11 @@ export default function AdminPage() {
                                     <input type="number" value={kpiTarget} onChange={(e) => setKpiTarget(Number(e.target.value))} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
                                 </div>
                             </div>
-                            <button
-                                onClick={async () => {
-                                    if (!kpiTitle.trim()) { setKpiMessage("KPI名を入力してください"); return; }
-                                    setKpiSaving(true);
-                                    await supabase.from("kpi_items").insert({ title: kpiTitle.trim(), unit: kpiUnit || "件", target_value: kpiTarget, is_active: true });
-                                    const { data: rows } = await supabase.from("kpi_items").select("*").order("created_at", { ascending: false });
-                                    setKpiItems(rows || []);
-                                    setKpiTitle(""); setKpiUnit("件"); setKpiTarget(0);
-                                    setKpiMessage("✅ KPI項目を追加しました！");
-                                    setKpiSaving(false);
-                                }}
-                                disabled={kpiSaving}
-                                style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
-                            >
+                            <button onClick={handlePostKpi} disabled={kpiSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
                                 {kpiSaving ? "追加中..." : "📊 追加する"}
                             </button>
                             {kpiMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399" }}>{kpiMessage}</div>}
                         </div>
-
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI ITEMS</div>
                             {kpiItems.length === 0 ? (
@@ -354,13 +345,7 @@ export default function AdminPage() {
                                                 <div style={{ fontSize: 14, fontWeight: 700, color: item.is_active ? "#f9fafb" : "#6b7280" }}>{item.title}</div>
                                                 <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>単位: {item.unit}　目標: {item.target_value}{item.unit}</div>
                                             </div>
-                                            <button
-                                                onClick={async () => {
-                                                    await supabase.from("kpi_items").update({ is_active: !item.is_active }).eq("id", item.id);
-                                                    setKpiItems(prev => prev.map(k => k.id === item.id ? { ...k, is_active: !k.is_active } : k));
-                                                }}
-                                                style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700 }}
-                                            >
+                                            <button onClick={async () => { await supabase.from("kpi_items").update({ is_active: !item.is_active }).eq("id", item.id); setKpiItems(prev => prev.map(k => k.id === item.id ? { ...k, is_active: !k.is_active } : k)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>
                                                 {item.is_active ? "無効にする" : "有効にする"}
                                             </button>
                                         </div>
@@ -369,7 +354,6 @@ export default function AdminPage() {
                             )}
                         </div>
                     </div>
-                )}
                 )}
 
                 {/* ダッシュボードタブ */}
@@ -382,7 +366,6 @@ export default function AdminPage() {
                                 </button>
                             ))}
                         </div>
-
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
                             {[
                                 { label: "TOTAL USERS", value: userCount, unit: "人", color: "#818cf8" },
@@ -397,7 +380,6 @@ export default function AdminPage() {
                                 </div>
                             ))}
                         </div>
-
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TOTAL POINT GROWTH</div>
@@ -426,7 +408,6 @@ export default function AdminPage() {
                                 ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
                             </div>
                         </div>
-
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>REPORT CONTENTS</div>
                             {reports.length === 0 ? (
@@ -458,7 +439,6 @@ export default function AdminPage() {
                                 </div>
                             )}
                         </div>
-
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -479,7 +459,6 @@ export default function AdminPage() {
                                     )}
                                 </div>
                             </div>
-
                             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>POINT RANKING</div>
