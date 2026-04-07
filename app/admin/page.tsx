@@ -69,7 +69,6 @@ export default function AdminPage() {
             }));
             setUserDetails(details);
 
-            // ポイント推移グラフ（全ユーザー合計）
             const { data: allHistory } = await supabase.from("points_history").select("change, created_at").order("created_at", { ascending: true }).limit(200);
             if (allHistory) {
                 const dayMap: Record<string, number> = {};
@@ -100,7 +99,6 @@ export default function AdminPage() {
             setNotSubmittedUsers(users.filter((u) => !submittedIds.includes(u.id)));
             setReports(submissions.map((row) => ({ ...row, userName: users.find((u) => u.id === row.user_id)?.name || "名前未設定" })));
 
-            // 提出数グラフ
             const submitDayMap: Record<string, number> = {};
             submissions.forEach((row) => {
                 const date = new Date(row.created_at);
@@ -122,22 +120,19 @@ export default function AdminPage() {
         load();
     }, [period, router]);
 
-    const handleSavePoints = async (userId: string) => {
+    const handleSaveUser = async (userId: string) => {
         setSavingUser(userId);
+        const u = userDetails.find(u2 => u2.id === userId);
+        if (!u) return;
+        const newName = (u.editingName ?? u.name).trim();
+        if (newName) await supabase.from("profiles").update({ name: newName }).eq("id", userId);
         await supabase.from("user_points").update({ points: editingPoints }).eq("id", userId);
         await supabase.from("points_history").insert({ user_id: userId, change: 0, reason: "admin_edit", created_at: new Date().toISOString() });
-        setUserDetails((prev) => prev.map((u) => u.id === userId ? { ...u, points: editingPoints } : u));
+        setUserDetails((prev) => prev.map((u2) => u2.id === userId ? { ...u2, name: newName, points: editingPoints } : u2));
         setEditingUser(null);
         setSavingUser(null);
     };
-    const handleSaveName = async (userId: string, newName: string) => {
-        if (!newName.trim()) return;
-        setSavingUser(userId);
-        await supabase.from("profiles").update({ name: newName.trim() }).eq("id", userId);
-        setUserDetails((prev) => prev.map((u) => u.id === userId ? { ...u, name: newName.trim() } : u));
-        setEditingUser(null);
-        setSavingUser(null);
-    };
+
     const periodLabel = period === "today" ? "今日" : period === "week" ? "今週" : "今月";
     const copyText = useMemo(() => notSubmittedUsers.map((u) => u.name || "名前未設定").join("\n"), [notSubmittedUsers]);
     const reminderText = useMemo(() => `${periodLabel}の日報が未提出の方へ\n\n${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}\n\n確認のうえ、ご対応をお願いいたします。`, [notSubmittedUsers, periodLabel]);
@@ -157,7 +152,6 @@ export default function AdminPage() {
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
-                {/* ヘッダー */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
                     <div>
                         <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
@@ -169,7 +163,6 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* タブ */}
                 <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
                     <button onClick={() => setActiveTab("dashboard")} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === "dashboard" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === "dashboard" ? "#fff" : "#9ca3af" }}>ダッシュボード</button>
                     <button onClick={() => setActiveTab("users")} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === "users" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === "users" ? "#fff" : "#9ca3af" }}>ユーザー一覧</button>
@@ -197,9 +190,9 @@ export default function AdminPage() {
                                                         <span style={{ fontSize: 12, color: "#6b7280" }}>名前:</span>
                                                         <input
                                                             type="text"
-                                                            value={userDetails.find(u2 => u2.id === u.id)?.editingName ?? u.name}
+                                                            value={u.editingName ?? u.name}
                                                             onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))}
-                                                            style={{ width: 140, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }}
+                                                            style={{ width: 160, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }}
                                                         />
                                                     </div>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -212,15 +205,7 @@ export default function AdminPage() {
                                                         />
                                                     </div>
                                                     <div style={{ display: "flex", gap: 8 }}>
-                                                        <button
-                                                            onClick={async () => {
-                                                                const editingName = userDetails.find(u2 => u2.id === u.id)?.editingName ?? u.name;
-                                                                await handleSaveName(u.id, editingName);
-                                                                await handleSavePoints(u.id);
-                                                            }}
-                                                            disabled={savingUser === u.id}
-                                                            style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                                                        >
+                                                        <button onClick={() => handleSaveUser(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                                                             {savingUser === u.id ? "保存中..." : "保存"}
                                                         </button>
                                                         <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>キャンセル</button>
@@ -232,7 +217,7 @@ export default function AdminPage() {
                                                         <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
                                                         <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
                                                     </div>
-                                                    <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
+                                                    <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
                                                 </div>
                                             )}
                                         </div>
@@ -269,7 +254,6 @@ export default function AdminPage() {
                             ))}
                         </div>
 
-                        {/* グラフ2つ */}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TOTAL POINT GROWTH</div>
