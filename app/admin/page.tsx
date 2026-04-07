@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
 type UserDetail = { id: string; name: string; points: number; streak: number; role: string };
+type GraphData = { date: string; points: number };
+type SubmitGraphData = { date: string; count: number };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -34,6 +37,8 @@ export default function AdminPage() {
     const [notSubmittedUsers, setNotSubmittedUsers] = useState<UserRow[]>([]);
     const [reports, setReports] = useState<ReportRow[]>([]);
     const [userDetails, setUserDetails] = useState<UserDetail[]>([]);
+    const [pointGraphData, setPointGraphData] = useState<GraphData[]>([]);
+    const [submitGraphData, setSubmitGraphData] = useState<SubmitGraphData[]>([]);
     const [copied, setCopied] = useState(false);
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
@@ -57,16 +62,26 @@ export default function AdminPage() {
             setUserCount(users.length);
 
             const { data: pointRows } = await supabase.from("user_points").select("id, points");
-
-            // ユーザー詳細一覧
             const details: UserDetail[] = (profileRows || []).map((p: any) => ({
-                id: p.id,
-                name: p.name || "名前未設定",
+                id: p.id, name: p.name || "名前未設定",
                 points: pointRows?.find((pt) => pt.id === p.id)?.points || 0,
-                streak: 0,
-                role: p.role || "Owner",
+                streak: 0, role: p.role || "Owner",
             }));
             setUserDetails(details);
+
+            // ポイント推移グラフ（全ユーザー合計）
+            const { data: allHistory } = await supabase.from("points_history").select("change, created_at").order("created_at", { ascending: true }).limit(200);
+            if (allHistory) {
+                const dayMap: Record<string, number> = {};
+                allHistory.forEach((item) => {
+                    const date = new Date(item.created_at);
+                    const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+                    const key = `${jst.getUTCMonth() + 1}/${jst.getUTCDate()}`;
+                    dayMap[key] = (dayMap[key] || 0) + item.change;
+                });
+                let cum = 0;
+                setPointGraphData(Object.entries(dayMap).map(([date, pts]) => { cum += pts; return { date, points: cum }; }));
+            }
 
             const now = new Date();
             const from = new Date();
@@ -83,11 +98,17 @@ export default function AdminPage() {
             setReportCount(submittedIds.length);
             setSubmitRate(users.length === 0 ? 0 : Math.round((submittedIds.length / users.length) * 100));
             setNotSubmittedUsers(users.filter((u) => !submittedIds.includes(u.id)));
+            setReports(submissions.map((row) => ({ ...row, userName: users.find((u) => u.id === row.user_id)?.name || "名前未設定" })));
 
-            setReports(submissions.map((row) => ({
-                ...row,
-                userName: users.find((u) => u.id === row.user_id)?.name || "名前未設定",
-            })));
+            // 提出数グラフ
+            const submitDayMap: Record<string, number> = {};
+            submissions.forEach((row) => {
+                const date = new Date(row.created_at);
+                const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+                const key = `${jst.getUTCMonth() + 1}/${jst.getUTCDate()}`;
+                submitDayMap[key] = (submitDayMap[key] || 0) + 1;
+            });
+            setSubmitGraphData(Object.entries(submitDayMap).map(([date, count]) => ({ date, count })));
 
             const top3Point = [...(pointRows || [])].sort((a, b) => b.points - a.points).slice(0, 3);
             const { data: pointProfiles } = await supabase.from("profiles").select("id, name").in("id", top3Point.map((u) => u.id));
@@ -125,7 +146,6 @@ export default function AdminPage() {
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
-
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
@@ -144,12 +164,8 @@ export default function AdminPage() {
 
                 {/* タブ */}
                 <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-                    <button onClick={() => setActiveTab("dashboard")} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === "dashboard" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === "dashboard" ? "#fff" : "#9ca3af" }}>
-                        ダッシュボード
-                    </button>
-                    <button onClick={() => setActiveTab("users")} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === "users" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === "users" ? "#fff" : "#9ca3af" }}>
-                        ユーザー一覧
-                    </button>
+                    <button onClick={() => setActiveTab("dashboard")} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === "dashboard" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === "dashboard" ? "#fff" : "#9ca3af" }}>ダッシュボード</button>
+                    <button onClick={() => setActiveTab("users")} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === "users" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === "users" ? "#fff" : "#9ca3af" }}>ユーザー一覧</button>
                 </div>
 
                 {/* ユーザー一覧タブ */}
@@ -161,29 +177,18 @@ export default function AdminPage() {
                                 <div key={u.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                            <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff" }}>
-                                                {u.name.charAt(0)}
-                                            </div>
+                                            <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
                                             <div>
                                                 <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{u.name}</div>
-                                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>🔥 {u.streak}日連続　　役割: {u.role}</div>
+                                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>役割: {u.role}</div>
                                             </div>
                                         </div>
                                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                                             {editingUser === u.id ? (
                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                    <input
-                                                        type="number"
-                                                        value={editingPoints}
-                                                        onChange={(e) => setEditingPoints(Number(e.target.value))}
-                                                        style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }}
-                                                    />
-                                                    <button onClick={() => handleSavePoints(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                                                        {savingUser === u.id ? "保存中..." : "保存"}
-                                                    </button>
-                                                    <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>
-                                                        キャンセル
-                                                    </button>
+                                                    <input type="number" value={editingPoints} onChange={(e) => setEditingPoints(Number(e.target.value))} style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                                    <button onClick={() => handleSavePoints(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{savingUser === u.id ? "保存中..." : "保存"}</button>
+                                                    <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>キャンセル</button>
                                                 </div>
                                             ) : (
                                                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -191,9 +196,7 @@ export default function AdminPage() {
                                                         <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
                                                         <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
                                                     </div>
-                                                    <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
-                                                        編集
-                                                    </button>
+                                                    <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
                                                 </div>
                                             )}
                                         </div>
@@ -207,7 +210,6 @@ export default function AdminPage() {
                 {/* ダッシュボードタブ */}
                 {activeTab === "dashboard" && (
                     <>
-                        {/* 期間タブ */}
                         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
                             {(["today", "week", "month"] as const).map((p) => (
                                 <button key={p} onClick={() => setPeriod(p)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: period === p ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)", color: period === p ? "#fff" : "#9ca3af" }}>
@@ -216,7 +218,6 @@ export default function AdminPage() {
                             ))}
                         </div>
 
-                        {/* KPIカード */}
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
                             {[
                                 { label: "TOTAL USERS", value: userCount, unit: "人", color: "#818cf8" },
@@ -232,7 +233,37 @@ export default function AdminPage() {
                             ))}
                         </div>
 
-                        {/* 日報内容一覧 */}
+                        {/* グラフ2つ */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TOTAL POINT GROWTH</div>
+                                {pointGraphData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={160}>
+                                        <LineChart data={pointGraphData}>
+                                            <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
+                                            <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
+                                            <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計"]} />
+                                            <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 3 }} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
+                            </div>
+
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>DAILY SUBMISSIONS</div>
+                                {submitGraphData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={160}>
+                                        <BarChart data={submitGraphData}>
+                                            <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
+                                            <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
+                                            <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(52,211,153,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}件`, "提出数"]} />
+                                            <Bar dataKey="count" fill="#34d399" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
+                            </div>
+                        </div>
+
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>REPORT CONTENTS</div>
                             {reports.length === 0 ? (
@@ -243,9 +274,7 @@ export default function AdminPage() {
                                         <div key={report.id} style={{ borderRadius: 12, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
                                             <div onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "rgba(255,255,255,0.02)", cursor: "pointer" }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>
-                                                        {report.userName?.charAt(0) || "?"}
-                                                    </div>
+                                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{report.userName?.charAt(0) || "?"}</div>
                                                     <div>
                                                         <div style={{ fontSize: 14, fontWeight: 600, color: "#d1d5db" }}>{report.userName}</div>
                                                         <div style={{ fontSize: 11, color: "#6b7280" }}>{formatDateTime(report.created_at)}</div>
@@ -267,18 +296,13 @@ export default function AdminPage() {
                             )}
                         </div>
 
-                        {/* 下段グリッド */}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>MISSING REPORTS</div>
                                     <div style={{ display: "flex", gap: 8 }}>
-                                        <button onClick={async () => { await navigator.clipboard.writeText(copyText); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
-                                            {copied ? "✅ コピー済" : "名前コピー"}
-                                        </button>
-                                        <button onClick={async () => { await navigator.clipboard.writeText(reminderText); }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
-                                            リマインド文
-                                        </button>
+                                        <button onClick={async () => { await navigator.clipboard.writeText(copyText); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{copied ? "✅ コピー済" : "名前コピー"}</button>
+                                        <button onClick={async () => { await navigator.clipboard.writeText(reminderText); }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>リマインド文</button>
                                     </div>
                                 </div>
                                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -288,9 +312,7 @@ export default function AdminPage() {
                                             <a href={`https://line.me/R/msg/text/?${encodeURIComponent(`${u.name || ""}さん、日報の提出をお願いします。`)}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#818cf8", textDecoration: "none", fontWeight: 600 }}>連絡 →</a>
                                         </div>
                                     )) : (
-                                        <div style={{ padding: 16, borderRadius: 10, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#34d399", fontSize: 14, fontWeight: 600 }}>
-                                            ✅ 全員提出済み（{periodLabel}）
-                                        </div>
+                                        <div style={{ padding: 16, borderRadius: 10, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#34d399", fontSize: 14, fontWeight: 600 }}>✅ 全員提出済み（{periodLabel}）</div>
                                     )}
                                 </div>
                             </div>
@@ -307,7 +329,6 @@ export default function AdminPage() {
                                         )) : <div style={{ color: "#6b7280", fontSize: 14 }}>データがありません</div>}
                                     </div>
                                 </div>
-
                                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SUBMISSION RANKING</div>
                                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
