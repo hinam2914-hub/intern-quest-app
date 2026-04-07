@@ -9,7 +9,7 @@ type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
-type UserDetail = { id: string; name: string; points: number; streak: number; role: string };
+type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string };
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
 
@@ -130,7 +130,14 @@ export default function AdminPage() {
         setEditingUser(null);
         setSavingUser(null);
     };
-
+    const handleSaveName = async (userId: string, newName: string) => {
+        if (!newName.trim()) return;
+        setSavingUser(userId);
+        await supabase.from("profiles").update({ name: newName.trim() }).eq("id", userId);
+        setUserDetails((prev) => prev.map((u) => u.id === userId ? { ...u, name: newName.trim() } : u));
+        setEditingUser(null);
+        setSavingUser(null);
+    };
     const periodLabel = period === "today" ? "今日" : period === "week" ? "今週" : "今月";
     const copyText = useMemo(() => notSubmittedUsers.map((u) => u.name || "名前未設定").join("\n"), [notSubmittedUsers]);
     const reminderText = useMemo(() => `${periodLabel}の日報が未提出の方へ\n\n${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}\n\n確認のうえ、ご対応をお願いいたします。`, [notSubmittedUsers, periodLabel]);
@@ -185,10 +192,39 @@ export default function AdminPage() {
                                         </div>
                                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                                             {editingUser === u.id ? (
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                    <input type="number" value={editingPoints} onChange={(e) => setEditingPoints(Number(e.target.value))} style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
-                                                    <button onClick={() => handleSavePoints(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{savingUser === u.id ? "保存中..." : "保存"}</button>
-                                                    <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>キャンセル</button>
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>名前:</span>
+                                                        <input
+                                                            type="text"
+                                                            value={userDetails.find(u2 => u2.id === u.id)?.editingName ?? u.name}
+                                                            onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))}
+                                                            style={{ width: 140, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }}
+                                                        />
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>ポイント:</span>
+                                                        <input
+                                                            type="number"
+                                                            value={editingPoints}
+                                                            onChange={(e) => setEditingPoints(Number(e.target.value))}
+                                                            style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }}
+                                                        />
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 8 }}>
+                                                        <button
+                                                            onClick={async () => {
+                                                                const editingName = userDetails.find(u2 => u2.id === u.id)?.editingName ?? u.name;
+                                                                await handleSaveName(u.id, editingName);
+                                                                await handleSavePoints(u.id);
+                                                            }}
+                                                            disabled={savingUser === u.id}
+                                                            style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                                                        >
+                                                            {savingUser === u.id ? "保存中..." : "保存"}
+                                                        </button>
+                                                        <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>キャンセル</button>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

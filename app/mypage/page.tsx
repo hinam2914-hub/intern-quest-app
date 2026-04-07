@@ -146,6 +146,7 @@ export default function MyPage() {
     const [graphData, setGraphData] = useState<GraphData[]>([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
+    const [showNameModal, setShowNameModal] = useState(false);
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -186,10 +187,10 @@ export default function MyPage() {
         const hist = (historyRows || []) as PointHistory[];
         setHistory(hist);
         setGraphData(buildGraphData(hist));
-
+        const [showNameModal, setShowNameModal] = useState(false);
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
-        setLoading(false);
+        if (!profileData?.name) setShowNameModal(true); setLoading(false);
     };
 
     useEffect(() => { loadPage(); }, []);
@@ -226,7 +227,29 @@ export default function MyPage() {
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
-
+            {/* 名前入力モーダル */}
+            {showNameModal && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ background: "#0f0f1a", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 20, padding: 40, width: 400 }}>
+                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 8 }}>INTERN QUEST</div>
+                        <h2 style={{ fontSize: 24, fontWeight: 800, color: "#f9fafb", margin: "0 0 8px" }}>名前を教えてください</h2>
+                        <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 24px" }}>ランキングや管理画面に表示されます</p>
+                        <input
+                            value={inputName}
+                            onChange={(e) => setInputName(e.target.value)}
+                            placeholder="例：田中太郎"
+                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                            style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", marginBottom: 16 }}
+                        />
+                        <button
+                            onClick={async () => { await handleSaveName(); setShowNameModal(false); }}
+                            style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 16 }}
+                        >
+                            登録する →
+                        </button>
+                    </div>
+                </div>
+            )}
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
