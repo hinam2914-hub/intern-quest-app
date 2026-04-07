@@ -216,6 +216,7 @@ export default function MyPage() {
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
         if (!profileData?.name) setShowNameModal(true);
+
         const { data: announceRows } = await supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
         setAnnouncements((announceRows || []) as { id: string; title: string; content: string }[]);
         setLoading(false);
@@ -273,27 +274,18 @@ export default function MyPage() {
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
                 {/* ヘッダー */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                     <div>
                         <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>{name || "名前未設定"}</h1>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => router.push("/shop")} style={{ background: "rgba(251,191,36,0.15)", color: "#fbbf24", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.3)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>🛍️ ショップ</button>
-                        <button onClick={() => router.push("/thanks")} style={{ background: "rgba(251,191,36,0.15)", color: "#fbbf24", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.3)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>🎉 サンキュー</button>
-                        <button onClick={() => router.push("/learn")} style={{ background: "rgba(52,211,153,0.15)", color: "#34d399", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(52,211,153,0.3)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>📚 学習</button>
-                        <button onClick={() => router.push("/ranking")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>ランキング</button>
-                        <button onClick={() => router.push("/report")} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>日報提出</button>
-                        <button onClick={() => router.push("/admin")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>管理画面</button>
-                        <button onClick={handleLogout} style={{ background: "transparent", color: "#6b7280", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>ログアウト</button>
+                        <button onClick={() => router.push("/report")} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>📋 日報提出</button>
+                        <button onClick={() => router.push("/menu")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>☰ メニュー</button>
                     </div>
                 </div>
 
-                {message && (
-                    <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>
-                        {message}
-                    </div>
-                )}
+                {/* お知らせバナー */}
                 {announcements.filter(a => !closedAnnouncements.includes(a.id)).map((a) => (
                     <div key={a.id} style={{ marginBottom: 12, padding: "14px 20px", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
@@ -303,6 +295,13 @@ export default function MyPage() {
                         <button onClick={() => setClosedAnnouncements(prev => [...prev, a.id])} style={{ marginLeft: 16, background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 18 }}>×</button>
                     </div>
                 ))}
+
+                {message && (
+                    <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>
+                        {message}
+                    </div>
+                )}
+
                 {/* メイングリッド */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
@@ -369,15 +368,15 @@ export default function MyPage() {
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>BADGES</div>
-                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedCount} / {badges.length} 解锁済み</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedCount} / {badges.length} 解錠済み</div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
                         {badges.map((badge) => (
-                            <div key={badge.id} style={{ padding: 16, borderRadius: 12, background: badge.unlocked ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.02)", border: `1px solid ${badge.unlocked ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)"}`, textAlign: "center", opacity: badge.unlocked ? 1 : 0.4, transition: "all 0.2s" }}>
+                            <div key={badge.id} style={{ padding: 16, borderRadius: 12, background: badge.unlocked ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.02)", border: `1px solid ${badge.unlocked ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)"}`, textAlign: "center", opacity: badge.unlocked ? 1 : 0.4 }}>
                                 <div style={{ fontSize: 32, marginBottom: 8 }}>{badge.unlocked ? badge.icon : "🔒"}</div>
                                 <div style={{ fontSize: 13, fontWeight: 700, color: badge.unlocked ? "#f9fafb" : "#6b7280" }}>{badge.name}</div>
                                 <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{badge.description}</div>
-                                {badge.unlocked && <div style={{ marginTop: 8, fontSize: 10, color: "#818cf8", fontWeight: 700 }}>✅ 解锁済み</div>}
+                                {badge.unlocked && <div style={{ marginTop: 8, fontSize: 10, color: "#818cf8", fontWeight: 700 }}>✅ 解錠済み</div>}
                             </div>
                         ))}
                     </div>
