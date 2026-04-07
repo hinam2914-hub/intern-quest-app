@@ -275,6 +275,7 @@ export default function MyPage() {
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>{name || "名前未設定"}</h1>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => router.push("/thanks")} style={{ background: "rgba(251,191,36,0.15)", color: "#fbbf24", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.3)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>🎉 サンキュー</button>
                         <button onClick={() => router.push("/ranking")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>ランキング</button>
                         <button onClick={() => router.push("/report")} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>日報提出</button>
                         <button onClick={() => router.push("/admin")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>管理画面</button>
