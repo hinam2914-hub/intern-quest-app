@@ -370,6 +370,7 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+                )}
 
                 {/* ダッシュボードタブ */}
                 {activeTab === "dashboard" && (
