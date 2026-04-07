@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 type PointHistory = {
     id?: string;
@@ -18,6 +19,8 @@ type ProfileRow = {
     streak?: number | null;
     last_report_date?: string | null;
 };
+
+type GraphData = { date: string; points: number };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -39,10 +42,7 @@ function isSameJSTDay(value: string, targetYmd: string): boolean {
 
 function formatDateTimeJST(value: string): string {
     const date = new Date(value);
-    return date.toLocaleString("ja-JP", {
-        year: "numeric", month: "numeric", day: "numeric",
-        hour: "2-digit", minute: "2-digit",
-    });
+    return date.toLocaleString("ja-JP", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function formatReason(reason?: string | null): string {
@@ -54,28 +54,20 @@ function formatReason(reason?: string | null): string {
     return reason;
 }
 
-function getLevel(points: number): number {
-    return Math.max(1, Math.floor(points / 100) + 1);
-}
-
-function getExp(points: number): number {
-    return points % 100;
-}
-
+function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
+function getExp(points: number): number { return points % 100; }
 function getBadge(level: number): string {
     if (level >= 15) return "達人";
     if (level >= 10) return "上級者";
     if (level >= 5) return "中級者";
     return "初級者";
 }
-
 function getBadgeColor(level: number): string {
     if (level >= 15) return "linear-gradient(135deg, #f59e0b, #ef4444)";
     if (level >= 10) return "linear-gradient(135deg, #6366f1, #8b5cf6)";
     if (level >= 5) return "linear-gradient(135deg, #06b6d4, #3b82f6)";
     return "linear-gradient(135deg, #374151, #6b7280)";
 }
-
 function getRank(score: number): string {
     if (score >= 90) return "SS";
     if (score >= 80) return "S";
@@ -84,7 +76,6 @@ function getRank(score: number): string {
     if (score >= 50) return "C";
     return "D";
 }
-
 function getRankColor(rank: string): string {
     if (rank === "SS") return "linear-gradient(135deg, #f59e0b, #ef4444)";
     if (rank === "S") return "linear-gradient(135deg, #a855f7, #ec4899)";
@@ -93,10 +84,7 @@ function getRankColor(rank: string): string {
     if (rank === "C") return "linear-gradient(135deg, #84cc16, #22c55e)";
     return "linear-gradient(135deg, #374151, #6b7280)";
 }
-
-function getRankScore(params: {
-    level: number; streak: number; points: number; isSubmitted: boolean;
-}): number {
+function getRankScore(params: { level: number; streak: number; points: number; isSubmitted: boolean }): number {
     const { level, streak, points, isSubmitted } = params;
     let score = 0;
     score += Math.min(level * 2.5, 40);
@@ -105,7 +93,6 @@ function getRankScore(params: {
     score += isSubmitted ? 10 : 0;
     return Math.min(Math.round(score), 100);
 }
-
 function getNextRankInfo(rank: string): string {
     if (rank === "SS") return "最高ランク到達！";
     if (rank === "S") return "あと少しでSS到達";
@@ -114,38 +101,36 @@ function getNextRankInfo(rank: string): string {
     if (rank === "C") return "Bランクを目指そう";
     return "Cランクを目指そう";
 }
-
 function getActionMessage(isSubmitted: boolean, streak: number): string {
     if (!isSubmitted) return "📋 日報を提出してポイントを獲得しましょう";
     if (streak >= 7) return "🔥 連続提出が素晴らしい。この調子で継続しましょう";
     if (streak >= 3) return "⚡ 継続できています。次は上位を狙いましょう";
     return "📚 学習コンテンツを進めましょう";
 }
-
-function generateAIComment(params: {
-    name: string; level: number; rank2: string; rankScore: number;
-    streak: number; isSubmitted: boolean; points: number;
-}): string {
+function generateAIComment(params: { name: string; level: number; rank2: string; rankScore: number; streak: number; isSubmitted: boolean; points: number }): string {
     const { name, level, rank2, streak, isSubmitted, points } = params;
-    if (!isSubmitted && streak <= 1) {
-        return `${name}さん、今日はまだ日報が未提出です。小さな一歩でも記録することで成長が加速します。今すぐ提出しましょう！`;
-    }
-    if (streak >= 7) {
-        return `${name}さん、${streak}日連続提出は本物の習慣力の証です。この継続力こそが市場価値を高める最大の武器。ランク${rank2}はあなたの実力を正しく示しています。`;
-    }
-    if (streak >= 3) {
-        return `${name}さん、${streak}日連続で素晴らしい！継続は最強のスキルです。このペースを維持すればランクアップも近いです。`;
-    }
-    if (rank2 === "SS" || rank2 === "S") {
-        return `${name}さん、ランク${rank2}到達おめでとうございます！トップクラスの成長速度です。この調子でインターン業界をリードしていきましょう。`;
-    }
-    if (level >= 10) {
-        return `${name}さん、Lv.${level}まで成長しました。${points}ptという実績はあなたの努力の証。次はランクアップを狙いましょう！`;
-    }
-    if (points < 100) {
-        return `${name}さん、まだ始まったばかりです。毎日の日報提出を続けることで、一気に成長できます。今日から習慣にしましょう！`;
-    }
+    if (!isSubmitted && streak <= 1) return `${name}さん、今日はまだ日報が未提出です。小さな一歩でも記録することで成長が加速します。今すぐ提出しましょう！`;
+    if (streak >= 7) return `${name}さん、${streak}日連続提出は本物の習慣力の証です。この継続力こそが市場価値を高める最大の武器。ランク${rank2}はあなたの実力を正しく示しています。`;
+    if (streak >= 3) return `${name}さん、${streak}日連続で素晴らしい！継続は最強のスキルです。このペースを維持すればランクアップも近いです。`;
+    if (rank2 === "SS" || rank2 === "S") return `${name}さん、ランク${rank2}到達おめでとうございます！トップクラスの成長速度です。この調子でインターン業界をリードしていきましょう。`;
+    if (level >= 10) return `${name}さん、Lv.${level}まで成長しました。${points}ptという実績はあなたの努力の証。次はランクアップを狙いましょう！`;
+    if (points < 100) return `${name}さん、まだ始まったばかりです。毎日の日報提出を続けることで、一気に成長できます。今日から習慣にしましょう！`;
     return `${name}さん、着実に成長しています。日報の継続とKPI達成を意識することで、さらに上のランクが見えてきます。`;
+}
+
+function buildGraphData(history: PointHistory[]): GraphData[] {
+    const dayMap: Record<string, number> = {};
+    [...history].reverse().forEach((item) => {
+        const date = new Date(item.created_at);
+        const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+        const key = `${jst.getUTCMonth() + 1}/${jst.getUTCDate()}`;
+        dayMap[key] = (dayMap[key] || 0) + item.change;
+    });
+    let cumulative = 0;
+    return Object.entries(dayMap).map(([date, pts]) => {
+        cumulative += pts;
+        return { date, points: cumulative };
+    });
 }
 
 export default function MyPage() {
@@ -158,6 +143,7 @@ export default function MyPage() {
     const [streak, setStreak] = useState(1);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [history, setHistory] = useState<PointHistory[]>([]);
+    const [graphData, setGraphData] = useState<GraphData[]>([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
 
@@ -196,8 +182,10 @@ export default function MyPage() {
             setRank(myRank >= 0 ? myRank + 1 : null);
         }
 
-        const { data: historyRows } = await supabase.from("points_history").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
-        setHistory((historyRows || []) as PointHistory[]);
+        const { data: historyRows } = await supabase.from("points_history").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
+        const hist = (historyRows || []) as PointHistory[];
+        setHistory(hist);
+        setGraphData(buildGraphData(hist));
 
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
@@ -265,8 +253,6 @@ export default function MyPage() {
 
                 {/* メイングリッド */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
-
-                    {/* ポイントカード */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>TOTAL POINTS</div>
                         <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>{points.toLocaleString()}</div>
@@ -276,7 +262,6 @@ export default function MyPage() {
                         </div>
                     </div>
 
-                    {/* レベルカード */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>LEVEL</div>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
@@ -285,8 +270,7 @@ export default function MyPage() {
                         </div>
                         <div style={{ marginTop: 16 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6b7280", marginBottom: 6 }}>
-                                <span>EXP {exp}/100</span>
-                                <span>次まで {100 - exp}</span>
+                                <span>EXP {exp}/100</span><span>次まで {100 - exp}</span>
                             </div>
                             <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.08)" }}>
                                 <div style={{ height: "100%", width: `${exp}%`, background: "linear-gradient(90deg, #6366f1, #8b5cf6)", borderRadius: 999, transition: "width 0.6s ease" }} />
@@ -294,13 +278,10 @@ export default function MyPage() {
                         </div>
                     </div>
 
-                    {/* ランクカード */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>MARKET RANK</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                            <div style={{ width: 72, height: 72, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", boxShadow: "0 0 24px rgba(99,102,241,0.4)" }}>
-                                {rank2}
-                            </div>
+                            <div style={{ width: 72, height: 72, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", boxShadow: "0 0 24px rgba(99,102,241,0.4)" }}>{rank2}</div>
                             <div>
                                 <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 4 }}>スコア</div>
                                 <div style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb" }}>{rankScore}</div>
@@ -315,7 +296,6 @@ export default function MyPage() {
                         </div>
                     </div>
 
-                    {/* 連続提出カード */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>STREAK</div>
                         <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>{streak}</div>
@@ -330,14 +310,31 @@ export default function MyPage() {
                         <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🤖</div>
                         <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>AI METACOGNITION</div>
                     </div>
-                    <p style={{ margin: 0, fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>
-                        {aiComment}
-                    </p>
+                    <p style={{ margin: 0, fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
+                </div>
+
+                {/* ポイント推移グラフ */}
+                <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
+                    {graphData.length > 1 ? (
+                        <ResponsiveContainer width="100%" height={180}>
+                            <LineChart data={graphData}>
+                                <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                <Tooltip
+                                    contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }}
+                                    formatter={(value: number) => [`${value}pt`, "累計ポイント"]}
+                                />
+                                <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 4 }} activeDot={{ r: 6, fill: "#8b5cf6" }} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データが蓄積されるとグラフが表示されます</div>
+                    )}
                 </div>
 
                 {/* 下段 */}
                 <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 16 }}>
-
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
