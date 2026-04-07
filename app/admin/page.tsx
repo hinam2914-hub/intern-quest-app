@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabase";
 type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
+type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -17,6 +18,11 @@ function getTodayJST(): string {
     return `${y}-${m}-${d}`;
 }
 
+function formatDateTime(value: string): string {
+    const date = new Date(value);
+    return date.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 export default function AdminPage() {
     const router = useRouter();
     const [userCount, setUserCount] = useState(0);
@@ -25,9 +31,11 @@ export default function AdminPage() {
     const [topUsers, setTopUsers] = useState<TopUser[]>([]);
     const [topSubmitters, setTopSubmitters] = useState<TopSubmitter[]>([]);
     const [notSubmittedUsers, setNotSubmittedUsers] = useState<UserRow[]>([]);
+    const [reports, setReports] = useState<ReportRow[]>([]);
     const [copied, setCopied] = useState(false);
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
+    const [expandedReport, setExpandedReport] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -49,14 +57,21 @@ export default function AdminPage() {
             const todayYmd = getTodayJST();
 
             const { data: submissionRows } = period === "today"
-                ? await supabase.from("submissions").select("user_id, created_at").gte("created_at", `${todayYmd}T00:00:00`)
-                : await supabase.from("submissions").select("user_id, created_at").gte("created_at", from.toISOString());
+                ? await supabase.from("submissions").select("id, user_id, content, created_at").gte("created_at", `${todayYmd}T00:00:00`).order("created_at", { ascending: false })
+                : await supabase.from("submissions").select("id, user_id, content, created_at").gte("created_at", from.toISOString()).order("created_at", { ascending: false });
 
             const submissions = submissionRows || [];
             const submittedIds = [...new Set(submissions.map((row) => row.user_id))];
             setReportCount(submittedIds.length);
             setSubmitRate(users.length === 0 ? 0 : Math.round((submittedIds.length / users.length) * 100));
             setNotSubmittedUsers(users.filter((u) => !submittedIds.includes(u.id)));
+
+            // 日報に名前を付与
+            const reportsWithName: ReportRow[] = submissions.map((row) => ({
+                ...row,
+                userName: users.find((u) => u.id === row.user_id)?.name || "名前未設定",
+            }));
+            setReports(reportsWithName);
 
             const { data: pointRows } = await supabase.from("user_points").select("id, points").order("points", { ascending: false }).limit(3);
             if (pointRows && pointRows.length > 0) {
@@ -73,10 +88,8 @@ export default function AdminPage() {
     }, [period, router]);
 
     const periodLabel = period === "today" ? "今日" : period === "week" ? "今週" : "今月";
-
     const copyText = useMemo(() => notSubmittedUsers.map((u) => u.name || "名前未設定").join("\n"), [notSubmittedUsers]);
     const reminderText = useMemo(() => `${periodLabel}の日報が未提出の方へ\n\n${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}\n\n確認のうえ、ご対応をお願いいたします。`, [notSubmittedUsers, periodLabel]);
-
     const rankMedals = ["🥇", "🥈", "🥉"];
 
     if (loading) {
@@ -90,7 +103,6 @@ export default function AdminPage() {
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
 
-            {/* 背景グロー */}
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
@@ -132,6 +144,46 @@ export default function AdminPage() {
                     ))}
                 </div>
 
+                {/* 日報内容一覧 */}
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>REPORT CONTENTS</div>
+                    {reports.length === 0 ? (
+                        <div style={{ color: "#6b7280", fontSize: 14 }}>{periodLabel}の日報はまだありません</div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {reports.map((report) => (
+                                <div key={report.id} style={{ borderRadius: 12, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                                    <div
+                                        onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)}
+                                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "rgba(255,255,255,0.02)", cursor: "pointer" }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>
+                                                {report.userName?.charAt(0) || "?"}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: 14, fontWeight: 600, color: "#d1d5db" }}>{report.userName}</div>
+                                                <div style={{ fontSize: 11, color: "#6b7280" }}>{formatDateTime(report.created_at)}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <div style={{ fontSize: 12, color: "#9ca3af", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                {report.content}
+                                            </div>
+                                            <span style={{ color: "#6b7280", fontSize: 12 }}>{expandedReport === report.id ? "▲" : "▼"}</span>
+                                        </div>
+                                    </div>
+                                    {expandedReport === report.id && (
+                                        <div style={{ padding: "16px", background: "rgba(99,102,241,0.05)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                            <p style={{ margin: 0, fontSize: 14, color: "#c7d2fe", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{report.content}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* 下段グリッド */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
 
@@ -164,8 +216,6 @@ export default function AdminPage() {
 
                     {/* ランキング */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-                        {/* ポイントランキング */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>POINT RANKING</div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -178,7 +228,6 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        {/* 提出数ランキング */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SUBMISSION RANKING</div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
