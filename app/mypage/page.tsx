@@ -187,10 +187,10 @@ export default function MyPage() {
         const hist = (historyRows || []) as PointHistory[];
         setHistory(hist);
         setGraphData(buildGraphData(hist));
-        const [showNameModal, setShowNameModal] = useState(false);
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
-        if (!profileData?.name) setShowNameModal(true); setLoading(false);
+        if (!profileData?.name) setShowNameModal(true);
+        setLoading(false);
     };
 
     useEffect(() => { loadPage(); }, []);
