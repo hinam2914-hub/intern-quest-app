@@ -52,7 +52,7 @@ export default function AdminPage() {
             const adminEmails = ["hinam2914@gmail.com"];
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak");
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, role");
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
@@ -63,7 +63,7 @@ export default function AdminPage() {
                 id: p.id,
                 name: p.name || "名前未設定",
                 points: pointRows?.find((pt) => pt.id === p.id)?.points || 0,
-                streak: p.streak || 0,
+                streak: 0,
                 role: p.role || "Owner",
             }));
             setUserDetails(details);
