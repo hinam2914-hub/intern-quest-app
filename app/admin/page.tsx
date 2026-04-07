@@ -13,6 +13,7 @@ type UserDetail = { id: string; name: string; points: number; streak: number; ro
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
 type AnnounceRow = { id: string; title: string; content: string; created_at: string; is_active: boolean };
+type RequestRow = { id: string; user_id: string; shop_item_id: string; cost: number; status: string; note: string | null; created_at: string; userName?: string; itemTitle?: string };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -44,7 +45,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -67,6 +68,8 @@ export default function AdminPage() {
     const [contentBody, setContentBody] = useState("");
     const [contentSaving, setContentSaving] = useState(false);
     const [contentMessage, setContentMessage] = useState("");
+    const [requestsList, setRequestsList] = useState<RequestRow[]>([]);
+    const [processingRequest, setProcessingRequest] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -140,8 +143,18 @@ export default function AdminPage() {
 
             const { data: kpiRows } = await supabase.from("kpi_items").select("*").order("created_at", { ascending: false });
             setKpiItems(kpiRows || []);
+
             const { data: contentsRows } = await supabase.from("contents").select("*").order("created_at", { ascending: false });
             setContentsList(contentsRows || []);
+
+            const { data: shopItems } = await supabase.from("shop_items").select("id, title");
+            const { data: reqRows } = await supabase.from("point_requests").select("*").order("created_at", { ascending: false });
+            setRequestsList((reqRows || []).map((r: any) => ({
+                ...r,
+                userName: users.find(u => u.id === r.user_id)?.name || "名前未設定",
+                itemTitle: shopItems?.find((s: any) => s.id === r.shop_item_id)?.title || "不明",
+            })));
+
             setLoading(false);
         };
         load();
@@ -183,10 +196,27 @@ export default function AdminPage() {
         setKpiSaving(false);
     };
 
+    const handleApproveRequest = async (req: RequestRow, approve: boolean) => {
+        setProcessingRequest(req.id);
+        const nowIso = new Date().toISOString();
+        await supabase.from("point_requests").update({ status: approve ? "approved" : "rejected", updated_at: nowIso }).eq("id", req.id);
+
+        if (approve) {
+            const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", req.user_id).single();
+            const current = pointRow?.points || 0;
+            await supabase.from("user_points").update({ points: current - req.cost }).eq("id", req.user_id);
+            await supabase.from("points_history").insert({ user_id: req.user_id, change: -req.cost, reason: "shop_purchase", created_at: nowIso });
+        }
+
+        setRequestsList(prev => prev.map(r => r.id === req.id ? { ...r, status: approve ? "approved" : "rejected" } : r));
+        setProcessingRequest(null);
+    };
+
     const periodLabel = period === "today" ? "今日" : period === "week" ? "今週" : "今月";
     const copyText = useMemo(() => notSubmittedUsers.map((u) => u.name || "名前未設定").join("\n"), [notSubmittedUsers]);
     const reminderText = useMemo(() => `${periodLabel}の日報が未提出の方へ\n\n${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}\n\n確認のうえ、ご対応をお願いいたします。`, [notSubmittedUsers, periodLabel]);
     const rankMedals = ["🥇", "🥈", "🥉"];
+    const pendingCount = requestsList.filter(r => r.status === "pending").length;
 
     if (loading) {
         return (
@@ -213,15 +243,16 @@ export default function AdminPage() {
                 </div>
 
                 {/* タブ */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
                     {[
                         { key: "dashboard", label: "ダッシュボード" },
                         { key: "users", label: "ユーザー一覧" },
                         { key: "announce", label: "📢 お知らせ" },
                         { key: "kpi", label: "📊 KPI設定" },
                         { key: "contents", label: "📚 コンテンツ" },
+                        { key: "requests", label: `🛍️ 申請管理${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
                     ].map((tab) => (
-                        <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : "#9ca3af" }}>
+                        <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
                             {tab.label}
                         </button>
                     ))}
@@ -295,9 +326,7 @@ export default function AdminPage() {
                         </div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>ANNOUNCEMENTS</div>
-                            {announceList.length === 0 ? (
-                                <div style={{ color: "#6b7280", fontSize: 14 }}>お知らせはありません</div>
-                            ) : (
+                            {announceList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>お知らせはありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {announceList.map((item) => (
                                         <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${item.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}` }}>
@@ -345,9 +374,7 @@ export default function AdminPage() {
                         </div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI ITEMS</div>
-                            {kpiItems.length === 0 ? (
-                                <div style={{ color: "#6b7280", fontSize: 14 }}>KPI項目がありません</div>
-                            ) : (
+                            {kpiItems.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPI項目がありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {kpiItems.map((item) => (
                                         <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${item.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -365,6 +392,7 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+
                 {/* コンテンツタブ */}
                 {activeTab === "contents" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -397,31 +425,24 @@ export default function AdminPage() {
                                     <textarea value={contentBody} onChange={(e) => setContentBody(e.target.value)} placeholder="記事の内容を書いてください..." style={{ width: "100%", height: 160, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
                                 </div>
                             )}
-                            <button
-                                onClick={async () => {
-                                    if (!contentTitle.trim()) { setContentMessage("タイトルを入力してください"); return; }
-                                    setContentSaving(true);
-                                    const { data: { user } } = await supabase.auth.getUser();
-                                    await supabase.from("contents").insert({ title: contentTitle.trim(), description: contentDesc.trim(), content_type: contentType, url: contentUrl.trim() || null, body: contentBody.trim() || null, is_active: true, created_by: user?.id });
-                                    const { data: rows } = await supabase.from("contents").select("*").order("created_at", { ascending: false });
-                                    setContentsList(rows || []);
-                                    setContentTitle(""); setContentDesc(""); setContentUrl(""); setContentBody("");
-                                    setContentMessage("✅ コンテンツを追加しました！");
-                                    setContentSaving(false);
-                                }}
-                                disabled={contentSaving}
-                                style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
-                            >
+                            <button onClick={async () => {
+                                if (!contentTitle.trim()) { setContentMessage("タイトルを入力してください"); return; }
+                                setContentSaving(true);
+                                const { data: { user } } = await supabase.auth.getUser();
+                                await supabase.from("contents").insert({ title: contentTitle.trim(), description: contentDesc.trim(), content_type: contentType, url: contentUrl.trim() || null, body: contentBody.trim() || null, is_active: true, created_by: user?.id });
+                                const { data: rows } = await supabase.from("contents").select("*").order("created_at", { ascending: false });
+                                setContentsList(rows || []);
+                                setContentTitle(""); setContentDesc(""); setContentUrl(""); setContentBody("");
+                                setContentMessage("✅ コンテンツを追加しました！");
+                                setContentSaving(false);
+                            }} disabled={contentSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
                                 {contentSaving ? "追加中..." : "📚 追加する"}
                             </button>
                             {contentMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399" }}>{contentMessage}</div>}
                         </div>
-
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>CONTENTS</div>
-                            {contentsList.length === 0 ? (
-                                <div style={{ color: "#6b7280", fontSize: 14 }}>コンテンツがありません</div>
-                            ) : (
+                            {contentsList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>コンテンツがありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {contentsList.map((item) => (
                                         <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${item.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -432,13 +453,7 @@ export default function AdminPage() {
                                                 </div>
                                                 {item.description && <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>{item.description}</div>}
                                             </div>
-                                            <button
-                                                onClick={async () => {
-                                                    await supabase.from("contents").update({ is_active: !item.is_active }).eq("id", item.id);
-                                                    setContentsList(prev => prev.map(c => c.id === item.id ? { ...c, is_active: !c.is_active } : c));
-                                                }}
-                                                style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}
-                                            >
+                                            <button onClick={async () => { await supabase.from("contents").update({ is_active: !item.is_active }).eq("id", item.id); setContentsList(prev => prev.map(c => c.id === item.id ? { ...c, is_active: !c.is_active } : c)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
                                                 {item.is_active ? "非表示" : "表示する"}
                                             </button>
                                         </div>
@@ -448,6 +463,52 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+
+                {/* 申請管理タブ */}
+                {activeTab === "requests" && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT REQUESTS</div>
+                        {requestsList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>申請はありません</div> : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {requestsList.map((req) => (
+                                    <div key={req.id} style={{ padding: "16px 20px", borderRadius: 12, background: req.status === "pending" ? "rgba(251,191,36,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${req.status === "pending" ? "rgba(251,191,36,0.3)" : req.status === "approved" ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}` }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <div>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{req.userName}</span>
+                                                    <span style={{ fontSize: 12, color: "#6b7280" }}>→</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 600, color: "#c7d2fe" }}>{req.itemTitle}</span>
+                                                </div>
+                                                <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6b7280" }}>
+                                                    <span>{req.cost} pt</span>
+                                                    <span>{formatDateTime(req.created_at)}</span>
+                                                    {req.note && <span>備考: {req.note}</span>}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                {req.status === "pending" ? (
+                                                    <>
+                                                        <button onClick={() => handleApproveRequest(req, true)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                                                            ✅ 承認
+                                                        </button>
+                                                        <button onClick={() => handleApproveRequest(req, false)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                                                            ❌ 却下
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <div style={{ padding: "6px 14px", borderRadius: 8, background: req.status === "approved" ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)", color: req.status === "approved" ? "#34d399" : "#f87171", fontSize: 13, fontWeight: 700 }}>
+                                                        {req.status === "approved" ? "✅ 承認済" : "❌ 却下"}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* ダッシュボードタブ */}
                 {activeTab === "dashboard" && (
                     <>
@@ -502,9 +563,7 @@ export default function AdminPage() {
                         </div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>REPORT CONTENTS</div>
-                            {reports.length === 0 ? (
-                                <div style={{ color: "#6b7280", fontSize: 14 }}>{periodLabel}の日報はまだありません</div>
-                            ) : (
+                            {reports.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>{periodLabel}の日報はまだありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {reports.map((report) => (
                                         <div key={report.id} style={{ borderRadius: 12, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
@@ -546,9 +605,7 @@ export default function AdminPage() {
                                             <span style={{ fontWeight: 600, color: "#fca5a5", fontSize: 14 }}>{u.name || "名前未設定"}</span>
                                             <a href={`https://line.me/R/msg/text/?${encodeURIComponent(`${u.name || ""}さん、日報の提出をお願いします。`)}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#818cf8", textDecoration: "none", fontWeight: 600 }}>連絡 →</a>
                                         </div>
-                                    )) : (
-                                        <div style={{ padding: 16, borderRadius: 10, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#34d399", fontSize: 14, fontWeight: 600 }}>✅ 全員提出済み（{periodLabel}）</div>
-                                    )}
+                                    )) : <div style={{ padding: 16, borderRadius: 10, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#34d399", fontSize: 14, fontWeight: 600 }}>✅ 全員提出済み（{periodLabel}）</div>}
                                 </div>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
