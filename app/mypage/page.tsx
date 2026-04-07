@@ -316,14 +316,14 @@ export default function MyPage() {
                 {/* ポイント推移グラフ */}
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
-                    {graphData.length > 1 ? (
+                    {graphData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={180}>
                             <LineChart data={graphData}>
                                 <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
                                 <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
                                 <Tooltip
                                     contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }}
-                                    formatter={(value: number) => [`${value}pt`, "累計ポイント"]}
+                                    formatter={(value: unknown) => [`${value}pt`, "累計ポイント"]}
                                 />
                                 <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 4 }} activeDot={{ r: 6, fill: "#8b5cf6" }} />
                             </LineChart>
