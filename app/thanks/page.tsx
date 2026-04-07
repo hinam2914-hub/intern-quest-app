@@ -206,7 +206,7 @@ export default function ThanksPage() {
                     <div style={{ padding: "10px 16px", borderRadius: 8, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", marginBottom: 16 }}>
                         <span style={{ fontSize: 13, color: "#fbbf24" }}>🎁 送ると相手に +1pt プレゼント！（1日1人まで）</span>
                     </div>
-
+                    <button onClick={() => router.push("/shop")} style={{ background: "rgba(251,191,36,0.15)", color: "#fbbf24", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.3)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>🛍️ ショップ</button>
                     <button
                         onClick={handleSend}
                         disabled={sending}
