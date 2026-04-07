@@ -168,6 +168,8 @@ export default function MyPage() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [showNameModal, setShowNameModal] = useState(false);
+    const [announcements, setAnnouncements] = useState<{ id: string; title: string; content: string }[]>([]);
+    const [closedAnnouncements, setClosedAnnouncements] = useState<string[]>([]);
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -214,6 +216,8 @@ export default function MyPage() {
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
         if (!profileData?.name) setShowNameModal(true);
+        const { data: announceRows } = await supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
+        setAnnouncements((announceRows || []) as { id: string; title: string; content: string }[]);
         setLoading(false);
     };
 
@@ -288,7 +292,15 @@ export default function MyPage() {
                         {message}
                     </div>
                 )}
-
+                {announcements.filter(a => !closedAnnouncements.includes(a.id)).map((a) => (
+                    <div key={a.id} style={{ marginBottom: 12, padding: "14px 20px", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#818cf8", marginBottom: 4 }}>📢 {a.title}</div>
+                            <div style={{ fontSize: 13, color: "#c7d2fe", lineHeight: 1.6 }}>{a.content}</div>
+                        </div>
+                        <button onClick={() => setClosedAnnouncements(prev => [...prev, a.id])} style={{ marginLeft: 16, background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 18 }}>×</button>
+                    </div>
+                ))}
                 {/* メイングリッド */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
