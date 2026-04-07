@@ -22,6 +22,14 @@ type ProfileRow = {
 
 type GraphData = { date: string; points: number };
 
+type Badge = {
+    id: string;
+    icon: string;
+    name: string;
+    description: string;
+    unlocked: boolean;
+};
+
 function getTodayJST(): string {
     const now = new Date();
     const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
@@ -56,7 +64,7 @@ function formatReason(reason?: string | null): string {
 
 function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
 function getExp(points: number): number { return points % 100; }
-function getBadge(level: number): string {
+function getBadgeLabel(level: number): string {
     if (level >= 15) return "達人";
     if (level >= 10) return "上級者";
     if (level >= 5) return "中級者";
@@ -133,6 +141,19 @@ function buildGraphData(history: PointHistory[]): GraphData[] {
     });
 }
 
+function getBadges(points: number, streak: number): Badge[] {
+    return [
+        { id: "first_step", icon: "🔥", name: "はじめの一歩", description: "3日連続提出", unlocked: streak >= 3 },
+        { id: "keep_going", icon: "⚡", name: "継続の力", description: "7日連続提出", unlocked: streak >= 7 },
+        { id: "habit_master", icon: "💎", name: "習慣マスター", description: "30日連続提出", unlocked: streak >= 30 },
+        { id: "newbie", icon: "🌱", name: "新人", description: "100pt達成", unlocked: points >= 100 },
+        { id: "growing", icon: "⭐", name: "成長中", description: "500pt達成", unlocked: points >= 500 },
+        { id: "ace", icon: "🏆", name: "エース", description: "1000pt達成", unlocked: points >= 1000 },
+        { id: "legend", icon: "👑", name: "レジェンド", description: "5000pt達成", unlocked: points >= 5000 },
+        { id: "combo", icon: "🎯", name: "コンボ", description: "3日連続＋100pt", unlocked: streak >= 3 && points >= 100 },
+    ];
+}
+
 export default function MyPage() {
     const router = useRouter();
     const [userId, setUserId] = useState("");
@@ -151,7 +172,7 @@ export default function MyPage() {
     const todayYmd = getTodayJST();
     const level = getLevel(points);
     const exp = getExp(points);
-    const badge = getBadge(level);
+    const badgeLabel = getBadgeLabel(level);
     const badgeColor = getBadgeColor(level);
     const actionMessage = getActionMessage(isSubmitted, streak);
     const rankScore = getRankScore({ level, streak, points, isSubmitted });
@@ -159,6 +180,8 @@ export default function MyPage() {
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
+    const badges = getBadges(points, streak);
+    const unlockedCount = badges.filter(b => b.unlocked).length;
 
     const loadPage = async () => {
         setLoading(true);
@@ -187,6 +210,7 @@ export default function MyPage() {
         const hist = (historyRows || []) as PointHistory[];
         setHistory(hist);
         setGraphData(buildGraphData(hist));
+
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
         if (!profileData?.name) setShowNameModal(true);
@@ -234,22 +258,12 @@ export default function MyPage() {
                         <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 8 }}>INTERN QUEST</div>
                         <h2 style={{ fontSize: 24, fontWeight: 800, color: "#f9fafb", margin: "0 0 8px" }}>名前を教えてください</h2>
                         <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 24px" }}>ランキングや管理画面に表示されます</p>
-                        <input
-                            value={inputName}
-                            onChange={(e) => setInputName(e.target.value)}
-                            placeholder="例：田中太郎"
-                            onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
-                            style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", marginBottom: 16 }}
-                        />
-                        <button
-                            onClick={async () => { await handleSaveName(); setShowNameModal(false); }}
-                            style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 16 }}
-                        >
-                            登録する →
-                        </button>
+                        <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="例：田中太郎" onKeyDown={(e) => e.key === "Enter" && handleSaveName()} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
+                        <button onClick={async () => { await handleSaveName(); setShowNameModal(false); }} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 16 }}>登録する →</button>
                     </div>
                 </div>
             )}
+
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
@@ -289,7 +303,7 @@ export default function MyPage() {
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>LEVEL</div>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
                             <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>Lv.{level}</div>
-                            <div style={{ padding: "4px 10px", borderRadius: 6, background: badgeColor, fontSize: 12, fontWeight: 700, color: "#fff" }}>{badge}</div>
+                            <div style={{ padding: "4px 10px", borderRadius: 6, background: badgeColor, fontSize: 12, fontWeight: 700, color: "#fff" }}>{badgeLabel}</div>
                         </div>
                         <div style={{ marginTop: 16 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6b7280", marginBottom: 6 }}>
@@ -336,6 +350,24 @@ export default function MyPage() {
                     <p style={{ margin: 0, fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
                 </div>
 
+                {/* バッジ */}
+                <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>BADGES</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedCount} / {badges.length} 解锁済み</div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                        {badges.map((badge) => (
+                            <div key={badge.id} style={{ padding: 16, borderRadius: 12, background: badge.unlocked ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.02)", border: `1px solid ${badge.unlocked ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)"}`, textAlign: "center", opacity: badge.unlocked ? 1 : 0.4, transition: "all 0.2s" }}>
+                                <div style={{ fontSize: 32, marginBottom: 8 }}>{badge.unlocked ? badge.icon : "🔒"}</div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: badge.unlocked ? "#f9fafb" : "#6b7280" }}>{badge.name}</div>
+                                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{badge.description}</div>
+                                {badge.unlocked && <div style={{ marginTop: 8, fontSize: 10, color: "#818cf8", fontWeight: 700 }}>✅ 解锁済み</div>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 {/* ポイント推移グラフ */}
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
@@ -344,10 +376,7 @@ export default function MyPage() {
                             <LineChart data={graphData}>
                                 <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
                                 <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
-                                <Tooltip
-                                    contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }}
-                                    formatter={(value: unknown) => [`${value}pt`, "累計ポイント"]}
-                                />
+                                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計ポイント"]} />
                                 <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 4 }} activeDot={{ r: 6, fill: "#8b5cf6" }} />
                             </LineChart>
                         </ResponsiveContainer>
