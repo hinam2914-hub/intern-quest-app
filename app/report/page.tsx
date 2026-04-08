@@ -81,14 +81,20 @@ export default function ReportPage() {
         let bonus = 0;
         if (profileRow?.last_report_date) {
             const lastYmd = toJSTDateOnly(profileRow.last_report_date);
-            const todayDate = new Date(todayYmd);
+            const todayDate = new Date(`${todayYmd}T00:00:00+09:00`);
             const yesterdayDate = new Date(todayDate);
             yesterdayDate.setDate(todayDate.getDate() - 1);
-            const yesterdayYmd = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, "0")}-${String(yesterdayDate.getDate()).padStart(2, "0")}`;
-            newStreak = lastYmd === yesterdayYmd ? (profileRow.streak || 0) + 1 : 1;
+            const yesterdayYmd = yesterdayDate.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+            if (lastYmd === yesterdayYmd) {
+                newStreak = (profileRow.streak || 0) + 1;
+            } else if (lastYmd === todayYmd) {
+                newStreak = profileRow.streak || 1;
+            } else {
+                newStreak = 1;
+            }
         }
-        if (newStreak === 3) bonus = 5;
-        if (newStreak === 7) bonus = 10;
+        if (newStreak >= 3) bonus = 5;
+        if (newStreak >= 7) bonus = 10;
         const addPoints = 2 + bonus;
 
         await supabase.from("user_points").update({ points: currentPoints + addPoints }).eq("id", user.id);
