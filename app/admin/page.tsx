@@ -82,7 +82,7 @@ export default function AdminPage() {
             setLoading(true);
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
-            const adminEmails = ["hinam2914@gmail.com"];
+            const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
             const { data: profileRows } = await supabase.from("profiles").select("id, name, role");
