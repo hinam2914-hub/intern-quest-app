@@ -377,7 +377,6 @@ export default function AdminPage() {
                                             ) : (
                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                     <div style={{ textAlign: "right" }}>
-                                                       // ポイント表示の前に追加
                                                         {(() => {
                                                             const level = Math.max(1, Math.floor(u.points / 100) + 1);
                                                             const score = getRankScore({ level, streak: u.streak, submissionCount: u.submissionCount, thanksCount: u.thanksCount, kpiCount: u.kpiCount, activeDays: u.activeDays, education: u.education });

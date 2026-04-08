@@ -191,6 +191,9 @@ export default function MyPage() {
     const [thanksCount, setThanksCount] = useState(0);
     const [kpiCount, setKpiCount] = useState(0);
     const [activeDays, setActiveDays] = useState(0);
+    const [todayKpiDone, setTodayKpiDone] = useState(false);
+    const [todayThanksDone, setTodayThanksDone] = useState(false);
+    const [todayLearnDone, setTodayLearnDone] = useState(false);
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -264,7 +267,18 @@ export default function MyPage() {
 
         const { data: announceRows } = await supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
         setAnnouncements((announceRows || []) as { id: string; title: string; content: string }[]);
+        // デイリーミッション確認
+        const { data: todayKpiRows } = await supabase
+            .from("kpi_logs").select("created_at").eq("user_id", user.id);
+        setTodayKpiDone(todayKpiRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
 
+        const { data: todayThanksRows } = await supabase
+            .from("thanks").select("created_at").eq("from_user_id", user.id);
+        setTodayThanksDone(todayThanksRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
+
+        const { data: todayLearnRows } = await supabase
+            .from("content_completions").select("created_at").eq("user_id", user.id);
+        setTodayLearnDone(todayLearnRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
         setLoading(false);
     };
 
@@ -441,7 +455,50 @@ export default function MyPage() {
                         </div>
                     )}
                 </div>
-
+                {/* デイリーミッション */}
+                <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>DAILY MISSIONS</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>
+                            {[true, isSubmitted, todayKpiDone, todayThanksDone, todayLearnDone].filter(Boolean).length} / 5 完了
+                        </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {[
+                            { icon: "🔐", label: "ログインする", done: true, pt: "+1pt", path: null },
+                            { icon: "📋", label: "日報を提出する", done: isSubmitted, pt: "+2pt", path: "/report" },
+                            { icon: "📊", label: "KPIを入力する", done: todayKpiDone, pt: "✨", path: "/report" },
+                            { icon: "🎉", label: "サンキューを送る", done: todayThanksDone, pt: "✨", path: "/thanks" },
+                            { icon: "📚", label: "学習を完了する", done: todayLearnDone, pt: "+2pt", path: "/learn" },
+                        ].map((mission) => (
+                            <div
+                                key={mission.label}
+                                onClick={() => mission.path && !mission.done && router.push(mission.path)}
+                                style={{
+                                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                                    padding: "12px 16px", borderRadius: 12,
+                                    background: mission.done ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.02)",
+                                    border: `1px solid ${mission.done ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.06)"}`,
+                                    cursor: mission.path && !mission.done ? "pointer" : "default",
+                                    opacity: mission.done ? 1 : 0.8,
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    <span style={{ fontSize: 20 }}>{mission.done ? "✅" : mission.icon}</span>
+                                    <span style={{ fontSize: 14, fontWeight: 600, color: mission.done ? "#34d399" : "#d1d5db", textDecoration: mission.done ? "line-through" : "none" }}>
+                                        {mission.label}
+                                    </span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: mission.done ? "#34d399" : "#6b7280" }}>{mission.pt}</span>
+                                    {!mission.done && mission.path && (
+                                        <span style={{ fontSize: 12, color: "#6366f1", fontWeight: 700 }}>→</span>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
                 {/* AIメタ認知コメント */}
                 <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
