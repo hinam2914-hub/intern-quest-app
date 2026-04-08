@@ -19,6 +19,8 @@ type ProfileRow = {
     name?: string | null;
     streak?: number | null;
     last_report_date?: string | null;
+    education?: string | null;
+    started_at?: string | null;
 };
 
 type GraphData = { date: string; points: number };
@@ -60,6 +62,10 @@ function formatReason(reason?: string | null): string {
     if (reason === "login_bonus") return "ログインボーナス";
     if (reason === "report_submit") return "日報提出";
     if (reason === "streak_bonus") return "連続提出ボーナス";
+    if (reason === "content_complete") return "学習完了";
+    if (reason === "thanks_received") return "サンキュー受領";
+    if (reason === "shop_purchase") return "ショップ購入";
+    if (reason === "admin_edit") return "管理者編集";
     return reason;
 }
 
@@ -98,29 +104,14 @@ function getRankScore(params: {
     submissionCount: number; thanksCount: number; kpiCount: number;
     activeDays: number; education: string;
 }): number {
-    const { level, streak, points, submissionCount, thanksCount, kpiCount, activeDays, education } = params;
-
-    // 1. 学歴（0-10pt）
+    const { level, streak, submissionCount, thanksCount, kpiCount, activeDays, education } = params;
     const eduScore = education ? 8 : 0;
-
-    // 2. 活動期間（0-15pt）
     const activityScore = Math.min(activeDays * 0.5, 15);
-
-    // 3. 実績KPI（0-15pt）
     const kpiScore = Math.min(kpiCount * 3, 15);
-
-    // 4. 再現性・継続率（0-20pt）
     const streakScore = Math.min(streak * 2, 20);
-
-    // 5. リーダーシップ・サンキュー（0-10pt）
     const leaderScore = Math.min(thanksCount * 2, 10);
-
-    // 6. アウトプット・日報数（0-20pt）
     const outputScore = Math.min(submissionCount * 2, 20);
-
-    // 7. メタ認知・レベル（0-10pt）
     const metaScore = Math.min(level, 10);
-
     const total = eduScore + activityScore + kpiScore + streakScore + leaderScore + outputScore + metaScore;
     return Math.min(Math.round(total), 100);
 }
@@ -182,6 +173,7 @@ export default function MyPage() {
     const [userId, setUserId] = useState("");
     const [name, setName] = useState("");
     const [inputName, setInputName] = useState("");
+    const [education, setEducation] = useState("");
     const [points, setPoints] = useState(0);
     const [rank, setRank] = useState<number | null>(null);
     const [streak, setStreak] = useState(0);
@@ -199,7 +191,6 @@ export default function MyPage() {
     const [thanksCount, setThanksCount] = useState(0);
     const [kpiCount, setKpiCount] = useState(0);
     const [activeDays, setActiveDays] = useState(0);
-    const [education, setEducation] = useState("");
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -227,6 +218,13 @@ export default function MyPage() {
             setName(profile.name || "");
             setInputName(profile.name || "");
             setStreak(profile.streak ?? 0);
+            setEducation(profile.education || "");
+            if (profile.started_at) {
+                const start = new Date(profile.started_at);
+                const now = new Date();
+                const days = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                setActiveDays(days);
+            }
         }
 
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
@@ -245,57 +243,38 @@ export default function MyPage() {
 
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
+
         if (!profileData?.name) setShowNameModal(true);
-        // レベルアップ検知
+
         const newLevel = Math.max(1, Math.floor((pointRow?.points || 0) / 100) + 1);
         if (prevLevel > 0 && newLevel > prevLevel) {
             setLevelUpShow(true);
             setTimeout(() => setLevelUpShow(false), 3000);
         }
         setPrevLevel(newLevel);
-        // 7軸データ取得
-        const { count: subCount } = await supabase
-            .from("submissions").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+
+        const { count: subCount } = await supabase.from("submissions").select("*", { count: "exact", head: true }).eq("user_id", user.id);
         setSubmissionCount(subCount || 0);
 
-        const { count: tCount } = await supabase
-            .from("thanks").select("*", { count: "exact", head: true }).eq("from_user_id", user.id);
+        const { count: tCount } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("from_user_id", user.id);
         setThanksCount(tCount || 0);
 
-        const { count: kCount } = await supabase
-            .from("kpi_logs").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+        const { count: kCount } = await supabase.from("kpi_logs").select("*", { count: "exact", head: true }).eq("user_id", user.id);
         setKpiCount(kCount || 0);
 
-        if (profileData?.started_at) {
-            const start = new Date(profileData.started_at);
-            const now = new Date();
-            const days = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-            setActiveDays(days);
-        }
-        setEducation(profileData?.education || "");
-        setLoading(false);
         const { data: announceRows } = await supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
         setAnnouncements((announceRows || []) as { id: string; title: string; content: string }[]);
+
         setLoading(false);
     };
 
     useEffect(() => { loadPage(); }, []);
 
-    const handleSaveName = async () => {
-        if (!userId || !inputName.trim()) return;
-        await supabase.from("profiles").update({ name: inputName.trim() }).eq("id", userId);
-        setName(inputName.trim());
-        setMessage("✅ 名前を保存しました");
-    };
-
-    const handleAddPoint = async () => {
+    const handleSaveProfile = async () => {
         if (!userId) return;
-        const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", userId).single();
-        const current = pointRow?.points || 0;
-        await supabase.from("user_points").update({ points: current + 10 }).eq("id", userId);
-        await supabase.from("points_history").insert({ user_id: userId, change: 10, reason: "manual_add", created_at: new Date().toISOString() });
-        setMessage("⚡ +10ポイント追加しました");
-        await loadPage();
+        await supabase.from("profiles").update({ name: inputName.trim(), education: education.trim() }).eq("id", userId);
+        setName(inputName.trim());
+        setMessage("✅ プロフィールを保存しました");
     };
 
     const handleLogout = async () => {
@@ -320,11 +299,12 @@ export default function MyPage() {
                         <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 8 }}>INTERN QUEST</div>
                         <h2 style={{ fontSize: 24, fontWeight: 800, color: "#f9fafb", margin: "0 0 8px" }}>名前を教えてください</h2>
                         <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 24px" }}>ランキングや管理画面に表示されます</p>
-                        <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="例：田中太郎" onKeyDown={(e) => e.key === "Enter" && handleSaveName()} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
-                        <button onClick={async () => { await handleSaveName(); setShowNameModal(false); }} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 16 }}>登録する →</button>
+                        <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="例：田中太郎" onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
+                        <button onClick={async () => { await handleSaveProfile(); setShowNameModal(false); }} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 16 }}>登録する →</button>
                     </div>
                 </div>
             )}
+
             {/* レベルアップ演出 */}
             <AnimatePresence>
                 {levelUpShow && (
@@ -333,17 +313,9 @@ export default function MyPage() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.5, y: -50 }}
                         transition={{ type: "spring", bounce: 0.5 }}
-                        style={{
-                            position: "fixed", inset: 0, zIndex: 200,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            pointerEvents: "none"
-                        }}
+                        style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}
                     >
-                        <div style={{
-                            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                            borderRadius: 24, padding: "40px 60px", textAlign: "center",
-                            boxShadow: "0 0 80px rgba(99,102,241,0.6)"
-                        }}>
+                        <div style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: 24, padding: "40px 60px", textAlign: "center", boxShadow: "0 0 80px rgba(99,102,241,0.6)" }}>
                             <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
                             <div style={{ fontSize: 14, color: "#c7d2fe", fontWeight: 700, letterSpacing: 3 }}>LEVEL UP!</div>
                             <div style={{ fontSize: 48, fontWeight: 900, color: "#fff", margin: "8px 0" }}>Lv.{level}</div>
@@ -387,9 +359,7 @@ export default function MyPage() {
                 )}
 
                 {/* メイングリッド */}
-                <div style={{
-                    display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16
-                }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16 }}>
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>TOTAL POINTS</div>
                         <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>{points.toLocaleString()}</div>
@@ -440,6 +410,7 @@ export default function MyPage() {
                         <div style={{ marginTop: 16, fontSize: 13, color: "#9ca3af" }}>{actionMessage}</div>
                     </div>
                 </div>
+
                 {/* 7軸スコア内訳 */}
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>7-AXIS EVALUATION</div>
@@ -470,6 +441,7 @@ export default function MyPage() {
                         </div>
                     )}
                 </div>
+
                 {/* AIメタ認知コメント */}
                 <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -485,9 +457,7 @@ export default function MyPage() {
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>BADGES</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedCount} / {badges.length} 解錠済み</div>
                     </div>
-                    <div style={{
-                        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12
-                    }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
                         {badges.map((badge) => (
                             <div key={badge.id} style={{ padding: 16, borderRadius: 12, background: badge.unlocked ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.02)", border: `1px solid ${badge.unlocked ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)"}`, textAlign: "center", opacity: badge.unlocked ? 1 : 0.4 }}>
                                 <div style={{ fontSize: 32, marginBottom: 8 }}>{badge.unlocked ? badge.icon : "🔒"}</div>
@@ -521,8 +491,24 @@ export default function MyPage() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
-                            <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                            <button onClick={handleSaveName} style={{ marginTop: 10, width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>保存</button>
+                            <input
+                                value={inputName}
+                                onChange={(e) => setInputName(e.target.value)}
+                                placeholder="名前を入力"
+                                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
+                            />
+                            <input
+                                value={education}
+                                onChange={(e) => setEducation(e.target.value)}
+                                placeholder="学歴を入力（例：〇〇大学）"
+                                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
+                            />
+                            <button
+                                onClick={handleSaveProfile}
+                                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+                            >
+                                保存
+                            </button>
                         </div>
                         <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
                     </div>
