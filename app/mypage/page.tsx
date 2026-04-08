@@ -161,7 +161,7 @@ export default function MyPage() {
     const [inputName, setInputName] = useState("");
     const [points, setPoints] = useState(0);
     const [rank, setRank] = useState<number | null>(null);
-    const [streak, setStreak] = useState(1);
+    const [streak, setStreak] = useState(0);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [history, setHistory] = useState<PointHistory[]>([]);
     const [graphData, setGraphData] = useState<GraphData[]>([]);
@@ -196,7 +196,7 @@ export default function MyPage() {
             const profile = profileData as ProfileRow;
             setName(profile.name || "");
             setInputName(profile.name || "");
-            setStreak(profile.streak || 1);
+            setStreak(profile.streak ?? 0);
         }
 
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
@@ -303,7 +303,9 @@ export default function MyPage() {
                 )}
 
                 {/* メイングリッド */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
+                <div style={{
+                    display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16
+                }}>
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>TOTAL POINTS</div>
                         <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>{points.toLocaleString()}</div>
@@ -370,7 +372,9 @@ export default function MyPage() {
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>BADGES</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedCount} / {badges.length} 解錠済み</div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                    <div style={{
+                        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12
+                    }}>
                         {badges.map((badge) => (
                             <div key={badge.id} style={{ padding: 16, borderRadius: 12, background: badge.unlocked ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.02)", border: `1px solid ${badge.unlocked ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)"}`, textAlign: "center", opacity: badge.unlocked ? 1 : 0.4 }}>
                                 <div style={{ fontSize: 32, marginBottom: 8 }}>{badge.unlocked ? badge.icon : "🔒"}</div>
@@ -400,7 +404,7 @@ export default function MyPage() {
                 </div>
 
                 {/* 下段 */}
-                <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
