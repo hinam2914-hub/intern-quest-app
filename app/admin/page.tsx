@@ -31,6 +31,7 @@ function formatDateTime(value: string): string {
     const date = new Date(value);
     return date.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
+
 function getRankScore(params: { level: number; streak: number; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; }): number {
     const { level, streak, submissionCount, thanksCount, kpiCount, activeDays, education } = params;
     const eduScore = education ? 8 : 0;
@@ -60,6 +61,7 @@ function getRankColor(rank: string): string {
     if (rank === "C") return "#84cc16";
     return "#6b7280";
 }
+
 export default function AdminPage() {
     const router = useRouter();
     const [userCount, setUserCount] = useState(0);
@@ -104,6 +106,9 @@ export default function AdminPage() {
     const [kpiStatuses, setKpiStatuses] = useState<KpiStatus[]>([]);
     const [thanksList, setThanksList] = useState<ThanksRow[]>([]);
     const [contentCompletions, setContentCompletions] = useState<ContentCompletion[]>([]);
+    const [inviteEmail, setInviteEmail] = useState("");
+    const [inviting, setInviting] = useState(false);
+    const [inviteMessage, setInviteMessage] = useState("");
 
     useEffect(() => {
         const load = async () => {
@@ -113,7 +118,7 @@ export default function AdminPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, role");
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education");
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
@@ -205,7 +210,6 @@ export default function AdminPage() {
                 itemTitle: shopItems?.find((s: any) => s.id === r.shop_item_id)?.title || "不明",
             })));
 
-            // KPI達成状況
             const { data: kpiLogs } = await supabase.from("kpi_logs").select("*").order("created_at", { ascending: false });
             if (kpiLogs && kpiRows) {
                 const statuses: KpiStatus[] = kpiLogs.map((log: any) => ({
@@ -220,7 +224,6 @@ export default function AdminPage() {
                 setKpiStatuses(statuses);
             }
 
-            // サンキュー履歴
             const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(20);
             if (thanksRows) {
                 setThanksList(thanksRows.map((r: any) => ({
@@ -230,7 +233,6 @@ export default function AdminPage() {
                 })));
             }
 
-            // 学習完了状況
             const { data: completionRows } = await supabase.from("content_completions").select("*").order("created_at", { ascending: false });
             if (completionRows && contentsRows) {
                 setContentCompletions(completionRows.map((r: any) => ({
@@ -248,18 +250,6 @@ export default function AdminPage() {
     }, [period, router]);
 
     const handleSaveUser = async (userId: string) => {
-        const handleAddPoints = async (userId: string, amount: number) => {
-            const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", userId).single();
-            const current = pointRow?.points || 0;
-            await supabase.from("user_points").update({ points: current + amount }).eq("id", userId);
-            await supabase.from("points_history").insert({
-                user_id: userId,
-                change: amount,
-                reason: "manual_add",
-                created_at: new Date().toISOString(),
-            });
-            setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, points: current + amount } : u));
-        };
         setSavingUser(userId);
         const u = userDetails.find(u2 => u2.id === userId);
         if (!u) return;
@@ -271,6 +261,7 @@ export default function AdminPage() {
         setEditingUser(null);
         setSavingUser(null);
     };
+
     const handleAddPoints = async (userId: string, amount: number) => {
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", userId).single();
         const current = pointRow?.points || 0;
@@ -283,6 +274,26 @@ export default function AdminPage() {
         });
         setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, points: current + amount } : u));
     };
+
+    const handleInvite = async () => {
+        if (!inviteEmail.trim()) { setInviteMessage("メールアドレスを入力してください"); return; }
+        setInviting(true);
+        setInviteMessage("");
+        const res = await fetch("/api/invite", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: inviteEmail.trim() }),
+        });
+        const data = await res.json();
+        if (data.error) {
+            setInviteMessage("招待に失敗しました: " + data.error);
+        } else {
+            setInviteMessage(`✅ ${inviteEmail} に招待メールを送信しました！`);
+            setInviteEmail("");
+        }
+        setInviting(false);
+    };
+
     const handlePostAnnounce = async () => {
         if (!announceTitle.trim() || !announceContent.trim()) { setAnnounceMessage("タイトルと内容を入力してください"); return; }
         setAnnounceSending(true);
@@ -350,7 +361,6 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* タブ */}
                 <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
                     {[
                         { key: "dashboard", label: "ダッシュボード" },
@@ -366,40 +376,50 @@ export default function AdminPage() {
                     ))}
                 </div>
 
-                {/* ユーザー一覧タブ */}
                 {activeTab === "users" && (
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>USER MANAGEMENT</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            {userDetails.sort((a, b) => b.points - a.points).map((u, i) => (
-                                <div key={u.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                            <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
-                                            <div>
-                                                <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{u.name}</div>
-                                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>役割: {u.role}</div>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                                            {editingUser === u.id ? (
-                                                <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>名前:</span>
-                                                        <input type="text" value={u.editingName ?? u.name} onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))} style={{ width: 160, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
-                                                    </div>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>ポイント:</span>
-                                                        <input type="number" value={editingPoints} onChange={(e) => setEditingPoints(Number(e.target.value))} style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
-                                                    </div>
-                                                    <div style={{ display: "flex", gap: 8 }}>
-                                                        <button onClick={() => handleSaveUser(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{savingUser === u.id ? "保存中..." : "保存"}</button>
-                                                        <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>キャンセル</button>
-                                                    </div>
+                    <div>
+                        <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📧 新規メンバー招待</div>
+                            <div style={{ display: "flex", gap: 12 }}>
+                                <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleInvite()} placeholder="招待するメールアドレス" type="email" style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                <button onClick={handleInvite} disabled={inviting} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: inviting ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: inviting ? "not-allowed" : "pointer", fontSize: 14, whiteSpace: "nowrap" }}>
+                                    {inviting ? "送信中..." : "招待を送る"}
+                                </button>
+                            </div>
+                            {inviteMessage && <div style={{ marginTop: 12, fontSize: 13, color: inviteMessage.includes("✅") ? "#34d399" : "#f87171", fontWeight: 600 }}>{inviteMessage}</div>}
+                        </div>
+
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>USER MANAGEMENT</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {userDetails.sort((a, b) => b.points - a.points).map((u, i) => (
+                                    <div key={u.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
+                                                <div>
+                                                    <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{u.name}</div>
+                                                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>役割: {u.role}</div>
                                                 </div>
-                                            ) : (
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                    <div style={{ textAlign: "right" }}>
+                                            </div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                {editingUser === u.id ? (
+                                                    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                            <span style={{ fontSize: 12, color: "#6b7280" }}>名前:</span>
+                                                            <input type="text" value={u.editingName ?? u.name} onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))} style={{ width: 160, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                                        </div>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                            <span style={{ fontSize: 12, color: "#6b7280" }}>ポイント:</span>
+                                                            <input type="number" value={editingPoints} onChange={(e) => setEditingPoints(Number(e.target.value))} style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                                        </div>
+                                                        <div style={{ display: "flex", gap: 8 }}>
+                                                            <button onClick={() => handleSaveUser(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{savingUser === u.id ? "保存中..." : "保存"}</button>
+                                                            <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>キャンセル</button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                         {(() => {
                                                             const level = Math.max(1, Math.floor(u.points / 100) + 1);
                                                             const score = getRankScore({ level, streak: u.streak, submissionCount: u.submissionCount, thanksCount: u.thanksCount, kpiCount: u.kpiCount, activeDays: u.activeDays, education: u.education });
@@ -411,32 +431,29 @@ export default function AdminPage() {
                                                                     <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{score}pt</div>
                                                                 </div>
                                                             );
-                                                        })()} <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
-                                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
+                                                        })()}
+                                                        <div style={{ textAlign: "right" }}>
+                                                            <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
+                                                            <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
+                                                        </div>
+                                                        <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
+                                                        <div style={{ display: "flex", gap: 4 }}>
+                                                            {[10, 50, 100].map(amount => (
+                                                                <button key={amount} onClick={() => handleAddPoints(u.id, amount)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+{amount}</button>
+                                                            ))}
+                                                        </div>
+                                                        <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
                                                     </div>
-                                                    <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
-                                                    <div style={{ display: "flex", gap: 4 }}>
-                                                        {[10, 50, 100].map(amount => (
-                                                            <button
-                                                                key={amount}
-                                                                onClick={() => handleAddPoints(u.id, amount)}
-                                                                style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}
-                                                            >
-                                                                +{amount}
-                                                            </button>
-                                                        ))}
-                                                    </div> <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* お知らせタブ */}
                 {activeTab === "announce" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
@@ -478,7 +495,6 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* KPI設定タブ */}
                 {activeTab === "kpi" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
@@ -523,7 +539,6 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* コンテンツタブ */}
                 {activeTab === "contents" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
@@ -594,7 +609,6 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* 申請管理タブ */}
                 {activeTab === "requests" && (
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT REQUESTS</div>
@@ -635,7 +649,6 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* ダッシュボードタブ */}
                 {activeTab === "dashboard" && (
                     <>
                         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
@@ -645,7 +658,6 @@ export default function AdminPage() {
                                 </button>
                             ))}
                         </div>
-
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
                             {[
                                 { label: "TOTAL USERS", value: userCount, unit: "人", color: "#818cf8" },
@@ -660,7 +672,6 @@ export default function AdminPage() {
                                 </div>
                             ))}
                         </div>
-
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TOTAL POINT GROWTH</div>
@@ -689,8 +700,6 @@ export default function AdminPage() {
                                 ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
                             </div>
                         </div>
-
-                        {/* KPI達成状況 */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI ACHIEVEMENT</div>
                             {kpiStatuses.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPIデータがありません</div> : (
@@ -711,8 +720,6 @@ export default function AdminPage() {
                                 </div>
                             )}
                         </div>
-
-                        {/* 学習完了状況 & サンキュー履歴 */}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>LEARNING COMPLETIONS</div>
@@ -730,7 +737,6 @@ export default function AdminPage() {
                                     </div>
                                 )}
                             </div>
-
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>THANKS HISTORY</div>
                                 {thanksList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>サンキューはありません</div> : (
@@ -749,7 +755,6 @@ export default function AdminPage() {
                                 )}
                             </div>
                         </div>
-
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>REPORT CONTENTS</div>
                             {reports.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>{periodLabel}の日報はまだありません</div> : (
@@ -779,7 +784,6 @@ export default function AdminPage() {
                                 </div>
                             )}
                         </div>
-
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
