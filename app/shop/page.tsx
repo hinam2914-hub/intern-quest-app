@@ -96,6 +96,11 @@ export default function ShopPage() {
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <div style={{ padding: "10px 20px", borderRadius: 12, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", fontSize: 18, fontWeight: 800, color: "#fbbf24" }}>
                             {points.toLocaleString()} pt
+                            {requests.filter(r => r.status === "pending").length > 0 && (
+                                <div style={{ fontSize: 11, color: "#f59e0b", marginTop: 4 }}>
+                                    審査中: -{requests.filter(r => r.status === "pending").reduce((sum, r) => sum + r.cost, 0)}pt
+                                </div>
+                            )}
                         </div>
                         <button onClick={() => router.push("/mypage")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>マイページ</button>
                     </div>
@@ -109,7 +114,7 @@ export default function ShopPage() {
 
                 {/* ショップアイテム */}
                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SHOP ITEMS</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 32 }}>
                     {items.map((item) => {
                         const canAfford = points >= item.cost;
                         const hasPending = requests.some(r => r.shop_item_id === item.id && r.status === "pending");
