@@ -135,7 +135,8 @@ export default function ThanksPage() {
         });
 
         setSuccess(true);
-        setResult(`✅ ${users.find(u => u.id === toUserId)?.name}さんにサンキューを送りました！+1pt 付与しました`);
+        const toName = users.find(u => u.id === toUserId)?.name || "相手";
+        setResult(`✅ ${toName}さんにサンキューを送りました！+1pt 付与しました`);
         setMessage("");
         setToUserId("");
 

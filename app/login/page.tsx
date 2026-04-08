@@ -45,7 +45,6 @@ export default function LoginPage() {
         const todayYmd = getTodayJST();
         const nowIso = new Date().toISOString();
 
-        // 今日すでにログインボーナスを受け取っているか確認
         const { data: historyRows } = await supabase
             .from("points_history")
             .select("created_at, reason")
@@ -57,17 +56,14 @@ export default function LoginPage() {
         ) || false;
 
         if (!alreadyReceived) {
-            // ポイント取得
             const { data: pointRow } = await supabase
                 .from("user_points").select("points").eq("id", user.id).single();
             const current = pointRow?.points || 0;
 
-            // ポイント更新
             await supabase.from("user_points")
                 .update({ points: current + 1 })
                 .eq("id", user.id);
 
-            // 履歴保存
             await supabase.from("points_history").insert({
                 user_id: user.id,
                 change: 1,
@@ -76,12 +72,23 @@ export default function LoginPage() {
             });
 
             setBonus(true);
-            setMessage("🎁 ログインボーナス +10pt 獲得！");
+            setMessage("🎁 ログインボーナス +1pt 獲得！");
         } else {
             setMessage("✅ ログイン成功！");
         }
 
-        setTimeout(() => router.push("/mypage"), 1200);
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("name")
+            .eq("id", user.id)
+            .single();
+
+        const destination = (!profile?.name || profile.name.trim() === "")
+            ? "/register"
+            : "/mypage";
+
+        setTimeout(() => router.push(destination), 1200);
+        setLoading(false);
     };
 
     return (
@@ -97,12 +104,11 @@ export default function LoginPage() {
                     <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>アカウントにログインしてください</p>
                 </div>
 
-                {/* ログインボーナス告知 */}
                 <div style={{ marginBottom: 20, padding: "12px 16px", background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12, display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 20 }}>🎁</span>
                     <div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#818cf8" }}>毎日ログインボーナス</div>
-                        <div style={{ fontSize: 12, color: "#6b7280" }}>ログインするだけで +10pt 獲得！</div>
+                        <div style={{ fontSize: 12, color: "#6b7280" }}>ログインするだけで +1pt 獲得！</div>
                     </div>
                 </div>
 
@@ -139,10 +145,12 @@ export default function LoginPage() {
                     >
                         {loading ? "ログイン中..." : "ログイン →"}
                     </button>
+
                     <div style={{ marginTop: 20, textAlign: "center" }}>
                         <span style={{ fontSize: 13, color: "#6b7280" }}>アカウントをお持ちでない方は </span>
                         <button onClick={() => router.push("/register")} style={{ background: "none", border: "none", color: "#818cf8", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>新規登録</button>
                     </div>
+
                     {message && (
                         <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: bonus ? "rgba(99,102,241,0.15)" : message.includes("✅") ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", border: `1px solid ${bonus ? "rgba(99,102,241,0.3)" : message.includes("✅") ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`, color: bonus ? "#a5b4fc" : message.includes("✅") ? "#34d399" : "#f87171", fontSize: 14, fontWeight: 600 }}>
                             {message}
