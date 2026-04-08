@@ -117,7 +117,8 @@ export default function ThanksPage() {
         });
 
         if (thanksError) {
-            setResult("送信に失敗しました");
+            console.error("Thanks error:", thanksError);  // 追加
+            setResult("送信に失敗しました: " + thanksError.message);  // 詳細表示
             setSending(false);
             return;
         }
