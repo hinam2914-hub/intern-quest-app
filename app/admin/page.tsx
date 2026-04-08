@@ -248,6 +248,18 @@ export default function AdminPage() {
     }, [period, router]);
 
     const handleSaveUser = async (userId: string) => {
+        const handleAddPoints = async (userId: string, amount: number) => {
+            const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", userId).single();
+            const current = pointRow?.points || 0;
+            await supabase.from("user_points").update({ points: current + amount }).eq("id", userId);
+            await supabase.from("points_history").insert({
+                user_id: userId,
+                change: amount,
+                reason: "manual_add",
+                created_at: new Date().toISOString(),
+            });
+            setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, points: current + amount } : u));
+        };
         setSavingUser(userId);
         const u = userDetails.find(u2 => u2.id === userId);
         if (!u) return;
@@ -259,7 +271,18 @@ export default function AdminPage() {
         setEditingUser(null);
         setSavingUser(null);
     };
-
+    const handleAddPoints = async (userId: string, amount: number) => {
+        const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", userId).single();
+        const current = pointRow?.points || 0;
+        await supabase.from("user_points").update({ points: current + amount }).eq("id", userId);
+        await supabase.from("points_history").insert({
+            user_id: userId,
+            change: amount,
+            reason: "manual_add",
+            created_at: new Date().toISOString(),
+        });
+        setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, points: current + amount } : u));
+    };
     const handlePostAnnounce = async () => {
         if (!announceTitle.trim() || !announceContent.trim()) { setAnnounceMessage("タイトルと内容を入力してください"); return; }
         setAnnounceSending(true);
@@ -392,7 +415,17 @@ export default function AdminPage() {
                                                         <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
                                                     </div>
                                                     <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
-                                                    <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
+                                                    <div style={{ display: "flex", gap: 4 }}>
+                                                        {[10, 50, 100].map(amount => (
+                                                            <button
+                                                                key={amount}
+                                                                onClick={() => handleAddPoints(u.id, amount)}
+                                                                style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}
+                                                            >
+                                                                +{amount}
+                                                            </button>
+                                                        ))}
+                                                    </div> <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
                                                 </div>
                                             )}
                                         </div>
