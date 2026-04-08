@@ -9,7 +9,7 @@ type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
-type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string };
+type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; };
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
 type AnnounceRow = { id: string; title: string; content: string; created_at: string; is_active: boolean };
@@ -31,7 +31,35 @@ function formatDateTime(value: string): string {
     const date = new Date(value);
     return date.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
+function getRankScore(params: { level: number; streak: number; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; }): number {
+    const { level, streak, submissionCount, thanksCount, kpiCount, activeDays, education } = params;
+    const eduScore = education ? 8 : 0;
+    const activityScore = Math.min(activeDays * 0.5, 15);
+    const kpiScore = Math.min(kpiCount * 3, 15);
+    const streakScore = Math.min(streak * 2, 20);
+    const leaderScore = Math.min(thanksCount * 2, 10);
+    const outputScore = Math.min(submissionCount * 2, 20);
+    const metaScore = Math.min(level, 10);
+    return Math.min(Math.round(eduScore + activityScore + kpiScore + streakScore + leaderScore + outputScore + metaScore), 100);
+}
 
+function getRank(score: number): string {
+    if (score >= 90) return "SS";
+    if (score >= 80) return "S";
+    if (score >= 70) return "A";
+    if (score >= 60) return "B";
+    if (score >= 50) return "C";
+    return "D";
+}
+
+function getRankColor(rank: string): string {
+    if (rank === "SS") return "#f59e0b";
+    if (rank === "S") return "#a855f7";
+    if (rank === "A") return "#6366f1";
+    if (rank === "B") return "#06b6d4";
+    if (rank === "C") return "#84cc16";
+    return "#6b7280";
+}
 export default function AdminPage() {
     const router = useRouter();
     const [userCount, setUserCount] = useState(0);
@@ -90,11 +118,27 @@ export default function AdminPage() {
             setUserCount(users.length);
 
             const { data: pointRows } = await supabase.from("user_points").select("id, points");
-            const details: UserDetail[] = (profileRows || []).map((p: any) => ({
-                id: p.id, name: p.name || "名前未設定",
-                points: pointRows?.find((pt) => pt.id === p.id)?.points || 0,
-                streak: 0, role: p.role || "Owner",
-            }));
+            const { data: thanksSentRows } = await supabase.from("thanks").select("from_user_id");
+            const { data: kpiLogRows } = await supabase.from("kpi_logs").select("user_id");
+            const { data: subCountRows } = await supabase.from("submissions").select("user_id");
+
+            const details: UserDetail[] = (profileRows || []).map((p: any) => {
+                const activeDays = p.started_at
+                    ? Math.floor((Date.now() - new Date(p.started_at).getTime()) / (1000 * 60 * 60 * 24))
+                    : 0;
+                return {
+                    id: p.id,
+                    name: p.name || "名前未設定",
+                    points: pointRows?.find((pt: any) => pt.id === p.id)?.points || 0,
+                    streak: p.streak || 0,
+                    role: p.role || "Owner",
+                    submissionCount: subCountRows?.filter((r: any) => r.user_id === p.id).length || 0,
+                    thanksCount: thanksSentRows?.filter((r: any) => r.from_user_id === p.id).length || 0,
+                    kpiCount: kpiLogRows?.filter((r: any) => r.user_id === p.id).length || 0,
+                    activeDays,
+                    education: p.education || "",
+                };
+            });
             setUserDetails(details);
 
             const { data: allHistory } = await supabase.from("points_history").select("change, created_at").order("created_at", { ascending: true }).limit(200);
@@ -333,7 +377,19 @@ export default function AdminPage() {
                                             ) : (
                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                     <div style={{ textAlign: "right" }}>
-                                                        <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
+                                                       // ポイント表示の前に追加
+                                                        {(() => {
+                                                            const level = Math.max(1, Math.floor(u.points / 100) + 1);
+                                                            const score = getRankScore({ level, streak: u.streak, submissionCount: u.submissionCount, thanksCount: u.thanksCount, kpiCount: u.kpiCount, activeDays: u.activeDays, education: u.education });
+                                                            const rank = getRank(score);
+                                                            const color = getRankColor(rank);
+                                                            return (
+                                                                <div style={{ textAlign: "center", marginRight: 8 }}>
+                                                                    <div style={{ width: 44, height: 44, borderRadius: 10, background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>{rank}</div>
+                                                                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{score}pt</div>
+                                                                </div>
+                                                            );
+                                                        })()} <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
                                                         <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
                                                     </div>
                                                     <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
