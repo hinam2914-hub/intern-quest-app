@@ -13,7 +13,11 @@ type HistoryItem = {
 
 function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
-    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    return date.toLocaleString("ja-JP", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric", month: "numeric", day: "numeric",
+        hour: "2-digit", minute: "2-digit"
+    });
 }
 
 function getReasonLabel(reason: string): string {
@@ -22,6 +26,10 @@ function getReasonLabel(reason: string): string {
         case "streak_bonus": return "連続ボーナス";
         case "login_bonus": return "ログインボーナス";
         case "manual_add": return "手動追加";
+        case "content_complete": return "学習完了";
+        case "thanks_received": return "サンキュー受領";
+        case "shop_purchase": return "ショップ購入";
+        case "admin_edit": return "管理者編集";
         default: return "その他";
     }
 }
@@ -32,6 +40,10 @@ function getReasonIcon(reason: string): string {
         case "streak_bonus": return "🔥";
         case "login_bonus": return "🎁";
         case "manual_add": return "⚡";
+        case "content_complete": return "📚";
+        case "thanks_received": return "🎉";
+        case "shop_purchase": return "🛍️";
+        case "admin_edit": return "⚙️";
         default: return "✨";
     }
 }

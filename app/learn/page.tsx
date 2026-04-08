@@ -139,7 +139,7 @@ export default function LearnPage() {
                                                 <div style={{ marginBottom: 20, borderRadius: 12, overflow: "hidden", aspectRatio: "16/9" }}>
                                                     <iframe
                                                         width="100%" height="100%"
-                                                        src={`https://www.youtube.com/embed/${ytId}`}
+                                                        src={`https://www.youtube.com/embed/${ytId}`} title={content.title}
                                                         style={{ border: "none", display: "block", aspectRatio: "16/9" }}
                                                         allowFullScreen
                                                     />
