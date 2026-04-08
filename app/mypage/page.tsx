@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { AnimatePresence, motion } from "framer-motion";
 
 type PointHistory = {
     id?: string;
@@ -170,6 +171,8 @@ export default function MyPage() {
     const [showNameModal, setShowNameModal] = useState(false);
     const [announcements, setAnnouncements] = useState<{ id: string; title: string; content: string }[]>([]);
     const [closedAnnouncements, setClosedAnnouncements] = useState<string[]>([]);
+    const [levelUpShow, setLevelUpShow] = useState(false);
+    const [prevLevel, setPrevLevel] = useState(0);
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -216,7 +219,15 @@ export default function MyPage() {
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
         if (!profileData?.name) setShowNameModal(true);
+        // レベルアップ検知
+        const newLevel = Math.max(1, Math.floor((pointRow?.points || 0) / 100) + 1);
+        if (prevLevel > 0 && newLevel > prevLevel) {
+            setLevelUpShow(true);
+            setTimeout(() => setLevelUpShow(false), 3000);
+        }
+        setPrevLevel(newLevel);
 
+        setLoading(false);
         const { data: announceRows } = await supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
         setAnnouncements((announceRows || []) as { id: string; title: string; content: string }[]);
         setLoading(false);
@@ -268,6 +279,33 @@ export default function MyPage() {
                     </div>
                 </div>
             )}
+            {/* レベルアップ演出 */}
+            <AnimatePresence>
+                {levelUpShow && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.5, y: 50 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.5, y: -50 }}
+                        transition={{ type: "spring", bounce: 0.5 }}
+                        style={{
+                            position: "fixed", inset: 0, zIndex: 200,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            pointerEvents: "none"
+                        }}
+                    >
+                        <div style={{
+                            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                            borderRadius: 24, padding: "40px 60px", textAlign: "center",
+                            boxShadow: "0 0 80px rgba(99,102,241,0.6)"
+                        }}>
+                            <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
+                            <div style={{ fontSize: 14, color: "#c7d2fe", fontWeight: 700, letterSpacing: 3 }}>LEVEL UP!</div>
+                            <div style={{ fontSize: 48, fontWeight: 900, color: "#fff", margin: "8px 0" }}>Lv.{level}</div>
+                            <div style={{ fontSize: 14, color: "#c7d2fe" }}>おめでとうございます！</div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
