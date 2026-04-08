@@ -19,8 +19,8 @@ export default function MenuPage() {
             const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
             setName(profile?.name || "");
             setPoints(pointRow?.points || 0);
-            setIsAdmin(user.email === "hinam2914@gmail.com");
-            setLoading(false);
+            const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
+            setIsAdmin(!!user.email && adminEmails.includes(user.email)); setLoading(false);
         };
         load();
     }, [router]);
