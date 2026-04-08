@@ -93,14 +93,36 @@ function getRankColor(rank: string): string {
     if (rank === "C") return "linear-gradient(135deg, #84cc16, #22c55e)";
     return "linear-gradient(135deg, #374151, #6b7280)";
 }
-function getRankScore(params: { level: number; streak: number; points: number; isSubmitted: boolean }): number {
-    const { level, streak, points, isSubmitted } = params;
-    let score = 0;
-    score += Math.min(level * 2.5, 40);
-    score += Math.min(points / 50, 30);
-    score += Math.min(streak * 2, 20);
-    score += isSubmitted ? 10 : 0;
-    return Math.min(Math.round(score), 100);
+function getRankScore(params: {
+    level: number; streak: number; points: number; isSubmitted: boolean;
+    submissionCount: number; thanksCount: number; kpiCount: number;
+    activeDays: number; education: string;
+}): number {
+    const { level, streak, points, submissionCount, thanksCount, kpiCount, activeDays, education } = params;
+
+    // 1. 学歴（0-10pt）
+    const eduScore = education ? 8 : 0;
+
+    // 2. 活動期間（0-15pt）
+    const activityScore = Math.min(activeDays * 0.5, 15);
+
+    // 3. 実績KPI（0-15pt）
+    const kpiScore = Math.min(kpiCount * 3, 15);
+
+    // 4. 再現性・継続率（0-20pt）
+    const streakScore = Math.min(streak * 2, 20);
+
+    // 5. リーダーシップ・サンキュー（0-10pt）
+    const leaderScore = Math.min(thanksCount * 2, 10);
+
+    // 6. アウトプット・日報数（0-20pt）
+    const outputScore = Math.min(submissionCount * 2, 20);
+
+    // 7. メタ認知・レベル（0-10pt）
+    const metaScore = Math.min(level, 10);
+
+    const total = eduScore + activityScore + kpiScore + streakScore + leaderScore + outputScore + metaScore;
+    return Math.min(Math.round(total), 100);
 }
 function getNextRankInfo(rank: string): string {
     if (rank === "SS") return "最高ランク到達！";
@@ -173,6 +195,11 @@ export default function MyPage() {
     const [closedAnnouncements, setClosedAnnouncements] = useState<string[]>([]);
     const [levelUpShow, setLevelUpShow] = useState(false);
     const [prevLevel, setPrevLevel] = useState(0);
+    const [submissionCount, setSubmissionCount] = useState(0);
+    const [thanksCount, setThanksCount] = useState(0);
+    const [kpiCount, setKpiCount] = useState(0);
+    const [activeDays, setActiveDays] = useState(0);
+    const [education, setEducation] = useState("");
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -180,7 +207,7 @@ export default function MyPage() {
     const badgeLabel = getBadgeLabel(level);
     const badgeColor = getBadgeColor(level);
     const actionMessage = getActionMessage(isSubmitted, streak);
-    const rankScore = getRankScore({ level, streak, points, isSubmitted });
+    const rankScore = getRankScore({ level, streak, points, isSubmitted, submissionCount, thanksCount, kpiCount, activeDays, education });
     const rank2 = getRank(rankScore);
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
@@ -226,7 +253,26 @@ export default function MyPage() {
             setTimeout(() => setLevelUpShow(false), 3000);
         }
         setPrevLevel(newLevel);
+        // 7軸データ取得
+        const { count: subCount } = await supabase
+            .from("submissions").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+        setSubmissionCount(subCount || 0);
 
+        const { count: tCount } = await supabase
+            .from("thanks").select("*", { count: "exact", head: true }).eq("from_user_id", user.id);
+        setThanksCount(tCount || 0);
+
+        const { count: kCount } = await supabase
+            .from("kpi_logs").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+        setKpiCount(kCount || 0);
+
+        if (profileData?.started_at) {
+            const start = new Date(profileData.started_at);
+            const now = new Date();
+            const days = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+            setActiveDays(days);
+        }
+        setEducation(profileData?.education || "");
         setLoading(false);
         const { data: announceRows } = await supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
         setAnnouncements((announceRows || []) as { id: string; title: string; content: string }[]);
@@ -394,7 +440,36 @@ export default function MyPage() {
                         <div style={{ marginTop: 16, fontSize: 13, color: "#9ca3af" }}>{actionMessage}</div>
                     </div>
                 </div>
-
+                {/* 7軸スコア内訳 */}
+                <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>7-AXIS EVALUATION</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {[
+                            { label: "学歴", value: education ? 8 : 0, max: 10, color: "#6366f1" },
+                            { label: "活動期間", value: Math.min(activeDays * 0.5, 15), max: 15, color: "#8b5cf6" },
+                            { label: "実績KPI", value: Math.min(kpiCount * 3, 15), max: 15, color: "#06b6d4" },
+                            { label: "再現性", value: Math.min(streak * 2, 20), max: 20, color: "#f59e0b" },
+                            { label: "リーダーシップ", value: Math.min(thanksCount * 2, 10), max: 10, color: "#ec4899" },
+                            { label: "アウトプット", value: Math.min(submissionCount * 2, 20), max: 20, color: "#34d399" },
+                            { label: "メタ認知", value: Math.min(level, 10), max: 10, color: "#f97316" },
+                        ].map((axis) => (
+                            <div key={axis.label}>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>
+                                    <span>{axis.label}</span>
+                                    <span style={{ color: axis.color, fontWeight: 700 }}>{Math.round(axis.value)} / {axis.max}</span>
+                                </div>
+                                <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
+                                    <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999, transition: "width 0.8s ease" }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {!education && (
+                        <div style={{ marginTop: 16, padding: "10px 14px", borderRadius: 8, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", fontSize: 12, color: "#fbbf24" }}>
+                            💡 プロフィールに学歴を登録するとスコアが上がります
+                        </div>
+                    )}
+                </div>
                 {/* AIメタ認知コメント */}
                 <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
