@@ -263,7 +263,7 @@ export default function MyPage() {
         const { count: subCount } = await supabase.from("submissions").select("*", { count: "exact", head: true }).eq("user_id", user.id);
         setSubmissionCount(subCount || 0);
 
-        const { count: tCount } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("from_user_id", user.id);
+        const { count: tCount } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("to_user_id", user.id);
         setThanksCount(tCount || 0);
 
         const { count: kCount } = await supabase.from("kpi_logs").select("*", { count: "exact", head: true }).eq("user_id", user.id);
