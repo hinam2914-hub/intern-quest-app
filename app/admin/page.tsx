@@ -428,12 +428,12 @@ export default function AdminPage() {
                     {[
                         { key: "dashboard", label: "ダッシュボード" },
                         { key: "users", label: "ユーザー一覧" },
-                        { key: "announce", label: "📢 お知らせ" },
-                        { key: "kpi", label: "📊 KPI設定" },
-                        { key: "contents", label: "📚 コンテンツ" },
-                        { key: "teams", label: "👥 チーム" },
-                        { key: "monthly_kpi", label: "📈 月次KPI" },
-                        { key: "requests", label: `🛍️ 申請管理${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
+                        { key: "announce", label: "📢" },
+                        { key: "kpi", label: "📊 KPI" },
+                        { key: "contents", label: "📚" },
+                        { key: "teams", label: "👥" },
+                        { key: "monthly_kpi", label: "📈 KPI" },
+                        { key: "requests", label: `🛍️ 申請${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
                             {tab.label}
