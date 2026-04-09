@@ -9,7 +9,7 @@ type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
-type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; };
+type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; };
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
 type AnnounceRow = { id: string; title: string; content: string; created_at: string; is_active: boolean };
@@ -133,7 +133,7 @@ export default function AdminPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, department_id, team_id");
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, department_id, team_id, avatar_url");
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
@@ -158,6 +158,7 @@ export default function AdminPage() {
                     activeDays,
                     education: p.education || "",
                     team_id: p.team_id || "",
+                    avatar_url: p.avatar_url || null,
                 };
             });
             setUserDetails(details);
@@ -485,56 +486,58 @@ export default function AdminPage() {
                                     <div key={u.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
-                                                <div>
-                                                    <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{u.name}</div>
-                                                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>役割: {u.role}</div>
-                                                </div>
-                                            </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                {editingUser === u.id ? (
-                                                    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                            <span style={{ fontSize: 12, color: "#6b7280" }}>名前:</span>
-                                                            <input type="text" value={u.editingName ?? u.name} onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))} style={{ width: 160, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
-                                                        </div>
-                                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                            <span style={{ fontSize: 12, color: "#6b7280" }}>ポイント:</span>
-                                                            <input type="number" value={editingPoints} onChange={(e) => setEditingPoints(Number(e.target.value))} style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
-                                                        </div>
-                                                        <div style={{ display: "flex", gap: 8 }}>
-                                                            <button onClick={() => handleSaveUser(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{savingUser === u.id ? "保存中..." : "保存"}</button>
-                                                            <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>キャンセル</button>
-                                                        </div>
-                                                    </div>
+                                                {u.avatar_url ? (
+                                                    <img src={u.avatar_url} alt={u.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", border: "2px solid rgba(99,102,241,0.4)" }} />
                                                 ) : (
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                        {(() => {
-                                                            const level = Math.max(1, Math.floor(u.points / 100) + 1);
-                                                            const score = getRankScore({ level, streak: u.streak, submissionCount: u.submissionCount, thanksCount: u.thanksCount, kpiCount: u.kpiCount, activeDays: u.activeDays, education: u.education });
-                                                            const rank = getRank(score);
-                                                            const color = getRankColor(rank);
-                                                            return (
-                                                                <div style={{ textAlign: "center", marginRight: 8 }}>
-                                                                    <div style={{ width: 44, height: 44, borderRadius: 10, background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>{rank}</div>
-                                                                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{score}pt</div>
-                                                                </div>
-                                                            );
-                                                        })()}
-                                                        <div style={{ textAlign: "right" }}>
-                                                            <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
-                                                            <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
-                                                        </div>
-                                                        <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
-                                                        <div style={{ display: "flex", gap: 4 }}>
-                                                            {[10, 50, 100].map(amount => (
-                                                                <button key={amount} onClick={() => handleAddPoints(u.id, amount)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+{amount}</button>
-                                                            ))}
-                                                        </div>
-                                                        <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
-                                                    </div>
+                                                    <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
                                                 )}
+                                                <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{u.name}</div>
+                                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>役割: {u.role}</div>
                                             </div>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            {editingUser === u.id ? (
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>名前:</span>
+                                                        <input type="text" value={u.editingName ?? u.name} onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))} style={{ width: 160, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>ポイント:</span>
+                                                        <input type="number" value={editingPoints} onChange={(e) => setEditingPoints(Number(e.target.value))} style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 8 }}>
+                                                        <button onClick={() => handleSaveUser(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{savingUser === u.id ? "保存中..." : "保存"}</button>
+                                                        <button onClick={() => setEditingUser(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer" }}>キャンセル</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                    {(() => {
+                                                        const level = Math.max(1, Math.floor(u.points / 100) + 1);
+                                                        const score = getRankScore({ level, streak: u.streak, submissionCount: u.submissionCount, thanksCount: u.thanksCount, kpiCount: u.kpiCount, activeDays: u.activeDays, education: u.education });
+                                                        const rank = getRank(score);
+                                                        const color = getRankColor(rank);
+                                                        return (
+                                                            <div style={{ textAlign: "center", marginRight: 8 }}>
+                                                                <div style={{ width: 44, height: 44, borderRadius: 10, background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>{rank}</div>
+                                                                <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{score}pt</div>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                    <div style={{ textAlign: "right" }}>
+                                                        <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
+                                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
+                                                    </div>
+                                                    <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
+                                                    <div style={{ display: "flex", gap: 4 }}>
+                                                        {[10, 50, 100].map(amount => (
+                                                            <button key={amount} onClick={() => handleAddPoints(u.id, amount)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+{amount}</button>
+                                                        ))}
+                                                    </div>
+                                                    <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -1236,6 +1239,6 @@ export default function AdminPage() {
                     </div>
                 )}
             </div>
-        </main>
+        </main >
     );
 }
