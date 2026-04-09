@@ -158,6 +158,7 @@ export default function AdminPage() {
                     activeDays,
                     education: p.education || "",
                     team_id: p.team_id || "",
+                    team_id: p.team_id || "",
                 };
             });
             setUserDetails(details);
