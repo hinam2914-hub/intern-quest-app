@@ -12,7 +12,8 @@ type ContentCompletion = { id: string; content_id: string; created_at: string; c
 
 function formatDateTime(value: string): string {
     const date = new Date(value);
-    return date.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    return jst.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function formatReason(reason?: string | null): string {

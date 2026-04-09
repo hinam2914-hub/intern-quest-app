@@ -32,7 +32,8 @@ function getTodayJST(): string {
 
 function formatDateTime(value: string): string {
     const date = new Date(value);
-    return date.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    return jst.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function getRankScore(params: { level: number; streak: number; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; }): number {
