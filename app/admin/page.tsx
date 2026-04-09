@@ -9,7 +9,7 @@ type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
-type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; };
+type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; };
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
 type AnnounceRow = { id: string; title: string; content: string; created_at: string; is_active: boolean };
@@ -18,6 +18,7 @@ type KpiStatus = { userId: string; userName: string; kpiId: string; kpiTitle: st
 type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
 type ContentCompletion = { userId: string; userName: string; contentId: string; contentTitle: string; created_at: string };
 type Team = { id: string; name: string; color: string };
+type Department = { id: string; name: string; code: string };
 type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; officialTarget?: number; };
 
 function getTodayJST(): string {
@@ -106,6 +107,8 @@ export default function AdminPage() {
     const [requestsList, setRequestsList] = useState<RequestRow[]>([]);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [selectedDept, setSelectedDept] = useState<string>("all");
     const [monthlyKpis, setMonthlyKpis] = useState<MonthlyKpiRow[]>([]);
     const [kpiMonth, setKpiMonth] = useState(() => {
         const now = new Date();
@@ -142,6 +145,10 @@ export default function AdminPage() {
             const { data: kpiLogRows } = await supabase.from("kpi_logs").select("user_id");
             const { data: subCountRows } = await supabase.from("submissions").select("user_id");
 
+            // 事業部一覧取得
+            const { data: deptRows } = await supabase.from("departments").select("*");
+            setDepartments((deptRows || []) as Department[]);
+
             const details: UserDetail[] = (profileRows || []).map((p: any) => {
                 const activeDays = p.started_at
                     ? Math.floor((Date.now() - new Date(p.started_at).getTime()) / (1000 * 60 * 60 * 24))
@@ -159,6 +166,8 @@ export default function AdminPage() {
                     education: p.education || "",
                     team_id: p.team_id || "",
                     avatar_url: p.avatar_url || null,
+                    department_id: p.department_id || "",
+                    deptName: deptRows?.find((d: any) => d.id === p.department_id)?.name || "",
                 };
             });
             setUserDetails(details);
@@ -260,18 +269,17 @@ export default function AdminPage() {
                     created_at: r.created_at,
                 })));
             }
-            // チーム取得
+
             const { data: teamRows } = await supabase.from("teams").select("*").order("created_at");
             setTeams((teamRows || []) as Team[]);
-            // 月次KPI取得
+
             const { data: monthlyKpiRows } = await supabase.from("monthly_kpi").select("*").eq("year_month", kpiMonth).order("created_at", { ascending: false });
-            const { data: deptRows2 } = await supabase.from("departments").select("*");
             setMonthlyKpis((monthlyKpiRows || []).map((k: any) => ({
                 ...k,
                 userName: users.find(u => u.id === k.user_id)?.name || "名前未設定",
-                deptName: deptRows2?.find((d: any) => d.id === k.department_id)?.name || "不明",
+                deptName: deptRows?.find((d: any) => d.id === k.department_id)?.name || "不明",
             })));
-            // 月次目標取得
+
             const { data: targetRows } = await supabase.from("monthly_targets").select("*").eq("year_month", kpiMonth);
             setMonthlyTargets((targetRows || []) as { user_id: string; department_id: string; target: number }[]);
             setLoading(false);
@@ -296,14 +304,10 @@ export default function AdminPage() {
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", userId).single();
         const current = pointRow?.points || 0;
         await supabase.from("user_points").update({ points: current + amount }).eq("id", userId);
-        await supabase.from("points_history").insert({
-            user_id: userId,
-            change: amount,
-            reason: "manual_add",
-            created_at: new Date().toISOString(),
-        });
+        await supabase.from("points_history").insert({ user_id: userId, change: amount, reason: "manual_add", created_at: new Date().toISOString() });
         setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, points: current + amount } : u));
     };
+
     const handleCreateTeam = async () => {
         if (!teamName.trim()) { setTeamMessage("チーム名を入力してください"); return; }
         setTeamSaving(true);
@@ -316,69 +320,36 @@ export default function AdminPage() {
         setTeamMessage("✅ チームを作成しました！");
         setTeamSaving(false);
     };
+
     const handleApproveKpi = async (kpi: MonthlyKpiRow) => {
         setApprovingKpi(kpi.id);
-        const handleSetTarget = async (userId: string, deptId: string, target: number) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            await supabase.from("monthly_targets").upsert({
-                user_id: userId,
-                department_id: deptId,
-                year_month: kpiMonth,
-                target,
-                set_by: user?.id,
-            }, { onConflict: "user_id,department_id,year_month" });
-        };
         const nowIso = new Date().toISOString();
-        await supabase.from("monthly_kpi").update({
-            approved: true,
-            approved_at: nowIso,
-            points_awarded: kpi.points_awarded,
-        }).eq("id", kpi.id);
-
-        // ポイント付与
+        await supabase.from("monthly_kpi").update({ approved: true, approved_at: nowIso, points_awarded: kpi.points_awarded }).eq("id", kpi.id);
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", kpi.user_id).single();
         const current = pointRow?.points || 0;
         await supabase.from("user_points").update({ points: current + kpi.points_awarded }).eq("id", kpi.user_id);
-        await supabase.from("points_history").insert({
-            user_id: kpi.user_id,
-            change: kpi.points_awarded,
-            reason: "kpi_achievement",
-            created_at: nowIso,
-        });
-
+        await supabase.from("points_history").insert({ user_id: kpi.user_id, change: kpi.points_awarded, reason: "kpi_achievement", created_at: nowIso });
         setMonthlyKpis(prev => prev.map(k => k.id === kpi.id ? { ...k, approved: true } : k));
         setApprovingKpi(null);
     };
+
     const handleSetTarget = async (userId: string, deptId: string, target: number) => {
         const { data: { user } } = await supabase.auth.getUser();
-        await supabase.from("monthly_targets").upsert({
-            user_id: userId,
-            department_id: deptId,
-            year_month: kpiMonth,
-            target,
-            set_by: user?.id,
-        }, { onConflict: "user_id,department_id,year_month" });
+        await supabase.from("monthly_targets").upsert({ user_id: userId, department_id: deptId, year_month: kpiMonth, target, set_by: user?.id }, { onConflict: "user_id,department_id,year_month" });
     };
+
     const handleAssignTeam = async (userId: string, teamId: string) => {
         await supabase.from("profiles").update({ team_id: teamId || null }).eq("id", userId);
         setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, team_id: teamId } : u));
     };
+
     const handleInvite = async () => {
         if (!inviteEmail.trim()) { setInviteMessage("メールアドレスを入力してください"); return; }
         setInviting(true);
         setInviteMessage("");
-        const res = await fetch("/api/invite", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: inviteEmail.trim() }),
-        });
+        const res = await fetch("/api/invite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: inviteEmail.trim() }) });
         const data = await res.json();
-        if (data.error) {
-            setInviteMessage("招待に失敗しました: " + data.error);
-        } else {
-            setInviteMessage(`✅ ${inviteEmail} に招待メールを送信しました！`);
-            setInviteEmail("");
-        }
+        if (data.error) { setInviteMessage("招待に失敗しました: " + data.error); } else { setInviteMessage(`✅ ${inviteEmail} に招待メールを送信しました！`); setInviteEmail(""); }
         setInviting(false);
     };
 
@@ -425,6 +396,13 @@ export default function AdminPage() {
     const rankMedals = ["🥇", "🥈", "🥉"];
     const pendingCount = requestsList.filter(r => r.status === "pending").length;
 
+    // フィルター済みユーザー
+    const filteredUsers = useMemo(() => {
+        const sorted = [...userDetails].sort((a, b) => b.points - a.points);
+        if (selectedDept === "all") return sorted;
+        return sorted.filter(u => u.department_id === selectedDept);
+    }, [userDetails, selectedDept]);
+
     if (loading) {
         return (
             <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -466,8 +444,10 @@ export default function AdminPage() {
                     ))}
                 </div>
 
+                {/* ユーザー一覧タブ */}
                 {activeTab === "users" && (
                     <div>
+                        {/* 招待 */}
                         <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
                             <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📧 新規メンバー招待</div>
                             <div style={{ display: "flex", gap: 12 }}>
@@ -479,32 +459,53 @@ export default function AdminPage() {
                             {inviteMessage && <div style={{ marginTop: 12, fontSize: 13, color: inviteMessage.includes("✅") ? "#34d399" : "#f87171", fontWeight: 600 }}>{inviteMessage}</div>}
                         </div>
 
+                        {/* ユーザー一覧 */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>USER MANAGEMENT</div>
+                            {/* フィルター */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>
+                                    USER MANAGEMENT <span style={{ color: "#818cf8", marginLeft: 8 }}>{filteredUsers.length}人</span>
+                                </div>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                    <button
+                                        onClick={() => setSelectedDept("all")}
+                                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: selectedDept === "all" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: selectedDept === "all" ? "#fff" : "#9ca3af" }}
+                                    >
+                                        全員
+                                    </button>
+                                    {departments.map(dept => (
+                                        <button
+                                            key={dept.id}
+                                            onClick={() => setSelectedDept(dept.id)}
+                                            style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: selectedDept === dept.id ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: selectedDept === dept.id ? "#fff" : "#9ca3af" }}
+                                        >
+                                            {dept.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                {userDetails.sort((a, b) => b.points - a.points).map((u, i) => (
-                                    <div key={u.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                {u.avatar_url ? (
-                                                    <img src={u.avatar_url} alt={u.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", border: "2px solid rgba(99,102,241,0.4)" }} />
-                                                ) : (
-                                                    <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
-                                                )}
-                                                <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{u.name}</div>
-                                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>役割: {u.role}</div>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                {filteredUsers.map((u, i) => {
+                                    const level = Math.max(1, Math.floor(u.points / 100) + 1);
+                                    const score = getRankScore({ level, streak: u.streak, submissionCount: u.submissionCount, thanksCount: u.thanksCount, kpiCount: u.kpiCount, activeDays: u.activeDays, education: u.education });
+                                    const rank = getRank(score);
+                                    const rankColor = getRankColor(rank);
+
+                                    return (
+                                        <div key={u.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                             {editingUser === u.id ? (
-                                                <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>名前:</span>
-                                                        <input type="text" value={u.editingName ?? u.name} onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))} style={{ width: 160, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
-                                                    </div>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>ポイント:</span>
-                                                        <input type="number" value={editingPoints} onChange={(e) => setEditingPoints(Number(e.target.value))} style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                                // 編集モード
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                            <span style={{ fontSize: 12, color: "#6b7280" }}>名前:</span>
+                                                            <input type="text" value={u.editingName ?? u.name} onChange={(e) => setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: e.target.value } : u2))} style={{ width: 160, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                                        </div>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                            <span style={{ fontSize: 12, color: "#6b7280" }}>ポイント:</span>
+                                                            <input type="number" value={editingPoints} onChange={(e) => setEditingPoints(Number(e.target.value))} style={{ width: 100, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                                        </div>
                                                     </div>
                                                     <div style={{ display: "flex", gap: 8 }}>
                                                         <button onClick={() => handleSaveUser(u.id)} disabled={savingUser === u.id} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{savingUser === u.id ? "保存中..." : "保存"}</button>
@@ -512,35 +513,58 @@ export default function AdminPage() {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                    {(() => {
-                                                        const level = Math.max(1, Math.floor(u.points / 100) + 1);
-                                                        const score = getRankScore({ level, streak: u.streak, submissionCount: u.submissionCount, thanksCount: u.thanksCount, kpiCount: u.kpiCount, activeDays: u.activeDays, education: u.education });
-                                                        const rank = getRank(score);
-                                                        const color = getRankColor(rank);
-                                                        return (
-                                                            <div style={{ textAlign: "center", marginRight: 8 }}>
-                                                                <div style={{ width: 44, height: 44, borderRadius: 10, background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, color: "#fff" }}>{rank}</div>
-                                                                <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{score}pt</div>
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                    <div style={{ textAlign: "right" }}>
-                                                        <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
-                                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
+                                                // 通常表示
+                                                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                                    {/* アバター */}
+                                                    {u.avatar_url ? (
+                                                        <img src={u.avatar_url} alt={u.name} style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(99,102,241,0.4)", flexShrink: 0 }} />
+                                                    ) : (
+                                                        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{u.name.charAt(0)}</div>
+                                                    )}
+
+                                                    {/* 名前・事業部 */}
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                                            <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{u.name}</span>
+                                                            {u.deptName && (
+                                                                <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", fontSize: 11, color: "#06b6d4", fontWeight: 600 }}>{u.deptName}</span>
+                                                            )}
+                                                            {u.education && (
+                                                                <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 11, color: "#f59e0b", fontWeight: 600 }}>🎓 {u.education}</span>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6b7280" }}>
+                                                            <span>🔥 {u.streak}日連続</span>
+                                                            <span>📋 {u.submissionCount}件</span>
+                                                            <span>🎉 {u.thanksCount}件</span>
+                                                        </div>
                                                     </div>
-                                                    <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
-                                                    <div style={{ display: "flex", gap: 4 }}>
+
+                                                    {/* ランク・ポイント */}
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                        <div style={{ textAlign: "center" }}>
+                                                            <div style={{ width: 40, height: 40, borderRadius: 10, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: "#fff" }}>{rank}</div>
+                                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{score}pt</div>
+                                                        </div>
+                                                        <div style={{ textAlign: "right" }}>
+                                                            <div style={{ fontSize: 20, fontWeight: 800, color: "#818cf8" }}>{u.points.toLocaleString()}pt</div>
+                                                            <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* ボタン */}
+                                                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                                                        <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
                                                         {[10, 50, 100].map(amount => (
                                                             <button key={amount} onClick={() => handleAddPoints(u.id, amount)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+{amount}</button>
                                                         ))}
+                                                        <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
                                                     </div>
-                                                    <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
@@ -740,31 +764,19 @@ export default function AdminPage() {
                         )}
                     </div>
                 )}
-                {/* チームタブ */}
+
                 {activeTab === "teams" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        {/* チーム作成 */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>👥 新規チーム作成</div>
                             <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-                                <input
-                                    value={teamName}
-                                    onChange={(e) => setTeamName(e.target.value)}
-                                    placeholder="代理店名を入力（例：〇〇代理店）"
-                                    style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none" }}
-                                />
-                                <button
-                                    onClick={handleCreateTeam}
-                                    disabled={teamSaving}
-                                    style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
-                                >
+                                <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="代理店名を入力（例：〇〇代理店）" style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                                <button onClick={handleCreateTeam} disabled={teamSaving} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
                                     {teamSaving ? "作成中..." : "作成"}
                                 </button>
                             </div>
                             {teamMessage && <div style={{ fontSize: 13, color: "#34d399", fontWeight: 600 }}>{teamMessage}</div>}
                         </div>
-
-                        {/* チーム一覧＆メンバー割り当て */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>メンバー割り当て</div>
                             {teams.length === 0 ? (
@@ -774,64 +786,54 @@ export default function AdminPage() {
                                     {userDetails.map((u) => (
                                         <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                <div style={{ width: 36, height: 36, borderRadius: 8, background: teams.find(t => t.id === u.team_id)?.color || "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
+                                                {u.avatar_url ? (
+                                                    <img src={u.avatar_url} alt={u.name} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", border: "2px solid rgba(99,102,241,0.4)" }} />
+                                                ) : (
+                                                    <div style={{ width: 36, height: 36, borderRadius: 8, background: teams.find(t => t.id === u.team_id)?.color || "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
+                                                )}
                                                 <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb" }}>{u.name}</div>
                                             </div>
-                                            <select
-                                                value={u.team_id || ""}
-                                                onChange={(e) => handleAssignTeam(u.id, e.target.value)}
-                                                style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", cursor: "pointer" }}
-                                            >
+                                            <select value={u.team_id || ""} onChange={(e) => handleAssignTeam(u.id, e.target.value)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", cursor: "pointer" }}>
                                                 <option value="">チームなし</option>
-                                                {teams.map(t => (
-                                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                                ))}
+                                                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                                             </select>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
-
-                        {/* チームランキング */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🏆 チームランキング</div>
-                            {teams.length === 0 ? (
-                                <div style={{ color: "#6b7280", fontSize: 14 }}>チームがありません</div>
-                            ) : (
+                            {teams.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>チームがありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {teams.map((team) => {
                                         const members = userDetails.filter(u => u.team_id === team.id);
                                         const totalPoints = members.reduce((sum, u) => sum + u.points, 0);
                                         return { ...team, members, totalPoints };
-                                    }).sort((a, b) => b.totalPoints - a.totalPoints).map((team, i) => {
-                                        const { id, name, color, members, totalPoints } = team;
-                                        return (
-                                            <div key={team.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${team.color}40` }}>
-                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                        <div style={{ width: 12, height: 12, borderRadius: "50%", background: team.color }} />
-                                                        <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`} {team.name}</span>
-                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>{team.members.length}人</span>
-                                                    </div>
-                                                    <span style={{ fontSize: 20, fontWeight: 800, color: team.color }}>{totalPoints.toLocaleString()}pt</span>
+                                    }).sort((a, b) => b.totalPoints - a.totalPoints).map((team, i) => (
+                                        <div key={team.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${team.color}40` }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                    <div style={{ width: 12, height: 12, borderRadius: "50%", background: team.color }} />
+                                                    <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`} {team.name}</span>
+                                                    <span style={{ fontSize: 12, color: "#6b7280" }}>{team.members.length}人</span>
                                                 </div>
-                                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                                    {team.members.map(m => (
-                                                        <div key={m.id} style={{ padding: "4px 10px", borderRadius: 6, background: `${team.color}20`, border: `1px solid ${team.color}40`, fontSize: 12, color: "#d1d5db" }}>
-                                                            {m.name} {m.points}pt
-                                                        </div>
-                                                    ))}
-                                                    {team.members.length === 0 && <div style={{ fontSize: 12, color: "#6b7280" }}>メンバーなし</div>}
-                                                </div>
+                                                <span style={{ fontSize: 20, fontWeight: 800, color: team.color }}>{team.totalPoints.toLocaleString()}pt</span>
                                             </div>
-                                        );
-                                    })}
+                                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                                {team.members.map(m => (
+                                                    <div key={m.id} style={{ padding: "4px 10px", borderRadius: 6, background: `${team.color}20`, border: `1px solid ${team.color}40`, fontSize: 12, color: "#d1d5db" }}>{m.name} {m.points}pt</div>
+                                                ))}
+                                                {team.members.length === 0 && <div style={{ fontSize: 12, color: "#6b7280" }}>メンバーなし</div>}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
+
                 {activeTab === "dashboard" && (
                     <>
                         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
@@ -1012,16 +1014,12 @@ export default function AdminPage() {
                         </div>
                     </>
                 )}
-                {/* 月次KPI承認タブ */}
+
                 {activeTab === "monthly_kpi" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>月次KPI管理</div>
-                            <select
-                                value={kpiMonth}
-                                onChange={(e) => setKpiMonth(e.target.value)}
-                                style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none" }}
-                            >
+                            <select value={kpiMonth} onChange={(e) => setKpiMonth(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none" }}>
                                 {Array.from({ length: 6 }, (_, i) => {
                                     const d = new Date();
                                     d.setMonth(d.getMonth() - i);
@@ -1031,12 +1029,9 @@ export default function AdminPage() {
                             </select>
                         </div>
 
-                        {/* ★ 事業部別ダッシュボード */}
                         {(() => {
-                            // departments テーブルのユニークな部署一覧を monthlyKpis から集める
                             const deptIds = [...new Set(monthlyKpis.map(k => k.department_id))];
                             if (deptIds.length === 0) return null;
-
                             const deptSummaries = deptIds.map(deptId => {
                                 const deptKpis = monthlyKpis.filter(k => k.department_id === deptId);
                                 const deptName = deptKpis[0]?.deptName || "不明";
@@ -1060,24 +1055,15 @@ export default function AdminPage() {
                             return (
                                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🏢 事業部別ダッシュボード</div>
-
-                                    {/* サマリーカード */}
                                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
                                         {deptSummaries.map((dept, i) => (
-                                            <div key={dept.deptId} style={{
-                                                padding: "16px 20px", borderRadius: 12,
-                                                background: `${dept.rateColor}10`,
-                                                border: `1px solid ${dept.rateColor}40`,
-                                                position: "relative", overflow: "hidden"
-                                            }}>
-                                                {i === 0 && (
-                                                    <div style={{ position: "absolute", top: 8, right: 10, fontSize: 16 }}>🥇</div>
-                                                )}
+                                            <div key={dept.deptId} style={{ padding: "16px 20px", borderRadius: 12, background: `${dept.rateColor}10`, border: `1px solid ${dept.rateColor}40`, position: "relative", overflow: "hidden" }}>
+                                                {i === 0 && <div style={{ position: "absolute", top: 8, right: 10, fontSize: 16 }}>🥇</div>}
                                                 <div style={{ fontSize: 13, fontWeight: 800, color: "#f9fafb", marginBottom: 4 }}>{dept.deptName}</div>
                                                 <div style={{ fontSize: 32, fontWeight: 900, color: dept.rateColor, lineHeight: 1, marginBottom: 4 }}>{dept.avgRate}%</div>
                                                 <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 10 }}>平均達成率</div>
                                                 <div style={{ height: 4, borderRadius: 999, background: "rgba(255,255,255,0.08)", marginBottom: 10 }}>
-                                                    <div style={{ height: "100%", width: `${Math.min(dept.avgRate, 100)}%`, background: dept.rateColor, borderRadius: 999, transition: "width 0.8s ease" }} />
+                                                    <div style={{ height: "100%", width: `${Math.min(dept.avgRate, 100)}%`, background: dept.rateColor, borderRadius: 999 }} />
                                                 </div>
                                                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af" }}>
                                                     <span>{dept.userCount}人参加</span>
@@ -1086,8 +1072,6 @@ export default function AdminPage() {
                                             </div>
                                         ))}
                                     </div>
-
-                                    {/* 詳細テーブル */}
                                     <div style={{ overflowX: "auto" }}>
                                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                                             <thead>
@@ -1111,17 +1095,11 @@ export default function AdminPage() {
                                                             </div>
                                                         </td>
                                                         <td style={{ padding: "12px", fontSize: 13, color: "#9ca3af" }}>
-                                                            <span style={{ color: dept.achievedCount > 0 ? "#34d399" : "#6b7280", fontWeight: 700 }}>
-                                                                {dept.achievedCount}/{dept.kpiCount}件
-                                                            </span>
+                                                            <span style={{ color: dept.achievedCount > 0 ? "#34d399" : "#6b7280", fontWeight: 700 }}>{dept.achievedCount}/{dept.kpiCount}件</span>
                                                         </td>
                                                         <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#818cf8" }}>{dept.totalPts}pt</td>
                                                         <td style={{ padding: "12px" }}>
-                                                            <div style={{
-                                                                display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700,
-                                                                background: dept.avgRate >= 100 ? "rgba(52,211,153,0.15)" : dept.avgRate >= 80 ? "rgba(245,158,11,0.15)" : "rgba(248,113,113,0.15)",
-                                                                color: dept.avgRate >= 100 ? "#34d399" : dept.avgRate >= 80 ? "#f59e0b" : "#f87171"
-                                                            }}>
+                                                            <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: dept.avgRate >= 100 ? "rgba(52,211,153,0.15)" : dept.avgRate >= 80 ? "rgba(245,158,11,0.15)" : "rgba(248,113,113,0.15)", color: dept.avgRate >= 100 ? "#34d399" : dept.avgRate >= 80 ? "#f59e0b" : "#f87171" }}>
                                                                 {dept.avgRate >= 100 ? "✅ 達成" : dept.avgRate >= 80 ? "⚡ 惜しい" : "📉 要改善"}
                                                             </div>
                                                         </td>
@@ -1134,66 +1112,48 @@ export default function AdminPage() {
                             );
                         })()}
 
-                        {/* 目標設定セクション */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>🎯 目標設定</div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                {userDetails.map((u) => {
-                                    return (
-                                        <div key={u.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                <div>
-                                                    <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{u.name}</div>
-                                                    <div style={{ fontSize: 12, color: "#6b7280" }}>役割: {u.role}</div>
-                                                </div>
-                                                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                                                    {monthlyKpis.filter(k => k.user_id === u.id).map(kpi => {
-                                                        const key = `${u.id}_${kpi.department_id}`;
-                                                        const currentTarget = monthlyTargets.find(t => t.user_id === u.id && t.department_id === kpi.department_id)?.target || kpi.target;
-                                                        return (
-                                                            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                                <span style={{ fontSize: 12, color: "#9ca3af" }}>{kpi.deptName}目標:</span>
-                                                                <input
-                                                                    type="number"
-                                                                    defaultValue={currentTarget}
-                                                                    onChange={(e) => setTargetInputs(prev => ({ ...prev, [key]: Number(e.target.value) }))}
-                                                                    style={{ width: 70, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }}
-                                                                />
-                                                                <button
-                                                                    onClick={async () => {
-                                                                        const val = targetInputs[key] ?? currentTarget;
-                                                                        await handleSetTarget(u.id, kpi.department_id, val);
-                                                                        setMonthlyTargets(prev => {
-                                                                            const exists = prev.find(t => t.user_id === u.id && t.department_id === kpi.department_id);
-                                                                            if (exists) return prev.map(t => t.user_id === u.id && t.department_id === kpi.department_id ? { ...t, target: val } : t);
-                                                                            return [...prev, { user_id: u.id, department_id: kpi.department_id, target: val }];
-                                                                        });
-                                                                    }}
-                                                                    style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                                                                >
-                                                                    設定
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {monthlyKpis.filter(k => k.user_id === u.id).length === 0 && (
-                                                        <div style={{ fontSize: 12, color: "#6b7280" }}>KPI未入力</div>
-                                                    )}
-                                                </div>
+                                {userDetails.map((u) => (
+                                    <div key={u.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <div>
+                                                <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{u.name}</div>
+                                                <div style={{ fontSize: 12, color: "#6b7280" }}>役割: {u.role}</div>
+                                            </div>
+                                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                                {monthlyKpis.filter(k => k.user_id === u.id).map(kpi => {
+                                                    const key = `${u.id}_${kpi.department_id}`;
+                                                    const currentTarget = monthlyTargets.find(t => t.user_id === u.id && t.department_id === kpi.department_id)?.target || kpi.target;
+                                                    return (
+                                                        <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                            <span style={{ fontSize: 12, color: "#9ca3af" }}>{kpi.deptName}目標:</span>
+                                                            <input type="number" defaultValue={currentTarget} onChange={(e) => setTargetInputs(prev => ({ ...prev, [key]: Number(e.target.value) }))} style={{ width: 70, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                                            <button onClick={async () => {
+                                                                const val = targetInputs[key] ?? currentTarget;
+                                                                await handleSetTarget(u.id, kpi.department_id, val);
+                                                                setMonthlyTargets(prev => {
+                                                                    const exists = prev.find(t => t.user_id === u.id && t.department_id === kpi.department_id);
+                                                                    if (exists) return prev.map(t => t.user_id === u.id && t.department_id === kpi.department_id ? { ...t, target: val } : t);
+                                                                    return [...prev, { user_id: u.id, department_id: kpi.department_id, target: val }];
+                                                                });
+                                                            }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>設定</button>
+                                                        </div>
+                                                    );
+                                                })}
+                                                {monthlyKpis.filter(k => k.user_id === u.id).length === 0 && <div style={{ fontSize: 12, color: "#6b7280" }}>KPI未入力</div>}
                                             </div>
                                         </div>
-                                    );
-                                })}
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        {/* 承認セクション */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>✅ KPI承認</div>
                             {monthlyKpis.length === 0 ? (
-                                <div style={{ textAlign: "center", color: "#6b7280", fontSize: 14, padding: 20 }}>
-                                    {kpiMonth}のKPIデータがありません
-                                </div>
+                                <div style={{ textAlign: "center", color: "#6b7280", fontSize: 14, padding: 20 }}>{kpiMonth}のKPIデータがありません</div>
                             ) : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {monthlyKpis.map((kpi) => {
@@ -1221,11 +1181,7 @@ export default function AdminPage() {
                                                         </div>
                                                     </div>
                                                     {!kpi.approved && (
-                                                        <button
-                                                            onClick={() => handleApproveKpi({ ...kpi, target: officialTarget, points_awarded: pts })}
-                                                            disabled={approvingKpi === kpi.id}
-                                                            style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: pts > 0 ? "linear-gradient(135deg, #10b981, #34d399)" : "rgba(255,255,255,0.1)", color: pts > 0 ? "#0a0a0f" : "#6b7280", fontWeight: 700, cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" }}
-                                                        >
+                                                        <button onClick={() => handleApproveKpi({ ...kpi, target: officialTarget, points_awarded: pts })} disabled={approvingKpi === kpi.id} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: pts > 0 ? "linear-gradient(135deg, #10b981, #34d399)" : "rgba(255,255,255,0.1)", color: pts > 0 ? "#0a0a0f" : "#6b7280", fontWeight: 700, cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" }}>
                                                             {approvingKpi === kpi.id ? "処理中..." : `承認 +${pts}pt`}
                                                         </button>
                                                     )}
@@ -1239,6 +1195,6 @@ export default function AdminPage() {
                     </div>
                 )}
             </div>
-        </main >
+        </main>
     );
 }
