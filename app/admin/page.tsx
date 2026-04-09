@@ -1028,22 +1028,122 @@ export default function AdminPage() {
                             </select>
                         </div>
 
+                        {/* ★ 事業部別ダッシュボード */}
+                        {(() => {
+                            // departments テーブルのユニークな部署一覧を monthlyKpis から集める
+                            const deptIds = [...new Set(monthlyKpis.map(k => k.department_id))];
+                            if (deptIds.length === 0) return null;
+
+                            const deptSummaries = deptIds.map(deptId => {
+                                const deptKpis = monthlyKpis.filter(k => k.department_id === deptId);
+                                const deptName = deptKpis[0]?.deptName || "不明";
+                                const userCount = [...new Set(deptKpis.map(k => k.user_id))].length;
+                                const rates = deptKpis.map(kpi => {
+                                    const officialTarget = monthlyTargets.find(t => t.user_id === kpi.user_id && t.department_id === kpi.department_id)?.target || kpi.target;
+                                    return officialTarget > 0 ? Math.round((kpi.result / officialTarget) * 100) : 0;
+                                });
+                                const avgRate = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0;
+                                const achievedCount = rates.filter(r => r >= 100).length;
+                                const totalPts = deptKpis.filter(k => k.approved).reduce((sum, k) => {
+                                    const officialTarget = monthlyTargets.find(t => t.user_id === k.user_id && t.department_id === k.department_id)?.target || k.target;
+                                    const rate = officialTarget > 0 ? Math.round((k.result / officialTarget) * 100) : 0;
+                                    const pts = rate >= 120 ? 50 : rate >= 100 ? 30 : rate >= 80 ? 20 : rate >= 60 ? 10 : 0;
+                                    return sum + pts;
+                                }, 0);
+                                const rateColor = avgRate >= 100 ? "#34d399" : avgRate >= 80 ? "#f59e0b" : avgRate >= 60 ? "#f97316" : "#f87171";
+                                return { deptId, deptName, userCount, avgRate, achievedCount, totalPts, rateColor, kpiCount: deptKpis.length };
+                            }).sort((a, b) => b.avgRate - a.avgRate);
+
+                            return (
+                                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🏢 事業部別ダッシュボード</div>
+
+                                    {/* サマリーカード */}
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
+                                        {deptSummaries.map((dept, i) => (
+                                            <div key={dept.deptId} style={{
+                                                padding: "16px 20px", borderRadius: 12,
+                                                background: `${dept.rateColor}10`,
+                                                border: `1px solid ${dept.rateColor}40`,
+                                                position: "relative", overflow: "hidden"
+                                            }}>
+                                                {i === 0 && (
+                                                    <div style={{ position: "absolute", top: 8, right: 10, fontSize: 16 }}>🥇</div>
+                                                )}
+                                                <div style={{ fontSize: 13, fontWeight: 800, color: "#f9fafb", marginBottom: 4 }}>{dept.deptName}</div>
+                                                <div style={{ fontSize: 32, fontWeight: 900, color: dept.rateColor, lineHeight: 1, marginBottom: 4 }}>{dept.avgRate}%</div>
+                                                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 10 }}>平均達成率</div>
+                                                <div style={{ height: 4, borderRadius: 999, background: "rgba(255,255,255,0.08)", marginBottom: 10 }}>
+                                                    <div style={{ height: "100%", width: `${Math.min(dept.avgRate, 100)}%`, background: dept.rateColor, borderRadius: 999, transition: "width 0.8s ease" }} />
+                                                </div>
+                                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af" }}>
+                                                    <span>{dept.userCount}人参加</span>
+                                                    <span style={{ color: "#818cf8" }}>{dept.totalPts}pt付与</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* 詳細テーブル */}
+                                    <div style={{ overflowX: "auto" }}>
+                                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                                                    {["事業部", "参加人数", "平均達成率", "100%達成", "承認済pt", "達成状況"].map(h => (
+                                                        <th key={h} style={{ padding: "8px 12px", fontSize: 11, color: "#6b7280", fontWeight: 700, textAlign: "left", letterSpacing: 1 }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {deptSummaries.map(dept => (
+                                                    <tr key={dept.deptId} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                                                        <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{dept.deptName}</td>
+                                                        <td style={{ padding: "12px", fontSize: 13, color: "#9ca3af" }}>{dept.userCount}人</td>
+                                                        <td style={{ padding: "12px" }}>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                                <div style={{ width: 80, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
+                                                                    <div style={{ height: "100%", width: `${Math.min(dept.avgRate, 100)}%`, background: dept.rateColor, borderRadius: 999 }} />
+                                                                </div>
+                                                                <span style={{ fontSize: 14, fontWeight: 700, color: dept.rateColor }}>{dept.avgRate}%</span>
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: "12px", fontSize: 13, color: "#9ca3af" }}>
+                                                            <span style={{ color: dept.achievedCount > 0 ? "#34d399" : "#6b7280", fontWeight: 700 }}>
+                                                                {dept.achievedCount}/{dept.kpiCount}件
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#818cf8" }}>{dept.totalPts}pt</td>
+                                                        <td style={{ padding: "12px" }}>
+                                                            <div style={{
+                                                                display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700,
+                                                                background: dept.avgRate >= 100 ? "rgba(52,211,153,0.15)" : dept.avgRate >= 80 ? "rgba(245,158,11,0.15)" : "rgba(248,113,113,0.15)",
+                                                                color: dept.avgRate >= 100 ? "#34d399" : dept.avgRate >= 80 ? "#f59e0b" : "#f87171"
+                                                            }}>
+                                                                {dept.avgRate >= 100 ? "✅ 達成" : dept.avgRate >= 80 ? "⚡ 惜しい" : "📉 要改善"}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         {/* 目標設定セクション */}
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>🎯 目標設定</div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                 {userDetails.map((u) => {
-                                    const dept = teams.find(t => t.id === u.team_id);
-                                    const deptInfo = ([] as any[]);
                                     return (
                                         <div key={u.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                                 <div>
                                                     <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{u.name}</div>
-                                                    <div style={{ fontSize: 12, color: "#6b7280" }}>事業部: {u.role}</div>
+                                                    <div style={{ fontSize: 12, color: "#6b7280" }}>役割: {u.role}</div>
                                                 </div>
-                                                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                                    {/* 各事業部の目標入力 */}
+                                                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                                                     {monthlyKpis.filter(k => k.user_id === u.id).map(kpi => {
                                                         const key = `${u.id}_${kpi.department_id}`;
                                                         const currentTarget = monthlyTargets.find(t => t.user_id === u.id && t.department_id === kpi.department_id)?.target || kpi.target;

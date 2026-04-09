@@ -135,7 +135,7 @@ function generateAIComment(params: { name: string; level: number; rank2: string;
     if (streak >= 7) return `${name}さん、${streak}日連続提出は本物の習慣力の証です。この継続力こそが市場価値を高める最大の武器。ランク${rank2}はあなたの実力を正しく示しています。`;
     if (streak >= 3) return `${name}さん、${streak}日連続で素晴らしい！継続は最強のスキルです。このペースを維持すればランクアップも近いです。`;
     if (rank2 === "SS" || rank2 === "S") return `${name}さん、ランク${rank2}到達おめでとうございます！トップクラスの成長速度です。この調子でインターン業界をリードしていきましょう。`;
-    if (level >= 10) return `${name}さん、Lv.${level}まで成長しました。${points}ptという実績はあなたの努力の証。次はランクアップを狙いましょう！`;
+    if (level >= 10) return `${name}さん、Lv.${level}まで成長しました。${points}ptという実績はあなたの努力の証。次はランクアップを目指しましょう！`;
     if (points < 100) return `${name}さん、まだ始まったばかりです。毎日の日報提出を続けることで、一気に成長できます。今日から習慣にしましょう！`;
     return `${name}さん、着実に成長しています。日報の継続とKPI達成を意識することで、さらに上のランクが見えてきます。`;
 }
@@ -173,6 +173,7 @@ export default function MyPage() {
     const [userId, setUserId] = useState("");
     const [name, setName] = useState("");
     const [inputName, setInputName] = useState("");
+    const [myKpis, setMyKpis] = useState<{ deptName: string; target: number; result: number; rate: number; pts: number; approved: boolean }[]>([]);
     const [education, setEducation] = useState("");
     const [departmentId, setDepartmentId] = useState("");
     const [departments, setDepartments] = useState<{ id: string; name: string; code: string }[]>([]);
@@ -270,6 +271,7 @@ export default function MyPage() {
 
         const { data: announceRows } = await supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
         setAnnouncements((announceRows || []) as { id: string; title: string; content: string }[]);
+
         // デイリーミッション確認
         const { data: todayKpiRows } = await supabase
             .from("kpi_logs").select("created_at").eq("user_id", user.id);
@@ -282,8 +284,29 @@ export default function MyPage() {
         const { data: todayLearnRows } = await supabase
             .from("content_completions").select("created_at").eq("user_id", user.id);
         setTodayLearnDone(todayLearnRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
+
         const { data: deptRows } = await supabase.from("departments").select("id, name, code").order("created_at");
         setDepartments((deptRows || []) as { id: string; name: string; code: string }[]);
+
+        // 月次KPI取得
+        const now = new Date();
+        const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const { data: kpiRows } = await supabase.from("monthly_kpi").select("*").eq("user_id", user.id).eq("year_month", ym);
+        const { data: kpiDeptRows } = await supabase.from("departments").select("*");
+        const { data: targetRows } = await supabase.from("monthly_targets").select("*").eq("year_month", ym).eq("user_id", user.id);
+
+        // ✅ 修正: kpiRows.map(k => ...) を正しく記述
+        if (kpiRows && kpiDeptRows) {
+            const kpis = kpiRows.map((k: any) => {
+                const dept = kpiDeptRows.find((d: any) => d.id === k.department_id);
+                const officialTarget = targetRows?.find((t: any) => t.department_id === k.department_id)?.target || k.target;
+                const rate = officialTarget > 0 ? Math.round((k.result / officialTarget) * 100) : 0;
+                const pts = rate >= 120 ? 50 : rate >= 100 ? 30 : rate >= 80 ? 20 : rate >= 60 ? 10 : 0;
+                return { deptName: dept?.name || "不明", target: officialTarget, result: k.result, rate, pts, approved: k.approved };
+            });
+            setMyKpis(kpis);
+        }
+
         setLoading(false);
     };
 
@@ -433,6 +456,7 @@ export default function MyPage() {
                         <div style={{ marginTop: 16, fontSize: 13, color: "#9ca3af" }}>{actionMessage}</div>
                     </div>
                 </div>
+
                 {/* 7軸スコア レーダーチャート */}
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>7-AXIS EVALUATION</div>
@@ -483,6 +507,46 @@ export default function MyPage() {
                         </div>
                     )}
                 </div>
+
+                {/* 月次KPI */}
+                {myKpis.length > 0 && (
+                    <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>MONTHLY KPI</div>
+                            <div style={{ fontSize: 12, color: "#6b7280" }}>{new Date().getFullYear()}/{new Date().getMonth() + 1}月</div>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            {myKpis.map((kpi, i) => {
+                                const rateColor = kpi.rate >= 100 ? "#34d399" : kpi.rate >= 80 ? "#f59e0b" : kpi.rate >= 60 ? "#f97316" : "#f87171";
+                                return (
+                                    <div key={i} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${kpi.approved ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.06)"}` }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{kpi.deptName}</span>
+                                                {kpi.approved && <span style={{ fontSize: 12, color: "#34d399", fontWeight: 600 }}>✅ 承認済</span>}
+                                            </div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                                <span style={{ fontSize: 13, color: "#9ca3af" }}>{kpi.result} / {kpi.target}件</span>
+                                                <span style={{ fontSize: 20, fontWeight: 800, color: rateColor }}>{kpi.rate}%</span>
+                                                <span style={{ fontSize: 16, fontWeight: 700, color: kpi.pts > 0 ? "#818cf8" : "#6b7280" }}>{kpi.approved ? `+${kpi.pts}pt` : `予定${kpi.pts}pt`}</span>
+                                            </div>
+                                        </div>
+                                        <div style={{ height: 8, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
+                                            <div style={{ height: "100%", width: `${Math.min(kpi.rate, 100)}%`, background: rateColor, borderRadius: 999, transition: "width 0.8s ease" }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <button
+                            onClick={() => router.push("/kpi")}
+                            style={{ marginTop: 16, width: "100%", padding: "12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}
+                        >
+                            📊 KPIを入力・更新する
+                        </button>
+                    </div>
+                )}
+
                 {/* デイリーミッション */}
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -527,6 +591,7 @@ export default function MyPage() {
                         ))}
                     </div>
                 </div>
+
                 {/* AIメタ認知コメント */}
                 <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
