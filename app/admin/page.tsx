@@ -286,7 +286,9 @@ export default function AdminPage() {
     const handleCreateTeam = async () => {
         if (!teamName.trim()) { setTeamMessage("チーム名を入力してください"); return; }
         setTeamSaving(true);
-        await supabase.from("teams").insert({ name: teamName.trim(), color: teamColor });
+        const colors = ["#6366f1", "#f59e0b", "#34d399", "#ec4899", "#06b6d4", "#f97316"];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        await supabase.from("teams").insert({ name: teamName.trim(), color: randomColor });
         const { data: rows } = await supabase.from("teams").select("*").order("created_at");
         setTeams((rows || []) as Team[]);
         setTeamName("");
@@ -682,14 +684,8 @@ export default function AdminPage() {
                                 <input
                                     value={teamName}
                                     onChange={(e) => setTeamName(e.target.value)}
-                                    placeholder="チーム名（例：Aチーム）"
+                                    placeholder="代理店名を入力（例：〇〇代理店）"
                                     style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none" }}
-                                />
-                                <input
-                                    type="color"
-                                    value={teamColor}
-                                    onChange={(e) => setTeamColor(e.target.value)}
-                                    style={{ width: 42, height: 42, borderRadius: 8, border: "2px solid rgba(255,255,255,0.1)", cursor: "pointer", padding: 2, background: "rgba(255,255,255,0.05)" }}
                                 />
                                 <button
                                     onClick={handleCreateTeam}
