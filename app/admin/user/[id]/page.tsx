@@ -29,6 +29,22 @@ function formatReason(reason?: string | null): string {
 }
 
 function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
+function getRank(score: number): string {
+    if (score >= 90) return "SS";
+    if (score >= 80) return "S";
+    if (score >= 70) return "A";
+    if (score >= 60) return "B";
+    if (score >= 50) return "C";
+    return "D";
+}
+function getRankColor(rank: string): string {
+    if (rank === "SS") return "#f59e0b";
+    if (rank === "S") return "#a855f7";
+    if (rank === "A") return "#6366f1";
+    if (rank === "B") return "#06b6d4";
+    if (rank === "C") return "#84cc16";
+    return "#6b7280";
+}
 
 export default function UserDetailPage() {
     const router = useRouter();
@@ -39,6 +55,10 @@ export default function UserDetailPage() {
     const [points, setPoints] = useState(0);
     const [streak, setStreak] = useState(0);
     const [role, setRole] = useState("");
+    const [education, setEducation] = useState("");
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [departmentName, setDepartmentName] = useState("");
+    const [startedAt, setStartedAt] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [pointHistory, setPointHistory] = useState<PointHistory[]>([]);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -59,6 +79,15 @@ export default function UserDetailPage() {
             setName(profile?.name || "名前未設定");
             setStreak(profile?.streak || 0);
             setRole(profile?.role || "");
+            setEducation(profile?.education || "");
+            setAvatarUrl(profile?.avatar_url || null);
+            setStartedAt(profile?.started_at || null);
+
+            // 事業部名を取得
+            if (profile?.department_id) {
+                const { data: dept } = await supabase.from("departments").select("name").eq("id", profile.department_id).single();
+                setDepartmentName(dept?.name || "");
+            }
 
             const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", userId).single();
             setPoints(pointRow?.points || 0);
@@ -110,6 +139,18 @@ export default function UserDetailPage() {
     }
 
     const level = getLevel(points);
+    const activeDays = startedAt ? Math.floor((Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+    const rankScore = Math.min(Math.round(
+        (education ? 8 : 0) +
+        Math.min(activeDays * 0.5, 15) +
+        Math.min(kpiLogs.length * 3, 15) +
+        Math.min(streak * 2, 20) +
+        Math.min(thanksReceived.length * 2, 10) +
+        Math.min(submissions.length * 2, 20) +
+        Math.min(level, 10)
+    ), 100);
+    const rank2 = getRank(rankScore);
+    const rankColor = getRankColor(rank2);
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -117,14 +158,57 @@ export default function UserDetailPage() {
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1000, margin: "0 auto" }}>
 
-                {/* ヘッダー */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-                    <div>
-                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3 }}>INTERN QUEST / 管理者</div>
-                        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>{name}</h1>
-                        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>役割: {role}</div>
-                    </div>
+                {/* 戻るボタン */}
+                <div style={{ marginBottom: 24 }}>
                     <button onClick={() => router.push("/admin")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>← 管理者画面</button>
+                </div>
+
+                {/* プロフィールカード */}
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, marginBottom: 24 }}>
+                    <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
+                        {/* アバター */}
+                        {avatarUrl ? (
+                            <img src={avatarUrl} alt={name} style={{ width: 100, height: 100, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(99,102,241,0.5)", flexShrink: 0 }} />
+                        ) : (
+                            <div style={{ width: 100, height: 100, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                                {name.charAt(0)}
+                            </div>
+                        )}
+
+                        {/* 基本情報 */}
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 4 }}>INTERN QUEST / メンバー詳細</div>
+                            <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 12px" }}>{name}</h1>
+                            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                                {role && (
+                                    <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 600 }}>
+                                        👤 {role}
+                                    </span>
+                                )}
+                                {departmentName && (
+                                    <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", fontSize: 12, color: "#06b6d4", fontWeight: 600 }}>
+                                        🏢 {departmentName}
+                                    </span>
+                                )}
+                                {education && (
+                                    <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>
+                                        🎓 {education}
+                                    </span>
+                                )}
+                                {startedAt && (
+                                    <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 12, color: "#34d399", fontWeight: 600 }}>
+                                        📅 参加 {activeDays}日目
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ランク */}
+                        <div style={{ textAlign: "center", flexShrink: 0 }}>
+                            <div style={{ width: 80, height: 80, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, fontWeight: 900, color: "#fff", boxShadow: `0 0 24px ${rankColor}60`, marginBottom: 8 }}>{rank2}</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af" }}>スコア {rankScore}/100</div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* ステータスカード */}
