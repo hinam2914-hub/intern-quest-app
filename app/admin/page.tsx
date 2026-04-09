@@ -689,7 +689,7 @@ export default function AdminPage() {
                                     type="color"
                                     value={teamColor}
                                     onChange={(e) => setTeamColor(e.target.value)}
-                                    style={{ width: 48, height: 42, borderRadius: 8, border: "none", cursor: "pointer", background: "none" }}
+                                    style={{ width: 42, height: 42, borderRadius: 8, border: "2px solid rgba(255,255,255,0.1)", cursor: "pointer", padding: 2, background: "rgba(255,255,255,0.05)" }}
                                 />
                                 <button
                                     onClick={handleCreateTeam}
