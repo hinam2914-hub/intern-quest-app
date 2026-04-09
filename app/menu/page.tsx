@@ -33,6 +33,7 @@ export default function MenuPage() {
     const menuItems = [
         { icon: "🏠", label: "マイページ", desc: "ホーム・ステータス確認", path: "/mypage", color: "#6366f1" },
         { icon: "📋", label: "日報提出", desc: "今日の活動を記録してポイント獲得", path: "/report", color: "#8b5cf6" },
+        { icon: "📸", label: "プロフィール写真", desc: "顔写真をアップロードする", path: "/profile", color: "#ec4899" },
         { icon: "📚", label: "学習コンテンツ", desc: "動画・記事を学習してポイント獲得", path: "/learn", color: "#06b6d4" },
         { icon: "🎉", label: "サンキュー", desc: "感謝を伝えてポイントをプレゼント", path: "/thanks", color: "#f59e0b" },
         { icon: "📊", label: "月次KPI", desc: "月次実績を入力してポイント獲得", path: "/kpi", color: "#06b6d4" },
