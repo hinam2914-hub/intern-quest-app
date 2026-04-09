@@ -378,15 +378,25 @@ export default function MyPage() {
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
                 {/* ヘッダー */}
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                    {avatarUrl ? (
-                        <img src={avatarUrl} alt={name} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(99,102,241,0.5)" }} />
-                    ) : (
-                        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#fff" }}>{name ? name.charAt(0) : "?"}</div>
-                    )}
-                    <div>
-                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
-                        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>{name || "名前未設定"}</h1>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <div style={{ position: "relative", flexShrink: 0 }}>
+                            {avatarUrl ? (
+                                <img src={avatarUrl} alt={name} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", display: "block", border: "3px solid rgba(99,102,241,0.6)" }} />
+                            ) : (
+                                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                                    {name ? name.charAt(0) : "?"}
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>INTERN QUEST</div>
+                            <h1 style={{ fontSize: 26, fontWeight: 800, color: "#f9fafb", margin: 0, lineHeight: 1 }}>{name || "名前未設定"}</h1>
+                        </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => router.push("/report")} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>📋 日報提出</button>
+                        <button onClick={() => router.push("/menu")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>☰ メニュー</button>
                     </div>
                 </div>
 
