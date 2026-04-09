@@ -9,7 +9,7 @@ type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
-type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; };
+type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; };
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
 type AnnounceRow = { id: string; title: string; content: string; created_at: string; is_active: boolean };
@@ -17,6 +17,7 @@ type RequestRow = { id: string; user_id: string; shop_item_id: string; cost: num
 type KpiStatus = { userId: string; userName: string; kpiId: string; kpiTitle: string; unit: string; target: number; value: number };
 type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
 type ContentCompletion = { userId: string; userName: string; contentId: string; contentTitle: string; created_at: string };
+type Team = { id: string; name: string; color: string };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -78,7 +79,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -103,6 +104,11 @@ export default function AdminPage() {
     const [contentMessage, setContentMessage] = useState("");
     const [requestsList, setRequestsList] = useState<RequestRow[]>([]);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [teamName, setTeamName] = useState("");
+    const [teamColor, setTeamColor] = useState("#6366f1");
+    const [teamMessage, setTeamMessage] = useState("");
+    const [teamSaving, setTeamSaving] = useState(false);
     const [kpiStatuses, setKpiStatuses] = useState<KpiStatus[]>([]);
     const [thanksList, setThanksList] = useState<ThanksRow[]>([]);
     const [contentCompletions, setContentCompletions] = useState<ContentCompletion[]>([]);
@@ -142,6 +148,7 @@ export default function AdminPage() {
                     kpiCount: kpiLogRows?.filter((r: any) => r.user_id === p.id).length || 0,
                     activeDays,
                     education: p.education || "",
+                    team_id: p.team_id || "",
                 };
             });
             setUserDetails(details);
@@ -243,7 +250,9 @@ export default function AdminPage() {
                     created_at: r.created_at,
                 })));
             }
-
+            // チーム取得
+            const { data: teamRows } = await supabase.from("teams").select("*").order("created_at");
+            setTeams((teamRows || []) as Team[]);
             setLoading(false);
         };
         load();
@@ -274,7 +283,21 @@ export default function AdminPage() {
         });
         setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, points: current + amount } : u));
     };
+    const handleCreateTeam = async () => {
+        if (!teamName.trim()) { setTeamMessage("チーム名を入力してください"); return; }
+        setTeamSaving(true);
+        await supabase.from("teams").insert({ name: teamName.trim(), color: teamColor });
+        const { data: rows } = await supabase.from("teams").select("*").order("created_at");
+        setTeams((rows || []) as Team[]);
+        setTeamName("");
+        setTeamMessage("✅ チームを作成しました！");
+        setTeamSaving(false);
+    };
 
+    const handleAssignTeam = async (userId: string, teamId: string) => {
+        await supabase.from("profiles").update({ team_id: teamId || null }).eq("id", userId);
+        setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, team_id: teamId } : u));
+    };
     const handleInvite = async () => {
         if (!inviteEmail.trim()) { setInviteMessage("メールアドレスを入力してください"); return; }
         setInviting(true);
@@ -368,6 +391,7 @@ export default function AdminPage() {
                         { key: "announce", label: "📢 お知らせ" },
                         { key: "kpi", label: "📊 KPI設定" },
                         { key: "contents", label: "📚 コンテンツ" },
+                        { key: "teams", label: "👥 チーム" },
                         { key: "requests", label: `🛍️ 申請管理${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -648,7 +672,104 @@ export default function AdminPage() {
                         )}
                     </div>
                 )}
+                {/* チームタブ */}
+                {activeTab === "teams" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        {/* チーム作成 */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>👥 新規チーム作成</div>
+                            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+                                <input
+                                    value={teamName}
+                                    onChange={(e) => setTeamName(e.target.value)}
+                                    placeholder="チーム名（例：Aチーム）"
+                                    style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none" }}
+                                />
+                                <input
+                                    type="color"
+                                    value={teamColor}
+                                    onChange={(e) => setTeamColor(e.target.value)}
+                                    style={{ width: 48, height: 42, borderRadius: 8, border: "none", cursor: "pointer", background: "none" }}
+                                />
+                                <button
+                                    onClick={handleCreateTeam}
+                                    disabled={teamSaving}
+                                    style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+                                >
+                                    {teamSaving ? "作成中..." : "作成"}
+                                </button>
+                            </div>
+                            {teamMessage && <div style={{ fontSize: 13, color: "#34d399", fontWeight: 600 }}>{teamMessage}</div>}
+                        </div>
 
+                        {/* チーム一覧＆メンバー割り当て */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>メンバー割り当て</div>
+                            {teams.length === 0 ? (
+                                <div style={{ color: "#6b7280", fontSize: 14 }}>チームがありません。先にチームを作成してください。</div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {userDetails.map((u) => (
+                                        <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                <div style={{ width: 36, height: 36, borderRadius: 8, background: teams.find(t => t.id === u.team_id)?.color || "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
+                                                <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb" }}>{u.name}</div>
+                                            </div>
+                                            <select
+                                                value={u.team_id || ""}
+                                                onChange={(e) => handleAssignTeam(u.id, e.target.value)}
+                                                style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", cursor: "pointer" }}
+                                            >
+                                                <option value="">チームなし</option>
+                                                {teams.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* チームランキング */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🏆 チームランキング</div>
+                            {teams.length === 0 ? (
+                                <div style={{ color: "#6b7280", fontSize: 14 }}>チームがありません</div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {teams.map((team) => {
+                                        const members = userDetails.filter(u => u.team_id === team.id);
+                                        const totalPoints = members.reduce((sum, u) => sum + u.points, 0);
+                                        return { ...team, members, totalPoints };
+                                    }).sort((a, b) => b.totalPoints - a.totalPoints).map((team, i) => {
+                                        const { id, name, color, members, totalPoints } = team;
+                                        return (
+                                            <div key={team.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${team.color}40` }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                        <div style={{ width: 12, height: 12, borderRadius: "50%", background: team.color }} />
+                                                        <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`} {team.name}</span>
+                                                        <span style={{ fontSize: 12, color: "#6b7280" }}>{team.members.length}人</span>
+                                                    </div>
+                                                    <span style={{ fontSize: 20, fontWeight: 800, color: team.color }}>{totalPoints.toLocaleString()}pt</span>
+                                                </div>
+                                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                                    {team.members.map(m => (
+                                                        <div key={m.id} style={{ padding: "4px 10px", borderRadius: 6, background: `${team.color}20`, border: `1px solid ${team.color}40`, fontSize: 12, color: "#d1d5db" }}>
+                                                            {m.name} {m.points}pt
+                                                        </div>
+                                                    ))}
+                                                    {team.members.length === 0 && <div style={{ fontSize: 12, color: "#6b7280" }}>メンバーなし</div>}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
                 {activeTab === "dashboard" && (
                     <>
                         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
