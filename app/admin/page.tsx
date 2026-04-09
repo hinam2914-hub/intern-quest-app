@@ -133,7 +133,7 @@ export default function AdminPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education");
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, department_id, team_id");
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
@@ -157,7 +157,6 @@ export default function AdminPage() {
                     kpiCount: kpiLogRows?.filter((r: any) => r.user_id === p.id).length || 0,
                     activeDays,
                     education: p.education || "",
-                    team_id: p.team_id || "",
                     team_id: p.team_id || "",
                 };
             });
