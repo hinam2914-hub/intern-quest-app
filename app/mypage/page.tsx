@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
 import { AnimatePresence, motion } from "framer-motion";
 
 type PointHistory = {
@@ -424,30 +424,49 @@ export default function MyPage() {
                         <div style={{ marginTop: 16, fontSize: 13, color: "#9ca3af" }}>{actionMessage}</div>
                     </div>
                 </div>
-
-                {/* 7軸スコア内訳 */}
+                {/* 7軸スコア レーダーチャート */}
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>7-AXIS EVALUATION</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {[
-                            { label: "学歴", value: education ? 8 : 0, max: 10, color: "#6366f1" },
-                            { label: "活動期間", value: Math.min(activeDays * 0.5, 15), max: 15, color: "#8b5cf6" },
-                            { label: "実績KPI", value: Math.min(kpiCount * 3, 15), max: 15, color: "#06b6d4" },
-                            { label: "再現性", value: Math.min(streak * 2, 20), max: 20, color: "#f59e0b" },
-                            { label: "リーダーシップ", value: Math.min(thanksCount * 2, 10), max: 10, color: "#ec4899" },
-                            { label: "アウトプット", value: Math.min(submissionCount * 2, 20), max: 20, color: "#34d399" },
-                            { label: "メタ認知", value: Math.min(level, 10), max: 10, color: "#f97316" },
-                        ].map((axis) => (
-                            <div key={axis.label}>
-                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>
-                                    <span>{axis.label}</span>
-                                    <span style={{ color: axis.color, fontWeight: 700 }}>{Math.round(axis.value)} / {axis.max}</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
+                        {/* レーダーチャート */}
+                        <ResponsiveContainer width="100%" height={280}>
+                            <RadarChart data={[
+                                { axis: "学歴", value: education ? 8 : 0, max: 10 },
+                                { axis: "活動期間", value: Math.min(activeDays * 0.5, 15), max: 15 },
+                                { axis: "実績KPI", value: Math.min(kpiCount * 3, 15), max: 15 },
+                                { axis: "再現性", value: Math.min(streak * 2, 20), max: 20 },
+                                { axis: "リーダーシップ", value: Math.min(thanksCount * 2, 10), max: 10 },
+                                { axis: "アウトプット", value: Math.min(submissionCount * 2, 20), max: 20 },
+                                { axis: "メタ認知", value: Math.min(level, 10), max: 10 },
+                            ]}>
+                                <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                                <PolarAngleAxis dataKey="axis" tick={{ fill: "#9ca3af", fontSize: 11, fontWeight: 600 }} />
+                                <Radar name="スコア" dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} strokeWidth={2} />
+                            </RadarChart>
+                        </ResponsiveContainer>
+
+                        {/* バー表示 */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {[
+                                { label: "学歴", value: education ? 8 : 0, max: 10, color: "#6366f1" },
+                                { label: "活動期間", value: Math.min(activeDays * 0.5, 15), max: 15, color: "#8b5cf6" },
+                                { label: "実績KPI", value: Math.min(kpiCount * 3, 15), max: 15, color: "#06b6d4" },
+                                { label: "再現性", value: Math.min(streak * 2, 20), max: 20, color: "#f59e0b" },
+                                { label: "リーダーシップ", value: Math.min(thanksCount * 2, 10), max: 10, color: "#ec4899" },
+                                { label: "アウトプット", value: Math.min(submissionCount * 2, 20), max: 20, color: "#34d399" },
+                                { label: "メタ認知", value: Math.min(level, 10), max: 10, color: "#f97316" },
+                            ].map((axis) => (
+                                <div key={axis.label}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>
+                                        <span>{axis.label}</span>
+                                        <span style={{ color: axis.color, fontWeight: 700 }}>{Math.round(axis.value)} / {axis.max}</span>
+                                    </div>
+                                    <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
+                                        <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999, transition: "width 0.8s ease" }} />
+                                    </div>
                                 </div>
-                                <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
-                                    <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999, transition: "width 0.8s ease" }} />
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                     {!education && (
                         <div style={{ marginTop: 16, padding: "10px 14px", borderRadius: 8, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", fontSize: 12, color: "#fbbf24" }}>
