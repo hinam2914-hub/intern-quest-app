@@ -141,7 +141,7 @@ export default function AdminPage() {
             setUserCount(users.length);
 
             const { data: pointRows } = await supabase.from("user_points").select("id, points");
-            const { data: thanksSentRows } = await supabase.from("thanks").select("from_user_id");
+            const { data: thanksSentRows } = await supabase.from("thanks").select("to_user_id");
             const { data: kpiLogRows } = await supabase.from("kpi_logs").select("user_id");
             const { data: subCountRows } = await supabase.from("submissions").select("user_id");
 
@@ -160,7 +160,7 @@ export default function AdminPage() {
                     streak: p.streak || 0,
                     role: p.role || "Owner",
                     submissionCount: subCountRows?.filter((r: any) => r.user_id === p.id).length || 0,
-                    thanksCount: thanksSentRows?.filter((r: any) => r.from_user_id === p.id).length || 0,
+                    thanksCount: thanksSentRows?.filter((r: any) => r.to_user_id === p.id).length || 0,
                     kpiCount: kpiLogRows?.filter((r: any) => r.user_id === p.id).length || 0,
                     activeDays,
                     education: p.education || "",
