@@ -18,6 +18,7 @@ type KpiStatus = { userId: string; userName: string; kpiId: string; kpiTitle: st
 type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
 type ContentCompletion = { userId: string; userName: string; contentId: string; contentTitle: string; created_at: string };
 type Team = { id: string; name: string; color: string };
+type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -79,7 +80,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -105,6 +106,12 @@ export default function AdminPage() {
     const [requestsList, setRequestsList] = useState<RequestRow[]>([]);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
     const [teams, setTeams] = useState<Team[]>([]);
+    const [monthlyKpis, setMonthlyKpis] = useState<MonthlyKpiRow[]>([]);
+    const [kpiMonth, setKpiMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    });
+    const [approvingKpi, setApprovingKpi] = useState<string | null>(null);
     const [teamName, setTeamName] = useState("");
     const [teamColor, setTeamColor] = useState("#6366f1");
     const [teamMessage, setTeamMessage] = useState("");
@@ -253,6 +260,14 @@ export default function AdminPage() {
             // チーム取得
             const { data: teamRows } = await supabase.from("teams").select("*").order("created_at");
             setTeams((teamRows || []) as Team[]);
+            // 月次KPI取得
+            const { data: monthlyKpiRows } = await supabase.from("monthly_kpi").select("*").eq("year_month", kpiMonth).order("created_at", { ascending: false });
+            const { data: deptRows2 } = await supabase.from("departments").select("*");
+            setMonthlyKpis((monthlyKpiRows || []).map((k: any) => ({
+                ...k,
+                userName: users.find(u => u.id === k.user_id)?.name || "名前未設定",
+                deptName: deptRows2?.find((d: any) => d.id === k.department_id)?.name || "不明",
+            })));
             setLoading(false);
         };
         load();
@@ -294,6 +309,29 @@ export default function AdminPage() {
         setTeamName("");
         setTeamMessage("✅ チームを作成しました！");
         setTeamSaving(false);
+    };
+    const handleApproveKpi = async (kpi: MonthlyKpiRow) => {
+        setApprovingKpi(kpi.id);
+        const nowIso = new Date().toISOString();
+        await supabase.from("monthly_kpi").update({
+            approved: true,
+            approved_at: nowIso,
+            points_awarded: kpi.points_awarded,
+        }).eq("id", kpi.id);
+
+        // ポイント付与
+        const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", kpi.user_id).single();
+        const current = pointRow?.points || 0;
+        await supabase.from("user_points").update({ points: current + kpi.points_awarded }).eq("id", kpi.user_id);
+        await supabase.from("points_history").insert({
+            user_id: kpi.user_id,
+            change: kpi.points_awarded,
+            reason: "kpi_achievement",
+            created_at: nowIso,
+        });
+
+        setMonthlyKpis(prev => prev.map(k => k.id === kpi.id ? { ...k, approved: true } : k));
+        setApprovingKpi(null);
     };
 
     const handleAssignTeam = async (userId: string, teamId: string) => {
@@ -394,6 +432,7 @@ export default function AdminPage() {
                         { key: "kpi", label: "📊 KPI設定" },
                         { key: "contents", label: "📚 コンテンツ" },
                         { key: "teams", label: "👥 チーム" },
+                        { key: "monthly_kpi", label: "📈 月次KPI" },
                         { key: "requests", label: `🛍️ 申請管理${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -945,6 +984,70 @@ export default function AdminPage() {
                             </div>
                         </div>
                     </>
+                )}
+                {/* 月次KPI承認タブ */}
+                {activeTab === "monthly_kpi" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>月次KPI承認</div>
+                            <select
+                                value={kpiMonth}
+                                onChange={(e) => setKpiMonth(e.target.value)}
+                                style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none" }}
+                            >
+                                {Array.from({ length: 6 }, (_, i) => {
+                                    const d = new Date();
+                                    d.setMonth(d.getMonth() - i);
+                                    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                                    return <option key={ym} value={ym}>{ym}</option>;
+                                })}
+                            </select>
+                        </div>
+
+                        {monthlyKpis.length === 0 ? (
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
+                                {kpiMonth}のKPIデータがありません
+                            </div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {monthlyKpis.map((kpi) => {
+                                    const rate = kpi.target > 0 ? Math.round((kpi.result / kpi.target) * 100) : 0;
+                                    const rateColor = rate >= 100 ? "#34d399" : rate >= 80 ? "#f59e0b" : rate >= 60 ? "#f97316" : "#f87171";
+                                    return (
+                                        <div key={kpi.id} style={{ padding: "20px 24px", borderRadius: 16, background: kpi.approved ? "rgba(52,211,153,0.05)" : "rgba(255,255,255,0.03)", border: `1px solid ${kpi.approved ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.08)"}` }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                <div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                                                        <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{kpi.userName}</span>
+                                                        <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{kpi.deptName}</span>
+                                                        {kpi.approved && <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, fontWeight: 700 }}>✅ 承認済</span>}
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 20, fontSize: 13, color: "#9ca3af" }}>
+                                                        <span>目標: <strong style={{ color: "#f9fafb" }}>{kpi.target}件</strong></span>
+                                                        <span>実績: <strong style={{ color: "#f9fafb" }}>{kpi.result}件</strong></span>
+                                                        <span>達成率: <strong style={{ color: rateColor }}>{rate}%</strong></span>
+                                                        <span>獲得予定: <strong style={{ color: "#818cf8" }}>{kpi.points_awarded}pt</strong></span>
+                                                    </div>
+                                                    <div style={{ marginTop: 10, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", width: 300 }}>
+                                                        <div style={{ height: "100%", width: `${Math.min(rate, 100)}%`, background: rateColor, borderRadius: 999 }} />
+                                                    </div>
+                                                </div>
+                                                {!kpi.approved && (
+                                                    <button
+                                                        onClick={() => handleApproveKpi(kpi)}
+                                                        disabled={approvingKpi === kpi.id}
+                                                        style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: kpi.points_awarded > 0 ? "linear-gradient(135deg, #10b981, #34d399)" : "rgba(255,255,255,0.1)", color: kpi.points_awarded > 0 ? "#0a0a0f" : "#6b7280", fontWeight: 700, cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" }}
+                                                    >
+                                                        {approvingKpi === kpi.id ? "処理中..." : `承認 +${kpi.points_awarded}pt`}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
         </main>
