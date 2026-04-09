@@ -595,7 +595,7 @@ export default function MyPage() {
                             >
                                 <option value="">事業部を選択</option>
                                 {departments.map(d => (
-                                    <option key={d.id} value={d.id}>{d.name}（{d.code}）</option>
+                                    <option key={d.id} value={d.id}>{d.name}</option>
                                 ))}
                             </select>
                             <button
