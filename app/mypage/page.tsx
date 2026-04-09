@@ -174,6 +174,8 @@ export default function MyPage() {
     const [name, setName] = useState("");
     const [inputName, setInputName] = useState("");
     const [education, setEducation] = useState("");
+    const [departmentId, setDepartmentId] = useState("");
+    const [departments, setDepartments] = useState<{ id: string; name: string; code: string }[]>([]);
     const [points, setPoints] = useState(0);
     const [rank, setRank] = useState<number | null>(null);
     const [streak, setStreak] = useState(0);
@@ -222,6 +224,7 @@ export default function MyPage() {
             setInputName(profile.name || "");
             setStreak(profile.streak ?? 0);
             setEducation(profile.education || "");
+            setDepartmentId((profileData as any)?.department_id || "");
             if (profile.started_at) {
                 const start = new Date(profile.started_at);
                 const now = new Date();
@@ -279,6 +282,8 @@ export default function MyPage() {
         const { data: todayLearnRows } = await supabase
             .from("content_completions").select("created_at").eq("user_id", user.id);
         setTodayLearnDone(todayLearnRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
+        const { data: deptRows } = await supabase.from("departments").select("id, name, code").order("created_at");
+        setDepartments((deptRows || []) as { id: string; name: string; code: string }[]);
         setLoading(false);
     };
 
@@ -286,7 +291,11 @@ export default function MyPage() {
 
     const handleSaveProfile = async () => {
         if (!userId) return;
-        await supabase.from("profiles").update({ name: inputName.trim(), education: education.trim() }).eq("id", userId);
+        await supabase.from("profiles").update({
+            name: inputName.trim(),
+            education: education.trim(),
+            department_id: departmentId || null,
+        }).eq("id", userId);
         setName(inputName.trim());
         setMessage("✅ プロフィールを保存しました");
     };
@@ -579,6 +588,16 @@ export default function MyPage() {
                                 placeholder="学歴を入力（例：〇〇大学）"
                                 style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
                             />
+                            <select
+                                value={departmentId}
+                                onChange={(e) => setDepartmentId(e.target.value)}
+                                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: departmentId ? "#f9fafb" : "#6b7280", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
+                            >
+                                <option value="">事業部を選択</option>
+                                {departments.map(d => (
+                                    <option key={d.id} value={d.id}>{d.name}（{d.code}）</option>
+                                ))}
+                            </select>
                             <button
                                 onClick={handleSaveProfile}
                                 style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
