@@ -18,7 +18,7 @@ type KpiStatus = { userId: string; userName: string; kpiId: string; kpiTitle: st
 type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
 type ContentCompletion = { userId: string; userName: string; contentId: string; contentTitle: string; created_at: string };
 type Team = { id: string; name: string; color: string };
-type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; };
+type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; officialTarget?: number; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -112,6 +112,8 @@ export default function AdminPage() {
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     });
     const [approvingKpi, setApprovingKpi] = useState<string | null>(null);
+    const [targetInputs, setTargetInputs] = useState<Record<string, number>>({});
+    const [monthlyTargets, setMonthlyTargets] = useState<{ user_id: string; department_id: string; target: number }[]>([]);
     const [teamName, setTeamName] = useState("");
     const [teamColor, setTeamColor] = useState("#6366f1");
     const [teamMessage, setTeamMessage] = useState("");
@@ -268,6 +270,9 @@ export default function AdminPage() {
                 userName: users.find(u => u.id === k.user_id)?.name || "名前未設定",
                 deptName: deptRows2?.find((d: any) => d.id === k.department_id)?.name || "不明",
             })));
+            // 月次目標取得
+            const { data: targetRows } = await supabase.from("monthly_targets").select("*").eq("year_month", kpiMonth);
+            setMonthlyTargets((targetRows || []) as { user_id: string; department_id: string; target: number }[]);
             setLoading(false);
         };
         load();
@@ -312,6 +317,16 @@ export default function AdminPage() {
     };
     const handleApproveKpi = async (kpi: MonthlyKpiRow) => {
         setApprovingKpi(kpi.id);
+        const handleSetTarget = async (userId: string, deptId: string, target: number) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            await supabase.from("monthly_targets").upsert({
+                user_id: userId,
+                department_id: deptId,
+                year_month: kpiMonth,
+                target,
+                set_by: user?.id,
+            }, { onConflict: "user_id,department_id,year_month" });
+        };
         const nowIso = new Date().toISOString();
         await supabase.from("monthly_kpi").update({
             approved: true,
@@ -333,7 +348,16 @@ export default function AdminPage() {
         setMonthlyKpis(prev => prev.map(k => k.id === kpi.id ? { ...k, approved: true } : k));
         setApprovingKpi(null);
     };
-
+    const handleSetTarget = async (userId: string, deptId: string, target: number) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from("monthly_targets").upsert({
+            user_id: userId,
+            department_id: deptId,
+            year_month: kpiMonth,
+            target,
+            set_by: user?.id,
+        }, { onConflict: "user_id,department_id,year_month" });
+    };
     const handleAssignTeam = async (userId: string, teamId: string) => {
         await supabase.from("profiles").update({ team_id: teamId || null }).eq("id", userId);
         setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, team_id: teamId } : u));
@@ -989,7 +1013,7 @@ export default function AdminPage() {
                 {activeTab === "monthly_kpi" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>月次KPI承認</div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>月次KPI管理</div>
                             <select
                                 value={kpiMonth}
                                 onChange={(e) => setKpiMonth(e.target.value)}
@@ -1004,49 +1028,111 @@ export default function AdminPage() {
                             </select>
                         </div>
 
-                        {monthlyKpis.length === 0 ? (
-                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
-                                {kpiMonth}のKPIデータがありません
-                            </div>
-                        ) : (
+                        {/* 目標設定セクション */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>🎯 目標設定</div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                {monthlyKpis.map((kpi) => {
-                                    const rate = kpi.target > 0 ? Math.round((kpi.result / kpi.target) * 100) : 0;
-                                    const rateColor = rate >= 100 ? "#34d399" : rate >= 80 ? "#f59e0b" : rate >= 60 ? "#f97316" : "#f87171";
+                                {userDetails.map((u) => {
+                                    const dept = teams.find(t => t.id === u.team_id);
+                                    const deptInfo = ([] as any[]);
                                     return (
-                                        <div key={kpi.id} style={{ padding: "20px 24px", borderRadius: 16, background: kpi.approved ? "rgba(52,211,153,0.05)" : "rgba(255,255,255,0.03)", border: `1px solid ${kpi.approved ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.08)"}` }}>
+                                        <div key={u.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                                 <div>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                                                        <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{kpi.userName}</span>
-                                                        <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{kpi.deptName}</span>
-                                                        {kpi.approved && <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, fontWeight: 700 }}>✅ 承認済</span>}
-                                                    </div>
-                                                    <div style={{ display: "flex", gap: 20, fontSize: 13, color: "#9ca3af" }}>
-                                                        <span>目標: <strong style={{ color: "#f9fafb" }}>{kpi.target}件</strong></span>
-                                                        <span>実績: <strong style={{ color: "#f9fafb" }}>{kpi.result}件</strong></span>
-                                                        <span>達成率: <strong style={{ color: rateColor }}>{rate}%</strong></span>
-                                                        <span>獲得予定: <strong style={{ color: "#818cf8" }}>{kpi.points_awarded}pt</strong></span>
-                                                    </div>
-                                                    <div style={{ marginTop: 10, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", width: 300 }}>
-                                                        <div style={{ height: "100%", width: `${Math.min(rate, 100)}%`, background: rateColor, borderRadius: 999 }} />
-                                                    </div>
+                                                    <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{u.name}</div>
+                                                    <div style={{ fontSize: 12, color: "#6b7280" }}>事業部: {u.role}</div>
                                                 </div>
-                                                {!kpi.approved && (
-                                                    <button
-                                                        onClick={() => handleApproveKpi(kpi)}
-                                                        disabled={approvingKpi === kpi.id}
-                                                        style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: kpi.points_awarded > 0 ? "linear-gradient(135deg, #10b981, #34d399)" : "rgba(255,255,255,0.1)", color: kpi.points_awarded > 0 ? "#0a0a0f" : "#6b7280", fontWeight: 700, cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" }}
-                                                    >
-                                                        {approvingKpi === kpi.id ? "処理中..." : `承認 +${kpi.points_awarded}pt`}
-                                                    </button>
-                                                )}
+                                                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                                    {/* 各事業部の目標入力 */}
+                                                    {monthlyKpis.filter(k => k.user_id === u.id).map(kpi => {
+                                                        const key = `${u.id}_${kpi.department_id}`;
+                                                        const currentTarget = monthlyTargets.find(t => t.user_id === u.id && t.department_id === kpi.department_id)?.target || kpi.target;
+                                                        return (
+                                                            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                                <span style={{ fontSize: 12, color: "#9ca3af" }}>{kpi.deptName}目標:</span>
+                                                                <input
+                                                                    type="number"
+                                                                    defaultValue={currentTarget}
+                                                                    onChange={(e) => setTargetInputs(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                                                                    style={{ width: 70, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }}
+                                                                />
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        const val = targetInputs[key] ?? currentTarget;
+                                                                        await handleSetTarget(u.id, kpi.department_id, val);
+                                                                        setMonthlyTargets(prev => {
+                                                                            const exists = prev.find(t => t.user_id === u.id && t.department_id === kpi.department_id);
+                                                                            if (exists) return prev.map(t => t.user_id === u.id && t.department_id === kpi.department_id ? { ...t, target: val } : t);
+                                                                            return [...prev, { user_id: u.id, department_id: kpi.department_id, target: val }];
+                                                                        });
+                                                                    }}
+                                                                    style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                                                                >
+                                                                    設定
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    {monthlyKpis.filter(k => k.user_id === u.id).length === 0 && (
+                                                        <div style={{ fontSize: 12, color: "#6b7280" }}>KPI未入力</div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
-                        )}
+                        </div>
+
+                        {/* 承認セクション */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>✅ KPI承認</div>
+                            {monthlyKpis.length === 0 ? (
+                                <div style={{ textAlign: "center", color: "#6b7280", fontSize: 14, padding: 20 }}>
+                                    {kpiMonth}のKPIデータがありません
+                                </div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {monthlyKpis.map((kpi) => {
+                                        const officialTarget = monthlyTargets.find(t => t.user_id === kpi.user_id && t.department_id === kpi.department_id)?.target || kpi.target;
+                                        const rate = officialTarget > 0 ? Math.round((kpi.result / officialTarget) * 100) : 0;
+                                        const pts = rate >= 120 ? 50 : rate >= 100 ? 30 : rate >= 80 ? 20 : rate >= 60 ? 10 : 0;
+                                        const rateColor = rate >= 100 ? "#34d399" : rate >= 80 ? "#f59e0b" : rate >= 60 ? "#f97316" : "#f87171";
+                                        return (
+                                            <div key={kpi.id} style={{ padding: "20px 24px", borderRadius: 16, background: kpi.approved ? "rgba(52,211,153,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${kpi.approved ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.08)"}` }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                    <div>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                                                            <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{kpi.userName}</span>
+                                                            <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{kpi.deptName}</span>
+                                                            {kpi.approved && <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, fontWeight: 700 }}>✅ 承認済</span>}
+                                                        </div>
+                                                        <div style={{ display: "flex", gap: 20, fontSize: 13, color: "#9ca3af" }}>
+                                                            <span>目標: <strong style={{ color: "#f9fafb" }}>{officialTarget}件</strong></span>
+                                                            <span>実績: <strong style={{ color: "#f9fafb" }}>{kpi.result}件</strong></span>
+                                                            <span>達成率: <strong style={{ color: rateColor }}>{rate}%</strong></span>
+                                                            <span>獲得予定: <strong style={{ color: "#818cf8" }}>{pts}pt</strong></span>
+                                                        </div>
+                                                        <div style={{ marginTop: 10, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", width: 300 }}>
+                                                            <div style={{ height: "100%", width: `${Math.min(rate, 100)}%`, background: rateColor, borderRadius: 999 }} />
+                                                        </div>
+                                                    </div>
+                                                    {!kpi.approved && (
+                                                        <button
+                                                            onClick={() => handleApproveKpi({ ...kpi, target: officialTarget, points_awarded: pts })}
+                                                            disabled={approvingKpi === kpi.id}
+                                                            style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: pts > 0 ? "linear-gradient(135deg, #10b981, #34d399)" : "rgba(255,255,255,0.1)", color: pts > 0 ? "#0a0a0f" : "#6b7280", fontWeight: 700, cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" }}
+                                                        >
+                                                            {approvingKpi === kpi.id ? "処理中..." : `承認 +${pts}pt`}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
