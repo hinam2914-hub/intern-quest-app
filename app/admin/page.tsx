@@ -20,6 +20,7 @@ type ContentCompletion = { userId: string; userName: string; contentId: string; 
 type Team = { id: string; name: string; color: string };
 type Department = { id: string; name: string; code: string };
 type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; officialTarget?: number; };
+type DeptReport = { id: string; department_id: string; year_month: string; content: string; created_at: string; deptName?: string; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -128,6 +129,12 @@ export default function AdminPage() {
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviting, setInviting] = useState(false);
     const [inviteMessage, setInviteMessage] = useState("");
+    const [deptReports, setDeptReports] = useState<DeptReport[]>([]);
+    const [reportDeptId, setReportDeptId] = useState("");
+    const [reportMonth, setReportMonth] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`; });
+    const [reportContent, setReportContent] = useState("");
+    const [reportSaving, setReportSaving] = useState(false);
+    const [reportMessage, setReportMessage] = useState("");
 
     useEffect(() => {
         const load = async () => {
@@ -287,7 +294,12 @@ export default function AdminPage() {
             const now2 = new Date();
             const currentYm = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, "0")}`;
             setMonthlyKpis(enrichedAll.filter((k: any) => k.year_month === currentYm));
-
+            // 部署別レポート取得
+            const { data: deptReportRows } = await supabase.from("dept_reports").select("*").order("year_month", { ascending: false });
+            setDeptReports((deptReportRows || []).map((r: any) => ({
+                ...r,
+                deptName: deptRows?.find((d: any) => d.id === r.department_id)?.name || "不明",
+            })));
             setLoading(false);
         };
         load();
@@ -469,7 +481,7 @@ export default function AdminPage() {
                         { key: "contents", label: "コンテンツ" },
                         { key: "teams", label: "チーム" },
                         { key: "monthly_kpi", label: "月次KPI" },
-                        { key: "dept_stats", label: "🏢 部署別成績" },
+                        { key: "dept_stats", label: "部署別成績" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -1020,79 +1032,201 @@ export default function AdminPage() {
                         </div>
                     </>
                 )}
-
                 {/* 部署別成績タブ */}
                 {activeTab === "dept_stats" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>🏢 部署別成績（全期間）</div>
+
+                        {/* 月次レポート投稿フォーム */}
+                        <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📝 月次レポート投稿</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>事業部</div>
+                                    <select
+                                        value={reportDeptId}
+                                        onChange={(e) => setReportDeptId(e.target.value)}
+                                        style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: reportDeptId ? "#f9fafb" : "#6b7280", fontSize: 14, outline: "none" }}
+                                    >
+                                        <option value="">選択してください</option>
+                                        {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>対象月</div>
+                                    <select
+                                        value={reportMonth}
+                                        onChange={(e) => setReportMonth(e.target.value)}
+                                        style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 14, outline: "none" }}
+                                    >
+                                        {Array.from({ length: 12 }, (_, i) => {
+                                            const d = new Date();
+                                            d.setMonth(d.getMonth() - i);
+                                            const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                                            return <option key={ym} value={ym}>{ym}</option>;
+                                        })}
+                                    </select>
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>レポート内容</div>
+                                <textarea
+                                    value={reportContent}
+                                    onChange={(e) => setReportContent(e.target.value)}
+                                    placeholder="月次レポートをここに貼り付けてください..."
+                                    style={{ width: "100%", height: 200, padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "monospace", lineHeight: 1.8 }}
+                                />
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    if (!reportDeptId) { setReportMessage("事業部を選択してください"); return; }
+                                    if (!reportContent.trim()) { setReportMessage("内容を入力してください"); return; }
+                                    setReportSaving(true);
+                                    setReportMessage("");
+                                    const { data: { user } } = await supabase.auth.getUser();
+                                    await supabase.from("dept_reports").insert({
+                                        department_id: reportDeptId,
+                                        year_month: reportMonth,
+                                        content: reportContent.trim(),
+                                        created_by: user?.id,
+                                    });
+                                    const { data: rows } = await supabase.from("dept_reports").select("*").order("year_month", { ascending: false });
+                                    const { data: deptRows } = await supabase.from("departments").select("*");
+                                    setDeptReports((rows || []).map((r: any) => ({ ...r, deptName: deptRows?.find((d: any) => d.id === r.department_id)?.name || "不明" })));
+                                    setReportContent("");
+                                    setReportMessage("✅ レポートを投稿しました！");
+                                    setReportSaving(false);
+                                }}
+                                disabled={reportSaving}
+                                style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: reportSaving ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: reportSaving ? "not-allowed" : "pointer", fontSize: 14 }}
+                            >
+                                {reportSaving ? "投稿中..." : "📤 投稿する"}
+                            </button>
+                            {reportMessage && <div style={{ marginTop: 12, fontSize: 13, color: reportMessage.includes("✅") ? "#34d399" : "#f87171", fontWeight: 600 }}>{reportMessage}</div>}
+                        </div>
+
+                        {/* KPI達成率サマリー */}
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>🏢 部署別成績（全期間）</div>
 
                         {deptStats.length === 0 ? (
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
-                                データがありません
+                                KPIデータがありません
                             </div>
                         ) : deptStats.map((dept, di) => {
                             const overallColor = dept.overallAvg >= 100 ? "#34d399" : dept.overallAvg >= 80 ? "#f59e0b" : dept.overallAvg >= 60 ? "#f97316" : "#f87171";
+                            // この部署の投稿レポート
+                            const thisReports = deptReports.filter(r => r.department_id === dept.deptId);
+
                             return (
-                                <div key={dept.deptId} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                    {/* 部署ヘッダー */}
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                            <div style={{ fontSize: 20 }}>{["🥇", "🥈", "🥉"][di] || "🏢"}</div>
-                                            <div>
-                                                <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb" }}>{dept.deptName}</div>
-                                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{dept.monthlyStats.length}ヶ月のデータ</div>
+                                <div key={dept.deptId} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                    {/* KPI達成率カード */}
+                                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                <div style={{ fontSize: 20 }}>{["🥇", "🥈", "🥉"][di] || "🏢"}</div>
+                                                <div>
+                                                    <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb" }}>{dept.deptName}</div>
+                                                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{dept.monthlyStats.length}ヶ月のデータ</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: "right" }}>
+                                                <div style={{ fontSize: 32, fontWeight: 900, color: overallColor }}>{dept.overallAvg}%</div>
+                                                <div style={{ fontSize: 12, color: "#6b7280" }}>全期間平均達成率</div>
                                             </div>
                                         </div>
-                                        <div style={{ textAlign: "right" }}>
-                                            <div style={{ fontSize: 32, fontWeight: 900, color: overallColor }}>{dept.overallAvg}%</div>
-                                            <div style={{ fontSize: 12, color: "#6b7280" }}>全期間平均達成率</div>
+
+                                        <div style={{ overflowX: "auto" }}>
+                                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                                <thead>
+                                                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                                                        {["月", "平均達成率", "100%達成", "承認済", "達成状況"].map(h => (
+                                                            <th key={h} style={{ padding: "8px 12px", fontSize: 11, color: "#6b7280", fontWeight: 700, textAlign: "left", letterSpacing: 1 }}>{h}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {dept.monthlyStats.map(m => {
+                                                        const rc = m.avgRate >= 100 ? "#34d399" : m.avgRate >= 80 ? "#f59e0b" : m.avgRate >= 60 ? "#f97316" : "#f87171";
+                                                        return (
+                                                            <tr key={m.ym} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                                                                <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{m.ym}</td>
+                                                                <td style={{ padding: "12px" }}>
+                                                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                                        <div style={{ width: 100, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
+                                                                            <div style={{ height: "100%", width: `${Math.min(m.avgRate, 100)}%`, background: rc, borderRadius: 999 }} />
+                                                                        </div>
+                                                                        <span style={{ fontSize: 14, fontWeight: 700, color: rc }}>{m.avgRate}%</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td style={{ padding: "12px", fontSize: 13, color: m.achievedCount > 0 ? "#34d399" : "#6b7280", fontWeight: 700 }}>{m.achievedCount}/{m.total}件</td>
+                                                                <td style={{ padding: "12px", fontSize: 13, color: "#818cf8", fontWeight: 700 }}>{m.approved}/{m.total}件</td>
+                                                                <td style={{ padding: "12px" }}>
+                                                                    <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: m.avgRate >= 100 ? "rgba(52,211,153,0.15)" : m.avgRate >= 80 ? "rgba(245,158,11,0.15)" : "rgba(248,113,113,0.15)", color: m.avgRate >= 100 ? "#34d399" : m.avgRate >= 80 ? "#f59e0b" : "#f87171" }}>
+                                                                        {m.avgRate >= 100 ? "✅ 達成" : m.avgRate >= 80 ? "⚡ 惜しい" : "📉 要改善"}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
 
-                                    {/* 月別成績テーブル */}
-                                    <div style={{ overflowX: "auto" }}>
-                                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                            <thead>
-                                                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                                                    {["月", "平均達成率", "100%達成", "承認済", "達成状況"].map(h => (
-                                                        <th key={h} style={{ padding: "8px 12px", fontSize: 11, color: "#6b7280", fontWeight: 700, textAlign: "left", letterSpacing: 1 }}>{h}</th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {dept.monthlyStats.map(m => {
-                                                    const rc = m.avgRate >= 100 ? "#34d399" : m.avgRate >= 80 ? "#f59e0b" : m.avgRate >= 60 ? "#f97316" : "#f87171";
-                                                    return (
-                                                        <tr key={m.ym} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                                                            <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{m.ym}</td>
-                                                            <td style={{ padding: "12px" }}>
-                                                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                                    <div style={{ width: 100, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
-                                                                        <div style={{ height: "100%", width: `${Math.min(m.avgRate, 100)}%`, background: rc, borderRadius: 999 }} />
-                                                                    </div>
-                                                                    <span style={{ fontSize: 14, fontWeight: 700, color: rc }}>{m.avgRate}%</span>
-                                                                </div>
-                                                            </td>
-                                                            <td style={{ padding: "12px", fontSize: 13, color: m.achievedCount > 0 ? "#34d399" : "#6b7280", fontWeight: 700 }}>
-                                                                {m.achievedCount}/{m.total}件
-                                                            </td>
-                                                            <td style={{ padding: "12px", fontSize: 13, color: "#818cf8", fontWeight: 700 }}>
-                                                                {m.approved}/{m.total}件
-                                                            </td>
-                                                            <td style={{ padding: "12px" }}>
-                                                                <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: m.avgRate >= 100 ? "rgba(52,211,153,0.15)" : m.avgRate >= 80 ? "rgba(245,158,11,0.15)" : "rgba(248,113,113,0.15)", color: m.avgRate >= 100 ? "#34d399" : m.avgRate >= 80 ? "#f59e0b" : "#f87171" }}>
-                                                                    {m.avgRate >= 100 ? "✅ 達成" : m.avgRate >= 80 ? "⚡ 惜しい" : "📉 要改善"}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    {/* この部署の月次レポート */}
+                                    {thisReports.length > 0 && (
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingLeft: 16 }}>
+                                            {thisReports.map(report => (
+                                                <div key={report.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 20 }}>
+                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                            <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{report.deptName}</span>
+                                                            <span style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{report.year_month}</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={async () => {
+                                                                await supabase.from("dept_reports").delete().eq("id", report.id);
+                                                                setDeptReports(prev => prev.filter(r => r.id !== report.id));
+                                                            }}
+                                                            style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700 }}
+                                                        >
+                                                            削除
+                                                        </button>
+                                                    </div>
+                                                    <pre style={{ margin: 0, fontSize: 13, color: "#d1d5db", lineHeight: 1.8, whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{report.content}</pre>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
+
+                        {/* KPIデータはないがレポートだけある部署 */}
+                        {deptReports.filter(r => !deptStats.find(d => d.deptId === r.department_id)).length > 0 && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>その他のレポート</div>
+                                {[...new Set(deptReports.filter(r => !deptStats.find(d => d.deptId === r.department_id)).map(r => r.department_id))].map(deptId => {
+                                    const reports = deptReports.filter(r => r.department_id === deptId);
+                                    const deptName = reports[0]?.deptName || "不明";
+                                    return (
+                                        <div key={deptId} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                            <div style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb", marginBottom: 16 }}>🏢 {deptName}</div>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                {reports.map(report => (
+                                                    <div key={report.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 20 }}>
+                                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                                            <span style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{report.year_month}</span>
+                                                            <button onClick={async () => { await supabase.from("dept_reports").delete().eq("id", report.id); setDeptReports(prev => prev.filter(r => r.id !== report.id)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>削除</button>
+                                                        </div>
+                                                        <pre style={{ margin: 0, fontSize: 13, color: "#d1d5db", lineHeight: 1.8, whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{report.content}</pre>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 )}
 
