@@ -193,11 +193,30 @@ export default function CBStatsPage() {
                     {message && <span style={{ marginLeft: 16, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{message}</span>}
                 </div>
 
-                {/* グラフ */}
+                {/* メイングラフ：商談数・納品数12ヶ月推移 */}
+                {graphData.length > 0 && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>📈 商談数・納品数 推移（12ヶ月）</div>
+                        <ResponsiveContainer width="100%" height={240}>
+                            <LineChart data={graphData}>
+                                <XAxis dataKey="year_month" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: any) => [value + "件"]} />
+                                <Legend />
+                                <Line type="monotone" dataKey="shōdan_actual" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} name="商談数（実績）" />
+                                <Line type="monotone" dataKey="shōdan_target" stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" dot={false} name="商談数（目標）" />
+                                <Line type="monotone" dataKey="nohin_actual" stroke="#ec4899" strokeWidth={2} dot={{ r: 4 }} name="納品数（実績）" />
+                                <Line type="monotone" dataKey="nohin_target" stroke="#ec4899" strokeWidth={1} strokeDasharray="4 4" dot={false} name="納品数（目標）" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                )}
+
+                {/* 項目別棒グラフ */}
                 {graphData.length > 0 && (
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 24 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>📈 月次推移グラフ</div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>📊 項目別推移</div>
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                                 {CB_METRICS.map(m => (
                                     <button key={m.key} onClick={() => setGraphMetric(m.key)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, background: graphMetric === m.key ? m.color : "rgba(255,255,255,0.05)", color: graphMetric === m.key ? "#fff" : "#9ca3af" }}>
@@ -206,55 +225,16 @@ export default function CBStatsPage() {
                                 ))}
                             </div>
                         </div>
-                        <ResponsiveContainer width="100%" height={240}>
+                        <ResponsiveContainer width="100%" height={200}>
                             <BarChart data={graphData} barGap={4}>
                                 <XAxis dataKey="year_month" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
                                 <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
                                 <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: any, name: any) => [value + "件", name === `${graphMetric}_actual` ? "実績" : "目標"]} />
-                                <Legend formatter={(value) => value === `${graphMetric}_actual` ? "実績" : "目標"} />
-                                <Bar dataKey={`${graphMetric}_target`} fill="rgba(255,255,255,0.1)" radius={[4, 4, 0, 0]} name={`${graphMetric}_target`} />
+                                <Legend formatter={(value: any) => value === `${graphMetric}_actual` ? "実績" : "目標"} />
+                                <Bar dataKey={`${graphMetric}_target`} fill="rgba(255,255,255,0.25)" radius={[4, 4, 0, 0]} name={`${graphMetric}_target`} />
                                 <Bar dataKey={`${graphMetric}_actual`} fill={selectedMetric.color} radius={[4, 4, 0, 0]} name={`${graphMetric}_actual`} />
                             </BarChart>
                         </ResponsiveContainer>
-                    </div>
-                )}
-
-                {/* 月別一覧テーブル */}
-                {graphData.length > 0 && (
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📋 月別実績一覧</div>
-                        <div style={{ overflowX: "auto" }}>
-                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                <thead>
-                                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                                        <th style={{ padding: "8px 12px", fontSize: 11, color: "#6b7280", fontWeight: 700, textAlign: "left" }}>月</th>
-                                        {CB_METRICS.map(m => (
-                                            <th key={m.key} style={{ padding: "8px 12px", fontSize: 11, color: m.color, fontWeight: 700, textAlign: "center" }}>{m.label}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {[...graphData].reverse().map(row => (
-                                        <tr key={row.year_month} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                                            <td style={{ padding: "10px 12px", fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{row.year_month}</td>
-                                            {CB_METRICS.map(m => {
-                                                const actual = row[`${m.key}_actual`] || 0;
-                                                const target = row[`${m.key}_target`] || 0;
-                                                const rate = target > 0 ? Math.round((actual / target) * 100) : null;
-                                                const rateColor = rate !== null ? (rate >= 100 ? "#34d399" : rate >= 80 ? "#f59e0b" : "#f87171") : "#6b7280";
-                                                return (
-                                                    <td key={m.key} style={{ padding: "10px 12px", textAlign: "center" }}>
-                                                        <div style={{ fontSize: 14, fontWeight: 700, color: rateColor }}>{actual > 0 ? actual : "-"}</div>
-                                                        {target > 0 && <div style={{ fontSize: 11, color: "#6b7280" }}>/{target}</div>}
-                                                        {rate !== null && actual > 0 && <div style={{ fontSize: 11, color: rateColor }}>{rate}%</div>}
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 )}
             </div>
