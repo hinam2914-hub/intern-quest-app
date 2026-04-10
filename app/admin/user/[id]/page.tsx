@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 type PointHistory = { id: string; change: number; reason: string | null; created_at: string };
 type Submission = { id: string; content: string; created_at: string };
 type KpiLog = { id: string; kpi_item_id: string; value: number; created_at: string; kpiTitle?: string; unit?: string; target?: number };
 type Thanks = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
 type ContentCompletion = { id: string; content_id: string; created_at: string; contentTitle?: string };
+type GraphData = { date: string; points: number };
+type ActivityData = { date: string; count: number };
 
 function formatDateTime(value: string): string {
     const date = new Date(value);
@@ -26,6 +29,7 @@ function formatReason(reason?: string | null): string {
     if (reason === "thanks_received") return "サンキュー受領";
     if (reason === "shop_purchase") return "ショップ購入";
     if (reason === "admin_edit") return "管理者編集";
+    if (reason === "kpi_achievement") return "KPI達成";
     return reason;
 }
 
@@ -45,6 +49,32 @@ function getRankColor(rank: string): string {
     if (rank === "B") return "#06b6d4";
     if (rank === "C") return "#84cc16";
     return "#6b7280";
+}
+
+function buildGraphData(history: PointHistory[]): GraphData[] {
+    const dayMap: Record<string, number> = {};
+    [...history].reverse().forEach((item) => {
+        const date = new Date(item.created_at);
+        const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+        const key = `${jst.getUTCMonth() + 1}/${jst.getUTCDate()}`;
+        dayMap[key] = (dayMap[key] || 0) + item.change;
+    });
+    let cumulative = 0;
+    return Object.entries(dayMap).map(([date, pts]) => {
+        cumulative += pts;
+        return { date, points: cumulative };
+    });
+}
+
+function buildActivityData(submissions: Submission[]): ActivityData[] {
+    const dayMap: Record<string, number> = {};
+    [...submissions].reverse().forEach((item) => {
+        const date = new Date(item.created_at);
+        const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+        const key = `${jst.getUTCMonth() + 1}/${jst.getUTCDate()}`;
+        dayMap[key] = (dayMap[key] || 0) + 1;
+    });
+    return Object.entries(dayMap).map(([date, count]) => ({ date, count }));
 }
 
 export default function UserDetailPage() {
@@ -68,6 +98,9 @@ export default function UserDetailPage() {
     const [thanksReceived, setThanksReceived] = useState<Thanks[]>([]);
     const [completions, setCompletions] = useState<ContentCompletion[]>([]);
     const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
+    const [graphData, setGraphData] = useState<GraphData[]>([]);
+    const [activityData, setActivityData] = useState<ActivityData[]>([]);
+    const [graphTab, setGraphTab] = useState<"points" | "activity">("points");
 
     useEffect(() => {
         const load = async () => {
@@ -84,7 +117,6 @@ export default function UserDetailPage() {
             setAvatarUrl(profile?.avatar_url || null);
             setStartedAt(profile?.started_at || null);
 
-            // 事業部名を取得
             if (profile?.department_id) {
                 const { data: dept } = await supabase.from("departments").select("name").eq("id", profile.department_id).single();
                 setDepartmentName(dept?.name || "");
@@ -93,11 +125,15 @@ export default function UserDetailPage() {
             const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", userId).single();
             setPoints(pointRow?.points || 0);
 
-            const { data: histRows } = await supabase.from("points_history").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(30);
-            setPointHistory((histRows || []) as PointHistory[]);
+            const { data: histRows } = await supabase.from("points_history").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(100);
+            const hist = (histRows || []) as PointHistory[];
+            setPointHistory(hist);
+            setGraphData(buildGraphData(hist));
 
-            const { data: subRows } = await supabase.from("submissions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20);
-            setSubmissions((subRows || []) as Submission[]);
+            const { data: subRows } = await supabase.from("submissions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
+            const subs = (subRows || []) as Submission[];
+            setSubmissions(subs);
+            setActivityData(buildActivityData(subs));
 
             const { data: kpiItems } = await supabase.from("kpi_items").select("id, title, unit, target_value");
             const { data: kpiRows } = await supabase.from("kpi_logs").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20);
@@ -159,7 +195,6 @@ export default function UserDetailPage() {
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1000, margin: "0 auto" }}>
 
-                {/* 戻るボタン */}
                 <div style={{ marginBottom: 24 }}>
                     <button onClick={() => router.push("/admin")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>← 管理者画面</button>
                 </div>
@@ -167,44 +202,21 @@ export default function UserDetailPage() {
                 {/* プロフィールカード */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, marginBottom: 24 }}>
                     <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
-                        {/* アバター */}
                         {avatarUrl ? (
                             <img src={avatarUrl} alt={name} style={{ width: 100, height: 100, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(99,102,241,0.5)", flexShrink: 0 }} />
                         ) : (
-                            <div style={{ width: 100, height: 100, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                                {name.charAt(0)}
-                            </div>
+                            <div style={{ width: 100, height: 100, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{name.charAt(0)}</div>
                         )}
-
-                        {/* 基本情報 */}
                         <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 4 }}>INTERN QUEST / メンバー詳細</div>
                             <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 12px" }}>{name}</h1>
                             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                                {role && (
-                                    <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 600 }}>
-                                        👤 {role}
-                                    </span>
-                                )}
-                                {departmentName && (
-                                    <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", fontSize: 12, color: "#06b6d4", fontWeight: 600 }}>
-                                        🏢 {departmentName}
-                                    </span>
-                                )}
-                                {education && (
-                                    <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>
-                                        🎓 {education}
-                                    </span>
-                                )}
-                                {startedAt && (
-                                    <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 12, color: "#34d399", fontWeight: 600 }}>
-                                        📅 参加 {activeDays}日目
-                                    </span>
-                                )}
+                                {role && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 600 }}>👤 {role}</span>}
+                                {departmentName && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", fontSize: 12, color: "#06b6d4", fontWeight: 600 }}>🏢 {departmentName}</span>}
+                                {education && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>🎓 {education}</span>}
+                                {startedAt && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 12, color: "#34d399", fontWeight: 600 }}>📅 参加 {activeDays}日目</span>}
                             </div>
                         </div>
-
-                        {/* ランク */}
                         <div style={{ textAlign: "center", flexShrink: 0 }}>
                             <div style={{ width: 80, height: 80, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, fontWeight: 900, color: "#fff", boxShadow: `0 0 24px ${rankColor}60`, marginBottom: 8 }}>{rank2}</div>
                             <div style={{ fontSize: 12, color: "#9ca3af" }}>スコア {rankScore}/100</div>
@@ -227,8 +239,47 @@ export default function UserDetailPage() {
                     ))}
                 </div>
 
+                {/* 成長グラフ */}
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>GROWTH CHART</div>
+                        <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 3 }}>
+                            {[
+                                { key: "points", label: "📈 ポイント推移" },
+                                { key: "activity", label: "📋 日報活動" },
+                            ].map((tab) => (
+                                <button key={tab.key} onClick={() => setGraphTab(tab.key as any)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, background: graphTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: graphTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    {graphTab === "points" ? (
+                        graphData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={200}>
+                                <LineChart data={graphData}>
+                                    <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                    <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                    <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計ポイント"]} />
+                                    <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 3 }} activeDot={{ r: 5, fill: "#8b5cf6" }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>
+                    ) : (
+                        activityData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={activityData}>
+                                    <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                    <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                    <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(52,211,153,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}件`, "日報数"]} />
+                                    <Bar dataKey="count" fill="#34d399" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>
+                    )}
+                </div>
+
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                    {/* 日報履歴 */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SUBMISSIONS ({submissions.length}件)</div>
                         {submissions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>日報はありません</div> : (
@@ -252,8 +303,6 @@ export default function UserDetailPage() {
                             </div>
                         )}
                     </div>
-
-                    {/* KPI実績 */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI LOGS ({kpiLogs.length}件)</div>
                         {kpiLogs.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPIデータがありません</div> : (
@@ -276,7 +325,6 @@ export default function UserDetailPage() {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                    {/* 学習完了 */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>LEARNING ({completions.length}件)</div>
                         {completions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>学習記録がありません</div> : (
@@ -290,8 +338,6 @@ export default function UserDetailPage() {
                             </div>
                         )}
                     </div>
-
-                    {/* サンキュー */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>THANKS</div>
                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>受け取った ({thanksReceived.length}件)</div>
@@ -319,7 +365,6 @@ export default function UserDetailPage() {
                     </div>
                 </div>
 
-                {/* ポイント履歴 */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>POINT HISTORY</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
