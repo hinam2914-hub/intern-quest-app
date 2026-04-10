@@ -210,7 +210,7 @@ export default function CBStatsPage() {
                             <BarChart data={graphData} barGap={4}>
                                 <XAxis dataKey="year_month" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
                                 <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
-                                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: any, name: string) => [value + "件", name === `${graphMetric}_actual` ? "実績" : "目標"]} />
+                                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: any, name: any) => [value + "件", name === `${graphMetric}_actual` ? "実績" : "目標"]} />
                                 <Legend formatter={(value) => value === `${graphMetric}_actual` ? "実績" : "目標"} />
                                 <Bar dataKey={`${graphMetric}_target`} fill="rgba(255,255,255,0.1)" radius={[4, 4, 0, 0]} name={`${graphMetric}_target`} />
                                 <Bar dataKey={`${graphMetric}_actual`} fill={selectedMetric.color} radius={[4, 4, 0, 0]} name={`${graphMetric}_actual`} />
