@@ -1035,7 +1035,23 @@ export default function AdminPage() {
                 {/* 部署別成績タブ */}
                 {activeTab === "dept_stats" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
+                        {/* 事業部ページへのリンク */}
+                        <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
+                            {[
+                                { label: "CB事業部", path: "/admin/cb", color: "#6366f1" },
+                                { label: "IP事業部", path: "/admin/ip", color: "#06b6d4" },
+                                { label: "SP事業部", path: "/admin/sp", color: "#34d399" },
+                                { label: "HR事業部", path: "/admin/hr", color: "#f59e0b" },
+                            ].map((dept) => (
+                                <button
+                                    key={dept.path}
+                                    onClick={() => router.push(dept.path)}
+                                    style={{ padding: "10px 24px", borderRadius: 10, border: `1px solid ${dept.color}50`, background: `${dept.color}15`, color: dept.color, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+                                >
+                                    📊 {dept.label}
+                                </button>
+                            ))}
+                        </div>
                         {/* 月次レポート投稿フォーム */}
                         <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📝 月次レポート投稿</div>
