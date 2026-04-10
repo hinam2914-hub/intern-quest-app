@@ -13,8 +13,6 @@ function getOneWeekAgoISO(): string {
     return oneWeekAgo.toISOString();
 }
 
-const medals = ["🥇", "🥈", "🥉"];
-
 export default function RankingPage() {
     const router = useRouter();
     const [users, setUsers] = useState<RankingUser[]>([]);
@@ -22,6 +20,7 @@ export default function RankingPage() {
     const [myId, setMyId] = useState("");
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [activeTab, setActiveTab] = useState<"total" | "weekly">("total");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -60,53 +59,89 @@ export default function RankingPage() {
         loadRanking();
     }, [router]);
 
-    const renderAvatar = (user: RankingUser, size: number = 40) => {
+    const renderAvatar = (user: RankingUser, size: number) => {
         if (user.avatar_url) {
-            return (
-                <img
-                    src={user.avatar_url}
-                    alt={user.name}
-                    style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(99,102,241,0.4)", flexShrink: 0 }}
-                />
-            );
+            return <img src={user.avatar_url} alt={user.name} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", display: "block" }} />;
         }
         return (
-            <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.35, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+            <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.38, fontWeight: 700, color: "#fff" }}>
                 {user.name.charAt(0)}
             </div>
         );
     };
 
-    const renderList = (list: RankingUser[], label: string) => (
-        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>{label}</div>
-            {list.length === 0 ? (
-                <div style={{ color: "#6b7280", fontSize: 14 }}>データがありません</div>
-            ) : list.map((user, i) => {
-                const isMe = user.id === myId;
-                return (
-                    <div key={user.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, marginBottom: 8, background: isMe ? "rgba(99,102,241,0.12)" : i === 0 ? "rgba(245,158,11,0.08)" : "rgba(255,255,255,0.02)", border: isMe ? "1px solid rgba(99,102,241,0.4)" : i === 0 ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.05)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            {/* 順位 */}
-                            <div style={{ fontSize: 18, width: 28, textAlign: "center", flexShrink: 0 }}>
-                                {i < 3 ? medals[i] : <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 700 }}>{i + 1}</span>}
+    const renderPodium = (list: RankingUser[]) => {
+        const top3 = list.slice(0, 3);
+        const podiumOrder = [1, 0, 2];
+        const podiumColors = ["#c0c0c0", "#f59e0b", "#cd7f32"];
+        const podiumHeights = [110, 150, 80];
+        const medals = ["🥇", "🥈", "🥉"];
+
+        return (
+            <div style={{ marginBottom: 24 }}>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 8 }}>
+                    {podiumOrder.map((rank) => {
+                        const user = top3[rank];
+                        if (!user) return <div key={rank} style={{ width: 140 }} />;
+                        const isMe = user.id === myId;
+                        const color = podiumColors[rank];
+                        const height = podiumHeights[rank];
+
+                        return (
+                            <div key={rank} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140 }}>
+                                <div style={{ position: "relative", marginBottom: 8 }}>
+                                    <div style={{ width: rank === 0 ? 80 : 64, height: rank === 0 ? 80 : 64, borderRadius: "50%", border: `3px solid ${color}`, overflow: "hidden", boxShadow: `0 0 20px ${color}50` }}>
+                                        {renderAvatar(user, rank === 0 ? 80 : 64)}
+                                    </div>
+                                    <div style={{ position: "absolute", bottom: -4, right: -4, fontSize: rank === 0 ? 24 : 18 }}>{medals[rank]}</div>
+                                </div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: isMe ? "#818cf8" : "#f9fafb", marginBottom: 2, textAlign: "center", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {user.name}{isMe && <span style={{ marginLeft: 4, fontSize: 10, color: "#6366f1" }}> YOU</span>}
+                                </div>
+                                <div style={{ fontSize: rank === 0 ? 16 : 13, fontWeight: 800, color, marginBottom: 8 }}>
+                                    {user.points.toLocaleString()}pt
+                                </div>
+                                <div style={{ width: "100%", height, background: `linear-gradient(180deg, ${color}30, ${color}15)`, border: `1px solid ${color}50`, borderRadius: "8px 8px 0 0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <div style={{ fontSize: rank === 0 ? 36 : 28, fontWeight: 900, color: `${color}60` }}>{rank + 1}</div>
+                                </div>
                             </div>
-                            {/* アバター */}
-                            {renderAvatar(user, 40)}
-                            {/* 名前 */}
-                            <div style={{ fontSize: 15, fontWeight: 700, color: isMe ? "#818cf8" : "#f9fafb" }}>
-                                {user.name}
-                                {isMe && <span style={{ marginLeft: 8, fontSize: 10, color: "#6366f1", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(99,102,241,0.2)" }}>YOU</span>}
+                        );
+                    })}
+                </div>
+                <div style={{ height: 3, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)", marginBottom: 24 }} />
+            </div>
+        );
+    };
+
+    const renderList = (list: RankingUser[]) => {
+        const rest = list.slice(3);
+        if (rest.length === 0) return null;
+        return (
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20 }}>
+                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>4位以下</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {rest.map((user, i) => {
+                        const isMe = user.id === myId;
+                        return (
+                            <div key={user.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: isMe ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)", border: isMe ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(255,255,255,0.05)" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    <div style={{ width: 28, textAlign: "center", fontSize: 13, color: "#6b7280", fontWeight: 700 }}>{i + 4}</div>
+                                    <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
+                                        {renderAvatar(user, 36)}
+                                    </div>
+                                    <div style={{ fontSize: 14, fontWeight: 600, color: isMe ? "#818cf8" : "#f9fafb" }}>
+                                        {user.name}
+                                        {isMe && <span style={{ marginLeft: 8, fontSize: 10, color: "#6366f1", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(99,102,241,0.2)" }}>YOU</span>}
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: isMe ? "#818cf8" : "#d1d5db" }}>{user.points.toLocaleString()}pt</div>
                             </div>
-                        </div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: i === 0 ? "#f59e0b" : isMe ? "#818cf8" : "#d1d5db" }}>
-                            {user.points.toLocaleString()}pt
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
 
     if (loading) {
         return (
@@ -116,13 +151,14 @@ export default function RankingPage() {
         );
     }
 
+    const currentList = activeTab === "total" ? users : weeklyUsers;
+
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
-            <div style={{ position: "relative", zIndex: 1, maxWidth: 1000, margin: "0 auto" }}>
+            <div style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto" }}>
 
-                {/* ヘッダー */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
                     <div>
                         <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
@@ -137,11 +173,26 @@ export default function RankingPage() {
                     </div>
                 </div>
 
-                {/* ランキング2カラム */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
-                    {renderList(users, "TOTAL RANKING")}
-                    {renderList(weeklyUsers, "WEEKLY RANKING")}
+                {/* タブ */}
+                <div style={{ display: "flex", gap: 4, marginBottom: 32, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 4 }}>
+                    {[
+                        { key: "total", label: "🏆 総合" },
+                        { key: "weekly", label: "⚡ 今週" },
+                    ].map((tab) => (
+                        <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
+
+                {currentList.length === 0 ? (
+                    <div style={{ textAlign: "center", color: "#6b7280", fontSize: 14, padding: 40 }}>データがありません</div>
+                ) : (
+                    <>
+                        {renderPodium(currentList)}
+                        {renderList(currentList)}
+                    </>
+                )}
             </div>
         </main>
     );
