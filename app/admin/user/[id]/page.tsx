@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 type PointHistory = { id: string; change: number; reason: string | null; created_at: string };
 type Submission = { id: string; content: string; created_at: string };
@@ -11,7 +11,7 @@ type KpiLog = { id: string; kpi_item_id: string; value: number; created_at: stri
 type Thanks = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
 type ContentCompletion = { id: string; content_id: string; created_at: string; contentTitle?: string };
 type GraphData = { date: string; points: number };
-type ActivityData = { date: string; count: number };
+type BreakdownData = { name: string; value: number; color: string };
 
 function formatDateTime(value: string): string {
     const date = new Date(value);
@@ -66,15 +66,30 @@ function buildGraphData(history: PointHistory[]): GraphData[] {
     });
 }
 
-function buildActivityData(submissions: Submission[]): ActivityData[] {
-    const dayMap: Record<string, number> = {};
-    [...submissions].reverse().forEach((item) => {
-        const date = new Date(item.created_at);
-        const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-        const key = `${jst.getUTCMonth() + 1}/${jst.getUTCDate()}`;
-        dayMap[key] = (dayMap[key] || 0) + 1;
+function buildBreakdownData(history: PointHistory[]): BreakdownData[] {
+    const reasonMap: Record<string, { label: string; color: string }> = {
+        report_submit: { label: "日報提出", color: "#6366f1" },
+        streak_bonus: { label: "連続ボーナス", color: "#8b5cf6" },
+        kpi_achievement: { label: "KPI達成", color: "#06b6d4" },
+        thanks_received: { label: "サンキュー", color: "#f59e0b" },
+        content_complete: { label: "学習完了", color: "#34d399" },
+        manual_add: { label: "手動追加", color: "#9ca3af" },
+        login_bonus: { label: "ログイン", color: "#ec4899" },
+    };
+
+    const totals: Record<string, number> = {};
+    history.filter(h => h.change > 0).forEach((item) => {
+        const key = item.reason || "other";
+        totals[key] = (totals[key] || 0) + item.change;
     });
-    return Object.entries(dayMap).map(([date, count]) => ({ date, count }));
+
+    return Object.entries(totals)
+        .map(([key, value]) => ({
+            name: reasonMap[key]?.label || key,
+            value,
+            color: reasonMap[key]?.color || "#6b7280",
+        }))
+        .sort((a, b) => b.value - a.value);
 }
 
 export default function UserDetailPage() {
@@ -99,8 +114,8 @@ export default function UserDetailPage() {
     const [completions, setCompletions] = useState<ContentCompletion[]>([]);
     const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
     const [graphData, setGraphData] = useState<GraphData[]>([]);
-    const [activityData, setActivityData] = useState<ActivityData[]>([]);
-    const [graphTab, setGraphTab] = useState<"points" | "activity">("points");
+    const [breakdownData, setBreakdownData] = useState<BreakdownData[]>([]);
+    const [graphTab, setGraphTab] = useState<"points" | "breakdown">("points");
 
     useEffect(() => {
         const load = async () => {
@@ -129,11 +144,10 @@ export default function UserDetailPage() {
             const hist = (histRows || []) as PointHistory[];
             setPointHistory(hist);
             setGraphData(buildGraphData(hist));
+            setBreakdownData(buildBreakdownData(hist));
 
             const { data: subRows } = await supabase.from("submissions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
-            const subs = (subRows || []) as Submission[];
-            setSubmissions(subs);
-            setActivityData(buildActivityData(subs));
+            setSubmissions((subRows || []) as Submission[]);
 
             const { data: kpiItems } = await supabase.from("kpi_items").select("id, title, unit, target_value");
             const { data: kpiRows } = await supabase.from("kpi_logs").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20);
@@ -246,7 +260,7 @@ export default function UserDetailPage() {
                         <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 3 }}>
                             {[
                                 { key: "points", label: "📈 ポイント推移" },
-                                { key: "activity", label: "📋 日報活動" },
+                                { key: "breakdown", label: "🥧 ポイント内訳" },
                             ].map((tab) => (
                                 <button key={tab.key} onClick={() => setGraphTab(tab.key as any)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, background: graphTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: graphTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
                                     {tab.label}
@@ -254,6 +268,7 @@ export default function UserDetailPage() {
                             ))}
                         </div>
                     </div>
+
                     {graphTab === "points" ? (
                         graphData.length > 0 ? (
                             <ResponsiveContainer width="100%" height={200}>
@@ -266,20 +281,36 @@ export default function UserDetailPage() {
                             </ResponsiveContainer>
                         ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>
                     ) : (
-                        activityData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={activityData}>
-                                    <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
-                                    <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
-                                    <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(52,211,153,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}件`, "日報数"]} />
-                                    <Bar dataKey="count" fill="#34d399" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                        breakdownData.length > 0 ? (
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <PieChart>
+                                        <Pie data={breakdownData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} strokeWidth={0}>
+                                            {breakdownData.map((entry, index) => (
+                                                <Cell key={index} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`]} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {breakdownData.map((item, i) => (
+                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                <div style={{ width: 10, height: 10, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+                                                <span style={{ fontSize: 13, color: "#9ca3af" }}>{item.name}</span>
+                                            </div>
+                                            <span style={{ fontSize: 14, fontWeight: 700, color: item.color }}>{item.value}pt</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>
                     )}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                    {/* 日報履歴 */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SUBMISSIONS ({submissions.length}件)</div>
                         {submissions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>日報はありません</div> : (
@@ -303,6 +334,8 @@ export default function UserDetailPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* KPI実績 */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI LOGS ({kpiLogs.length}件)</div>
                         {kpiLogs.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPIデータがありません</div> : (
@@ -325,6 +358,7 @@ export default function UserDetailPage() {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                    {/* 学習完了 */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>LEARNING ({completions.length}件)</div>
                         {completions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>学習記録がありません</div> : (
@@ -338,6 +372,8 @@ export default function UserDetailPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* サンキュー */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>THANKS</div>
                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>受け取った ({thanksReceived.length}件)</div>
@@ -365,6 +401,7 @@ export default function UserDetailPage() {
                     </div>
                 </div>
 
+                {/* ポイント履歴 */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>POINT HISTORY</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
