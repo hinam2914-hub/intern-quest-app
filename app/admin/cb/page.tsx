@@ -192,26 +192,6 @@ export default function CBStatsPage() {
                     </button>
                     {message && <span style={{ marginLeft: 16, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{message}</span>}
                 </div>
-
-                {/* メイングラフ：商談数・納品数12ヶ月推移 */}
-                {graphData.length > 0 && (
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>📈 商談数・納品数 推移（12ヶ月）</div>
-                        <ResponsiveContainer width="100%" height={240}>
-                            <LineChart data={graphData}>
-                                <XAxis dataKey="year_month" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
-                                <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
-                                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: any) => [value + "件"]} />
-                                <Legend />
-                                <Line type="monotone" dataKey="shōdan_actual" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} name="商談数（実績）" />
-                                <Line type="monotone" dataKey="shōdan_target" stroke="#f59e0b" strokeWidth={1} strokeDasharray="4 4" dot={false} name="商談数（目標）" />
-                                <Line type="monotone" dataKey="nohin_actual" stroke="#ec4899" strokeWidth={2} dot={{ r: 4 }} name="納品数（実績）" />
-                                <Line type="monotone" dataKey="nohin_target" stroke="#ec4899" strokeWidth={1} strokeDasharray="4 4" dot={false} name="納品数（目標）" />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                )}
-
                 {/* 項目別棒グラフ */}
                 {graphData.length > 0 && (
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 24 }}>
