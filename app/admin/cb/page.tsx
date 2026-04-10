@@ -219,6 +219,44 @@ export default function CBStatsPage() {
                     </div>
                 )}
             </div>
+            {/* 月別実績一覧 */}
+            {graphData.length > 0 && (
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📋 月別実績一覧</div>
+                    <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                            <thead>
+                                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <th style={{ padding: "8px 12px", fontSize: 11, color: "#6b7280", fontWeight: 700, textAlign: "left" }}>月</th>
+                                    {CB_METRICS.map(m => (
+                                        <th key={m.key} style={{ padding: "8px 12px", fontSize: 11, color: m.color, fontWeight: 700, textAlign: "center" }}>{m.label}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[...graphData].reverse().map(row => (
+                                    <tr key={row.year_month} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                                        <td style={{ padding: "10px 12px", fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{row.year_month}</td>
+                                        {CB_METRICS.map(m => {
+                                            const actual = row[`${m.key}_actual`] || 0;
+                                            const target = row[`${m.key}_target`] || 0;
+                                            const rate = target > 0 ? Math.round((actual / target) * 100) : null;
+                                            const rateColor = rate !== null ? (rate >= 100 ? "#34d399" : rate >= 80 ? "#f59e0b" : "#f87171") : "#6b7280";
+                                            return (
+                                                <td key={m.key} style={{ padding: "10px 12px", textAlign: "center" }}>
+                                                    <div style={{ fontSize: 14, fontWeight: 700, color: rateColor }}>{actual > 0 ? actual : "-"}</div>
+                                                    {target > 0 && <div style={{ fontSize: 11, color: "#6b7280" }}>/{target}</div>}
+                                                    {rate !== null && actual > 0 && <div style={{ fontSize: 11, color: rateColor }}>{rate}%</div>}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }
