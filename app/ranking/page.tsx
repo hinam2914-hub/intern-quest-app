@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
-type RankingUser = { id: string; name: string; points: number };
+type RankingUser = { id: string; name: string; points: number; avatar_url?: string | null };
 
 function getOneWeekAgoISO(): string {
     const now = new Date();
@@ -34,21 +34,48 @@ export default function RankingPage() {
 
             const { data: pointRows } = await supabase.from("user_points").select("id, points").order("points", { ascending: false });
             const totalRows = pointRows || [];
-            const { data: profileRows } = await supabase.from("profiles").select("id, name").in("id", totalRows.map((r) => r.id));
-            setUsers(totalRows.map((row) => ({ id: row.id, name: profileRows?.find((p) => p.id === row.id)?.name || "名前未設定", points: row.points || 0 })));
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, avatar_url").in("id", totalRows.map((r) => r.id));
+            setUsers(totalRows.map((row) => ({
+                id: row.id,
+                name: profileRows?.find((p) => p.id === row.id)?.name || "名前未設定",
+                points: row.points || 0,
+                avatar_url: profileRows?.find((p) => p.id === row.id)?.avatar_url || null,
+            })));
 
             const { data: weeklyData } = await supabase.from("points_history").select("user_id, change, created_at").gte("created_at", getOneWeekAgoISO());
             const weeklyTotals: Record<string, number> = {};
             (weeklyData || []).forEach((item) => { weeklyTotals[item.user_id] = (weeklyTotals[item.user_id] || 0) + item.change; });
             const weeklyIds = Object.keys(weeklyTotals);
             if (weeklyIds.length > 0) {
-                const { data: weeklyProfiles } = await supabase.from("profiles").select("id, name").in("id", weeklyIds);
-                setWeeklyUsers(weeklyIds.map((id) => ({ id, name: weeklyProfiles?.find((p) => p.id === id)?.name || "名前未設定", points: weeklyTotals[id] || 0 })).sort((a, b) => b.points - a.points));
+                const { data: weeklyProfiles } = await supabase.from("profiles").select("id, name, avatar_url").in("id", weeklyIds);
+                setWeeklyUsers(weeklyIds.map((id) => ({
+                    id,
+                    name: weeklyProfiles?.find((p) => p.id === id)?.name || "名前未設定",
+                    points: weeklyTotals[id] || 0,
+                    avatar_url: weeklyProfiles?.find((p) => p.id === id)?.avatar_url || null,
+                })).sort((a, b) => b.points - a.points));
             }
             setLoading(false);
         };
         loadRanking();
     }, [router]);
+
+    const renderAvatar = (user: RankingUser, size: number = 40) => {
+        if (user.avatar_url) {
+            return (
+                <img
+                    src={user.avatar_url}
+                    alt={user.name}
+                    style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(99,102,241,0.4)", flexShrink: 0 }}
+                />
+            );
+        }
+        return (
+            <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.35, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                {user.name.charAt(0)}
+            </div>
+        );
+    };
 
     const renderList = (list: RankingUser[], label: string) => (
         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
@@ -58,16 +85,23 @@ export default function RankingPage() {
             ) : list.map((user, i) => {
                 const isMe = user.id === myId;
                 return (
-                    <div key={user.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", borderRadius: 12, marginBottom: 8, background: isMe ? "rgba(99,102,241,0.12)" : i === 0 ? "rgba(245,158,11,0.08)" : "rgba(255,255,255,0.02)", border: isMe ? "1px solid rgba(99,102,241,0.4)" : i === 0 ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.05)" }}>
+                    <div key={user.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, marginBottom: 8, background: isMe ? "rgba(99,102,241,0.12)" : i === 0 ? "rgba(245,158,11,0.08)" : "rgba(255,255,255,0.02)", border: isMe ? "1px solid rgba(99,102,241,0.4)" : i === 0 ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.05)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ fontSize: 20, width: 32, textAlign: "center" }}>
+                            {/* 順位 */}
+                            <div style={{ fontSize: 18, width: 28, textAlign: "center", flexShrink: 0 }}>
                                 {i < 3 ? medals[i] : <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 700 }}>{i + 1}</span>}
                             </div>
-                            <div>
-                                <div style={{ fontSize: 16, fontWeight: 700, color: isMe ? "#818cf8" : "#f9fafb" }}>{user.name}{isMe && <span style={{ marginLeft: 8, fontSize: 11, color: "#6366f1", fontWeight: 700 }}>YOU</span>}</div>
+                            {/* アバター */}
+                            {renderAvatar(user, 40)}
+                            {/* 名前 */}
+                            <div style={{ fontSize: 15, fontWeight: 700, color: isMe ? "#818cf8" : "#f9fafb" }}>
+                                {user.name}
+                                {isMe && <span style={{ marginLeft: 8, fontSize: 10, color: "#6366f1", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(99,102,241,0.2)" }}>YOU</span>}
                             </div>
                         </div>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: i === 0 ? "#f59e0b" : isMe ? "#818cf8" : "#d1d5db" }}>{user.points.toLocaleString()}pt</div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: i === 0 ? "#f59e0b" : isMe ? "#818cf8" : "#d1d5db" }}>
+                            {user.points.toLocaleString()}pt
+                        </div>
                     </div>
                 );
             })}
@@ -84,7 +118,6 @@ export default function RankingPage() {
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
-
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1000, margin: "0 auto" }}>
@@ -105,10 +138,7 @@ export default function RankingPage() {
                 </div>
 
                 {/* ランキング2カラム */}
-                <div style={{
-                    display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))"
-                    , gap: 16
-                }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
                     {renderList(users, "TOTAL RANKING")}
                     {renderList(weeklyUsers, "WEEKLY RANKING")}
                 </div>
