@@ -607,28 +607,26 @@ export default function MyPage() {
 
                 {/* AIメタ認知コメント */}
                 <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🤖</div>
-                        <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>AI METACOGNITION</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🤖</div>
+                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>AI METACOGNITION</div>
+                        </div>
+                        <div style={{ fontSize: 12, color: "#6b7280" }}>
+                            {new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
+                        </div>
                     </div>
-                    <p style={{ margin: 0, fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
-                </div>
-
-                {/* バッジ */}
-                <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>BADGES</div>
-                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedCount} / {badges.length} 解錠済み</div>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
-                        {badges.map((badge) => (
-                            <div key={badge.id} style={{ padding: 16, borderRadius: 12, background: badge.unlocked ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.02)", border: `1px solid ${badge.unlocked ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)"}`, textAlign: "center", opacity: badge.unlocked ? 1 : 0.4 }}>
-                                <div style={{ fontSize: 32, marginBottom: 8 }}>{badge.unlocked ? badge.icon : "🔒"}</div>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: badge.unlocked ? "#f9fafb" : "#6b7280" }}>{badge.name}</div>
-                                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{badge.description}</div>
-                                {badge.unlocked && <div style={{ marginTop: 8, fontSize: 10, color: "#818cf8", fontWeight: 700 }}>✅ 解錠済み</div>}
-                            </div>
-                        ))}
+                    <p style={{ margin: "0 0 16px", fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
+                    <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", fontSize: 13, color: "#818cf8", fontWeight: 600 }}>
+                        💡 {[
+                            "小さな積み重ねが大きな差を生む。今日も一歩前へ。",
+                            "成長は毎日の習慣から生まれる。継続こそ最強のスキル。",
+                            "今日の努力は必ず明日の自分に返ってくる。",
+                            "トップ営業マンも最初は初心者だった。諦めずに続けよう。",
+                            "失敗は成功のデータ。今日も全力でぶつかろう。",
+                            "1日1%の成長で1年後には37倍になる。今日も成長しよう。",
+                            "行動した人だけが結果を手にできる。まず動こう。",
+                        ][new Date().getDay()]}
                     </div>
                 </div>
 
