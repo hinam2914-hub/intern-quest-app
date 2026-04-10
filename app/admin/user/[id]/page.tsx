@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 type PointHistory = { id: string; change: number; reason: string | null; created_at: string };
 type Submission = { id: string; content: string; created_at: string };
@@ -12,6 +12,7 @@ type Thanks = { id: string; from_user_id: string; to_user_id: string; message: s
 type ContentCompletion = { id: string; content_id: string; created_at: string; contentTitle?: string };
 type GraphData = { date: string; points: number };
 type BreakdownData = { name: string; value: number; color: string };
+type MonthlyKpiRecord = { id: string; year_month: string; department_id: string; target: number; result: number; approved: boolean; points_awarded: number; deptName?: string; rate?: number; officialTarget?: number; };
 
 function formatDateTime(value: string): string {
     const date = new Date(value);
@@ -76,19 +77,13 @@ function buildBreakdownData(history: PointHistory[]): BreakdownData[] {
         manual_add: { label: "手動追加", color: "#9ca3af" },
         login_bonus: { label: "ログイン", color: "#ec4899" },
     };
-
     const totals: Record<string, number> = {};
     history.filter(h => h.change > 0).forEach((item) => {
         const key = item.reason || "other";
         totals[key] = (totals[key] || 0) + item.change;
     });
-
     return Object.entries(totals)
-        .map(([key, value]) => ({
-            name: reasonMap[key]?.label || key,
-            value,
-            color: reasonMap[key]?.color || "#6b7280",
-        }))
+        .map(([key, value]) => ({ name: reasonMap[key]?.label || key, value, color: reasonMap[key]?.color || "#6b7280" }))
         .sort((a, b) => b.value - a.value);
 }
 
@@ -116,6 +111,8 @@ export default function UserDetailPage() {
     const [graphData, setGraphData] = useState<GraphData[]>([]);
     const [breakdownData, setBreakdownData] = useState<BreakdownData[]>([]);
     const [graphTab, setGraphTab] = useState<"points" | "breakdown">("points");
+    const [monthlyKpiHistory, setMonthlyKpiHistory] = useState<MonthlyKpiRecord[]>([]);
+    const [activeTab, setActiveTab] = useState<"overview" | "monthly_kpi">("overview");
 
     useEffect(() => {
         const load = async () => {
@@ -175,6 +172,22 @@ export default function UserDetailPage() {
                 ...r,
                 contentTitle: contents?.find((c: any) => c.id === r.content_id)?.title || "不明",
             })) as ContentCompletion[]);
+
+            // 月次KPI全履歴取得
+            const { data: monthlyKpiRows } = await supabase.from("monthly_kpi").select("*").eq("user_id", userId).order("year_month", { ascending: false });
+            const { data: deptRows } = await supabase.from("departments").select("*");
+            const { data: targetRows } = await supabase.from("monthly_targets").select("*").eq("user_id", userId);
+
+            setMonthlyKpiHistory((monthlyKpiRows || []).map((k: any) => {
+                const officialTarget = targetRows?.find((t: any) => t.department_id === k.department_id && t.year_month === k.year_month)?.target || k.target;
+                const rate = officialTarget > 0 ? Math.round((k.result / officialTarget) * 100) : 0;
+                return {
+                    ...k,
+                    deptName: deptRows?.find((d: any) => d.id === k.department_id)?.name || "不明",
+                    officialTarget,
+                    rate,
+                };
+            }));
 
             setLoading(false);
         };
@@ -253,172 +266,252 @@ export default function UserDetailPage() {
                     ))}
                 </div>
 
-                {/* 成長グラフ */}
-                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>GROWTH CHART</div>
-                        <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 3 }}>
-                            {[
-                                { key: "points", label: "📈 ポイント推移" },
-                                { key: "breakdown", label: "🥧 ポイント内訳" },
-                            ].map((tab) => (
-                                <button key={tab.key} onClick={() => setGraphTab(tab.key as any)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, background: graphTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: graphTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                {/* タブ切り替え */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                    {[
+                        { key: "overview", label: "📊 概要" },
+                        { key: "monthly_kpi", label: "📈 月次KPI履歴" },
+                    ].map((tab) => (
+                        <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : "#9ca3af" }}>
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
 
-                    {graphTab === "points" ? (
-                        graphData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={200}>
-                                <LineChart data={graphData}>
-                                    <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
-                                    <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
-                                    <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計ポイント"]} />
-                                    <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 3 }} activeDot={{ r: 5, fill: "#8b5cf6" }} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>
-                    ) : (
-                        breakdownData.length > 0 ? (
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
-                                <ResponsiveContainer width="100%" height={200}>
-                                    <PieChart>
-                                        <Pie data={breakdownData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} strokeWidth={0}>
-                                            {breakdownData.map((entry, index) => (
-                                                <Cell key={index} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`]} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                    {breakdownData.map((item, i) => (
-                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <div style={{ width: 10, height: 10, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
-                                                <span style={{ fontSize: 13, color: "#9ca3af" }}>{item.name}</span>
-                                            </div>
-                                            <span style={{ fontSize: 14, fontWeight: 700, color: item.color }}>{item.value}pt</span>
-                                        </div>
+                {activeTab === "overview" && (
+                    <>
+                        {/* 成長グラフ */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>GROWTH CHART</div>
+                                <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 3 }}>
+                                    {[
+                                        { key: "points", label: "📈 ポイント推移" },
+                                        { key: "breakdown", label: "🥧 ポイント内訳" },
+                                    ].map((tab) => (
+                                        <button key={tab.key} onClick={() => setGraphTab(tab.key as any)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, background: graphTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: graphTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
+                                            {tab.label}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
-                        ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>
-                    )}
-                </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                    {/* 日報履歴 */}
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SUBMISSIONS ({submissions.length}件)</div>
-                        {submissions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>日報はありません</div> : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {submissions.map((s) => (
-                                    <div key={s.id} style={{ borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                                        <div onClick={() => setExpandedSubmission(expandedSubmission === s.id ? null : s.id)} style={{ padding: "10px 14px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)" }}>
-                                            <div style={{ fontSize: 12, color: "#9ca3af", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.content}</div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <span style={{ fontSize: 11, color: "#6b7280" }}>{formatDateTime(s.created_at)}</span>
-                                                <span style={{ fontSize: 11, color: "#6b7280" }}>{expandedSubmission === s.id ? "▲" : "▼"}</span>
-                                            </div>
+                            {graphTab === "points" ? (
+                                graphData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={200}>
+                                        <LineChart data={graphData}>
+                                            <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                            <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                            <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計ポイント"]} />
+                                            <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 3 }} activeDot={{ r: 5, fill: "#8b5cf6" }} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>
+                            ) : (
+                                breakdownData.length > 0 ? (
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
+                                        <ResponsiveContainer width="100%" height={200}>
+                                            <PieChart>
+                                                <Pie data={breakdownData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} strokeWidth={0}>
+                                                    {breakdownData.map((entry, index) => (
+                                                        <Cell key={index} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`]} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                            {breakdownData.map((item, i) => (
+                                                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+                                                        <span style={{ fontSize: 13, color: "#9ca3af" }}>{item.name}</span>
+                                                    </div>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: item.color }}>{item.value}pt</span>
+                                                </div>
+                                            ))}
                                         </div>
-                                        {expandedSubmission === s.id && (
-                                            <div style={{ padding: "12px 14px", background: "rgba(99,102,241,0.05)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                                                <p style={{ margin: 0, fontSize: 13, color: "#c7d2fe", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{s.content}</p>
-                                            </div>
-                                        )}
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>
+                            )}
+                        </div>
 
-                    {/* KPI実績 */}
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI LOGS ({kpiLogs.length}件)</div>
-                        {kpiLogs.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPIデータがありません</div> : (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                            {/* 日報履歴 */}
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SUBMISSIONS ({submissions.length}件)</div>
+                                {submissions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>日報はありません</div> : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {submissions.map((s) => (
+                                            <div key={s.id} style={{ borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                                                <div onClick={() => setExpandedSubmission(expandedSubmission === s.id ? null : s.id)} style={{ padding: "10px 14px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)" }}>
+                                                    <div style={{ fontSize: 12, color: "#9ca3af", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.content}</div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <span style={{ fontSize: 11, color: "#6b7280" }}>{formatDateTime(s.created_at)}</span>
+                                                        <span style={{ fontSize: 11, color: "#6b7280" }}>{expandedSubmission === s.id ? "▲" : "▼"}</span>
+                                                    </div>
+                                                </div>
+                                                {expandedSubmission === s.id && (
+                                                    <div style={{ padding: "12px 14px", background: "rgba(99,102,241,0.05)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                                        <p style={{ margin: 0, fontSize: 13, color: "#c7d2fe", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{s.content}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* KPI実績 */}
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI LOGS ({kpiLogs.length}件)</div>
+                                {kpiLogs.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPIデータがありません</div> : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {kpiLogs.map((k) => (
+                                            <div key={k.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: `${k.value >= (k.target || 0) ? "rgba(52,211,153,0.05)" : "rgba(255,255,255,0.02)"}`, border: `1px solid ${k.value >= (k.target || 0) ? "rgba(52,211,153,0.2)" : "rgba(255,255,255,0.05)"}` }}>
+                                                <div>
+                                                    <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{k.kpiTitle}</div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>{formatDateTime(k.created_at)}</div>
+                                                </div>
+                                                <div style={{ textAlign: "right" }}>
+                                                    <div style={{ fontSize: 16, fontWeight: 700, color: k.value >= (k.target || 0) ? "#34d399" : "#f9fafb" }}>{k.value}{k.unit}</div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>目標: {k.target}{k.unit}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                            {/* 学習完了 */}
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>LEARNING ({completions.length}件)</div>
+                                {completions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>学習記録がありません</div> : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {completions.map((c) => (
+                                            <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                                                <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{c.contentTitle}</div>
+                                                <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700 }}>✅ {formatDateTime(c.created_at)}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* サンキュー */}
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>THANKS</div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>受け取った ({thanksReceived.length}件)</div>
+                                {thanksReceived.length === 0 ? <div style={{ color: "#6b7280", fontSize: 13, marginBottom: 12 }}>なし</div> : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+                                        {thanksReceived.slice(0, 3).map((t) => (
+                                            <div key={t.id} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
+                                                <div style={{ fontSize: 11, color: "#fbbf24", marginBottom: 2 }}>from {t.fromName}</div>
+                                                <div style={{ fontSize: 12, color: "#d1d5db" }}>{t.message}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>送った ({thanksSent.length}件)</div>
+                                {thanksSent.length === 0 ? <div style={{ color: "#6b7280", fontSize: 13 }}>なし</div> : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                        {thanksSent.slice(0, 3).map((t) => (
+                                            <div key={t.id} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                                                <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 2 }}>to {t.toName}</div>
+                                                <div style={{ fontSize: 12, color: "#d1d5db" }}>{t.message}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ポイント履歴 */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>POINT HISTORY</div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {kpiLogs.map((k) => (
-                                    <div key={k.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: `${k.value >= (k.target || 0) ? "rgba(52,211,153,0.05)" : "rgba(255,255,255,0.02)"}`, border: `1px solid ${k.value >= (k.target || 0) ? "rgba(52,211,153,0.2)" : "rgba(255,255,255,0.05)"}` }}>
+                                {pointHistory.map((item) => (
+                                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
                                         <div>
-                                            <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{k.kpiTitle}</div>
-                                            <div style={{ fontSize: 11, color: "#6b7280" }}>{formatDateTime(k.created_at)}</div>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{formatReason(item.reason)}</div>
+                                            <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{formatDateTime(item.created_at)}</div>
                                         </div>
-                                        <div style={{ textAlign: "right" }}>
-                                            <div style={{ fontSize: 16, fontWeight: 700, color: k.value >= (k.target || 0) ? "#34d399" : "#f9fafb" }}>{k.value}{k.unit}</div>
-                                            <div style={{ fontSize: 11, color: "#6b7280" }}>目標: {k.target}{k.unit}</div>
+                                        <div style={{ fontSize: 16, fontWeight: 700, color: item.change > 0 ? "#34d399" : item.change < 0 ? "#f87171" : "#6b7280" }}>
+                                            {item.change > 0 ? `+${item.change}` : item.change}pt
                                         </div>
                                     </div>
                                 ))}
+                                {pointHistory.length === 0 && <div style={{ color: "#6b7280", fontSize: 14 }}>履歴がありません</div>}
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </div>
+                    </>
+                )}
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                    {/* 学習完了 */}
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>LEARNING ({completions.length}件)</div>
-                        {completions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>学習記録がありません</div> : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {completions.map((c) => (
-                                    <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.15)" }}>
-                                        <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{c.contentTitle}</div>
-                                        <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700 }}>✅ {formatDateTime(c.created_at)}</div>
-                                    </div>
-                                ))}
+                {activeTab === "monthly_kpi" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {monthlyKpiHistory.length === 0 ? (
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
+                                月次KPIデータがありません
                             </div>
-                        )}
-                    </div>
+                        ) : (
+                            <>
+                                {/* 月ごとにグループ化して表示 */}
+                                {[...new Set(monthlyKpiHistory.map(k => k.year_month))].map(ym => {
+                                    const monthKpis = monthlyKpiHistory.filter(k => k.year_month === ym);
+                                    const avgRate = Math.round(monthKpis.reduce((sum, k) => sum + (k.rate || 0), 0) / monthKpis.length);
+                                    const rateColor = avgRate >= 100 ? "#34d399" : avgRate >= 80 ? "#f59e0b" : avgRate >= 60 ? "#f97316" : "#f87171";
 
-                    {/* サンキュー */}
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>THANKS</div>
-                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>受け取った ({thanksReceived.length}件)</div>
-                        {thanksReceived.length === 0 ? <div style={{ color: "#6b7280", fontSize: 13, marginBottom: 12 }}>なし</div> : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-                                {thanksReceived.slice(0, 3).map((t) => (
-                                    <div key={t.id} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
-                                        <div style={{ fontSize: 11, color: "#fbbf24", marginBottom: 2 }}>from {t.fromName}</div>
-                                        <div style={{ fontSize: 12, color: "#d1d5db" }}>{t.message}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>送った ({thanksSent.length}件)</div>
-                        {thanksSent.length === 0 ? <div style={{ color: "#6b7280", fontSize: 13 }}>なし</div> : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                {thanksSent.slice(0, 3).map((t) => (
-                                    <div key={t.id} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
-                                        <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 2 }}>to {t.toName}</div>
-                                        <div style={{ fontSize: 12, color: "#d1d5db" }}>{t.message}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
+                                    return (
+                                        <div key={ym} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                            {/* 月ヘッダー */}
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                    <div style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb" }}>{ym}</div>
+                                                    <div style={{ padding: "3px 10px", borderRadius: 6, background: `${rateColor}20`, border: `1px solid ${rateColor}40`, fontSize: 13, fontWeight: 700, color: rateColor }}>
+                                                        平均 {avgRate}%
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontSize: 13, color: "#6b7280" }}>
+                                                    {monthKpis.filter(k => k.approved).length}/{monthKpis.length}件承認済
+                                                </div>
+                                            </div>
 
-                {/* ポイント履歴 */}
-                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>POINT HISTORY</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {pointHistory.map((item) => (
-                            <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                                <div>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{formatReason(item.reason)}</div>
-                                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{formatDateTime(item.created_at)}</div>
-                                </div>
-                                <div style={{ fontSize: 16, fontWeight: 700, color: item.change > 0 ? "#34d399" : item.change < 0 ? "#f87171" : "#6b7280" }}>
-                                    {item.change > 0 ? `+${item.change}` : item.change}pt
-                                </div>
-                            </div>
-                        ))}
-                        {pointHistory.length === 0 && <div style={{ color: "#6b7280", fontSize: 14 }}>履歴がありません</div>}
+                                            {/* 各事業部のKPI */}
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                {monthKpis.map(kpi => {
+                                                    const rc = (kpi.rate || 0) >= 100 ? "#34d399" : (kpi.rate || 0) >= 80 ? "#f59e0b" : (kpi.rate || 0) >= 60 ? "#f97316" : "#f87171";
+                                                    const pts = (kpi.rate || 0) >= 120 ? 50 : (kpi.rate || 0) >= 100 ? 30 : (kpi.rate || 0) >= 80 ? 20 : (kpi.rate || 0) >= 60 ? 10 : 0;
+                                                    return (
+                                                        <div key={kpi.id} style={{ padding: "14px 16px", borderRadius: 12, background: kpi.approved ? "rgba(52,211,153,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${kpi.approved ? "rgba(52,211,153,0.2)" : "rgba(255,255,255,0.06)"}` }}>
+                                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                                    <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{kpi.deptName}</span>
+                                                                    {kpi.approved && <span style={{ fontSize: 12, color: "#34d399", fontWeight: 600 }}>✅ 承認済</span>}
+                                                                </div>
+                                                                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                                                    <span style={{ fontSize: 13, color: "#9ca3af" }}>{kpi.result} / {kpi.officialTarget}件</span>
+                                                                    <span style={{ fontSize: 18, fontWeight: 800, color: rc }}>{kpi.rate}%</span>
+                                                                    <span style={{ fontSize: 14, fontWeight: 700, color: kpi.approved ? "#818cf8" : "#6b7280" }}>
+                                                                        {kpi.approved ? `+${kpi.points_awarded}pt` : `予定${pts}pt`}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
+                                                                <div style={{ height: "100%", width: `${Math.min(kpi.rate || 0, 100)}%`, background: rc, borderRadius: 999 }} />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </>
+                        )}
                     </div>
-                </div>
+                )}
             </div>
         </main>
     );
