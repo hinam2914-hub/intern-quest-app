@@ -198,6 +198,8 @@ export default function MyPage() {
     const [todayKpiDone, setTodayKpiDone] = useState(false);
     const [todayThanksDone, setTodayThanksDone] = useState(false);
     const [todayLearnDone, setTodayLearnDone] = useState(false);
+    const [mbti, setMbti] = useState("");
+    const [club, setClub] = useState("");
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -228,6 +230,8 @@ export default function MyPage() {
             setEducation(profile.education || "");
             setDepartmentId((profileData as any)?.department_id || "");
             setAvatarUrl((profileData as any)?.avatar_url || null);
+            setMbti((profileData as any)?.mbti || "");
+            setClub((profileData as any)?.club || "");
             if (profile.started_at) {
                 const start = new Date(profile.started_at);
                 const now = new Date();
@@ -652,6 +656,21 @@ export default function MyPage() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
+                            {/* MBTI・部活表示 */}
+                            {(mbti || club) && (
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                                    {mbti && (
+                                        <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 700 }}>
+                                            🧠 {mbti}
+                                        </div>
+                                    )}
+                                    {club && (
+                                        <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>
+                                            ⚽ {club}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <input
                                 value={inputName}
                                 onChange={(e) => setInputName(e.target.value)}
