@@ -9,6 +9,7 @@ type StatRow = { id: string; year_month: string; metric_key: string; target: num
 type MonthData = { year_month: string;[key: string]: any };
 
 const CB_METRICS = [
+    { key: "members", label: "稼働人数", color: "#9ca3af" },
     { key: "appoint", label: "アポ数", color: "#6366f1" },
     { key: "tsumitsu", label: "詰通数", color: "#06b6d4" },
     { key: "shōdan", label: "商談数", color: "#f59e0b" },
