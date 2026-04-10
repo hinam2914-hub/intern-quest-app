@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
-type UserOption = { id: string; name: string };
+type UserOption = { id: string; name: string; avatar_url?: string | null };
 type ThanksRow = {
     id: string;
     from_user_id: string;
@@ -13,11 +13,14 @@ type ThanksRow = {
     created_at: string;
     from_name?: string;
     to_name?: string;
+    from_avatar?: string | null;
+    to_avatar?: string | null;
 };
 
 function formatDateTime(value: string): string {
     const date = new Date(value);
-    return date.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    return jst.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function getTodayJST(): string {
@@ -50,6 +53,7 @@ export default function ThanksPage() {
     const [success, setSuccess] = useState(false);
     const [thanksList, setThanksList] = useState<ThanksRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [historyTab, setHistoryTab] = useState<"all" | "sent" | "received">("all");
 
     useEffect(() => {
         const load = async () => {
@@ -57,25 +61,20 @@ export default function ThanksPage() {
             if (!user) { router.push("/login"); return; }
             setMyId(user.id);
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name");
-            const allUsers = (profileRows || []).map((p: any) => ({ id: p.id, name: p.name || "名前未設定" }));
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, avatar_url");
+            const allUsers = (profileRows || []).map((p: any) => ({ id: p.id, name: p.name || "名前未設定", avatar_url: p.avatar_url || null }));
             setMyName(allUsers.find(u => u.id === user.id)?.name || "");
             setUsers(allUsers.filter(u => u.id !== user.id));
 
-            // サンキュー履歴取得
-            const { data: thanksRows } = await supabase
-                .from("thanks")
-                .select("*")
-                .order("created_at", { ascending: false })
-                .limit(30);
-
+            const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(50);
             if (thanksRows) {
-                const enriched = thanksRows.map((row: any) => ({
+                setThanksList(thanksRows.map((row: any) => ({
                     ...row,
                     from_name: allUsers.find(u => u.id === row.from_user_id)?.name || "名前未設定",
                     to_name: allUsers.find(u => u.id === row.to_user_id)?.name || "名前未設定",
-                }));
-                setThanksList(enriched);
+                    from_avatar: allUsers.find(u => u.id === row.from_user_id)?.avatar_url || null,
+                    to_avatar: allUsers.find(u => u.id === row.to_user_id)?.avatar_url || null,
+                })));
             }
             setLoading(false);
         };
@@ -89,16 +88,10 @@ export default function ThanksPage() {
 
         setSending(true);
         setResult("");
+        setSuccess(false);
 
         const todayYmd = getTodayJST();
-
-        // 今日すでに同じ人に送っているか確認
-        const { data: existingRows } = await supabase
-            .from("thanks")
-            .select("created_at")
-            .eq("from_user_id", myId)
-            .eq("to_user_id", toUserId);
-
+        const { data: existingRows } = await supabase.from("thanks").select("created_at").eq("from_user_id", myId).eq("to_user_id", toUserId);
         const alreadySent = existingRows?.some(row => isSameJSTDay(row.created_at, todayYmd));
         if (alreadySent) {
             setResult("今日はすでにこの人にサンキューを送りました");
@@ -107,32 +100,13 @@ export default function ThanksPage() {
         }
 
         const nowIso = new Date().toISOString();
+        const { error: thanksError } = await supabase.from("thanks").insert({ from_user_id: myId, to_user_id: toUserId, message: message.trim(), created_at: nowIso });
+        if (thanksError) { setResult("送信に失敗しました: " + thanksError.message); setSending(false); return; }
 
-        // thanksテーブルに保存
-        const { error: thanksError } = await supabase.from("thanks").insert({
-            from_user_id: myId,
-            to_user_id: toUserId,
-            message: message.trim(),
-            created_at: nowIso,
-        });
-
-        if (thanksError) {
-            console.error("Thanks error:", thanksError);  // 追加
-            setResult("送信に失敗しました: " + thanksError.message);  // 詳細表示
-            setSending(false);
-            return;
-        }
-
-        // 受け取った人にポイント付与
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", toUserId).single();
         const current = pointRow?.points || 0;
         await supabase.from("user_points").update({ points: current + 1 }).eq("id", toUserId);
-        await supabase.from("points_history").insert({
-            user_id: toUserId,
-            change: 1,
-            reason: "thanks_received",
-            created_at: nowIso,
-        });
+        await supabase.from("points_history").insert({ user_id: toUserId, change: 1, reason: "thanks_received", created_at: nowIso });
 
         setSuccess(true);
         const toName = users.find(u => u.id === toUserId)?.name || "相手";
@@ -140,18 +114,39 @@ export default function ThanksPage() {
         setMessage("");
         setToUserId("");
 
-        // 履歴を更新
-        const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(30);
+        const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(50);
         const allUsers = [...users, { id: myId, name: myName }];
         if (thanksRows) {
             setThanksList(thanksRows.map((row: any) => ({
                 ...row,
                 from_name: allUsers.find(u => u.id === row.from_user_id)?.name || "名前未設定",
                 to_name: allUsers.find(u => u.id === row.to_user_id)?.name || "名前未設定",
+                from_avatar: users.find(u => u.id === row.from_user_id)?.avatar_url || null,
+                to_avatar: users.find(u => u.id === row.to_user_id)?.avatar_url || null,
             })));
         }
         setSending(false);
     };
+
+    const renderAvatar = (avatarUrl: string | null | undefined, name: string, size: number = 36) => {
+        if (avatarUrl) {
+            return <img src={avatarUrl} alt={name} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />;
+        }
+        return (
+            <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.38, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                {name.charAt(0)}
+            </div>
+        );
+    };
+
+    const filteredList = thanksList.filter(item => {
+        if (historyTab === "sent") return item.from_user_id === myId;
+        if (historyTab === "received") return item.to_user_id === myId;
+        return true;
+    });
+
+    const sentCount = thanksList.filter(i => i.from_user_id === myId).length;
+    const receivedCount = thanksList.filter(i => i.to_user_id === myId).length;
 
     if (loading) {
         return (
@@ -177,17 +172,27 @@ export default function ThanksPage() {
                     <button onClick={() => router.push("/mypage")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>マイページ</button>
                 </div>
 
+                {/* 自分の統計 */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+                    <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12, padding: "16px 20px", textAlign: "center" }}>
+                        <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>送った数</div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: "#818cf8" }}>{sentCount}</div>
+                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>件</div>
+                    </div>
+                    <div style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 12, padding: "16px 20px", textAlign: "center" }}>
+                        <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>受け取った数</div>
+                        <div style={{ fontSize: 32, fontWeight: 800, color: "#fbbf24" }}>{receivedCount}</div>
+                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>件</div>
+                    </div>
+                </div>
+
                 {/* 送信フォーム */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 28, marginBottom: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>SEND THANKS</div>
 
                     <div style={{ marginBottom: 16 }}>
                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>送り先</div>
-                        <select
-                            value={toUserId}
-                            onChange={(e) => setToUserId(e.target.value)}
-                            style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: toUserId ? "#f9fafb" : "#6b7280", fontSize: 15, outline: "none", cursor: "pointer" }}
-                        >
+                        <select value={toUserId} onChange={(e) => setToUserId(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: toUserId ? "#f9fafb" : "#6b7280", fontSize: 15, outline: "none", cursor: "pointer" }}>
                             <option value="" style={{ background: "#0f0f1a" }}>選んでください</option>
                             {users.map(u => (
                                 <option key={u.id} value={u.id} style={{ background: "#0f0f1a", color: "#f9fafb" }}>{u.name}</option>
@@ -197,22 +202,13 @@ export default function ThanksPage() {
 
                     <div style={{ marginBottom: 20 }}>
                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>メッセージ</div>
-                        <textarea
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder="感謝のメッセージを書いてください..."
-                            style={{ width: "100%", height: 120, padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }}
-                        />
+                        <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="感謝のメッセージを書いてください..." style={{ width: "100%", height: 120, padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }} />
                     </div>
 
                     <div style={{ padding: "10px 16px", borderRadius: 8, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", marginBottom: 16 }}>
                         <span style={{ fontSize: 13, color: "#fbbf24" }}>🎁 送ると相手に +1pt プレゼント！（1日1人まで）</span>
                     </div>
-                    <button
-                        onClick={handleSend}
-                        disabled={sending}
-                        style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: sending ? "rgba(251,191,36,0.3)" : "linear-gradient(135deg, #f59e0b, #fbbf24)", color: "#0a0a0f", fontWeight: 800, cursor: sending ? "not-allowed" : "pointer", fontSize: 16 }}
-                    >
+                    <button onClick={handleSend} disabled={sending} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: sending ? "rgba(251,191,36,0.3)" : "linear-gradient(135deg, #f59e0b, #fbbf24)", color: "#0a0a0f", fontWeight: 800, cursor: sending ? "not-allowed" : "pointer", fontSize: 16 }}>
                         {sending ? "送信中..." : "🎉 サンキューを送る"}
                     </button>
 
@@ -225,27 +221,53 @@ export default function ThanksPage() {
 
                 {/* サンキュー履歴 */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>THANKS HISTORY</div>
-                    {thanksList.length === 0 ? (
-                        <div style={{ color: "#6b7280", fontSize: 14 }}>まだサンキューはありません</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>THANKS HISTORY</div>
+                        {/* タブ */}
+                        <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 3 }}>
+                            {[
+                                { key: "all", label: "全員" },
+                                { key: "sent", label: "送った" },
+                                { key: "received", label: "受け取った" },
+                            ].map((tab) => (
+                                <button key={tab.key} onClick={() => setHistoryTab(tab.key as any)} style={{ padding: "5px 12px", borderRadius: 6, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, background: historyTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: historyTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {filteredList.length === 0 ? (
+                        <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 24 }}>まだサンキューはありません</div>
                     ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            {thanksList.map((item) => (
-                                <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: item.to_user_id === myId ? "rgba(251,191,36,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${item.to_user_id === myId ? "rgba(251,191,36,0.2)" : "rgba(255,255,255,0.05)"}` }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                        <div>
-                                            <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 4 }}>
-                                                <span style={{ color: "#818cf8", fontWeight: 700 }}>{item.from_name}</span>
-                                                <span> → </span>
-                                                <span style={{ color: item.to_user_id === myId ? "#fbbf24" : "#34d399", fontWeight: 700 }}>{item.to_name}</span>
-                                                {item.to_user_id === myId && <span style={{ marginLeft: 8, fontSize: 11, color: "#fbbf24" }}>（あなたへ）</span>}
+                            {filteredList.map((item) => {
+                                const isReceived = item.to_user_id === myId;
+                                const isSent = item.from_user_id === myId;
+                                return (
+                                    <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: isReceived ? "rgba(251,191,36,0.06)" : isSent ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${isReceived ? "rgba(251,191,36,0.2)" : isSent ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.05)"}` }}>
+                                        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                                            {/* 送り主アバター */}
+                                            {renderAvatar(item.from_avatar, item.from_name || "", 36)}
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                                    <div style={{ fontSize: 13, color: "#9ca3af" }}>
+                                                        <span style={{ color: isSent ? "#818cf8" : "#d1d5db", fontWeight: 700 }}>{item.from_name}</span>
+                                                        <span style={{ margin: "0 6px" }}>→</span>
+                                                        <span style={{ color: isReceived ? "#fbbf24" : "#d1d5db", fontWeight: 700 }}>{item.to_name}</span>
+                                                        {isReceived && <span style={{ marginLeft: 6, fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "rgba(251,191,36,0.15)", color: "#fbbf24" }}>あなたへ</span>}
+                                                        {isSent && <span style={{ marginLeft: 6, fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>あなたから</span>}
+                                                    </div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280", whiteSpace: "nowrap", marginLeft: 12 }}>{formatDateTime(item.created_at)}</div>
+                                                </div>
+                                                <div style={{ fontSize: 14, color: "#d1d5db", lineHeight: 1.6, background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
+                                                    {item.message}
+                                                </div>
                                             </div>
-                                            <div style={{ fontSize: 14, color: "#d1d5db", lineHeight: 1.6 }}>{item.message}</div>
                                         </div>
-                                        <div style={{ fontSize: 11, color: "#6b7280", whiteSpace: "nowrap", marginLeft: 12 }}>{formatDateTime(item.created_at)}</div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
