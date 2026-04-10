@@ -113,6 +113,8 @@ export default function UserDetailPage() {
     const [graphTab, setGraphTab] = useState<"points" | "breakdown">("points");
     const [monthlyKpiHistory, setMonthlyKpiHistory] = useState<MonthlyKpiRecord[]>([]);
     const [activeTab, setActiveTab] = useState<"overview" | "monthly_kpi">("overview");
+    const [mbti, setMbti] = useState("");
+    const [club, setClub] = useState("");
 
     useEffect(() => {
         const load = async () => {
@@ -127,6 +129,8 @@ export default function UserDetailPage() {
             setRole(profile?.role || "");
             setEducation(profile?.education || "");
             setAvatarUrl(profile?.avatar_url || null);
+            setMbti(profile?.mbti || "");
+            setClub(profile?.club || "");
             setStartedAt(profile?.started_at || null);
 
             if (profile?.department_id) {
@@ -241,6 +245,8 @@ export default function UserDetailPage() {
                                 {role && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 600 }}>👤 {role}</span>}
                                 {departmentName && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(6,182,212,0.15)", border: "1px solid rgba(6,182,212,0.3)", fontSize: 12, color: "#06b6d4", fontWeight: 600 }}>🏢 {departmentName}</span>}
                                 {education && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>🎓 {education}</span>}
+                                {mbti && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 600 }}>🧠 {mbti}</span>}
+                                {club && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.3)", fontSize: 12, color: "#fbbf24", fontWeight: 600 }}>⚽ {club}</span>}
                                 {startedAt && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 12, color: "#34d399", fontWeight: 600 }}>📅 参加 {activeDays}日目</span>}
                             </div>
                         </div>
