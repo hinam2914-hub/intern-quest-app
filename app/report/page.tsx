@@ -24,6 +24,45 @@ function toJSTDateOnly(value: string): string {
     return `${y}-${m}-${d}`;
 }
 
+const TEMPLATES = [
+    {
+        label: "📋 基本",
+        content: `【今日やったこと】
+・
+
+【学んだこと・気づき】
+・
+
+【明日やること】
+・`,
+    },
+    {
+        label: "📞 営業",
+        content: `【架電・商談】
+・架電数：
+・アポ獲得：
+・商談数：
+
+【成果・気づき】
+・
+
+【明日の目標】
+・`,
+    },
+    {
+        label: "💡 振り返り",
+        content: `【KPT振り返り】
+Keep（続けること）：
+・
+
+Problem（課題）：
+・
+
+Try（試すこと）：
+・`,
+    },
+];
+
 export default function ReportPage() {
     const router = useRouter();
     const [text, setText] = useState("");
@@ -32,6 +71,7 @@ export default function ReportPage() {
     const [success, setSuccess] = useState(false);
     const [kpiItems, setKpiItems] = useState<KpiItem[]>([]);
     const [kpiValues, setKpiValues] = useState<Record<string, number>>({});
+    const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -40,6 +80,17 @@ export default function ReportPage() {
         };
         load();
     }, []);
+
+    const handleApplyTemplate = (index: number) => {
+        if (selectedTemplate === index) {
+            // 同じテンプレートをもう一度押したら解除
+            setText("");
+            setSelectedTemplate(null);
+        } else {
+            setText(TEMPLATES[index].content);
+            setSelectedTemplate(index);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!text.trim()) { setMessage("日報を書いてください"); return; }
@@ -64,7 +115,6 @@ export default function ReportPage() {
         const { error: submissionError } = await supabase.from("submissions").insert({ user_id: user.id, content: text.trim(), created_at: nowIso });
         if (submissionError) { setMessage("日報の保存に失敗しました"); setLoading(false); return; }
 
-        // KPIログを保存
         const kpiLogs = Object.entries(kpiValues)
             .filter(([, v]) => v > 0)
             .map(([kpi_item_id, value]) => ({ user_id: user.id, kpi_item_id, value, created_at: nowIso }));
@@ -107,6 +157,7 @@ export default function ReportPage() {
         setSuccess(true);
         setMessage(bonus > 0 ? `+${addPoints}pt 獲得！連続提出ボーナス +${bonus}pt も獲得しました 🎉` : `+${addPoints}pt 獲得しました！`);
         setText("");
+        setSelectedTemplate(null);
         setLoading(false);
     };
 
@@ -167,12 +218,31 @@ export default function ReportPage() {
                 )}
 
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, backdropFilter: "blur(10px)" }}>
-                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TODAY'S REPORT</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>TODAY'S REPORT</div>
+                        {/* テンプレートボタン */}
+                        <div style={{ display: "flex", gap: 8 }}>
+                            {TEMPLATES.map((tmpl, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => handleApplyTemplate(i)}
+                                    style={{
+                                        padding: "5px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)",
+                                        background: selectedTemplate === i ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)",
+                                        color: selectedTemplate === i ? "#fff" : "#9ca3af",
+                                        fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.2s"
+                                    }}
+                                >
+                                    {tmpl.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <textarea
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         placeholder="今日やったこと、学んだこと、気づきを書いてください..."
-                        style={{ width: "100%", height: 240, padding: 16, borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, lineHeight: 1.7, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }}
+                        style={{ width: "100%", height: 280, padding: 16, borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, lineHeight: 1.8, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }}
                     />
                     <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
                         <button
