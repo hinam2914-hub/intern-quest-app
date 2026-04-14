@@ -218,6 +218,7 @@ export default function MyPage() {
     const [growthStatus, setGrowthStatus] = useState("Onboarding");
     const [growthRank, setGrowthRank] = useState("");
     const [growthGrade, setGrowthGrade] = useState("");
+    const [themeColor, setThemeColor] = useState("#6366f1");
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -248,6 +249,7 @@ export default function MyPage() {
             setEducation(profile.education || "");
             setDepartmentId((profileData as any)?.department_id || "");
             setAvatarUrl((profileData as any)?.avatar_url || null);
+            setThemeColor((profileData as any)?.theme_color || "#6366f1");
             setGrowthRank((profileData as any)?.growth_rank || "");
             setGrowthGrade((profileData as any)?.growth_grade || "");
             // 育成ステータス自動判定
@@ -393,7 +395,7 @@ export default function MyPage() {
             {showNameModal && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div style={{ background: "#0f0f1a", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 20, padding: 40, width: 400 }}>
-                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 8 }}>INTERN QUEST</div>
+                        <div style={{ fontSize: 12, color: themeColor, fontWeight: 700, letterSpacing: 3, marginBottom: 8 }}>INTERN QUEST</div>
                         <h2 style={{ fontSize: 24, fontWeight: 800, color: "#f9fafb", margin: "0 0 8px" }}>名前を教えてください</h2>
                         <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 24px" }}>ランキングや管理画面に表示されます</p>
                         <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="例：田中太郎" onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
@@ -439,12 +441,12 @@ export default function MyPage() {
                             )}
                         </div>
                         <div>
-                            <div style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>INTERN QUEST</div>
+                            <div style={{ fontSize: 11, color: themeColor, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>INTERN QUEST</div>
                             <h1 style={{ fontSize: 26, fontWeight: 800, color: "#f9fafb", margin: 0, lineHeight: 1 }}>{name || "名前未設定"}</h1>
                         </div>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => router.push("/report")} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>📋 日報提出</button>
+                        <button onClick={() => router.push("/report")} style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>📋 日報提出</button>
                         <button onClick={() => router.push("/menu")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>☰ メニュー</button>
                     </div>
                 </div>
