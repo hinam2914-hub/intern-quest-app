@@ -33,7 +33,7 @@ export default function ProfileUploadPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-            const { data: profile } = await supabase.from("profiles").select("name, avatar_url, mbti, club").eq("id", user.id).single();
+            const { data: profile } = await supabase.from("profiles").select("name, avatar_url, mbti, club, theme_color").eq("id", user.id).single();
             if (profile) {
                 setName(profile.name || "");
                 setAvatarUrl(profile.avatar_url || null);
@@ -94,7 +94,13 @@ export default function ProfileUploadPage() {
     };
 
     const currentImage = preview || avatarUrl;
-
+    if (loading) {
+        return (
+            <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ color: "#6366f1", fontSize: 18, fontWeight: 700 }}>Loading...</div>
+            </main>
+        );
+    }
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
