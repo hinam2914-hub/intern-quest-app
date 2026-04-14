@@ -66,6 +66,7 @@ function formatReason(reason?: string | null): string {
     if (reason === "thanks_received") return "サンキュー受領";
     if (reason === "shop_purchase") return "ショップ購入";
     if (reason === "admin_edit") return "管理者編集";
+    if (reason === "team_achievement") return "チーム達成ボーナス";
     return reason;
 }
 
