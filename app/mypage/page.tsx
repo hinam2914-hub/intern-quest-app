@@ -216,6 +216,8 @@ export default function MyPage() {
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
     const [growthStatus, setGrowthStatus] = useState("Onboarding");
+    const [growthRank, setGrowthRank] = useState("");
+    const [growthGrade, setGrowthGrade] = useState("");
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -246,6 +248,8 @@ export default function MyPage() {
             setEducation(profile.education || "");
             setDepartmentId((profileData as any)?.department_id || "");
             setAvatarUrl((profileData as any)?.avatar_url || null);
+            setGrowthRank((profileData as any)?.growth_rank || "");
+            setGrowthGrade((profileData as any)?.growth_grade || "");
             // 育成ステータス自動判定
             const rawStatus = (profileData as any)?.growth_status || "Onboarding";
             const autoStatus = (() => {
@@ -491,29 +495,26 @@ export default function MyPage() {
                     {/* 育成ステータス */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>GROWTH STATUS</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                            <div style={{ padding: "8px 20px", borderRadius: 10, background: getStatusColor(growthStatus), fontSize: 18, fontWeight: 900, color: "#fff", boxShadow: "0 0 20px rgba(99,102,241,0.3)" }}>
-                                {growthStatus}
+                        {growthRank ? (
+                            <div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                                    <div style={{ padding: "6px 16px", borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", fontSize: 20, fontWeight: 900, color: "#fff" }}>
+                                        {growthRank}
+                                    </div>
+                                    {growthGrade && (
+                                        <div style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(255,255,255,0.08)", fontSize: 14, fontWeight: 700, color: "#d1d5db" }}>
+                                            {growthGrade}
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{ fontSize: 13, color: "#6b7280" }}>社内育成フェーズ</div>
                             </div>
-                            <div style={{ fontSize: 13, color: "#9ca3af" }}>{getStatusDesc(growthStatus)}</div>
-                        </div>
-                        <div style={{ marginTop: 16, display: "flex", gap: 6 }}>
-                            {["Onboarding", "Basic", "Active", "Core", "Leader"].map((s, i, arr) => {
-                                const currentIdx = arr.indexOf(growthStatus);
-                                const isDone = i <= currentIdx;
-                                return (
-                                    <div key={s} style={{ flex: 1, height: 4, borderRadius: 999, background: isDone ? getStatusColor(growthStatus) : "rgba(255,255,255,0.08)" }} />
-                                );
-                            })}
-                        </div>
-                        <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6b7280" }}>
-                            {["Onboarding", "Basic", "Active", "Core", "Leader"].map(s => (
-                                <span key={s} style={{ color: s === growthStatus ? "#f9fafb" : "#6b7280", fontWeight: s === growthStatus ? 700 : 400 }}>{s}</span>
-                            ))}
-                        </div>
+                        ) : (
+                            <div style={{ fontSize: 14, color: "#6b7280" }}>未設定（管理者が設定します）</div>
+                        )}
                     </div>
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>MARKET RANK</div>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>EFFORT RANK</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                             <div style={{ width: 72, height: 72, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", boxShadow: "0 0 24px rgba(99,102,241,0.4)" }}>{rank2}</div>
                             <div>
