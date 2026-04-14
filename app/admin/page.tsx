@@ -17,7 +17,7 @@ type RequestRow = { id: string; user_id: string; shop_item_id: string; cost: num
 type KpiStatus = { userId: string; userName: string; kpiId: string; kpiTitle: string; unit: string; target: number; value: number };
 type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
 type ContentCompletion = { userId: string; userName: string; contentId: string; contentTitle: string; created_at: string };
-type Team = { id: string; name: string; color: string };
+type Team = { id: string; name: string; color: string; leader_id?: string };
 type Department = { id: string; name: string; code: string };
 type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; officialTarget?: number; };
 type DeptReport = { id: string; department_id: string; year_month: string; content: string; created_at: string; deptName?: string; };
@@ -348,10 +348,31 @@ export default function AdminPage() {
         setApprovingKpi(kpi.id);
         const nowIso = new Date().toISOString();
         await supabase.from("monthly_kpi").update({ approved: true, approved_at: nowIso, points_awarded: kpi.points_awarded }).eq("id", kpi.id);
+
+        // 本人にポイント付与
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", kpi.user_id).single();
         const current = pointRow?.points || 0;
         await supabase.from("user_points").update({ points: current + kpi.points_awarded }).eq("id", kpi.user_id);
         await supabase.from("points_history").insert({ user_id: kpi.user_id, change: kpi.points_awarded, reason: "kpi_achievement", created_at: nowIso });
+
+        // チーム達成ボーナス（100%以上の場合）
+        const rate = kpi.target > 0 ? Math.round((kpi.result / kpi.target) * 100) : 0;
+        if (rate >= 100) {
+            // このユーザーのチームを取得
+            const { data: profileRow } = await supabase.from("profiles").select("team_id").eq("id", kpi.user_id).single();
+            const teamId = profileRow?.team_id;
+            if (teamId) {
+                const team = teams.find(t => t.id === teamId);
+                const isLeader = team?.leader_id === kpi.user_id;
+                const bonusPt = isLeader ? 10 : 3;
+
+                const { data: bonusPointRow } = await supabase.from("user_points").select("points").eq("id", kpi.user_id).single();
+                const bonusCurrent = bonusPointRow?.points || 0;
+                await supabase.from("user_points").update({ points: bonusCurrent + bonusPt }).eq("id", kpi.user_id);
+                await supabase.from("points_history").insert({ user_id: kpi.user_id, change: bonusPt, reason: "team_achievement", created_at: nowIso });
+            }
+        }
+
         setMonthlyKpis(prev => prev.map(k => k.id === kpi.id ? { ...k, approved: true } : k));
         setAllMonthlyKpis(prev => prev.map(k => k.id === kpi.id ? { ...k, approved: true } : k));
         setApprovingKpi(null);
@@ -814,7 +835,23 @@ export default function AdminPage() {
                                             <select value={u.team_id || ""} onChange={(e) => handleAssignTeam(u.id, e.target.value)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", cursor: "pointer" }}>
                                                 <option value="">チームなし</option>
                                                 {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                            </select>
+                                            </select>// チーム選択のselectの後に追加
+                                            <button
+                                                onClick={async () => {
+                                                    const userTeam = teams.find(t => t.id === u.team_id);
+                                                    if (!userTeam) return;
+                                                    await supabase.from("teams").update({ leader_id: u.id }).eq("id", userTeam.id);
+                                                    setTeams(prev => prev.map(t => t.id === userTeam.id ? { ...t, leader_id: u.id } : t));
+                                                }}
+                                                style={{
+                                                    padding: "6px 12px", borderRadius: 8, border: "none",
+                                                    background: teams.find(t => t.id === u.team_id)?.leader_id === u.id ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.05)",
+                                                    color: teams.find(t => t.id === u.team_id)?.leader_id === u.id ? "#f59e0b" : "#6b7280",
+                                                    fontSize: 12, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap"
+                                                }}
+                                            >
+                                                {teams.find(t => t.id === u.team_id)?.leader_id === u.id ? "👑 リーダー" : "リーダーにする"}
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
