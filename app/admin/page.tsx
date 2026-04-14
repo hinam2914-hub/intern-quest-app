@@ -9,7 +9,10 @@ type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
-type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; growthStatus?: string; };
+type UserDetail = {
+    id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; growthStatus?: string; growthRank?: string;
+    growthGrade?: string;
+};
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
 type AnnounceRow = { id: string; title: string; content: string; created_at: string; is_active: boolean };
@@ -174,6 +177,8 @@ export default function AdminPage() {
                     department_id: p.department_id || "",
                     deptName: deptRows?.find((d: any) => d.id === p.department_id)?.name || "",
                     growthStatus: p.growth_status || "Onboarding",
+                    growthRank: p.growth_rank || "",
+                    growthGrade: p.growth_grade || "",
                 };
             });
             setUserDetails(details);
@@ -593,27 +598,39 @@ export default function AdminPage() {
                                                             <div style={{ fontSize: 11, color: "#6b7280" }}>{i + 1}位</div>
                                                         </div>
                                                     </div>
-                                                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                                                        <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
-                                                        {[10, 50, 100].map(amount => (
-                                                            <button key={amount} onClick={() => handleAddPoints(u.id, amount)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+{amount}</button>
-                                                        ))}
-                                                        <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
+                                                    <div style={{ display: "flex", gap: 4 }}>
                                                         <select
-                                                            value={u.growthStatus || "Onboarding"}
+                                                            value={u.growthRank || ""}
                                                             onChange={async (e) => {
-                                                                await supabase.from("profiles").update({ growth_status: e.target.value }).eq("id", u.id);
-                                                                setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, growthStatus: e.target.value } : u2));
+                                                                const val = e.target.value;
+                                                                await supabase.from("profiles").update({ growth_rank: val }).eq("id", u.id);
+                                                                setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, growthRank: val } : u2));
                                                             }}
-                                                            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 12, outline: "none", cursor: "pointer" }}
+                                                            style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 12, outline: "none", cursor: "pointer" }}
                                                         >
-                                                            {["Onboarding", "Basic", "Active", "Core", "Leader"].map(s => (
-                                                                <option key={s} value={s}>{s}</option>
+                                                            <option value="">ランク</option>
+                                                            {["S1", "S2", "S3", "S4", "P1", "P2", "P3", "P4"].map(r => (
+                                                                <option key={r} value={r}>{r}</option>
                                                             ))}
+                                                        </select>
+                                                        <select
+                                                            value={u.growthGrade || ""}
+                                                            onChange={async (e) => {
+                                                                const val = e.target.value;
+                                                                await supabase.from("profiles").update({ growth_grade: val }).eq("id", u.id);
+                                                                setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, growthGrade: val } : u2));
+                                                            }}
+                                                            style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 12, outline: "none", cursor: "pointer" }}
+                                                        >
+                                                            <option value="">グレード</option>
+                                                            <option value="Junior">Junior</option>
+                                                            <option value="Middle">Middle</option>
+                                                            <option value="Senior">Senior</option>
                                                         </select>
                                                     </div>
                                                 </div>
-                                            )}
+                                            )
+                                            }
                                         </div>
                                     );
                                 })}
@@ -1476,6 +1493,6 @@ export default function AdminPage() {
                     </div>
                 )}
             </div>
-        </main>
+        </main >
     );
 }
