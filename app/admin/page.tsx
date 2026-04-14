@@ -318,7 +318,6 @@ export default function AdminPage() {
         if (newName) await supabase.from("profiles").update({ name: newName }).eq("id", userId);
         await supabase.from("user_points").update({ points: editingPoints }).eq("id", userId);
         await supabase.from("points_history").insert({ user_id: userId, change: 0, reason: "admin_edit", created_at: new Date().toISOString() });
-        if (reason === "team_achievement") return "チーム達成ボーナス";
         setUserDetails((prev) => prev.map((u2) => u2.id === userId ? { ...u2, name: newName, points: editingPoints } : u2));
         setEditingUser(null);
         setSavingUser(null);
