@@ -69,7 +69,21 @@ function formatReason(reason?: string | null): string {
     if (reason === "team_achievement") return "チーム達成ボーナス";
     return reason;
 }
+function getStatusColor(status: string): string {
+    if (status === "Leader") return "linear-gradient(135deg, #f59e0b, #ef4444)";
+    if (status === "Core") return "linear-gradient(135deg, #6366f1, #8b5cf6)";
+    if (status === "Active") return "linear-gradient(135deg, #06b6d4, #3b82f6)";
+    if (status === "Basic") return "linear-gradient(135deg, #34d399, #10b981)";
+    return "linear-gradient(135deg, #374151, #6b7280)";
+}
 
+function getStatusDesc(status: string): string {
+    if (status === "Leader") return "チームを牽引するリーダー";
+    if (status === "Core") return "組織の中核メンバー";
+    if (status === "Active") return "安定稼働中";
+    if (status === "Basic") return "基礎習得中";
+    return "オンボーディング中";
+}
 function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
 function getExp(points: number): number { return points % 100; }
 function getBadgeLabel(level: number): string {
@@ -201,6 +215,7 @@ export default function MyPage() {
     const [todayLearnDone, setTodayLearnDone] = useState(false);
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
+    const [growthStatus, setGrowthStatus] = useState("Onboarding");
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -231,6 +246,17 @@ export default function MyPage() {
             setEducation(profile.education || "");
             setDepartmentId((profileData as any)?.department_id || "");
             setAvatarUrl((profileData as any)?.avatar_url || null);
+            // 育成ステータス自動判定
+            const rawStatus = (profileData as any)?.growth_status || "Onboarding";
+            const autoStatus = (() => {
+                if (points >= 1500 || rank2 === "S" || rank2 === "SS" || thanksCount >= 10) return "Leader";
+                if (points >= 700 || submissionCount >= 60) return "Core";
+                if (points >= 300 || submissionCount >= 30 || streak >= 7) return "Active";
+                if (points >= 100 || submissionCount >= 10) return "Basic";
+                return "Onboarding";
+            })();
+            // 管理者が上書きしていれば優先
+            setGrowthStatus(rawStatus !== "Onboarding" ? rawStatus : autoStatus);
             setMbti((profileData as any)?.mbti || "");
             setClub((profileData as any)?.club || "");
             if (profile.started_at) {
@@ -313,7 +339,21 @@ export default function MyPage() {
             });
             setMyKpis(kpis);
         }
+        function getStatusColor(status: string): string {
+            if (status === "Leader") return "linear-gradient(135deg, #f59e0b, #ef4444)";
+            if (status === "Core") return "linear-gradient(135deg, #6366f1, #8b5cf6)";
+            if (status === "Active") return "linear-gradient(135deg, #06b6d4, #3b82f6)";
+            if (status === "Basic") return "linear-gradient(135deg, #34d399, #10b981)";
+            return "linear-gradient(135deg, #374151, #6b7280)";
+        }
 
+        function getStatusDesc(status: string): string {
+            if (status === "Leader") return "チームを牽引するリーダー";
+            if (status === "Core") return "組織の中核メンバー";
+            if (status === "Active") return "安定稼働中";
+            if (status === "Basic") return "基礎習得中";
+            return "オンボーディング中";
+        }
         setLoading(false);
     };
 
@@ -448,7 +488,30 @@ export default function MyPage() {
                             </div>
                         </div>
                     </div>
-
+                    {/* 育成ステータス */}
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>GROWTH STATUS</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                            <div style={{ padding: "8px 20px", borderRadius: 10, background: getStatusColor(growthStatus), fontSize: 18, fontWeight: 900, color: "#fff", boxShadow: "0 0 20px rgba(99,102,241,0.3)" }}>
+                                {growthStatus}
+                            </div>
+                            <div style={{ fontSize: 13, color: "#9ca3af" }}>{getStatusDesc(growthStatus)}</div>
+                        </div>
+                        <div style={{ marginTop: 16, display: "flex", gap: 6 }}>
+                            {["Onboarding", "Basic", "Active", "Core", "Leader"].map((s, i, arr) => {
+                                const currentIdx = arr.indexOf(growthStatus);
+                                const isDone = i <= currentIdx;
+                                return (
+                                    <div key={s} style={{ flex: 1, height: 4, borderRadius: 999, background: isDone ? getStatusColor(growthStatus) : "rgba(255,255,255,0.08)" }} />
+                                );
+                            })}
+                        </div>
+                        <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6b7280" }}>
+                            {["Onboarding", "Basic", "Active", "Core", "Leader"].map(s => (
+                                <span key={s} style={{ color: s === growthStatus ? "#f9fafb" : "#6b7280", fontWeight: s === growthStatus ? 700 : 400 }}>{s}</span>
+                            ))}
+                        </div>
+                    </div>
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>MARKET RANK</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
