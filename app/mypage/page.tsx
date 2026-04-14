@@ -498,21 +498,34 @@ export default function MyPage() {
                         {/* バー表示 */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                             {[
-                                { label: "学歴", value: education ? 8 : 0, max: 10, color: "#6366f1" },
-                                { label: "活動期間", value: Math.min(activeDays * 0.5, 15), max: 15, color: "#8b5cf6" },
-                                { label: "実績KPI", value: Math.min(kpiCount * 3, 15), max: 15, color: "#06b6d4" },
-                                { label: "再現性", value: Math.min(streak * 2, 20), max: 20, color: "#f59e0b" },
-                                { label: "リーダーシップ", value: Math.min(thanksCount * 2, 10), max: 10, color: "#ec4899" },
-                                { label: "アウトプット", value: Math.min(submissionCount * 2, 20), max: 20, color: "#34d399" },
-                                { label: "メタ認知", value: Math.min(level, 10), max: 10, color: "#f97316" },
+                                { label: "学歴", value: education ? 8 : 0, max: 10, color: "#6366f1", tip: "学歴を登録するとスコアが上がります" },
+                                { label: "活動期間", value: Math.min(activeDays * 0.5, 15), max: 15, color: "#8b5cf6", tip: "インターン参加日数に応じて上がります" },
+                                { label: "実績KPI", value: Math.min(kpiCount * 3, 15), max: 15, color: "#06b6d4", tip: "KPIを入力するたびに上がります" },
+                                { label: "再現性", value: Math.min(streak * 2, 20), max: 20, color: "#f59e0b", tip: "日報を連続提出するほど上がります" },
+                                { label: "リーダーシップ", value: Math.min(thanksCount * 2, 10), max: 10, color: "#ec4899", tip: "サンキューを受け取るほど上がります" },
+                                { label: "アウトプット", value: Math.min(submissionCount * 2, 20), max: 20, color: "#34d399", tip: "日報を提出するたびに上がります" },
+                                { label: "メタ認知", value: Math.min(level, 10), max: 10, color: "#f97316", tip: "レベルアップするたびに上がります" },
                             ].map((axis) => (
-                                <div key={axis.label}>
+                                <div key={axis.label} style={{ position: "relative" }}
+                                    onMouseEnter={(e) => {
+                                        const tip = document.getElementById(`tip-${axis.label}`);
+                                        if (tip) tip.style.display = "block";
+                                    }}
+                                    onMouseLeave={() => {
+                                        const tip = document.getElementById(`tip-${axis.label}`);
+                                        if (tip) tip.style.display = "none";
+                                    }}
+                                >
                                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>
-                                        <span>{axis.label}</span>
+                                        <span style={{ cursor: "help", borderBottom: "1px dashed rgba(255,255,255,0.2)" }}>{axis.label} 💡</span>
                                         <span style={{ color: axis.color, fontWeight: 700 }}>{Math.round(axis.value)} / {axis.max}</span>
                                     </div>
                                     <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
                                         <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999, transition: "width 0.8s ease" }} />
+                                    </div>
+                                    {/* ツールチップ */}
+                                    <div id={`tip-${axis.label}`} style={{ display: "none", position: "absolute", top: -36, left: 0, background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#c7d2fe", whiteSpace: "nowrap", zIndex: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
+                                        {axis.tip}
                                     </div>
                                 </div>
                             ))}
