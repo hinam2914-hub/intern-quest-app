@@ -26,6 +26,7 @@ export default function ProfileUploadPage() {
     const [club, setClub] = useState("");
     const [savingProfile, setSavingProfile] = useState(false);
     const [profileMessage, setProfileMessage] = useState("");
+    const [themeColor, setThemeColor] = useState("#6366f1");
 
     useEffect(() => {
         const load = async () => {
@@ -36,6 +37,7 @@ export default function ProfileUploadPage() {
             if (profile) {
                 setName(profile.name || "");
                 setAvatarUrl(profile.avatar_url || null);
+                setThemeColor((profile as any)?.theme_color || "#6366f1");
                 setMbti(profile.mbti || "");
                 setClub(profile.club || "");
             }
@@ -82,18 +84,14 @@ export default function ProfileUploadPage() {
         if (!userId) return;
         setSavingProfile(true);
         setProfileMessage("");
-        await supabase.from("profiles").update({ mbti: mbti || null, club: club.trim() || null }).eq("id", userId);
+        await supabase.from("profiles").update({
+            mbti: mbti || null,
+            club: club.trim() || null,
+            theme_color: themeColor,
+        }).eq("id", userId);
         setProfileMessage("✅ 保存しました！");
         setSavingProfile(false);
     };
-
-    if (loading) {
-        return (
-            <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ color: "#6366f1", fontSize: 18, fontWeight: 700 }}>Loading...</div>
-            </main>
-        );
-    }
 
     const currentImage = preview || avatarUrl;
 
@@ -195,7 +193,46 @@ export default function ProfileUploadPage() {
                             style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }}
                         />
                     </div>
-
+                    {/* テーマカラー */}
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🎨 テーマカラー</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginBottom: 16 }}>
+                            {[
+                                { color: "#6366f1", label: "インディゴ" },
+                                { color: "#8b5cf6", label: "パープル" },
+                                { color: "#ec4899", label: "ピンク" },
+                                { color: "#ef4444", label: "レッド" },
+                                { color: "#f59e0b", label: "アンバー" },
+                                { color: "#34d399", label: "エメラルド" },
+                                { color: "#06b6d4", label: "シアン" },
+                                { color: "#3b82f6", label: "ブルー" },
+                                { color: "#84cc16", label: "ライム" },
+                                { color: "#f97316", label: "オレンジ" },
+                                { color: "#ffffff", label: "ホワイト" },
+                                { color: "#6b7280", label: "グレー" },
+                            ].map(({ color, label }) => (
+                                <div
+                                    key={color}
+                                    onClick={() => setThemeColor(color)}
+                                    title={label}
+                                    style={{
+                                        width: "100%", aspectRatio: "1", borderRadius: "50%", background: color,
+                                        cursor: "pointer", border: themeColor === color ? "3px solid #fff" : "3px solid transparent",
+                                        boxShadow: themeColor === color ? `0 0 12px ${color}` : "none",
+                                        transition: "all 0.2s",
+                                    }}
+                                />
+                            ))}
+                        </div>
+                        <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: themeColor, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                            💾 保存する
+                        </button>
+                        {profileMessage && (
+                            <div style={{ marginTop: 12, padding: "10px 16px", borderRadius: 8, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 13, color: "#34d399", fontWeight: 600 }}>
+                                {profileMessage}
+                            </div>
+                        )}
+                    </div>
                     <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: savingProfile ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: savingProfile ? "not-allowed" : "pointer", fontSize: 14 }}>
                         {savingProfile ? "保存中..." : "💾 保存する"}
                     </button>
