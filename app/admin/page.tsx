@@ -9,7 +9,7 @@ type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
-type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; };
+type UserDetail = { id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; growthStatus?: string; };
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
 type AnnounceRow = { id: string; title: string; content: string; created_at: string; is_active: boolean };
@@ -173,6 +173,7 @@ export default function AdminPage() {
                     avatar_url: p.avatar_url || null,
                     department_id: p.department_id || "",
                     deptName: deptRows?.find((d: any) => d.id === p.department_id)?.name || "",
+                    growthStatus: p.growth_status || "Onboarding",
                 };
             });
             setUserDetails(details);
@@ -598,6 +599,18 @@ export default function AdminPage() {
                                                             <button key={amount} onClick={() => handleAddPoints(u.id, amount)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+{amount}</button>
                                                         ))}
                                                         <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
+                                                        <select
+                                                            value={u.growthStatus || "Onboarding"}
+                                                            onChange={async (e) => {
+                                                                await supabase.from("profiles").update({ growth_status: e.target.value }).eq("id", u.id);
+                                                                setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, growthStatus: e.target.value } : u2));
+                                                            }}
+                                                            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 12, outline: "none", cursor: "pointer" }}
+                                                        >
+                                                            {["Onboarding", "Basic", "Active", "Core", "Leader"].map(s => (
+                                                                <option key={s} value={s}>{s}</option>
+                                                            ))}
+                                                        </select>
                                                     </div>
                                                 </div>
                                             )}
