@@ -146,6 +146,10 @@ export default function LoginPage() {
                         {loading ? "ログイン中..." : "ログイン →"}
                     </button>
 
+                    <div style={{ marginTop: 20, textAlign: "center" }}>
+                        <span style={{ fontSize: 13, color: "#6b7280" }}>アカウントをお持ちでない方は </span>
+                        <button onClick={() => router.push("/register")} style={{ background: "none", border: "none", color: "#818cf8", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>新規登録</button>
+                    </div>
                     <div style={{ marginTop: 8, textAlign: "center" }}>
                         <button
                             onClick={() => router.push("/reset-password")}
