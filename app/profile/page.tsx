@@ -27,19 +27,25 @@ export default function ProfileUploadPage() {
     const [savingProfile, setSavingProfile] = useState(false);
     const [profileMessage, setProfileMessage] = useState("");
     const [themeColor, setThemeColor] = useState("#6366f1");
+    const [bgColor, setBgColor] = useState("#0a0a0f");
+    const [fontFamily, setFontFamily] = useState("Inter");
+    const [savingBgFont, setSavingBgFont] = useState(false);
+    const [bgFontMessage, setBgFontMessage] = useState("");
 
     useEffect(() => {
         const load = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-            const { data: profile } = await supabase.from("profiles").select("name, avatar_url, mbti, club, theme_color").eq("id", user.id).single();
+            const { data: profile } = await supabase.from("profiles").select("name, avatar_url, mbti, club, theme_color, bg_color, font_family").eq("id", user.id).single();
             if (profile) {
                 setName(profile.name || "");
                 setAvatarUrl(profile.avatar_url || null);
                 setThemeColor((profile as any)?.theme_color || "#6366f1");
                 setMbti(profile.mbti || "");
                 setClub(profile.club || "");
+                setBgColor((profile as any)?.bg_color || "#0a0a0f");
+                setFontFamily((profile as any)?.font_family || "Inter");
             }
             setLoading(false);
         };
@@ -92,7 +98,14 @@ export default function ProfileUploadPage() {
         setProfileMessage("✅ 保存しました！");
         setSavingProfile(false);
     };
-
+    const handleSaveBgFont = async () => {
+        if (!userId) return;
+        setSavingBgFont(true);
+        setBgFontMessage("");
+        await supabase.from("profiles").update({ bg_color: bgColor, font_family: fontFamily }).eq("id", userId);
+        setBgFontMessage("✅ 保存しました！");
+        setSavingBgFont(false);
+    };
     const currentImage = preview || avatarUrl;
     if (loading) {
         return (
@@ -229,6 +242,52 @@ export default function ProfileUploadPage() {
                                     }}
                                 />
                             ))}
+                            {/* 背景色・フォント設定 */}
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, marginBottom: 16 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🖥️ 背景・フォント設定</div>
+
+                                {/* 背景色 */}
+                                <div style={{ marginBottom: 24 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#d1d5db", marginBottom: 12 }}>背景色</div>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+                                        {[
+                                            { color: "#0a0a0f", label: "ダーク" },
+                                            { color: "#0f0f2e", label: "ネイビー" },
+                                            { color: "#1a0a2e", label: "ディープパープル" },
+                                            { color: "#0a1f0a", label: "ダークグリーン" },
+                                            { color: "#000000", label: "ブラック" },
+                                        ].map(({ color, label }) => (
+                                            <div key={color} onClick={() => setBgColor(color)} style={{ cursor: "pointer", textAlign: "center" }}>
+                                                <div style={{ width: "100%", aspectRatio: "1", borderRadius: 12, background: color, border: bgColor === color ? "3px solid #fff" : "3px solid rgba(255,255,255,0.2)", boxShadow: bgColor === color ? "0 0 12px rgba(255,255,255,0.3)" : "none", marginBottom: 6 }} />
+                                                <div style={{ fontSize: 11, color: bgColor === color ? "#f9fafb" : "#6b7280" }}>{label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* フォント */}
+                                <div style={{ marginBottom: 20 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#d1d5db", marginBottom: 12 }}>フォント</div>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {[
+                                            { font: "Inter", label: "Inter（デフォルト）", preview: "成長が可視化される" },
+                                            { font: "'Noto Sans JP', sans-serif", label: "Noto Sans（丸ゴシック）", preview: "成長が可視化される" },
+                                            { font: "'Courier New', monospace", label: "Monospace（等幅）", preview: "成長が可視化される" },
+                                            { font: "'Georgia', serif", label: "Serif（セリフ体）", preview: "成長が可視化される" },
+                                        ].map(({ font, label, preview }) => (
+                                            <div key={font} onClick={() => setFontFamily(font)} style={{ padding: "12px 16px", borderRadius: 10, border: `1px solid ${fontFamily === font ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"}`, background: fontFamily === font ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.02)", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                <span style={{ fontSize: 13, color: fontFamily === font ? "#818cf8" : "#9ca3af", fontWeight: 600 }}>{label}</span>
+                                                <span style={{ fontSize: 14, color: "#f9fafb", fontFamily: font }}>{preview}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button onClick={handleSaveBgFont} disabled={savingBgFont} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: savingBgFont ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                    {savingBgFont ? "保存中..." : "💾 保存する"}
+                                </button>
+                                {bgFontMessage && <div style={{ marginTop: 12, padding: "10px 16px", borderRadius: 8, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 13, color: "#34d399", fontWeight: 600 }}>{bgFontMessage}</div>}
+                            </div>
                         </div>
                         <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: themeColor, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
                             💾 保存する
