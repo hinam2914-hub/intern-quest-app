@@ -24,6 +24,7 @@ type Team = { id: string; name: string; color: string; leader_id?: string };
 type Department = { id: string; name: string; code: string };
 type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; officialTarget?: number; };
 type DeptReport = { id: string; department_id: string; year_month: string; content: string; created_at: string; deptName?: string; };
+type Resource = { id: string; title: string; description: string | null; resource_type: string; url: string | null; category: string | null; is_active: boolean; created_at: string; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -86,7 +87,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -138,6 +139,14 @@ export default function AdminPage() {
     const [reportContent, setReportContent] = useState("");
     const [reportSaving, setReportSaving] = useState(false);
     const [reportMessage, setReportMessage] = useState("");
+    const [resources, setResources] = useState<Resource[]>([]);
+    const [resourceTitle, setResourceTitle] = useState("");
+    const [resourceDesc, setResourceDesc] = useState("");
+    const [resourceType, setResourceType] = useState<"pdf" | "image" | "link">("link");
+    const [resourceUrl, setResourceUrl] = useState("");
+    const [resourceCategory, setResourceCategory] = useState("");
+    const [resourceSaving, setResourceSaving] = useState(false);
+    const [resourceMessage, setResourceMessage] = useState("");
 
     useEffect(() => {
         const load = async () => {
@@ -307,6 +316,8 @@ export default function AdminPage() {
                 deptName: deptRows?.find((d: any) => d.id === r.department_id)?.name || "不明",
             })));
             setLoading(false);
+            const { data: resourceRows } = await supabase.from("resources").select("*").order("created_at", { ascending: false });
+            setResources((resourceRows || []) as Resource[]);
         };
         load();
     }, [period, router]);
@@ -1495,6 +1506,81 @@ export default function AdminPage() {
                                             </div>
                                         );
                                     })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                {activeTab === "resources" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>📁 新規資料追加</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイトル</div>
+                                    <input value={resourceTitle} onChange={(e) => setResourceTitle(e.target.value)} placeholder="資料のタイトル" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>カテゴリ</div>
+                                    <input value={resourceCategory} onChange={(e) => setResourceCategory(e.target.value)} placeholder="例：営業資料・研修資料" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>説明</div>
+                                <input value={resourceDesc} onChange={(e) => setResourceDesc(e.target.value)} placeholder="資料の説明（任意）" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイプ</div>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    {[{ key: "link", label: "🔗 リンク" }, { key: "pdf", label: "📄 PDF" }, { key: "image", label: "🖼️ 画像" }].map(t => (
+                                        <button key={t.key} onClick={() => setResourceType(t.key as any)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: resourceType === t.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: resourceType === t.key ? "#fff" : "#9ca3af" }}>
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>URL</div>
+                                <input value={resourceUrl} onChange={(e) => setResourceUrl(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                            <button onClick={async () => {
+                                if (!resourceTitle.trim()) { setResourceMessage("タイトルを入力してください"); return; }
+                                setResourceSaving(true);
+                                const { data: { user } } = await supabase.auth.getUser();
+                                await supabase.from("resources").insert({ title: resourceTitle.trim(), description: resourceDesc.trim() || null, resource_type: resourceType, url: resourceUrl.trim() || null, category: resourceCategory.trim() || null, is_active: true, created_by: user?.id });
+                                const { data: rows } = await supabase.from("resources").select("*").order("created_at", { ascending: false });
+                                setResources((rows || []) as Resource[]);
+                                setResourceTitle(""); setResourceDesc(""); setResourceUrl(""); setResourceCategory("");
+                                setResourceMessage("✅ 資料を追加しました！");
+                                setResourceSaving(false);
+                            }} disabled={resourceSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                {resourceSaving ? "追加中..." : "📁 追加する"}
+                            </button>
+                            {resourceMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{resourceMessage}</div>}
+                        </div>
+
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RESOURCES</div>
+                            {resources.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>資料がありません</div> : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {resources.map(r => (
+                                        <div key={r.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${r.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <div>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: r.is_active ? "#f9fafb" : "#6b7280" }}>{r.title}</span>
+                                                    {r.category && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{r.category}</span>}
+                                                    <span style={{ fontSize: 11, color: "#6b7280" }}>{r.resource_type}</span>
+                                                </div>
+                                                {r.description && <div style={{ fontSize: 12, color: "#6b7280" }}>{r.description}</div>}
+                                            </div>
+                                            <button onClick={async () => {
+                                                await supabase.from("resources").update({ is_active: !r.is_active }).eq("id", r.id);
+                                                setResources(prev => prev.map(res => res.id === r.id ? { ...res, is_active: !res.is_active } : res));
+                                            }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: r.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: r.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                                {r.is_active ? "非表示" : "表示する"}
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
