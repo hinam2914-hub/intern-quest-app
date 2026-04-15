@@ -211,7 +211,7 @@ export default function MyPage() {
         [bgColor]);
 
     const cardBg = isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)";
-    const cardBorder = isLightBg ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
+    const cardBorder = isLightBg ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.08)";
     const inputBg = isLightBg ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.05)";
     const textPrimary = isLightBg ? "#1a1a2e" : "#f9fafb";
     const textSecondary = isLightBg ? "#4b5563" : "#9ca3af";
