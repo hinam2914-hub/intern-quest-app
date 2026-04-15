@@ -41,6 +41,7 @@ export default function MenuPage() {
         { icon: "🏆", label: "ランキング", desc: "全員のポイントランキングを確認", path: "/ranking", color: "#ef4444" },
         { icon: "📜", label: "ポイント履歴", desc: "獲得・使用したポイントの履歴", path: "/history", color: "#6b7280" },
         { icon: "📖", label: "使い方", desc: "Intern Questの使い方を確認する", path: "/onboarding", color: "#34d399" },
+        { icon: "📁", label: "参考資料BOX", desc: "業務に役立つ資料・リンクをまとめています", path: "/resources", color: "#34d399" },
     ];
 
     if (loading) {

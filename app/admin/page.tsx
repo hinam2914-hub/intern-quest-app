@@ -509,6 +509,7 @@ export default function AdminPage() {
                         { key: "teams", label: "チーム" },
                         { key: "monthly_kpi", label: "月次KPI" },
                         { key: "dept_stats", label: "部署別成績" },
+                        { key: "resources", label: "資料管理" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
