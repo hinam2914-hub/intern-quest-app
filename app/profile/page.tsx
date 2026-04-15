@@ -35,6 +35,11 @@ const BG_COLORS = [
     { color: "#2e0a0a", label: "レッド" },
     { color: "#2e0a1a", label: "ピンク" },
     { color: "#2e2a0a", label: "イエロー" },
+    { color: "#fce4ec", label: "ライトピンク" },
+    { color: "#f3e5f5", label: "ライトパープル" },
+    { color: "#e8f5e9", label: "ライトグリーン" },
+    { color: "#e3f2fd", label: "ライトブルー" },
+    { color: "#fff9e6", label: "ライトイエロー" },
 ];
 
 const FONTS = [
