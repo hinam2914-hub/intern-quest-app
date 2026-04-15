@@ -395,7 +395,7 @@ export default function MyPage() {
 
     return (
         <main style={{
-            minHeight: "100vh", background: bgColor, padding: "40px 24px 64px", fontFamily: fontFamily, color: isLightBg ? "#1a1a2e" : "#f9fafb"
+            minHeight: "100vh", background: bgColor, padding: "40px 24px 64px", fontFamily: fontFamily, color: isLightBg ? "#1a1a2e" : "#f9fafb",
         }}>
             {/* 名前入力モーダル */}
             {showNameModal && (
