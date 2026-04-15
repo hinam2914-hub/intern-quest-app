@@ -415,70 +415,125 @@ export default function MyPage() {
 
                 {message && <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>{message}</div>}
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16 }}>
-                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>TOTAL POINTS</div>
-                        <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{points.toLocaleString()}</div>
-                        <div style={{ fontSize: 16, color: themeColor, fontWeight: 600, marginTop: 4 }}>pt</div>
-                        <div style={{ marginTop: 16, padding: "6px 12px", background: "rgba(99,102,241,0.1)", borderRadius: 6, display: "inline-block" }}>
-                            <span style={{ fontSize: 12, color: "#818cf8" }}>🏆 順位 {rank || "-"}位</span>
-                        </div>
-                    </div>
-
-                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>LEVEL</div>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                            <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>Lv.{level}</div>
-                            <div style={{ padding: "4px 10px", borderRadius: 6, background: badgeColor, fontSize: 12, fontWeight: 700, color: "#fff" }}>{badgeLabel}</div>
-                        </div>
-                        <div style={{ marginTop: 16 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: textMuted, marginBottom: 6 }}>
-                                <span>EXP {exp}/100</span><span>次まで {100 - exp}</span>
-                            </div>
-                            <div style={{ height: 6, borderRadius: 999, background: barBg }}>
-                                <div style={{ height: "100%", width: `${exp}%`, background: `linear-gradient(90deg, ${themeColor}, ${themeColor}aa)`, borderRadius: 999 }} />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>GROWTH STATUS</div>
-                        {growthRank ? (
-                            <div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                                    <div style={{ padding: "6px 16px", borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", fontSize: 20, fontWeight: 900, color: "#fff" }}>{growthRank}</div>
-                                    {growthGrade && <div style={{ padding: "6px 14px", borderRadius: 8, background: inputBg, fontSize: 14, fontWeight: 700, color: textPrimary }}>{growthGrade}</div>}
+                {/* メイングリッド 案A：2行レイアウト */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
+                    {/* 上段：3カード */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+                        {[
+                            {
+                                title: "TOTAL POINTS", tip: "獲得したポイントの累計です", content: (
+                                    <div>
+                                        <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{points.toLocaleString()}</div>
+                                        <div style={{ fontSize: 16, color: themeColor, fontWeight: 600, marginTop: 4 }}>pt</div>
+                                        <div style={{ marginTop: 12, padding: "6px 12px", background: "rgba(99,102,241,0.1)", borderRadius: 6, display: "inline-block" }}>
+                                            <span style={{ fontSize: 12, color: "#818cf8" }}>🏆 順位 {rank || "-"}位</span>
+                                        </div>
+                                    </div>
+                                )
+                            },
+                            {
+                                title: "LEVEL", tip: "ポイントが100pt貯まるごとにレベルアップします", content: (
+                                    <div>
+                                        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                                            <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>Lv.{level}</div>
+                                            <div style={{ padding: "4px 10px", borderRadius: 6, background: badgeColor, fontSize: 12, fontWeight: 700, color: "#fff" }}>{badgeLabel}</div>
+                                        </div>
+                                        <div style={{ marginTop: 16 }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: textMuted, marginBottom: 6 }}>
+                                                <span>EXP {exp}/100</span><span>次まで {100 - exp}</span>
+                                            </div>
+                                            <div style={{ height: 6, borderRadius: 999, background: barBg }}>
+                                                <div style={{ height: "100%", width: `${exp}%`, background: `linear-gradient(90deg, ${themeColor}, ${themeColor}aa)`, borderRadius: 999 }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            },
+                            {
+                                title: "STREAK", tip: "日報を連続提出した日数です", content: (
+                                    <div>
+                                        <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{streak}</div>
+                                        <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 600, marginTop: 4 }}>日連続</div>
+                                        <div style={{ marginTop: 16, fontSize: 13, color: textSecondary }}>{actionMessage}</div>
+                                    </div>
+                                )
+                            },
+                        ].map((card) => (
+                            <div key={card.title} style={{ position: "relative" }}
+                                onMouseEnter={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "block"; }}
+                                onMouseLeave={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "none"; }}
+                            >
+                                <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24, height: "100%", boxSizing: "border-box" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>{card.title}</div>
+                                        <div style={{ fontSize: 12, color: textMuted, cursor: "help" }}>💡</div>
+                                    </div>
+                                    {card.content}
                                 </div>
-                                <div style={{ fontSize: 13, color: textMuted }}>社内育成フェーズ</div>
+                                <div id={`tip-card-${card.title}`} style={{ display: "none", position: "absolute", top: -44, left: 0, background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 14px", fontSize: 12, color: "#c7d2fe", whiteSpace: "nowrap", zIndex: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
+                                    {card.tip}
+                                </div>
                             </div>
-                        ) : (
-                            <div style={{ fontSize: 14, color: textMuted }}>未設定（管理者が設定します）</div>
-                        )}
+                        ))}
                     </div>
 
-                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>EFFORT RANK</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                            <div style={{ width: 72, height: 72, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", boxShadow: "0 0 24px rgba(99,102,241,0.4)" }}>{rank2}</div>
-                            <div>
-                                <div style={{ fontSize: 13, color: textMuted, marginBottom: 4 }}>スコア</div>
-                                <div style={{ fontSize: 28, fontWeight: 800, color: textPrimary }}>{rankScore}</div>
-                                <div style={{ fontSize: 11, color: textMuted }}>/100</div>
+                    {/* 下段：2カード */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                        {[
+                            {
+                                title: "GROWTH STATUS", tip: "管理者が設定する社内育成フェーズです", content: (
+                                    <div>
+                                        {growthRank ? (
+                                            <div>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                                                    <div style={{ padding: "6px 16px", borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", fontSize: 20, fontWeight: 900, color: "#fff" }}>{growthRank}</div>
+                                                    {growthGrade && <div style={{ padding: "6px 14px", borderRadius: 8, background: inputBg, fontSize: 14, fontWeight: 700, color: textPrimary }}>{growthGrade}</div>}
+                                                </div>
+                                                <div style={{ fontSize: 13, color: textMuted }}>社内育成フェーズ</div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: 14, color: textMuted }}>未設定（管理者が設定します）</div>
+                                        )}
+                                    </div>
+                                )
+                            },
+                            {
+                                title: "EFFORT RANK", tip: "日々の活動量・質を7軸で総合評価したランクです", content: (
+                                    <div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                            <div style={{ width: 72, height: 72, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff" }}>{rank2}</div>
+                                            <div>
+                                                <div style={{ fontSize: 13, color: textMuted, marginBottom: 4 }}>スコア</div>
+                                                <div style={{ fontSize: 28, fontWeight: 800, color: textPrimary }}>{rankScore}</div>
+                                                <div style={{ fontSize: 11, color: textMuted }}>/100</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ marginTop: 16 }}>
+                                            <div style={{ height: 4, borderRadius: 999, background: barBg }}>
+                                                <div style={{ height: "100%", width: `${rankScore}%`, background: rankColor, borderRadius: 999 }} />
+                                            </div>
+                                            <div style={{ fontSize: 12, color: textMuted, marginTop: 8 }}>{nextRankInfo}</div>
+                                        </div>
+                                    </div>
+                                )
+                            },
+                        ].map((card) => (
+                            <div key={card.title} style={{ position: "relative" }}
+                                onMouseEnter={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "block"; }}
+                                onMouseLeave={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "none"; }}
+                            >
+                                <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24, height: "100%", boxSizing: "border-box" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>{card.title}</div>
+                                        <div style={{ fontSize: 12, color: textMuted, cursor: "help" }}>💡</div>
+                                    </div>
+                                    {card.content}
+                                </div>
+                                <div id={`tip-card-${card.title}`} style={{ display: "none", position: "absolute", top: -44, left: 0, background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 14px", fontSize: 12, color: "#c7d2fe", whiteSpace: "nowrap", zIndex: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
+                                    {card.tip}
+                                </div>
                             </div>
-                        </div>
-                        <div style={{ marginTop: 16 }}>
-                            <div style={{ height: 4, borderRadius: 999, background: barBg }}>
-                                <div style={{ height: "100%", width: `${rankScore}%`, background: rankColor, borderRadius: 999 }} />
-                            </div>
-                            <div style={{ fontSize: 12, color: textMuted, marginTop: 8 }}>{nextRankInfo}</div>
-                        </div>
-                    </div>
-
-                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>STREAK</div>
-                        <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{streak}</div>
-                        <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 600, marginTop: 4 }}>日連続</div>
-                        <div style={{ marginTop: 16, fontSize: 13, color: textSecondary }}>{actionMessage}</div>
+                        ))}
                     </div>
                 </div>
 
