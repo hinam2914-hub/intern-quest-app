@@ -58,7 +58,6 @@ export default function OnboardingPage() {
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
             const { data: profile } = await supabase.from("profiles").select("name, onboarding_done").eq("id", user.id).single();
-            if (profile?.onboarding_done) { router.push("/mypage"); return; }
             setName(profile?.name || "");
             setLoading(false);
         };
