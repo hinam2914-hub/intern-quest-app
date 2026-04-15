@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
@@ -219,8 +219,10 @@ export default function MyPage() {
     const [growthRank, setGrowthRank] = useState("");
     const [growthGrade, setGrowthGrade] = useState("");
     const [themeColor, setThemeColor] = useState("#6366f1");
-    const [bgColor, setBgColor] = useState("#0a0a0f");
-    const isLightBg = ["#fce4ec", "#f3e5f5", "#e8f5e9", "#e3f2fd", "#fff9e6"].includes(bgColor);
+    const [bgColor, setBgColor] = useState("");
+    const isLightBg = useMemo(() =>
+        ["#fce4ec", "#f3e5f5", "#e8f5e9", "#e3f2fd", "#fff9e6"].includes(bgColor),
+        [bgColor]);
     const [fontFamily, setFontFamily] = useState("'Inter', sans-serif");
 
     const todayYmd = getTodayJST();
