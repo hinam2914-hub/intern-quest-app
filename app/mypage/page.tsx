@@ -69,21 +69,7 @@ function formatReason(reason?: string | null): string {
     if (reason === "team_achievement") return "チーム達成ボーナス";
     return reason;
 }
-function getStatusColor(status: string): string {
-    if (status === "Leader") return "linear-gradient(135deg, #f59e0b, #ef4444)";
-    if (status === "Core") return "linear-gradient(135deg, #6366f1, #8b5cf6)";
-    if (status === "Active") return "linear-gradient(135deg, #06b6d4, #3b82f6)";
-    if (status === "Basic") return "linear-gradient(135deg, #34d399, #10b981)";
-    return "linear-gradient(135deg, #374151, #6b7280)";
-}
 
-function getStatusDesc(status: string): string {
-    if (status === "Leader") return "チームを牽引するリーダー";
-    if (status === "Core") return "組織の中核メンバー";
-    if (status === "Active") return "安定稼働中";
-    if (status === "Basic") return "基礎習得中";
-    return "オンボーディング中";
-}
 function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
 function getExp(points: number): number { return points % 100; }
 function getBadgeLabel(level: number): string {
@@ -127,8 +113,7 @@ function getRankScore(params: {
     const leaderScore = Math.min(thanksCount * 2, 10);
     const outputScore = Math.min(submissionCount * 2, 20);
     const metaScore = Math.min(level, 10);
-    const total = eduScore + activityScore + kpiScore + streakScore + leaderScore + outputScore + metaScore;
-    return Math.min(Math.round(total), 100);
+    return Math.min(Math.round(eduScore + activityScore + kpiScore + streakScore + leaderScore + outputScore + metaScore), 100);
 }
 function getNextRankInfo(rank: string): string {
     if (rank === "SS") return "最高ランク到達！";
@@ -149,9 +134,9 @@ function generateAIComment(params: { name: string; level: number; rank2: string;
     if (!isSubmitted && streak <= 1) return `${name}さん、今日はまだ日報が未提出です。小さな一歩でも記録することで成長が加速します。今すぐ提出しましょう！`;
     if (streak >= 7) return `${name}さん、${streak}日連続提出は本物の習慣力の証です。この継続力こそが市場価値を高める最大の武器。ランク${rank2}はあなたの実力を正しく示しています。`;
     if (streak >= 3) return `${name}さん、${streak}日連続で素晴らしい！継続は最強のスキルです。このペースを維持すればランクアップも近いです。`;
-    if (rank2 === "SS" || rank2 === "S") return `${name}さん、ランク${rank2}到達おめでとうございます！トップクラスの成長速度です。この調子でインターン業界をリードしていきましょう。`;
-    if (level >= 10) return `${name}さん、Lv.${level}まで成長しました。${points}ptという実績はあなたの努力の証。次はランクアップを目指しましょう！`;
-    if (points < 100) return `${name}さん、まだ始まったばかりです。毎日の日報提出を続けることで、一気に成長できます。今日から習慣にしましょう！`;
+    if (rank2 === "SS" || rank2 === "S") return `${name}さん、ランク${rank2}到達おめでとうございます！トップクラスの成長速度です。`;
+    if (level >= 10) return `${name}さん、Lv.${level}まで成長しました。${points}ptという実績はあなたの努力の証。`;
+    if (points < 100) return `${name}さん、まだ始まったばかりです。毎日の日報提出を続けることで、一気に成長できます。`;
     return `${name}さん、着実に成長しています。日報の継続とKPI達成を意識することで、さらに上のランクが見えてきます。`;
 }
 
@@ -215,15 +200,23 @@ export default function MyPage() {
     const [todayLearnDone, setTodayLearnDone] = useState(false);
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
-    const [growthStatus, setGrowthStatus] = useState("Onboarding");
     const [growthRank, setGrowthRank] = useState("");
     const [growthGrade, setGrowthGrade] = useState("");
     const [themeColor, setThemeColor] = useState("#6366f1");
-    const [bgColor, setBgColor] = useState("");
+    const [bgColor, setBgColor] = useState("#0a0a0f");
+    const [fontFamily, setFontFamily] = useState("'Inter', sans-serif");
+
     const isLightBg = useMemo(() =>
         ["#fce4ec", "#f3e5f5", "#e8f5e9", "#e3f2fd", "#fff9e6"].includes(bgColor),
         [bgColor]);
-    const [fontFamily, setFontFamily] = useState("'Inter', sans-serif");
+
+    const cardBg = isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)";
+    const cardBorder = isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)";
+    const inputBg = isLightBg ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.05)";
+    const textPrimary = isLightBg ? "#1a1a2e" : "#f9fafb";
+    const textSecondary = isLightBg ? "#4b5563" : "#9ca3af";
+    const textMuted = isLightBg ? "#6b7280" : "#6b7280";
+    const barBg = isLightBg ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.06)";
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -237,7 +230,7 @@ export default function MyPage() {
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
     const badges = getBadges(points, streak);
-    const unlockedCount = badges.filter(b => b.unlocked).length;
+
     const loadPage = async () => {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
@@ -258,17 +251,6 @@ export default function MyPage() {
             setFontFamily((profileData as any)?.font_family || "'Inter', sans-serif");
             setGrowthRank((profileData as any)?.growth_rank || "");
             setGrowthGrade((profileData as any)?.growth_grade || "");
-            // 育成ステータス自動判定
-            const rawStatus = (profileData as any)?.growth_status || "Onboarding";
-            const autoStatus = (() => {
-                if (points >= 1500 || rank2 === "S" || rank2 === "SS" || thanksCount >= 10) return "Leader";
-                if (points >= 700 || submissionCount >= 60) return "Core";
-                if (points >= 300 || submissionCount >= 30 || streak >= 7) return "Active";
-                if (points >= 100 || submissionCount >= 10) return "Basic";
-                return "Onboarding";
-            })();
-            // 管理者が上書きしていれば優先
-            setGrowthStatus(rawStatus !== "Onboarding" ? rawStatus : autoStatus);
             setMbti((profileData as any)?.mbti || "");
             setClub((profileData as any)?.club || "");
             if (profile.started_at) {
@@ -317,30 +299,24 @@ export default function MyPage() {
         const { data: announceRows } = await supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
         setAnnouncements((announceRows || []) as { id: string; title: string; content: string }[]);
 
-        // デイリーミッション確認
-        const { data: todayKpiRows } = await supabase
-            .from("kpi_logs").select("created_at").eq("user_id", user.id);
+        const { data: todayKpiRows } = await supabase.from("kpi_logs").select("created_at").eq("user_id", user.id);
         setTodayKpiDone(todayKpiRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
 
-        const { data: todayThanksRows } = await supabase
-            .from("thanks").select("created_at").eq("from_user_id", user.id);
+        const { data: todayThanksRows } = await supabase.from("thanks").select("created_at").eq("from_user_id", user.id);
         setTodayThanksDone(todayThanksRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
 
-        const { data: todayLearnRows } = await supabase
-            .from("content_completions").select("created_at").eq("user_id", user.id);
+        const { data: todayLearnRows } = await supabase.from("content_completions").select("created_at").eq("user_id", user.id);
         setTodayLearnDone(todayLearnRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
 
         const { data: deptRows } = await supabase.from("departments").select("id, name, code").order("created_at");
         setDepartments((deptRows || []) as { id: string; name: string; code: string }[]);
 
-        // 月次KPI取得
         const now = new Date();
         const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
         const { data: kpiRows } = await supabase.from("monthly_kpi").select("*").eq("user_id", user.id).eq("year_month", ym);
         const { data: kpiDeptRows } = await supabase.from("departments").select("*");
         const { data: targetRows } = await supabase.from("monthly_targets").select("*").eq("year_month", ym).eq("user_id", user.id);
 
-        // ✅ 修正: kpiRows.map(k => ...) を正しく記述
         if (kpiRows && kpiDeptRows) {
             const kpis = kpiRows.map((k: any) => {
                 const dept = kpiDeptRows.find((d: any) => d.id === k.department_id);
@@ -351,21 +327,7 @@ export default function MyPage() {
             });
             setMyKpis(kpis);
         }
-        function getStatusColor(status: string): string {
-            if (status === "Leader") return "linear-gradient(135deg, #f59e0b, #ef4444)";
-            if (status === "Core") return "linear-gradient(135deg, #6366f1, #8b5cf6)";
-            if (status === "Active") return "linear-gradient(135deg, #06b6d4, #3b82f6)";
-            if (status === "Basic") return "linear-gradient(135deg, #34d399, #10b981)";
-            return "linear-gradient(135deg, #374151, #6b7280)";
-        }
 
-        function getStatusDesc(status: string): string {
-            if (status === "Leader") return "チームを牽引するリーダー";
-            if (status === "Core") return "組織の中核メンバー";
-            if (status === "Active") return "安定稼働中";
-            if (status === "Basic") return "基礎習得中";
-            return "オンボーディング中";
-        }
         setLoading(false);
     };
 
@@ -382,11 +344,6 @@ export default function MyPage() {
         setMessage("✅ プロフィールを保存しました");
     };
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.push("/login");
-    };
-
     if (loading) {
         return (
             <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -396,17 +353,7 @@ export default function MyPage() {
     }
 
     return (
-        <main style={{
-            minHeight: "100vh", background: bgColor, padding: "40px 24px 64px", fontFamily: fontFamily, color: isLightBg ? "#1a1a2e" : "#f9fafb",
-        }}>
-            {isLightBg && (
-                <style>{`
-        * { color: #1a1a2e !important; }
-        [style*="rgba(255,255,255,0.03)"] { background: rgba(0,0,0,0.05) !important; }
-        [style*="rgba(255,255,255,0.08)"] { border-color: rgba(0,0,0,0.15) !important; }
-    `}</style>
-            )}
-            {/* 名前入力モーダル */}
+        <main style={{ minHeight: "100vh", background: bgColor || "#0a0a0f", padding: "40px 24px 64px", fontFamily: fontFamily, color: textPrimary }}>
             {showNameModal && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div style={{ background: "#0f0f1a", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 20, padding: 40, width: 400 }}>
@@ -419,16 +366,9 @@ export default function MyPage() {
                 </div>
             )}
 
-            {/* レベルアップ演出 */}
             <AnimatePresence>
                 {levelUpShow && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.5, y: 50 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.5, y: -50 }}
-                        transition={{ type: "spring", bounce: 0.5 }}
-                        style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}
-                    >
+                    <motion.div initial={{ opacity: 0, scale: 0.5, y: 50 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.5, y: -50 }} transition={{ type: "spring", bounce: 0.5 }} style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
                         <div style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: 24, padding: "40px 60px", textAlign: "center", boxShadow: "0 0 80px rgba(99,102,241,0.6)" }}>
                             <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
                             <div style={{ fontSize: 14, color: "#c7d2fe", fontWeight: 700, letterSpacing: 3 }}>LEVEL UP!</div>
@@ -439,157 +379,127 @@ export default function MyPage() {
                 )}
             </AnimatePresence>
 
-            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(ellipse at 20% 50%, ${themeColor}08 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, ${themeColor}05 0%, transparent 60%)` }} />
+            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(ellipse at 20% 50%, ${themeColor}08 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, ${themeColor}05 0%, transparent 60%)`, pointerEvents: "none", zIndex: 0 }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
-                {/* ヘッダー */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                        <div style={{ position: "relative", flexShrink: 0 }}>
-                            {avatarUrl ? (
-                                <img src={avatarUrl} alt={name} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", display: "block", border: "3px solid rgba(99,102,241,0.6)" }} />
-                            ) : (
-                                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                                    {name ? name.charAt(0) : "?"}
-                                </div>
-                            )}
-                        </div>
+                        {avatarUrl ? (
+                            <img src={avatarUrl} alt={name} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", display: "block", border: "3px solid rgba(99,102,241,0.6)" }} />
+                        ) : (
+                            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                                {name ? name.charAt(0) : "?"}
+                            </div>
+                        )}
                         <div>
                             <div style={{ fontSize: 11, color: themeColor, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>INTERN QUEST</div>
-                            <h1 style={{ fontSize: 26, fontWeight: 800, color: "#f9fafb", margin: 0, lineHeight: 1 }}>{name || "名前未設定"}</h1>
+                            <h1 style={{ fontSize: 26, fontWeight: 800, color: textPrimary, margin: 0, lineHeight: 1 }}>{name || "名前未設定"}</h1>
                         </div>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                         <button onClick={() => router.push("/report")} style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>📋 日報提出</button>
-                        <button onClick={() => router.push("/menu")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>☰ メニュー</button>
+                        <button onClick={() => router.push("/menu")} style={{ background: cardBg, color: textPrimary, padding: "8px 16px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>☰ メニュー</button>
                     </div>
                 </div>
 
-                {/* お知らせバナー */}
                 {announcements.filter(a => !closedAnnouncements.includes(a.id)).map((a) => (
                     <div key={a.id} style={{ marginBottom: 12, padding: "14px 20px", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
                             <div style={{ fontSize: 13, fontWeight: 700, color: "#818cf8", marginBottom: 4 }}>📢 {a.title}</div>
-                            <div style={{ fontSize: 13, color: "#c7d2fe", lineHeight: 1.6 }}>{a.content}</div>
+                            <div style={{ fontSize: 13, color: isLightBg ? "#4b5563" : "#c7d2fe", lineHeight: 1.6 }}>{a.content}</div>
                         </div>
                         <button onClick={() => setClosedAnnouncements(prev => [...prev, a.id])} style={{ marginLeft: 16, background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 18 }}>×</button>
                     </div>
                 ))}
 
-                {message && (
-                    <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>
-                        {message}
-                    </div>
-                )}
+                {message && <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>{message}</div>}
 
-                {/* メイングリッド */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16 }}>
-                    <div style={{ background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>TOTAL POINTS</div>
-                        <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>{points.toLocaleString()}</div>
-                        <div style={{ fontSize: 16, color: "#6366f1", fontWeight: 600, marginTop: 4 }}>pt</div>
+                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>TOTAL POINTS</div>
+                        <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{points.toLocaleString()}</div>
+                        <div style={{ fontSize: 16, color: themeColor, fontWeight: 600, marginTop: 4 }}>pt</div>
                         <div style={{ marginTop: 16, padding: "6px 12px", background: "rgba(99,102,241,0.1)", borderRadius: 6, display: "inline-block" }}>
                             <span style={{ fontSize: 12, color: "#818cf8" }}>🏆 順位 {rank || "-"}位</span>
                         </div>
                     </div>
 
-                    <div style={{ background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)", border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>LEVEL</div>
+                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>LEVEL</div>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                            <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>Lv.{level}</div>
+                            <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>Lv.{level}</div>
                             <div style={{ padding: "4px 10px", borderRadius: 6, background: badgeColor, fontSize: 12, fontWeight: 700, color: "#fff" }}>{badgeLabel}</div>
                         </div>
                         <div style={{ marginTop: 16 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6b7280", marginBottom: 6 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: textMuted, marginBottom: 6 }}>
                                 <span>EXP {exp}/100</span><span>次まで {100 - exp}</span>
                             </div>
-                            <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.08)" }}>
-                                <div style={{ height: "100%", width: `${exp}%`, background: "linear-gradient(90deg, #6366f1, #8b5cf6)", borderRadius: 999, transition: "width 0.6s ease" }} />
+                            <div style={{ height: 6, borderRadius: 999, background: barBg }}>
+                                <div style={{ height: "100%", width: `${exp}%`, background: `linear-gradient(90deg, ${themeColor}, ${themeColor}aa)`, borderRadius: 999 }} />
                             </div>
                         </div>
                     </div>
-                    {/* 育成ステータス */}
-                    <div style={{
-                        background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24, backdropFilter: "blur(10px)"
-                    }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>GROWTH STATUS</div>
+
+                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>GROWTH STATUS</div>
                         {growthRank ? (
                             <div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                                    <div style={{ padding: "6px 16px", borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", fontSize: 20, fontWeight: 900, color: "#fff" }}>
-                                        {growthRank}
-                                    </div>
-                                    {growthGrade && (
-                                        <div style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(255,255,255,0.08)", fontSize: 14, fontWeight: 700, color: "#d1d5db" }}>
-                                            {growthGrade}
-                                        </div>
-                                    )}
+                                    <div style={{ padding: "6px 16px", borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", fontSize: 20, fontWeight: 900, color: "#fff" }}>{growthRank}</div>
+                                    {growthGrade && <div style={{ padding: "6px 14px", borderRadius: 8, background: inputBg, fontSize: 14, fontWeight: 700, color: textPrimary }}>{growthGrade}</div>}
                                 </div>
-                                <div style={{ fontSize: 13, color: "#6b7280" }}>社内育成フェーズ</div>
+                                <div style={{ fontSize: 13, color: textMuted }}>社内育成フェーズ</div>
                             </div>
                         ) : (
-                            <div style={{ fontSize: 14, color: "#6b7280" }}>未設定（管理者が設定します）</div>
+                            <div style={{ fontSize: 14, color: textMuted }}>未設定（管理者が設定します）</div>
                         )}
                     </div>
-                    <div style={{
-                        background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24, backdropFilter: "blur(10px)"
-                    }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>EFFORT RANK</div>
+
+                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>EFFORT RANK</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                             <div style={{ width: 72, height: 72, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", boxShadow: "0 0 24px rgba(99,102,241,0.4)" }}>{rank2}</div>
                             <div>
-                                <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 4 }}>スコア</div>
-                                <div style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb" }}>{rankScore}</div>
-                                <div style={{ fontSize: 11, color: "#6b7280" }}>/100</div>
+                                <div style={{ fontSize: 13, color: textMuted, marginBottom: 4 }}>スコア</div>
+                                <div style={{ fontSize: 28, fontWeight: 800, color: textPrimary }}>{rankScore}</div>
+                                <div style={{ fontSize: 11, color: textMuted }}>/100</div>
                             </div>
                         </div>
                         <div style={{ marginTop: 16 }}>
-                            <div style={{ height: 4, borderRadius: 999, background: "rgba(255,255,255,0.08)" }}>
-                                <div style={{ height: "100%", width: `${rankScore}%`, background: rankColor, borderRadius: 999, transition: "width 0.6s ease" }} />
+                            <div style={{ height: 4, borderRadius: 999, background: barBg }}>
+                                <div style={{ height: "100%", width: `${rankScore}%`, background: rankColor, borderRadius: 999 }} />
                             </div>
-                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>{nextRankInfo}</div>
+                            <div style={{ fontSize: 12, color: textMuted, marginTop: 8 }}>{nextRankInfo}</div>
                         </div>
                     </div>
 
-                    <div style={{
-                        background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24, backdropFilter: "blur(10px)"
-                    }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>STREAK</div>
-                        <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>{streak}</div>
+                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>STREAK</div>
+                        <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{streak}</div>
                         <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 600, marginTop: 4 }}>日連続</div>
-                        <div style={{ marginTop: 16, fontSize: 13, color: "#9ca3af" }}>{actionMessage}</div>
+                        <div style={{ marginTop: 16, fontSize: 13, color: textSecondary }}>{actionMessage}</div>
                     </div>
                 </div>
 
-                {/* 7軸スコア レーダーチャート */}
-                <div style={{
-                    marginBottom: 16, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                    , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
-                }}>
-                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>7-AXIS EVALUATION</div>
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>7-AXIS EVALUATION</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
-                        {/* レーダーチャート */}
                         <ResponsiveContainer width="100%" height={280}>
                             <RadarChart data={[
-                                { axis: "学歴", value: education ? 8 : 0, max: 10 },
-                                { axis: "活動期間", value: Math.min(activeDays * 0.5, 15), max: 15 },
-                                { axis: "実績KPI", value: Math.min(kpiCount * 3, 15), max: 15 },
-                                { axis: "再現性", value: Math.min(streak * 2, 20), max: 20 },
-                                { axis: "リーダーシップ", value: Math.min(thanksCount * 2, 10), max: 10 },
-                                { axis: "アウトプット", value: Math.min(submissionCount * 2, 20), max: 20 },
-                                { axis: "メタ認知", value: Math.min(level, 10), max: 10 },
+                                { axis: "学歴", value: education ? 8 : 0 },
+                                { axis: "活動期間", value: Math.min(activeDays * 0.5, 15) },
+                                { axis: "実績KPI", value: Math.min(kpiCount * 3, 15) },
+                                { axis: "再現性", value: Math.min(streak * 2, 20) },
+                                { axis: "リーダーシップ", value: Math.min(thanksCount * 2, 10) },
+                                { axis: "アウトプット", value: Math.min(submissionCount * 2, 20) },
+                                { axis: "メタ認知", value: Math.min(level, 10) },
                             ]}>
-                                <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                                <PolarAngleAxis dataKey="axis" tick={{ fill: "#9ca3af", fontSize: 11, fontWeight: 600 }} />
-                                <Radar name="スコア" dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} strokeWidth={2} />
+                                <PolarGrid stroke={barBg} />
+                                <PolarAngleAxis dataKey="axis" tick={{ fill: textMuted, fontSize: 11, fontWeight: 600 }} />
+                                <Radar name="スコア" dataKey="value" stroke={themeColor} fill={themeColor} fillOpacity={0.3} strokeWidth={2} />
                             </RadarChart>
                         </ResponsiveContainer>
-
-                        {/* バー表示 */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                             {[
                                 { label: "学歴", value: education ? 8 : 0, max: 10, color: "#6366f1", tip: "学歴を登録するとスコアが上がります" },
@@ -601,92 +511,62 @@ export default function MyPage() {
                                 { label: "メタ認知", value: Math.min(level, 10), max: 10, color: "#f97316", tip: "レベルアップするたびに上がります" },
                             ].map((axis) => (
                                 <div key={axis.label} style={{ position: "relative" }}
-                                    onMouseEnter={(e) => {
-                                        const tip = document.getElementById(`tip-${axis.label}`);
-                                        if (tip) tip.style.display = "block";
-                                    }}
-                                    onMouseLeave={() => {
-                                        const tip = document.getElementById(`tip-${axis.label}`);
-                                        if (tip) tip.style.display = "none";
-                                    }}
+                                    onMouseEnter={() => { const tip = document.getElementById(`tip-${axis.label}`); if (tip) tip.style.display = "block"; }}
+                                    onMouseLeave={() => { const tip = document.getElementById(`tip-${axis.label}`); if (tip) tip.style.display = "none"; }}
                                 >
-                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>
-                                        <span style={{ cursor: "help", borderBottom: "1px dashed rgba(255,255,255,0.2)" }}>{axis.label} 💡</span>
+                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: textMuted, marginBottom: 4 }}>
+                                        <span style={{ cursor: "help", borderBottom: `1px dashed ${cardBorder}` }}>{axis.label} 💡</span>
                                         <span style={{ color: axis.color, fontWeight: 700 }}>{Math.round(axis.value)} / {axis.max}</span>
                                     </div>
-                                    <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
-                                        <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999, transition: "width 0.8s ease" }} />
+                                    <div style={{ height: 6, borderRadius: 999, background: barBg }}>
+                                        <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999 }} />
                                     </div>
-                                    {/* ツールチップ */}
-                                    <div id={`tip-${axis.label}`} style={{ display: "none", position: "absolute", top: -36, left: 0, background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#c7d2fe", whiteSpace: "nowrap", zIndex: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
+                                    <div id={`tip-${axis.label}`} style={{ display: "none", position: "absolute", top: -36, left: 0, background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#c7d2fe", whiteSpace: "nowrap", zIndex: 10 }}>
                                         {axis.tip}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </div>
-                    {!education && (
-                        <div style={{ marginTop: 16, padding: "10px 14px", borderRadius: 8, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", fontSize: 12, color: "#fbbf24" }}>
-                            💡 プロフィールに学歴を登録するとスコアが上がります
-                        </div>
-                    )}
                 </div>
 
-                {/* 月次KPI */}
                 {myKpis.length > 0 && (
-                    <div style={{
-                        marginBottom: 16, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
-                    }}>
+                    <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>MONTHLY KPI</div>
-                            <div style={{ fontSize: 12, color: "#6b7280" }}>{new Date().getFullYear()}/{new Date().getMonth() + 1}月</div>
+                            <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>MONTHLY KPI</div>
+                            <div style={{ fontSize: 12, color: textMuted }}>{new Date().getFullYear()}/{new Date().getMonth() + 1}月</div>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                             {myKpis.map((kpi, i) => {
                                 const rateColor = kpi.rate >= 100 ? "#34d399" : kpi.rate >= 80 ? "#f59e0b" : kpi.rate >= 60 ? "#f97316" : "#f87171";
                                 return (
-                                    <div key={i} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${kpi.approved ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.06)"}` }}>
+                                    <div key={i} style={{ padding: "16px 20px", borderRadius: 12, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${kpi.approved ? "rgba(52,211,153,0.3)" : cardBorder}` }}>
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                 <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{kpi.deptName}</span>
                                                 {kpi.approved && <span style={{ fontSize: 12, color: "#34d399", fontWeight: 600 }}>✅ 承認済</span>}
                                             </div>
                                             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                                                <span style={{ fontSize: 13, color: "#9ca3af" }}>{kpi.result} / {kpi.target}件</span>
+                                                <span style={{ fontSize: 13, color: textMuted }}>{kpi.result} / {kpi.target}件</span>
                                                 <span style={{ fontSize: 20, fontWeight: 800, color: rateColor }}>{kpi.rate}%</span>
-                                                <span style={{ fontSize: 16, fontWeight: 700, color: kpi.pts > 0 ? "#818cf8" : "#6b7280" }}>{kpi.approved ? `+${kpi.pts}pt` : `予定${kpi.pts}pt`}</span>
+                                                <span style={{ fontSize: 16, fontWeight: 700, color: kpi.pts > 0 ? "#818cf8" : textMuted }}>{kpi.approved ? `+${kpi.pts}pt` : `予定${kpi.pts}pt`}</span>
                                             </div>
                                         </div>
-                                        <div style={{ height: 8, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
-                                            <div style={{ height: "100%", width: `${Math.min(kpi.rate, 100)}%`, background: rateColor, borderRadius: 999, transition: "width 0.8s ease" }} />
+                                        <div style={{ height: 8, borderRadius: 999, background: barBg }}>
+                                            <div style={{ height: "100%", width: `${Math.min(kpi.rate, 100)}%`, background: rateColor, borderRadius: 999 }} />
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                        <button
-                            onClick={() => router.push("/kpi")}
-                            style={{
-                                marginTop: 16, width: "100%", padding: "12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                                , color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14
-                            }}
-                        >
-                            📊 KPIを入力・更新する
-                        </button>
+                        <button onClick={() => router.push("/kpi")} style={{ marginTop: 16, width: "100%", padding: "12px", borderRadius: 10, border: `1px solid ${cardBorder}`, background: cardBg, color: textSecondary, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>📊 KPIを入力・更新する</button>
                     </div>
                 )}
 
-                {/* デイリーミッション */}
-                <div style={{
-                    marginBottom: 16, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                    , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
-                }}>
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>DAILY MISSIONS</div>
-                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>
-                            {[true, isSubmitted, todayKpiDone, todayThanksDone, todayLearnDone].filter(Boolean).length} / 5 完了
-                        </div>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>DAILY MISSIONS</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{[true, isSubmitted, todayKpiDone, todayThanksDone, todayLearnDone].filter(Boolean).length} / 5 完了</div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
@@ -696,156 +576,86 @@ export default function MyPage() {
                             { icon: "🎉", label: "サンキューを送る", done: todayThanksDone, pt: "✨", path: "/thanks" },
                             { icon: "📚", label: "学習を完了する", done: todayLearnDone, pt: "+2pt", path: "/learn" },
                         ].map((mission) => (
-                            <div
-                                key={mission.label}
-                                onClick={() => mission.path && !mission.done && router.push(mission.path)}
-                                style={{
-                                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                                    padding: "12px 16px", borderRadius: 12,
-                                    background: mission.done ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.02)",
-                                    border: `1px solid ${mission.done ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.06)"}`,
-                                    cursor: mission.path && !mission.done ? "pointer" : "default",
-                                    opacity: mission.done ? 1 : 0.8,
-                                }}
-                            >
+                            <div key={mission.label} onClick={() => mission.path && !mission.done && router.push(mission.path)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: mission.done ? "rgba(52,211,153,0.08)" : isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${mission.done ? "rgba(52,211,153,0.3)" : cardBorder}`, cursor: mission.path && !mission.done ? "pointer" : "default" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                     <span style={{ fontSize: 20 }}>{mission.done ? "✅" : mission.icon}</span>
-                                    <span style={{ fontSize: 14, fontWeight: 600, color: mission.done ? "#34d399" : "#d1d5db", textDecoration: mission.done ? "line-through" : "none" }}>
-                                        {mission.label}
-                                    </span>
+                                    <span style={{ fontSize: 14, fontWeight: 600, color: mission.done ? "#34d399" : textPrimary, textDecoration: mission.done ? "line-through" : "none" }}>{mission.label}</span>
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <span style={{ fontSize: 12, fontWeight: 700, color: mission.done ? "#34d399" : "#6b7280" }}>{mission.pt}</span>
-                                    {!mission.done && mission.path && (
-                                        <span style={{ fontSize: 12, color: "#6366f1", fontWeight: 700 }}>→</span>
-                                    )}
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: mission.done ? "#34d399" : textMuted }}>{mission.pt}</span>
+                                    {!mission.done && mission.path && <span style={{ fontSize: 12, color: themeColor, fontWeight: 700 }}>→</span>}
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* AIメタ認知コメント */}
                 <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🤖</div>
                             <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>AI METACOGNITION</div>
                         </div>
-                        <div style={{ fontSize: 12, color: "#6b7280" }}>
-                            {new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}
-                        </div>
+                        <div style={{ fontSize: 12, color: textMuted }}>{new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}</div>
                     </div>
-                    <p style={{ margin: "0 0 16px", fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
+                    <p style={{ margin: "0 0 16px", fontSize: 15, color: isLightBg ? "#4b5563" : "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
                     <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", fontSize: 13, color: "#818cf8", fontWeight: 600 }}>
-                        💡 {[
-                            "小さな積み重ねが大きな差を生む。今日も一歩前へ。",
-                            "成長は毎日の習慣から生まれる。継続こそ最強のスキル。",
-                            "今日の努力は必ず明日の自分に返ってくる。",
-                            "トップ営業マンも最初は初心者だった。諦めずに続けよう。",
-                            "失敗は成功のデータ。今日も全力でぶつかろう。",
-                            "1日1%の成長で1年後には37倍になる。今日も成長しよう。",
-                            "行動した人だけが結果を手にできる。まず動こう。",
-                        ][new Date().getDay()]}
+                        💡 {["小さな積み重ねが大きな差を生む。今日も一歩前へ。", "成長は毎日の習慣から生まれる。継続こそ最強のスキル。", "今日の努力は必ず明日の自分に返ってくる。", "トップ営業マンも最初は初心者だった。諦めずに続けよう。", "失敗は成功のデータ。今日も全力でぶつかろう。", "1日1%の成長で1年後には37倍になる。今日も成長しよう。", "行動した人だけが結果を手にできる。まず動こう。"][new Date().getDay()]}
                     </div>
                 </div>
 
-                {/* ポイント推移グラフ */}
-                <div style={{
-                    marginBottom: 16, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                    , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
-                }}>
-                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
                     {graphData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={180}>
                             <LineChart data={graphData}>
-                                <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
-                                <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                                <XAxis dataKey="date" stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
+                                <YAxis stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
                                 <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計ポイント"]} />
-                                <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 4 }} activeDot={{ r: 6, fill: "#8b5cf6" }} />
+                                <Line type="monotone" dataKey="points" stroke={themeColor} strokeWidth={2} dot={{ fill: themeColor, r: 4 }} activeDot={{ r: 6, fill: themeColor }} />
                             </LineChart>
                         </ResponsiveContainer>
                     ) : (
-                        <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データが蓄積されるとグラフが表示されます</div>
+                        <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>データが蓄積されるとグラフが表示されます</div>
                     )}
                 </div>
 
-                {/* 下段 */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        <div style={{
-                            background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                            , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 20
-                        }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
-                            {/* MBTI・部活表示 */}
+                        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 20 }}>
+                            <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
                             {(mbti || club) && (
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                                    {mbti && (
-                                        <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 700 }}>
-                                            🧠 {mbti}
-                                        </div>
-                                    )}
-                                    {club && (
-                                        <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>
-                                            ⚽ {club}
-                                        </div>
-                                    )}
+                                    {mbti && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 700 }}>🧠 {mbti}</div>}
+                                    {club && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
                                 </div>
                             )}
-                            <input
-                                value={inputName}
-                                onChange={(e) => setInputName(e.target.value)}
-                                placeholder="名前を入力"
-                                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
-                            />
-                            <input
-                                value={education}
-                                onChange={(e) => setEducation(e.target.value)}
-                                placeholder="学歴を入力（例：〇〇大学）"
-                                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
-                            />
-                            <select
-                                value={departmentId}
-                                onChange={(e) => setDepartmentId(e.target.value)}
-                                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: departmentId ? "#f9fafb" : "#6b7280", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}
-                            >
+                            <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                            <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="学歴を入力（例：〇〇大学）" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                            <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}>
                                 <option value="">事業部を選択</option>
-                                {departments.map(d => (
-                                    <option key={d.id} value={d.id}>{d.name}</option>
-                                ))}
+                                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                             </select>
-                            <button
-                                onClick={handleSaveProfile}
-                                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}
-                            >
-                                保存
-                            </button>
+                            <button onClick={handleSaveProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>保存</button>
                         </div>
-                        <button onClick={() => router.push("/history")} style={{
-                            padding: "14px", borderRadius: 12, border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                            , color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14
-                        }}>履歴を見る →</button>
+                        <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: `1px solid ${cardBorder}`, background: cardBg, color: textSecondary, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
                     </div>
 
-                    <div style={{
-                        background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
-                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
-                    }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RECENT ACTIVITY</div>
+                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RECENT ACTIVITY</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                             {history.slice(0, 8).map((item, i) => (
-                                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${cardBorder}` }}>
                                     <div>
-                                        <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{formatReason(item.reason)}</div>
-                                        <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{formatDateTimeJST(item.created_at)}</div>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{formatReason(item.reason)}</div>
+                                        <div style={{ fontSize: 11, color: textMuted, marginTop: 2 }}>{formatDateTimeJST(item.created_at)}</div>
                                     </div>
                                     <div style={{ fontSize: 16, fontWeight: 700, color: item.change >= 0 ? "#34d399" : "#f87171" }}>
                                         {item.change > 0 ? `+${item.change}` : item.change}pt
                                     </div>
                                 </div>
                             ))}
-                            {history.length === 0 && <div style={{ color: "#6b7280", fontSize: 14 }}>履歴がありません</div>}
+                            {history.length === 0 && <div style={{ color: textMuted, fontSize: 14 }}>履歴がありません</div>}
                         </div>
                     </div>
                 </div>
