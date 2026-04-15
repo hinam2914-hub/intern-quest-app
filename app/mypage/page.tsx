@@ -399,6 +399,12 @@ export default function MyPage() {
         <main style={{
             minHeight: "100vh", background: bgColor, padding: "40px 24px 64px", fontFamily: fontFamily, color: isLightBg ? "#1a1a2e" : "#f9fafb",
         }}>
+            {isLightBg && (
+                <style>{`
+        * { color: #1a1a2e !important; }
+        .keep-color { color: inherit !important; }
+    `}</style>
+            )}
             {/* 名前入力モーダル */}
             {showNameModal && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
