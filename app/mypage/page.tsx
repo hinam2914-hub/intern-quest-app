@@ -485,11 +485,11 @@ export default function MyPage() {
                                     <div>
                                         {growthRank ? (
                                             <div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                                                    <div style={{ padding: "6px 16px", borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", fontSize: 20, fontWeight: 900, color: "#fff" }}>{growthRank}</div>
-                                                    {growthGrade && <div style={{ padding: "6px 14px", borderRadius: 8, background: inputBg, fontSize: 14, fontWeight: 700, color: textPrimary }}>{growthGrade}</div>}
+                                                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                                    <div style={{ width: 72, height: 72, borderRadius: 16, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff" }}>{growthRank}</div>
+                                                    <div style={{ fontSize: 28, fontWeight: 800, color: textPrimary }}>{growthGrade}</div>
                                                 </div>
-                                                <div style={{ fontSize: 13, color: textMuted }}>社内育成フェーズ</div>
+                                                <div style={{ fontSize: 12, color: textMuted, marginTop: 16 }}>社内育成フェーズ</div>
                                             </div>
                                         ) : (
                                             <div style={{ fontSize: 14, color: textMuted }}>未設定（管理者が設定します）</div>
