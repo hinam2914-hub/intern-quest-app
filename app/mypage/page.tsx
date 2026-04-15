@@ -220,6 +220,7 @@ export default function MyPage() {
     const [growthGrade, setGrowthGrade] = useState("");
     const [themeColor, setThemeColor] = useState("#6366f1");
     const [bgColor, setBgColor] = useState("#0a0a0f");
+    const isLightBg = ["#fce4ec", "#f3e5f5", "#e8f5e9", "#e3f2fd", "#fff9e6"].includes(bgColor);
     const [fontFamily, setFontFamily] = useState("'Inter', sans-serif");
 
     const todayYmd = getTodayJST();
@@ -235,7 +236,6 @@ export default function MyPage() {
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
     const badges = getBadges(points, streak);
     const unlockedCount = badges.filter(b => b.unlocked).length;
-    const isLightBg = ["#fce4ec", "#f3e5f5", "#e8f5e9", "#e3f2fd", "#fff9e6"].includes(bgColor);
     const loadPage = async () => {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
