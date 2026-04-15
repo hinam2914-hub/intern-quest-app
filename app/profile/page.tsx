@@ -231,7 +231,7 @@ export default function ProfileUploadPage() {
                     {/* 背景色 */}
                     <div style={{ marginBottom: 24 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#d1d5db", marginBottom: 12 }}>背景色</div>
-                        <div style={{ display: "flex", gap: 12 }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
                             {BG_COLORS.map(({ color, label }) => (
                                 <div key={color} onClick={() => setBgColor(color)} style={{ textAlign: "center", cursor: "pointer" }}>
                                     <div style={{ width: 48, height: 48, borderRadius: 12, background: color, border: bgColor === color ? "3px solid #fff" : "3px solid rgba(255,255,255,0.2)", boxShadow: bgColor === color ? "0 0 10px rgba(255,255,255,0.3)" : "none", marginBottom: 6 }} />
