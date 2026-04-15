@@ -428,7 +428,7 @@ export default function MyPage() {
                 )}
             </AnimatePresence>
 
-            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(ellipse at 20% 50%, ${themeColor}15 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, ${themeColor}10 0%, transparent 60%)` }} />
+            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(ellipse at 20% 50%, ${themeColor}08 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, ${themeColor}05 0%, transparent 60%)` }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
