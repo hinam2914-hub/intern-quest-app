@@ -485,7 +485,7 @@ export default function MyPage() {
 
                 {/* メイングリッド */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16 }}>
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
+                    <div style={{ background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>TOTAL POINTS</div>
                         <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>{points.toLocaleString()}</div>
                         <div style={{ fontSize: 16, color: "#6366f1", fontWeight: 600, marginTop: 4 }}>pt</div>
@@ -494,7 +494,7 @@ export default function MyPage() {
                         </div>
                     </div>
 
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
+                    <div style={{ background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)", border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>LEVEL</div>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
                             <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>Lv.{level}</div>
@@ -510,7 +510,10 @@ export default function MyPage() {
                         </div>
                     </div>
                     {/* 育成ステータス */}
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
+                    <div style={{
+                        background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24, backdropFilter: "blur(10px)"
+                    }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>GROWTH STATUS</div>
                         {growthRank ? (
                             <div>
@@ -530,7 +533,10 @@ export default function MyPage() {
                             <div style={{ fontSize: 14, color: "#6b7280" }}>未設定（管理者が設定します）</div>
                         )}
                     </div>
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
+                    <div style={{
+                        background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24, backdropFilter: "blur(10px)"
+                    }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>EFFORT RANK</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                             <div style={{ width: 72, height: 72, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", boxShadow: "0 0 24px rgba(99,102,241,0.4)" }}>{rank2}</div>
@@ -548,7 +554,10 @@ export default function MyPage() {
                         </div>
                     </div>
 
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, backdropFilter: "blur(10px)" }}>
+                    <div style={{
+                        background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24, backdropFilter: "blur(10px)"
+                    }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>STREAK</div>
                         <div style={{ fontSize: 48, fontWeight: 800, color: "#f9fafb", lineHeight: 1 }}>{streak}</div>
                         <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 600, marginTop: 4 }}>日連続</div>
@@ -557,7 +566,10 @@ export default function MyPage() {
                 </div>
 
                 {/* 7軸スコア レーダーチャート */}
-                <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                <div style={{
+                    marginBottom: 16, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                    , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
+                }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>7-AXIS EVALUATION</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
                         {/* レーダーチャート */}
@@ -622,7 +634,10 @@ export default function MyPage() {
 
                 {/* 月次KPI */}
                 {myKpis.length > 0 && (
-                    <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                    <div style={{
+                        marginBottom: 16, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
+                    }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>MONTHLY KPI</div>
                             <div style={{ fontSize: 12, color: "#6b7280" }}>{new Date().getFullYear()}/{new Date().getMonth() + 1}月</div>
@@ -652,7 +667,10 @@ export default function MyPage() {
                         </div>
                         <button
                             onClick={() => router.push("/kpi")}
-                            style={{ marginTop: 16, width: "100%", padding: "12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}
+                            style={{
+                                marginTop: 16, width: "100%", padding: "12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                                , color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14
+                            }}
                         >
                             📊 KPIを入力・更新する
                         </button>
@@ -660,7 +678,10 @@ export default function MyPage() {
                 )}
 
                 {/* デイリーミッション */}
-                <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                <div style={{
+                    marginBottom: 16, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                    , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
+                }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>DAILY MISSIONS</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>
@@ -730,7 +751,10 @@ export default function MyPage() {
                 </div>
 
                 {/* ポイント推移グラフ */}
-                <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                <div style={{
+                    marginBottom: 16, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                    , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
+                }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
                     {graphData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={180}>
@@ -749,7 +773,10 @@ export default function MyPage() {
                 {/* 下段 */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20 }}>
+                        <div style={{
+                            background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                            , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 20
+                        }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
                             {/* MBTI・部活表示 */}
                             {(mbti || club) && (
@@ -795,10 +822,16 @@ export default function MyPage() {
                                 保存
                             </button>
                         </div>
-                        <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
+                        <button onClick={() => router.push("/history")} style={{
+                            padding: "14px", borderRadius: 12, border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                            , color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14
+                        }}>履歴を見る →</button>
                     </div>
 
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                    <div style={{
+                        background: isLightBg ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.03)"
+                        , border: `1px solid ${isLightBg ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 24
+                    }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RECENT ACTIVITY</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                             {history.slice(0, 8).map((item, i) => (
