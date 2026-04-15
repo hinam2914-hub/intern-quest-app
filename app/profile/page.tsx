@@ -215,7 +215,7 @@ export default function ProfileUploadPage() {
                     {/* テーマカラー */}
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, marginBottom: 16 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🎨 テーマカラー</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginBottom: 16 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 16 }}>
                             {[
                                 { color: "#6366f1", label: "インディゴ" },
                                 { color: "#8b5cf6", label: "パープル" },
@@ -249,7 +249,7 @@ export default function ProfileUploadPage() {
                                 {/* 背景色 */}
                                 <div style={{ marginBottom: 24 }}>
                                     <div style={{ fontSize: 13, fontWeight: 700, color: "#d1d5db", marginBottom: 12 }}>背景色</div>
-                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
                                         {[
                                             { color: "#0a0a0f", label: "ダーク" },
                                             { color: "#0f0f2e", label: "ネイビー" },
@@ -259,7 +259,7 @@ export default function ProfileUploadPage() {
                                         ].map(({ color, label }) => (
                                             <div key={color} onClick={() => setBgColor(color)} style={{ cursor: "pointer", textAlign: "center" }}>
                                                 <div style={{ width: "100%", aspectRatio: "1", borderRadius: 12, background: color, border: bgColor === color ? "3px solid #fff" : "3px solid rgba(255,255,255,0.2)", boxShadow: bgColor === color ? "0 0 12px rgba(255,255,255,0.3)" : "none", marginBottom: 6 }} />
-                                                <div style={{ fontSize: 11, color: bgColor === color ? "#f9fafb" : "#6b7280" }}>{label}</div>
+                                                <div style={{ fontSize: 10, color: bgColor === color ? "#f9fafb" : "#6b7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</div>
                                             </div>
                                         ))}
                                     </div>
