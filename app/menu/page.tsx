@@ -40,6 +40,7 @@ export default function MenuPage() {
         { icon: "🛍️", label: "ポイントショップ", desc: "ポイントでアイテムと交換", path: "/shop", color: "#10b981" },
         { icon: "🏆", label: "ランキング", desc: "全員のポイントランキングを確認", path: "/ranking", color: "#ef4444" },
         { icon: "📜", label: "ポイント履歴", desc: "獲得・使用したポイントの履歴", path: "/history", color: "#6b7280" },
+        { icon: "📖", label: "使い方", desc: "Intern Questの使い方を確認する", path: "/onboarding", color: "#34d399" },
     ];
 
     if (loading) {
