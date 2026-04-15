@@ -235,7 +235,7 @@ export default function MyPage() {
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
     const badges = getBadges(points, streak);
     const unlockedCount = badges.filter(b => b.unlocked).length;
-
+    const isLightBg = ["#fce4ec", "#f3e5f5", "#e8f5e9", "#e3f2fd", "#fff9e6"].includes(bgColor);
     const loadPage = async () => {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
@@ -394,7 +394,9 @@ export default function MyPage() {
     }
 
     return (
-        <main style={{ minHeight: "100vh", background: bgColor, padding: "40px 24px 64px", fontFamily: fontFamily }}>
+        <main style={{
+            minHeight: "100vh", background: bgColor, padding: "40px 24px 64px", fontFamily: fontFamily, color: isLightBg ? "#1a1a2e" : "#f9fafb"
+        }}>
             {/* 名前入力モーダル */}
             {showNameModal && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
