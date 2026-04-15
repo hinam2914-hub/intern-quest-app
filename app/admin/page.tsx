@@ -612,13 +612,6 @@ export default function AdminPage() {
                                                             {["S1", "S2", "S3", "S4", "P1", "P2", "P3", "P4"].map(r => (
                                                                 <option key={r} value={r}>{r}</option>
                                                             ))}
-                                                            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                                                                <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
-                                                                {[10, 50, 100].map(amount => (
-                                                                    <button key={amount} onClick={() => handleAddPoints(u.id, amount)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+{amount}</button>
-                                                                ))}
-                                                                <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
-                                                            </div>
                                                         </select>
                                                         <select
                                                             value={u.growthGrade || ""}
@@ -634,6 +627,13 @@ export default function AdminPage() {
                                                             <option value="Middle">Middle</option>
                                                             <option value="Senior">Senior</option>
                                                         </select>
+                                                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                                                            <button onClick={() => router.push(`/admin/user/${u.id}`)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>詳細</button>
+                                                            {[10, 50, 100].map(amount => (
+                                                                <button key={amount} onClick={() => handleAddPoints(u.id, amount)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>+{amount}</button>
+                                                            ))}
+                                                            <button onClick={() => { setEditingUser(u.id); setEditingPoints(u.points); setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, editingName: u.name } : u2)); }} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>編集</button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )
