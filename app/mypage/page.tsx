@@ -235,7 +235,6 @@ export default function MyPage() {
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
     const badges = getBadges(points, streak);
     const unlockedCount = badges.filter(b => b.unlocked).length;
-    // 238行目を削除して、bgColorのuseStateの下に追加
     const isLightBg = ["#fce4ec", "#f3e5f5", "#e8f5e9", "#e3f2fd", "#fff9e6"].includes(bgColor);
     const loadPage = async () => {
         setLoading(true);
