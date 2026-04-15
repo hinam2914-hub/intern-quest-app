@@ -26,7 +26,11 @@ export default function RegisterPage() {
         // 1. auth.usersに登録
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) {
-            setMessage("登録に失敗しました：" + error.message);
+            if (error.message.includes("already registered") || error.message.includes("already exists")) {
+                setMessage("このメールアドレスはすでに登録されています。ログインページからログインしてください。");
+            } else {
+                setMessage("登録に失敗しました：" + error.message);
+            }
             setLoading(false);
             return;
         }
