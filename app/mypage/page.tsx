@@ -402,7 +402,8 @@ export default function MyPage() {
             {isLightBg && (
                 <style>{`
         * { color: #1a1a2e !important; }
-        .keep-color { color: inherit !important; }
+        [style*="rgba(255,255,255,0.03)"] { background: rgba(0,0,0,0.05) !important; }
+        [style*="rgba(255,255,255,0.08)"] { border-color: rgba(0,0,0,0.15) !important; }
     `}</style>
             )}
             {/* 名前入力モーダル */}
