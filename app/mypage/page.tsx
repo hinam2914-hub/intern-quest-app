@@ -219,6 +219,8 @@ export default function MyPage() {
     const [growthRank, setGrowthRank] = useState("");
     const [growthGrade, setGrowthGrade] = useState("");
     const [themeColor, setThemeColor] = useState("#6366f1");
+    const [bgColor, setBgColor] = useState("#0a0a0f");
+    const [fontFamily, setFontFamily] = useState("'Inter', sans-serif");
 
     const todayYmd = getTodayJST();
     const level = getLevel(points);
@@ -250,6 +252,8 @@ export default function MyPage() {
             setDepartmentId((profileData as any)?.department_id || "");
             setAvatarUrl((profileData as any)?.avatar_url || null);
             setThemeColor((profileData as any)?.theme_color || "#6366f1");
+            setBgColor((profileData as any)?.bg_color || "#0a0a0f");
+            setFontFamily((profileData as any)?.font_family || "'Inter', sans-serif");
             setGrowthRank((profileData as any)?.growth_rank || "");
             setGrowthGrade((profileData as any)?.growth_grade || "");
             // 育成ステータス自動判定
@@ -390,7 +394,7 @@ export default function MyPage() {
     }
 
     return (
-        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
+        <main style={{ minHeight: "100vh", background: bgColor, padding: "40px 24px 64px", fontFamily: fontFamily }}>
             {/* 名前入力モーダル */}
             {showNameModal && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -424,7 +428,7 @@ export default function MyPage() {
                 )}
             </AnimatePresence>
 
-            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
+            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(ellipse at 20% 50%, ${themeColor}15 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, ${themeColor}10 0%, transparent 60%)` }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
