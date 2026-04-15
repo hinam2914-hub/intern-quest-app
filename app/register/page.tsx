@@ -59,7 +59,7 @@ export default function RegisterPage() {
 
         setSuccess(true);
         setMessage("登録完了！ログインページに移動します...");
-        setTimeout(() => router.push("/login"), 2000);
+        setTimeout(() => router.push("/onboarding"), 2000);
         setLoading(false);
     };
 

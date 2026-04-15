@@ -83,9 +83,7 @@ export default function LoginPage() {
             .eq("id", user.id)
             .single();
 
-        const destination = (!profile?.name || profile.name.trim() === "")
-            ? "/register"
-            : "/mypage";
+        const destination = (!profile?.name || profile.name.trim() === "") ? "/register" : ((profile as any)?.onboarding_done ? "/mypage" : "/onboarding");
 
         setTimeout(() => router.push(destination), 1200);
         setLoading(false);
