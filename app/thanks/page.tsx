@@ -53,14 +53,17 @@ export default function ThanksPage() {
     const [success, setSuccess] = useState(false);
     const [thanksList, setThanksList] = useState<ThanksRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [historyTab, setHistoryTab] = useState<"all" | "sent" | "received">("all");
+    const [historyTab, setHistoryTab] = useState<"all" | "sent" | "received">("sent");
+    const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {
         const load = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setMyId(user.id);
-
+            const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            setIsAdmin(!!currentUser?.email && adminEmails.includes(currentUser.email));
             const { data: profileRows } = await supabase.from("profiles").select("id, name, avatar_url");
             const allUsers = (profileRows || []).map((p: any) => ({ id: p.id, name: p.name || "名前未設定", avatar_url: p.avatar_url || null }));
             setMyName(allUsers.find(u => u.id === user.id)?.name || "");
@@ -226,7 +229,7 @@ export default function ThanksPage() {
                         {/* タブ */}
                         <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 3 }}>
                             {[
-                                { key: "all", label: "全員" },
+                                ...(isAdmin ? [{ key: "all", label: "全員" }] : []),
                                 { key: "sent", label: "送った" },
                                 { key: "received", label: "受け取った" },
                             ].map((tab) => (
