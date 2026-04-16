@@ -1107,14 +1107,12 @@ export default function MyPage() {
                     </div>
                 </div>
             </div>
-
             {/* ✅ ページ下部ホームボタン */}
             <div style={{ marginTop: 32, textAlign: "center" }}>
-                <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
                     🏠 ホームに戻る
                 </button>
             </div>
-        </div>
-        </main >
+        </main>
     );
 }
