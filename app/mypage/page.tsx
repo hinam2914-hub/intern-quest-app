@@ -33,6 +33,17 @@ type Badge = {
     unlocked: boolean;
 };
 
+type Trophy = {
+    id: string;
+    icon: string;
+    name: string;
+    description: string;
+    rarity: "common" | "rare" | "epic" | "legendary";
+    unlocked: boolean;
+};
+
+type UserTag = { id: string; tag: string; };
+
 // パーティクル型
 type Particle = {
     id: number;
@@ -190,6 +201,28 @@ function getBadges(points: number, streak: number): Badge[] {
     ];
 }
 
+function getTrophies(params: { points: number; streak: number; submissionCount: number; thanksCount: number; rank2: string; }): Trophy[] {
+    const { points, streak, submissionCount, thanksCount, rank2 } = params;
+    return [
+        { id: "legend_intern", icon: "👑", name: "伝説のインターン", description: "5000pt達成", rarity: "legendary" as const, unlocked: points >= 5000 },
+        { id: "streak_master", icon: "🔥", name: "連続投稿マスター", description: "30日連続提出", rarity: "epic" as const, unlocked: streak >= 30 },
+        { id: "ss_ranker", icon: "💎", name: "SSランカー", description: "ランクSS到達", rarity: "epic" as const, unlocked: rank2 === "SS" },
+        { id: "output_king", icon: "📋", name: "アウトプット王", description: "日報50件提出", rarity: "rare" as const, unlocked: submissionCount >= 50 },
+        { id: "thanks_hero", icon: "🎉", name: "感謝の人", description: "サンキュー10件受領", rarity: "rare" as const, unlocked: thanksCount >= 10 },
+        { id: "s_ranker", icon: "⭐", name: "Sランカー", description: "ランクS到達", rarity: "rare" as const, unlocked: rank2 === "S" || rank2 === "SS" },
+        { id: "week_streak", icon: "⚡", name: "週間連続賞", description: "7日連続提出", rarity: "common" as const, unlocked: streak >= 7 },
+        { id: "first_100", icon: "🌱", name: "100pt突破", description: "100pt達成", rarity: "common" as const, unlocked: points >= 100 },
+        { id: "submitter10", icon: "📝", name: "コツコツ提出者", description: "日報10件提出", rarity: "common" as const, unlocked: submissionCount >= 10 },
+    ];
+}
+
+function getRarityStyle(rarity: Trophy["rarity"]) {
+    if (rarity === "legendary") return { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.5)", color: "#f59e0b", label: "LEGENDARY" };
+    if (rarity === "epic") return { bg: "rgba(139,92,246,0.15)", border: "rgba(139,92,246,0.5)", color: "#8b5cf6", label: "EPIC" };
+    if (rarity === "rare") return { bg: "rgba(6,182,212,0.15)", border: "rgba(6,182,212,0.5)", color: "#06b6d4", label: "RARE" };
+    return { bg: "rgba(107,114,128,0.15)", border: "rgba(107,114,128,0.4)", color: "#9ca3af", label: "COMMON" };
+}
+
 // ========== パーティクルエフェクト Hook ==========
 function useParticleEffect() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -324,6 +357,11 @@ export default function MyPage() {
     const [bgColor, setBgColor] = useState("#0a0a0f");
     const [fontFamily, setFontFamily] = useState("'Inter', sans-serif");
 
+    // タグ state
+    const [userTags, setUserTags] = useState<UserTag[]>([]);
+    const [newTag, setNewTag] = useState("");
+    const [tagSaving, setTagSaving] = useState(false);
+
     // エフェクト用 state
     const [floatingPoints, setFloatingPoints] = useState<FloatingPoint[]>([]);
     const floatingIdRef = useRef(0);
@@ -354,6 +392,12 @@ export default function MyPage() {
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
     const badges = getBadges(points, streak);
+    const trophies = getTrophies({ points, streak, submissionCount, thanksCount, rank2 });
+    const unlockedTrophies = trophies.filter(t => t.unlocked);
+    const topTrophy = [...unlockedTrophies].sort((a, b) => {
+        const order = { legendary: 4, epic: 3, rare: 2, common: 1 };
+        return order[b.rarity] - order[a.rarity];
+    })[0];
 
     // ポイント獲得エフェクト発火
     const triggerPointEffect = useCallback((amount: number, prevPoints: number) => {
@@ -477,6 +521,10 @@ export default function MyPage() {
             setMyKpis(kpis);
         }
 
+        // タグ取得
+        const { data: tagRows } = await supabase.from("user_tags").select("*").eq("user_id", user.id).order("created_at");
+        setUserTags((tagRows || []) as UserTag[]);
+
         setLoading(false);
     };
 
@@ -491,6 +539,20 @@ export default function MyPage() {
         }).eq("id", userId);
         setName(inputName.trim());
         setMessage("✅ プロフィールを保存しました");
+    };
+
+    const handleAddTag = async () => {
+        if (!newTag.trim() || !userId) return;
+        setTagSaving(true);
+        const { data } = await supabase.from("user_tags").insert({ user_id: userId, tag: newTag.trim(), created_by: userId }).select().single();
+        if (data) setUserTags(prev => [...prev, data as UserTag]);
+        setNewTag("");
+        setTagSaving(false);
+    };
+
+    const handleDeleteTag = async (tagId: string) => {
+        await supabase.from("user_tags").delete().eq("id", tagId);
+        setUserTags(prev => prev.filter(t => t.id !== tagId));
     };
 
     if (loading) {
@@ -649,6 +711,13 @@ export default function MyPage() {
                         <div>
                             <div style={{ fontSize: 11, color: themeColor, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>INTERN QUEST</div>
                             <h1 style={{ fontSize: 26, fontWeight: 800, color: textPrimary, margin: 0, lineHeight: 1 }}>{name || "名前未設定"}</h1>
+                            {topTrophy && (
+                                <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                                    <span style={{ fontSize: 15 }}>{topTrophy.icon}</span>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: getRarityStyle(topTrophy.rarity).color }}>{topTrophy.name}</span>
+                                    <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: getRarityStyle(topTrophy.rarity).bg, border: `1px solid ${getRarityStyle(topTrophy.rarity).border}`, color: getRarityStyle(topTrophy.rarity).color, fontWeight: 700 }}>{getRarityStyle(topTrophy.rarity).label}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
@@ -783,6 +852,72 @@ export default function MyPage() {
                                 <div id={`tip-card-${card.title}`} style={{ display: "none", position: "absolute", top: -44, left: 0, background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 14px", fontSize: 12, color: "#c7d2fe", whiteSpace: "nowrap", zIndex: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
                                     {card.tip}
                                 </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+
+                {/* ===== タグ ===== */}
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>🏷️ MY TAGS</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                        {mbti && <div style={{ padding: "6px 14px", borderRadius: 20, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 13, color: "#818cf8", fontWeight: 700 }}>🧠 {mbti}</div>}
+                        {club && <div style={{ padding: "6px 14px", borderRadius: 20, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
+                        {userTags.map(tag => (
+                            <div key={tag.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 13, color: "#34d399", fontWeight: 700 }}>
+                                {tag.tag}
+                                <button onClick={() => handleDeleteTag(tag.id)} style={{ background: "none", border: "none", color: "#34d399", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1, opacity: 0.7 }}>×</button>
+                            </div>
+                        ))}
+                        {userTags.length === 0 && !mbti && !club && <div style={{ fontSize: 13, color: textMuted }}>タグがありません。追加してみましょう！</div>}
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                        <input value={newTag} onChange={(e) => setNewTag(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddTag()} placeholder="例：🏢 新宿オフィス、💼 営業担当" style={{ flex: 1, padding: "8px 14px", borderRadius: 10, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 13, outline: "none" }} />
+                        <button onClick={handleAddTag} disabled={tagSaving || !newTag.trim()} style={{ padding: "8px 20px", borderRadius: 10, border: "none", background: newTag.trim() ? `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)` : "rgba(255,255,255,0.1)", color: "#fff", fontWeight: 700, cursor: newTag.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>追加</button>
+                    </div>
+                </div>
+
+                {/* ===== トロフィー ===== */}
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🏆 TROPHIES & 称号</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedTrophies.length} / {trophies.length} 獲得</div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
+                        {[...trophies].sort((a, b) => { const order = { legendary: 4, epic: 3, rare: 2, common: 1 }; return order[b.rarity] - order[a.rarity]; }).map(trophy => {
+                            const s = getRarityStyle(trophy.rarity);
+                            return (
+                                <div key={trophy.id} style={{ padding: "14px 16px", borderRadius: 12, background: trophy.unlocked ? s.bg : "rgba(255,255,255,0.02)", border: `1px solid ${trophy.unlocked ? s.border : "rgba(255,255,255,0.06)"}`, opacity: trophy.unlocked ? 1 : 0.4 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                        <span style={{ fontSize: 28, filter: trophy.unlocked ? "none" : "grayscale(1)" }}>{trophy.icon}</span>
+                                        <div>
+                                            <div style={{ fontSize: 13, fontWeight: 700, color: trophy.unlocked ? textPrimary : textMuted }}>{trophy.name}</div>
+                                            <div style={{ fontSize: 11, color: textMuted, marginTop: 2 }}>{trophy.description}</div>
+                                            <div style={{ marginTop: 4, fontSize: 10, padding: "1px 6px", borderRadius: 4, display: "inline-block", background: trophy.unlocked ? s.bg : "rgba(255,255,255,0.05)", border: `1px solid ${trophy.unlocked ? s.border : "rgba(255,255,255,0.1)"}`, color: trophy.unlocked ? s.color : textMuted, fontWeight: 700 }}>{s.label}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* ===== バッジ ===== */}
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎖️ BADGES</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{badges.filter(b => b.unlocked).length} / {badges.length} 解除済み</div>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                        {badges.map(badge => (
+                            <div key={badge.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, background: badge.unlocked ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)", border: `1px solid ${badge.unlocked ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)"}`, opacity: badge.unlocked ? 1 : 0.4 }}>
+                                <span style={{ fontSize: 22, filter: badge.unlocked ? "none" : "grayscale(1)" }}>{badge.icon}</span>
+                                <div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: badge.unlocked ? textPrimary : textMuted }}>{badge.name}</div>
+                                    <div style={{ fontSize: 11, color: textMuted }}>{badge.description}</div>
+                                </div>
+                                {badge.unlocked && <span style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginLeft: 4 }}>✅</span>}
                             </div>
                         ))}
                     </div>
