@@ -406,14 +406,12 @@ export default function MyPage() {
 
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
         const newPoints = pointRow?.points || 0;
+        setPoints(newPoints);
 
-        // ポイントが前回より増えていたらエフェクト発火
-        setPoints(prev => {
-            if (prev > 0 && newPoints > prev) {
-                setTimeout(() => triggerPointEffect(newPoints - prev, prev), 500);
-            }
-            return newPoints;
-        });
+        // ページを開いたら必ずエフェクト発火（0pt以上なら）
+        if (newPoints > 0) {
+            setTimeout(() => triggerPointEffect(newPoints, 0), 800);
+        }
 
         const { data: rankingRows } = await supabase.from("user_points").select("id, points").order("points", { ascending: false });
         if (rankingRows) {
