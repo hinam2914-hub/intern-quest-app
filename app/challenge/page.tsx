@@ -78,6 +78,8 @@ export default function ChallengePage() {
     const handleSubmit = async () => {
         if (!selectedChallenge) return;
         if (!comment.trim()) { setMessage("コメントを入力してください"); return; }
+        // ✅ 写真必須チェック
+        if (!image) { setMessage("写真を選択してください"); return; }
         setSending(true);
         setMessage("");
 
@@ -129,17 +131,15 @@ export default function ChallengePage() {
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto" }}>
 
-                {/* ヘッダー */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
                     <div>
-                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
+                        <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}>INTERN QUEST</div>
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>🎯 ライフチャレンジ</h1>
                         <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>人生の経験値を積んでスタンプを集めよう！</p>
                     </div>
                     <button onClick={() => router.push("/menu")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>← メニュー</button>
                 </div>
 
-                {/* 進捗 */}
                 <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 16, padding: 24, marginBottom: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>🏆 達成スタンプ</div>
@@ -153,7 +153,6 @@ export default function ChallengePage() {
                     </div>
                 </div>
 
-                {/* カテゴリフィルター */}
                 <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
                     {categories.map(cat => (
                         <button key={cat} onClick={() => setSelectedCategory(cat)} style={{ padding: "6px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: selectedCategory === cat ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: selectedCategory === cat ? "#fff" : "#9ca3af" }}>
@@ -162,7 +161,6 @@ export default function ChallengePage() {
                     ))}
                 </div>
 
-                {/* チャレンジグリッド */}
                 {filteredChallenges.length === 0 ? (
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 60, textAlign: "center" }}>
                         <div style={{ fontSize: 48, marginBottom: 16 }}>🎯</div>
@@ -183,22 +181,17 @@ export default function ChallengePage() {
                                     onMouseEnter={(e) => { if (!isApproved && !isPending) (e.currentTarget as HTMLDivElement).style.borderColor = `${catColor}60`; }}
                                     onMouseLeave={(e) => { if (!isApproved && !isPending) (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.08)"; }}
                                 >
-                                    {/* スタンプ */}
                                     <div style={{ fontSize: 40, marginBottom: 12, filter: isApproved ? "none" : "grayscale(0.3)", opacity: isApproved ? 1 : isPending ? 0.7 : 0.6 }}>
                                         {challenge.icon}
                                     </div>
-
-                                    {/* 達成バッジ */}
                                     {isApproved && (
                                         <div style={{ position: "absolute", top: 12, right: 12, width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg, #34d399, #10b981)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>✓</div>
                                     )}
                                     {isPending && (
                                         <div style={{ position: "absolute", top: 12, right: 12, padding: "3px 8px", borderRadius: 6, background: "rgba(251,191,36,0.2)", color: "#fbbf24", fontSize: 10, fontWeight: 700 }}>申請中</div>
                                     )}
-
                                     <div style={{ fontSize: 14, fontWeight: 700, color: isApproved ? "#34d399" : "#f9fafb", marginBottom: 6 }}>{challenge.title}</div>
                                     {challenge.description && <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5, marginBottom: 8 }}>{challenge.description}</div>}
-
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                         {challenge.category && <span style={{ fontSize: 11, color: catColor, fontWeight: 600 }}>{challenge.category}</span>}
                                         <span style={{ fontSize: 12, fontWeight: 700, color: "#818cf8" }}>+{challenge.points}pt</span>
@@ -209,7 +202,6 @@ export default function ChallengePage() {
                     </div>
                 )}
 
-                {/* 申請モーダル */}
                 {selectedChallenge && (
                     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
                         <div style={{ background: "#0f0f1a", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 20, padding: 40, width: "100%", maxWidth: 500 }}>
@@ -223,22 +215,23 @@ export default function ChallengePage() {
                             </div>
 
                             <div style={{ marginBottom: 20 }}>
-                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>写真（任意）</div>
+                                {/* ✅ 任意 → 必須 に変更 */}
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>写真（必須）</div>
                                 {preview ? (
                                     <div style={{ position: "relative" }}>
                                         <img src={preview} alt="preview" style={{ width: "100%", height: 160, objectFit: "cover", borderRadius: 10 }} />
                                         <button onClick={() => { setImage(null); setPreview(null); }} style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: "50%", background: "rgba(0,0,0,0.7)", border: "none", color: "#fff", cursor: "pointer", fontSize: 16 }}>×</button>
                                     </div>
                                 ) : (
-                                    <div onClick={() => fileInputRef.current?.click()} style={{ border: "2px dashed rgba(255,255,255,0.1)", borderRadius: 10, padding: "24px", textAlign: "center", cursor: "pointer" }}>
+                                    <div onClick={() => fileInputRef.current?.click()} style={{ border: "2px dashed rgba(99,102,241,0.4)", borderRadius: 10, padding: "24px", textAlign: "center", cursor: "pointer" }}>
                                         <div style={{ fontSize: 24, marginBottom: 8 }}>📸</div>
-                                        <div style={{ fontSize: 13, color: "#6b7280" }}>クリックして写真を選択</div>
+                                        <div style={{ fontSize: 13, color: "#9ca3af" }}>クリックして写真を選択<span style={{ color: "#f87171", marginLeft: 4 }}>*</span></div>
                                     </div>
                                 )}
                                 <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} />
                             </div>
 
-                            {message && <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 8, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.3)", color: "#34d399", fontSize: 13, fontWeight: 600 }}>{message}</div>}
+                            {message && <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 8, background: message.includes("✅") ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", border: `1px solid ${message.includes("✅") ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`, color: message.includes("✅") ? "#34d399" : "#f87171", fontSize: 13, fontWeight: 600 }}>{message}</div>}
 
                             <div style={{ display: "flex", gap: 10 }}>
                                 <button onClick={() => { setSelectedChallenge(null); setComment(""); setImage(null); setPreview(null); setMessage(""); }} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>キャンセル</button>
