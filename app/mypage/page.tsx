@@ -361,6 +361,8 @@ export default function MyPage() {
     const [userTags, setUserTags] = useState<UserTag[]>([]);
     const [newTag, setNewTag] = useState("");
     const [tagSaving, setTagSaving] = useState(false);
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     // エフェクト用 state
     const [floatingPoints, setFloatingPoints] = useState<FloatingPoint[]>([]);
@@ -532,13 +534,17 @@ export default function MyPage() {
 
     const handleSaveProfile = async () => {
         if (!userId) return;
+        setSavingProfile(true);
         await supabase.from("profiles").update({
             name: inputName.trim(),
             education: education.trim(),
             department_id: departmentId || null,
         }).eq("id", userId);
         setName(inputName.trim());
+        setSavingProfile(false);
+        setSaveSuccess(true);
         setMessage("✅ プロフィールを保存しました");
+        setTimeout(() => setSaveSuccess(false), 2000);
     };
 
     const handleAddTag = async () => {
@@ -709,7 +715,7 @@ export default function MyPage() {
                             </div>
                         )}
                         <div>
-                            <div style={{ fontSize: 11, color: themeColor, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>INTERN QUEST</div>
+                            <div onClick={() => router.push("/mypage")} style={{ fontSize: 11, color: themeColor, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4, cursor: "pointer" }}>INTERN QUEST</div>
                             <h1 style={{ fontSize: 26, fontWeight: 800, color: textPrimary, margin: 0, lineHeight: 1 }}>{name || "名前未設定"}</h1>
                             {topTrophy && (
                                 <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
@@ -1077,7 +1083,7 @@ export default function MyPage() {
                                 <option value="">事業部を選択</option>
                                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                             </select>
-                            <button onClick={handleSaveProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>保存</button>
+                            <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: saveSuccess ? "linear-gradient(135deg, #10b981, #34d399)" : `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.3s" }}>{savingProfile ? "保存中..." : saveSuccess ? "✅ 保存しました！" : "保存"}</button>
                         </div>
                         <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: `1px solid ${cardBorder}`, background: cardBg, color: textSecondary, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
                     </div>
@@ -1101,6 +1107,14 @@ export default function MyPage() {
                     </div>
                 </div>
             </div>
-        </main>
+
+            {/* ✅ ページ下部ホームボタン */}
+            <div style={{ marginTop: 32, textAlign: "center" }}>
+                <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                    🏠 ホームに戻る
+                </button>
+            </div>
+        </div>
+        </main >
     );
 }

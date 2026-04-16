@@ -62,7 +62,13 @@ export default function MenuPage() {
                 {/* ヘッダー */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 40 }}>
                     <div>
-                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
+                        {/* ✅ ロゴクリックでホームへ */}
+                        <div
+                            onClick={() => router.push("/mypage")}
+                            style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}
+                        >
+                            INTERN QUEST
+                        </div>
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>{name || "名前未設定"}</h1>
                     </div>
                     <div style={{ padding: "10px 20px", borderRadius: 12, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 18, fontWeight: 800, color: "#818cf8" }}>
