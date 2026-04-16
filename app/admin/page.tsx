@@ -25,6 +25,8 @@ type Department = { id: string; name: string; code: string };
 type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; officialTarget?: number; };
 type DeptReport = { id: string; department_id: string; year_month: string; content: string; created_at: string; deptName?: string; };
 type Resource = { id: string; title: string; description: string | null; resource_type: string; url: string | null; category: string | null; is_active: boolean; created_at: string; };
+type Challenge = { id: string; title: string; description: string | null; category: string | null; points: number; icon: string; is_active: boolean; };
+type ChallengeSubmission = { id: string; user_id: string; challenge_id: string; comment: string | null; image_url: string | null; status: string; created_at: string; userName?: string; challengeTitle?: string; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -87,7 +89,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -147,7 +149,17 @@ export default function AdminPage() {
     const [resourceCategory, setResourceCategory] = useState("");
     const [resourceSaving, setResourceSaving] = useState(false);
     const [resourceMessage, setResourceMessage] = useState("");
+    const [challenges, setChallenges] = useState<Challenge[]>([]);
+    const [challengeSubmissions, setChallengeSubmissions] = useState<ChallengeSubmission[]>([]);
+    const [challengeTitle, setChallengeTitle] = useState("");
+    const [challengeDesc, setChallengeDesc] = useState("");
+    const [challengeCategory, setChallengeCategory] = useState("");
+    const [challengePoints, setChallengePoints] = useState(10);
+    const [challengeIcon, setChallengeIcon] = useState("🎯");
+    const [challengeSaving, setChallengeSaving] = useState(false);
+    const [challengeMessage, setChallengeMessage] = useState("");
 
+    // ✅ Fix 1: useEffect は load 関数を内部定義して即呼び出す正しい構造
     useEffect(() => {
         const load = async () => {
             setLoading(true);
@@ -293,7 +305,6 @@ export default function AdminPage() {
             const { data: teamRows } = await supabase.from("teams").select("*").order("created_at");
             setTeams((teamRows || []) as Team[]);
 
-            // 全月次KPI取得（部署別成績用）
             const { data: allMonthlyKpiRows } = await supabase.from("monthly_kpi").select("*").order("year_month", { ascending: false });
             const { data: allTargetRows } = await supabase.from("monthly_targets").select("*");
             setMonthlyTargets((allTargetRows || []) as { user_id: string; department_id: string; year_month: string; target: number }[]);
@@ -305,24 +316,31 @@ export default function AdminPage() {
             }));
             setAllMonthlyKpis(enrichedAll);
 
-            // 当月分
             const now2 = new Date();
             const currentYm = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, "0")}`;
             setMonthlyKpis(enrichedAll.filter((k: any) => k.year_month === currentYm));
-            // 部署別レポート取得
+
             const { data: deptReportRows } = await supabase.from("dept_reports").select("*").order("year_month", { ascending: false });
             setDeptReports((deptReportRows || []).map((r: any) => ({
                 ...r,
                 deptName: deptRows?.find((d: any) => d.id === r.department_id)?.name || "不明",
             })));
-            setLoading(false);
+
             const { data: resourceRows } = await supabase.from("resources").select("*").order("created_at", { ascending: false });
             setResources((resourceRows || []) as Resource[]);
+
+            const { data: challengeRows } = await supabase.from("challenges").select("*").order("created_at");
+            setChallenges((challengeRows || []) as Challenge[]);
+
+            const { data: challengeSubRows } = await supabase.from("challenge_submissions").select("*").order("created_at", { ascending: false });
+            setChallengeSubmissions((challengeSubRows || []) as ChallengeSubmission[]);
+
+            setLoading(false);
         };
+        // ✅ Fix 2: load() の呼び出しは useEffect コールバック内、load 定義の直後
         load();
     }, [period, router]);
 
-    // kpiMonthが変わったら月次KPIを絞り込む
     useEffect(() => {
         setMonthlyKpis(allMonthlyKpis.filter(k => k.year_month === kpiMonth));
     }, [kpiMonth, allMonthlyKpis]);
@@ -366,16 +384,13 @@ export default function AdminPage() {
         const nowIso = new Date().toISOString();
         await supabase.from("monthly_kpi").update({ approved: true, approved_at: nowIso, points_awarded: kpi.points_awarded }).eq("id", kpi.id);
 
-        // 本人にポイント付与
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", kpi.user_id).single();
         const current = pointRow?.points || 0;
         await supabase.from("user_points").update({ points: current + kpi.points_awarded }).eq("id", kpi.user_id);
         await supabase.from("points_history").insert({ user_id: kpi.user_id, change: kpi.points_awarded, reason: "kpi_achievement", created_at: nowIso });
 
-        // チーム達成ボーナス（100%以上の場合）
         const rate = kpi.target > 0 ? Math.round((kpi.result / kpi.target) * 100) : 0;
         if (rate >= 100) {
-            // このユーザーのチームを取得
             const { data: profileRow } = await supabase.from("profiles").select("team_id").eq("id", kpi.user_id).single();
             const teamId = profileRow?.team_id;
             if (teamId) {
@@ -464,7 +479,6 @@ export default function AdminPage() {
         return sorted.filter(u => u.department_id === selectedDept);
     }, [userDetails, selectedDept]);
 
-    // 部署別成績の計算
     const deptStats = useMemo(() => {
         const deptIds = [...new Set(allMonthlyKpis.map(k => k.department_id))];
         return deptIds.map(deptId => {
@@ -521,6 +535,7 @@ export default function AdminPage() {
                         { key: "monthly_kpi", label: "月次KPI" },
                         { key: "dept_stats", label: "部署別成績" },
                         { key: "resources", label: "資料管理" },
+                        { key: "challenges", label: "チャレンジ" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -529,7 +544,6 @@ export default function AdminPage() {
                     ))}
                 </div>
 
-                {/* ユーザー一覧タブ */}
                 {activeTab === "users" && (
                     <div>
                         <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
@@ -648,8 +662,7 @@ export default function AdminPage() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                            )
-                                            }
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -1118,10 +1131,9 @@ export default function AdminPage() {
                         </div>
                     </>
                 )}
-                {/* 部署別成績タブ */}
+
                 {activeTab === "dept_stats" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        {/* 事業部ページへのリンク */}
                         <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
                             {[
                                 { label: "CB事業部", path: "/admin/cb", color: "#6366f1" },
@@ -1138,7 +1150,6 @@ export default function AdminPage() {
                                 </button>
                             ))}
                         </div>
-                        {/* 月次レポート投稿フォーム */}
                         <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📝 月次レポート投稿</div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -1206,7 +1217,6 @@ export default function AdminPage() {
                             {reportMessage && <div style={{ marginTop: 12, fontSize: 13, color: reportMessage.includes("✅") ? "#34d399" : "#f87171", fontWeight: 600 }}>{reportMessage}</div>}
                         </div>
 
-                        {/* KPI達成率サマリー */}
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>🏢 部署別成績（全期間）</div>
 
                         {deptStats.length === 0 ? (
@@ -1215,12 +1225,10 @@ export default function AdminPage() {
                             </div>
                         ) : deptStats.map((dept, di) => {
                             const overallColor = dept.overallAvg >= 100 ? "#34d399" : dept.overallAvg >= 80 ? "#f59e0b" : dept.overallAvg >= 60 ? "#f97316" : "#f87171";
-                            // この部署の投稿レポート
                             const thisReports = deptReports.filter(r => r.department_id === dept.deptId);
 
                             return (
                                 <div key={dept.deptId} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                                    {/* KPI達成率カード */}
                                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1274,7 +1282,6 @@ export default function AdminPage() {
                                         </div>
                                     </div>
 
-                                    {/* この部署の月次レポート */}
                                     {thisReports.length > 0 && (
                                         <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingLeft: 16 }}>
                                             {thisReports.map(report => (
@@ -1303,7 +1310,6 @@ export default function AdminPage() {
                             );
                         })}
 
-                        {/* KPIデータはないがレポートだけある部署 */}
                         {deptReports.filter(r => !deptStats.find(d => d.deptId === r.department_id)).length > 0 && (
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>その他のレポート</div>
@@ -1332,6 +1338,7 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {/* ✅ Fix 3: monthly_kpi タブの <select> から challenges の JSX を分離 */}
                 {activeTab === "monthly_kpi" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1511,6 +1518,7 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+
                 {activeTab === "resources" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
@@ -1586,7 +1594,121 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+
+                {/* ✅ Fix 4: challenges タブを独立した条件分岐として正しい位置に配置 */}
+                {activeTab === "challenges" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🎯 新規チャレンジ追加</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイトル</div>
+                                    <input value={challengeTitle} onChange={(e) => setChallengeTitle(e.target.value)} placeholder="例：有名なラーメンを食べる" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>カテゴリ</div>
+                                    <input value={challengeCategory} onChange={(e) => setChallengeCategory(e.target.value)} placeholder="例：食・旅・スポーツ" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px", gap: 12, marginBottom: 16 }}>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>説明</div>
+                                    <input value={challengeDesc} onChange={(e) => setChallengeDesc(e.target.value)} placeholder="チャレンジの説明（任意）" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>アイコン</div>
+                                    <input value={challengeIcon} onChange={(e) => setChallengeIcon(e.target.value)} placeholder="🎯" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 20, outline: "none", boxSizing: "border-box", textAlign: "center" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>ポイント</div>
+                                    <input type="number" value={challengePoints} onChange={(e) => setChallengePoints(Number(e.target.value))} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                            </div>
+                            <button onClick={async () => {
+                                if (!challengeTitle.trim()) { setChallengeMessage("タイトルを入力してください"); return; }
+                                setChallengeSaving(true);
+                                await supabase.from("challenges").insert({ title: challengeTitle.trim(), description: challengeDesc.trim() || null, category: challengeCategory.trim() || null, points: challengePoints, icon: challengeIcon || "🎯", is_active: true });
+                                const { data: rows } = await supabase.from("challenges").select("*").order("created_at");
+                                setChallenges((rows || []) as Challenge[]);
+                                setChallengeTitle(""); setChallengeDesc(""); setChallengeCategory(""); setChallengePoints(10); setChallengeIcon("🎯");
+                                setChallengeMessage("✅ チャレンジを追加しました！");
+                                setChallengeSaving(false);
+                            }} disabled={challengeSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                {challengeSaving ? "追加中..." : "🎯 追加する"}
+                            </button>
+                            {challengeMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{challengeMessage}</div>}
+                        </div>
+
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📋 達成申請一覧</div>
+                            {challengeSubmissions.filter(s => s.status === "pending").length === 0 ? (
+                                <div style={{ color: "#6b7280", fontSize: 14 }}>申請中の達成報告はありません</div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {challengeSubmissions.filter(s => s.status === "pending").map(sub => (
+                                        <div key={sub.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)" }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                                                        <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{sub.userName}</span>
+                                                        <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{sub.challengeTitle}</span>
+                                                    </div>
+                                                    {sub.comment && <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 8 }}>{sub.comment}</div>}
+                                                    {sub.image_url && <img src={sub.image_url} alt="達成写真" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, marginBottom: 8 }} />}
+                                                </div>
+                                                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                                                    <button onClick={async () => {
+                                                        const nowIso = new Date().toISOString();
+                                                        await supabase.from("challenge_submissions").update({ status: "approved", approved_at: nowIso }).eq("id", sub.id);
+                                                        const challenge = challenges.find(c => c.id === sub.challenge_id);
+                                                        if (challenge) {
+                                                            const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", sub.user_id).single();
+                                                            const current = pointRow?.points || 0;
+                                                            await supabase.from("user_points").update({ points: current + challenge.points }).eq("id", sub.user_id);
+                                                            await supabase.from("points_history").insert({ user_id: sub.user_id, change: challenge.points, reason: "challenge_complete", created_at: nowIso });
+                                                        }
+                                                        setChallengeSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, status: "approved" } : s));
+                                                    }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認</button>
+                                                    <button onClick={async () => {
+                                                        await supabase.from("challenge_submissions").update({ status: "rejected" }).eq("id", sub.id);
+                                                        setChallengeSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, status: "rejected" } : s));
+                                                    }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>CHALLENGES</div>
+                            {challenges.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>チャレンジがありません</div> : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {challenges.map(c => (
+                                        <div key={c.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${c.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                <span style={{ fontSize: 24 }}>{c.icon}</span>
+                                                <div>
+                                                    <div style={{ fontSize: 14, fontWeight: 700, color: c.is_active ? "#f9fafb" : "#6b7280" }}>{c.title}</div>
+                                                    <div style={{ fontSize: 12, color: "#6b7280" }}>{c.category} · +{c.points}pt</div>
+                                                </div>
+                                            </div>
+                                            <button onClick={async () => {
+                                                await supabase.from("challenges").update({ is_active: !c.is_active }).eq("id", c.id);
+                                                setChallenges(prev => prev.map(ch => ch.id === c.id ? { ...ch, is_active: !ch.is_active } : ch));
+                                            }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: c.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: c.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>
+                                                {c.is_active ? "非表示" : "表示する"}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
             </div>
-        </main >
+        </main>
     );
 }
