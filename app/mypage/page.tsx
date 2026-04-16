@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
@@ -31,6 +31,28 @@ type Badge = {
     name: string;
     description: string;
     unlocked: boolean;
+};
+
+// パーティクル型
+type Particle = {
+    id: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    color: string;
+    size: number;
+    life: number;
+    maxLife: number;
+    shape: "circle" | "star" | "rect";
+};
+
+// フローティングポイント型
+type FloatingPoint = {
+    id: number;
+    x: number;
+    y: number;
+    value: number;
 };
 
 function getTodayJST(): string {
@@ -168,6 +190,102 @@ function getBadges(points: number, streak: number): Badge[] {
     ];
 }
 
+// ========== パーティクルエフェクト Hook ==========
+function useParticleEffect() {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const particlesRef = useRef<Particle[]>([]);
+    const animFrameRef = useRef<number>(0);
+    const particleIdRef = useRef(0);
+
+    const COLORS = ["#6366f1", "#8b5cf6", "#f59e0b", "#34d399", "#ec4899", "#06b6d4", "#f97316", "#fbbf24", "#a855f7"];
+
+    const spawnParticles = useCallback((x: number, y: number, count = 40) => {
+        for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+            const speed = 4 + Math.random() * 8;
+            particlesRef.current.push({
+                id: particleIdRef.current++,
+                x, y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - Math.random() * 4,
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                size: 4 + Math.random() * 8,
+                life: 1,
+                maxLife: 0.6 + Math.random() * 0.8,
+                shape: (["circle", "star", "rect"] as const)[Math.floor(Math.random() * 3)],
+            });
+        }
+    }, []);
+
+    const drawStar = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            const outer = (i * Math.PI * 2) / 5 - Math.PI / 2;
+            const inner = outer + Math.PI / 5;
+            if (i === 0) ctx.moveTo(x + Math.cos(outer) * size, y + Math.sin(outer) * size);
+            else ctx.lineTo(x + Math.cos(outer) * size, y + Math.sin(outer) * size);
+            ctx.lineTo(x + Math.cos(inner) * size * 0.4, y + Math.sin(inner) * size * 0.4);
+        }
+        ctx.closePath();
+        ctx.fill();
+    };
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener("resize", resize);
+
+        const animate = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particlesRef.current = particlesRef.current.filter(p => p.life > 0);
+            particlesRef.current.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.25; // 重力
+                p.vx *= 0.98;
+                p.life -= 0.018;
+                const alpha = Math.max(0, p.life / 1);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 8;
+                if (p.shape === "circle") {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (p.shape === "star") {
+                    drawStar(ctx, p.x, p.y, p.size / 2);
+                } else {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.life * 10);
+                    ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+                    ctx.restore();
+                }
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            });
+            animFrameRef.current = requestAnimationFrame(animate);
+        };
+        animate();
+
+        return () => {
+            window.removeEventListener("resize", resize);
+            cancelAnimationFrame(animFrameRef.current);
+        };
+    }, []);
+
+    return { canvasRef, spawnParticles };
+}
+
 export default function MyPage() {
     const router = useRouter();
     const [userId, setUserId] = useState("");
@@ -206,6 +324,12 @@ export default function MyPage() {
     const [bgColor, setBgColor] = useState("#0a0a0f");
     const [fontFamily, setFontFamily] = useState("'Inter', sans-serif");
 
+    // エフェクト用 state
+    const [floatingPoints, setFloatingPoints] = useState<FloatingPoint[]>([]);
+    const floatingIdRef = useRef(0);
+    const pointsCardRef = useRef<HTMLDivElement>(null);
+    const { canvasRef, spawnParticles } = useParticleEffect();
+
     const isLightBg = useMemo(() =>
         ["#fce4ec", "#f3e5f5", "#e8f5e9", "#e3f2fd", "#fff9e6"].includes(bgColor),
         [bgColor]);
@@ -230,6 +354,25 @@ export default function MyPage() {
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
     const badges = getBadges(points, streak);
+
+    // ポイント獲得エフェクト発火
+    const triggerPointEffect = useCallback((amount: number, prevPoints: number) => {
+        if (amount <= 0) return;
+
+        // フローティング +Xpt テキスト
+        const card = pointsCardRef.current;
+        const x = card ? card.getBoundingClientRect().left + card.offsetWidth / 2 : window.innerWidth / 2;
+        const y = card ? card.getBoundingClientRect().top + card.offsetHeight / 2 : window.innerHeight / 2;
+
+        const newFloat: FloatingPoint = { id: floatingIdRef.current++, x, y, value: amount };
+        setFloatingPoints(prev => [...prev, newFloat]);
+        setTimeout(() => {
+            setFloatingPoints(prev => prev.filter(f => f.id !== newFloat.id));
+        }, 1500);
+
+        // パーティクル
+        spawnParticles(x, y, amount >= 10 ? 60 : 30);
+    }, [spawnParticles]);
 
     const loadPage = async () => {
         setLoading(true);
@@ -262,7 +405,15 @@ export default function MyPage() {
         }
 
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
-        setPoints(pointRow?.points || 0);
+        const newPoints = pointRow?.points || 0;
+
+        // ポイントが前回より増えていたらエフェクト発火
+        setPoints(prev => {
+            if (prev > 0 && newPoints > prev) {
+                setTimeout(() => triggerPointEffect(newPoints - prev, prev), 500);
+            }
+            return newPoints;
+        });
 
         const { data: rankingRows } = await supabase.from("user_points").select("id, points").order("points", { ascending: false });
         if (rankingRows) {
@@ -280,10 +431,10 @@ export default function MyPage() {
 
         if (!profileData?.name) setShowNameModal(true);
 
-        const newLevel = Math.max(1, Math.floor((pointRow?.points || 0) / 100) + 1);
+        const newLevel = Math.max(1, Math.floor(newPoints / 100) + 1);
         if (prevLevel > 0 && newLevel > prevLevel) {
             setLevelUpShow(true);
-            setTimeout(() => setLevelUpShow(false), 3000);
+            setTimeout(() => setLevelUpShow(false), 4000);
         }
         setPrevLevel(newLevel);
 
@@ -354,6 +505,43 @@ export default function MyPage() {
 
     return (
         <main style={{ minHeight: "100vh", background: bgColor || "#0a0a0f", padding: "40px 24px 64px", fontFamily: fontFamily, color: textPrimary }}>
+
+            {/* ===== パーティクルキャンバス ===== */}
+            <canvas
+                ref={canvasRef}
+                style={{
+                    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+                    pointerEvents: "none", zIndex: 9999,
+                }}
+            />
+
+            {/* ===== フローティング +Xpt テキスト ===== */}
+            <AnimatePresence>
+                {floatingPoints.map(fp => (
+                    <motion.div
+                        key={fp.id}
+                        initial={{ opacity: 1, y: 0, scale: 0.5, x: fp.x - 40 }}
+                        animate={{ opacity: 0, y: -120, scale: 1.4 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1.4, ease: "easeOut" }}
+                        style={{
+                            position: "fixed",
+                            top: fp.y - 30,
+                            left: 0,
+                            zIndex: 9998,
+                            pointerEvents: "none",
+                            fontSize: 28,
+                            fontWeight: 900,
+                            color: "#fbbf24",
+                            textShadow: "0 0 20px rgba(251,191,36,0.8), 0 0 40px rgba(251,191,36,0.4)",
+                            letterSpacing: 1,
+                        }}
+                    >
+                        +{fp.value}pt ✨
+                    </motion.div>
+                ))}
+            </AnimatePresence>
+
             {showNameModal && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div style={{ background: "#0f0f1a", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 20, padding: 40, width: 400 }}>
@@ -366,15 +554,83 @@ export default function MyPage() {
                 </div>
             )}
 
+            {/* ===== レベルアップ演出（派手バージョン） ===== */}
             <AnimatePresence>
                 {levelUpShow && (
-                    <motion.div initial={{ opacity: 0, scale: 0.5, y: 50 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.5, y: -50 }} transition={{ type: "spring", bounce: 0.5 }} style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                        <div style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", borderRadius: 24, padding: "40px 60px", textAlign: "center", boxShadow: "0 0 80px rgba(99,102,241,0.6)" }}>
-                            <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
-                            <div style={{ fontSize: 14, color: "#c7d2fe", fontWeight: 700, letterSpacing: 3 }}>LEVEL UP!</div>
-                            <div style={{ fontSize: 48, fontWeight: 900, color: "#fff", margin: "8px 0" }}>Lv.{level}</div>
-                            <div style={{ fontSize: 14, color: "#c7d2fe" }}>おめでとうございます！</div>
-                        </div>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        style={{
+                            position: "fixed", inset: 0, zIndex: 9990,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            pointerEvents: "none",
+                            background: "radial-gradient(ellipse at center, rgba(99,102,241,0.3) 0%, transparent 70%)",
+                        }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0, rotate: -20 }}
+                            animate={{ scale: [0, 1.3, 1.1, 1.2], rotate: [0, 5, -3, 0] }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            transition={{ type: "spring", bounce: 0.6, duration: 0.8 }}
+                            style={{
+                                background: "linear-gradient(135deg, #1a1a3e, #0f0f2a)",
+                                border: "2px solid rgba(99,102,241,0.8)",
+                                borderRadius: 32,
+                                padding: "48px 80px",
+                                textAlign: "center",
+                                boxShadow: "0 0 120px rgba(99,102,241,0.7), 0 0 60px rgba(139,92,246,0.5), inset 0 0 40px rgba(99,102,241,0.1)",
+                            }}
+                        >
+                            <motion.div
+                                animate={{ rotate: [0, 15, -15, 10, -10, 0] }}
+                                transition={{ duration: 0.6, delay: 0.3 }}
+                                style={{ fontSize: 64, marginBottom: 8 }}
+                            >
+                                🎉
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                style={{ fontSize: 13, color: "#818cf8", fontWeight: 800, letterSpacing: 5, marginBottom: 8 }}
+                            >
+                                LEVEL UP!
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.3, type: "spring", bounce: 0.5 }}
+                                style={{
+                                    fontSize: 80, fontWeight: 900, color: "#fff",
+                                    lineHeight: 1,
+                                    textShadow: "0 0 40px rgba(139,92,246,0.8), 0 0 20px rgba(99,102,241,0.6)",
+                                }}
+                            >
+                                Lv.{level}
+                            </motion.div>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.5 }}
+                                style={{ fontSize: 16, color: "#c7d2fe", marginTop: 12, fontWeight: 600 }}
+                            >
+                                おめでとうございます！🚀
+                            </motion.div>
+
+                            {/* 周囲を回るリング */}
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                style={{
+                                    position: "absolute", inset: -20,
+                                    borderRadius: 48,
+                                    border: "2px dashed rgba(99,102,241,0.4)",
+                                    pointerEvents: "none",
+                                }}
+                            />
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -415,13 +671,11 @@ export default function MyPage() {
 
                 {message && <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>{message}</div>}
 
-                {/* メイングリッド 案A：2行レイアウト */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
-                    {/* 上段：3カード */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
                         {[
                             {
-                                title: "TOTAL POINTS", tip: "獲得したポイントの累計です", content: (
+                                title: "TOTAL POINTS", tip: "獲得したポイントの累計です", ref: pointsCardRef, content: (
                                     <div>
                                         <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{points.toLocaleString()}</div>
                                         <div style={{ fontSize: 16, color: themeColor, fontWeight: 600, marginTop: 4 }}>pt</div>
@@ -432,7 +686,7 @@ export default function MyPage() {
                                 )
                             },
                             {
-                                title: "LEVEL", tip: "ポイントが100pt貯まるごとにレベルアップします", content: (
+                                title: "LEVEL", tip: "ポイントが100pt貯まるごとにレベルアップします", ref: undefined, content: (
                                     <div>
                                         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
                                             <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>Lv.{level}</div>
@@ -450,7 +704,7 @@ export default function MyPage() {
                                 )
                             },
                             {
-                                title: "STREAK", tip: "日報を連続提出した日数です", content: (
+                                title: "STREAK", tip: "日報を連続提出した日数です", ref: undefined, content: (
                                     <div>
                                         <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{streak}</div>
                                         <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 600, marginTop: 4 }}>日連続</div>
@@ -459,7 +713,7 @@ export default function MyPage() {
                                 )
                             },
                         ].map((card) => (
-                            <div key={card.title} style={{ position: "relative" }}
+                            <div key={card.title} ref={card.ref} style={{ position: "relative" }}
                                 onMouseEnter={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "block"; }}
                                 onMouseLeave={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "none"; }}
                             >
@@ -477,7 +731,6 @@ export default function MyPage() {
                         ))}
                     </div>
 
-                    {/* 下段：2カード */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
                         {[
                             {
