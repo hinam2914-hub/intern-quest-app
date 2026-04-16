@@ -346,6 +346,7 @@ export default function MyPage() {
     const [thanksCount, setThanksCount] = useState(0);
     const [kpiCount, setKpiCount] = useState(0);
     const [activeDays, setActiveDays] = useState(0);
+    const [startedAt, setStartedAt] = useState("");
     const [todayKpiDone, setTodayKpiDone] = useState(false);
     const [todayThanksDone, setTodayThanksDone] = useState(false);
     const [todayLearnDone, setTodayLearnDone] = useState(false);
@@ -539,7 +540,13 @@ export default function MyPage() {
             name: inputName.trim(),
             education: education.trim(),
             department_id: departmentId || null,
+            started_at: startedAt || null,
         }).eq("id", userId);
+        // activeDaysを再計算
+        if (startedAt) {
+            const start = new Date(startedAt);
+            setActiveDays(Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24)));
+        }
         setName(inputName.trim());
         setSavingProfile(false);
         setSaveSuccess(true);
@@ -1079,6 +1086,10 @@ export default function MyPage() {
                             )}
                             <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
                             <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="学歴を入力（例：〇〇大学）" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                            <div style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>📅 入社日</div>
+                                <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
                             <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}>
                                 <option value="">事業部を選択</option>
                                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -1107,9 +1118,10 @@ export default function MyPage() {
                     </div>
                 </div>
             </div>
+
             {/* ✅ ページ下部ホームボタン */}
             <div style={{ marginTop: 32, textAlign: "center" }}>
-                <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 600, cursor: "pointer", fontSize: 14 }}>
+                <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
                     🏠 ホームに戻る
                 </button>
             </div>
