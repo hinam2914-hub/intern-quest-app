@@ -1124,7 +1124,6 @@ export default function MyPage() {
                 <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
                     🏠 ホームに戻る
                 </button>
-            </div>
-        </main>
+            </main>
     );
 }
