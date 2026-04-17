@@ -210,7 +210,20 @@ export default function LearnPage() {
                             )}
 
                             {selected.url && !getYouTubeId(selected.url) && (
-                                <a href={selected.url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginBottom: 20, color: "#818cf8", fontWeight: 600, textDecoration: "none" }}>🔗 リンクを開く →</a>
+                                <div style={{ marginBottom: 20 }}>
+                                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>🔗 参考リンク</div>
+                                    <a href={selected.url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 12, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)", textDecoration: "none", transition: "all 0.2s" }}
+                                        onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = "rgba(99,102,241,0.15)"}
+                                        onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = "rgba(99,102,241,0.08)"}
+                                    >
+                                        <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🌐</div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: 13, fontWeight: 700, color: "#818cf8", marginBottom: 2 }}>記事を読む</div>
+                                            <div style={{ fontSize: 11, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected.url}</div>
+                                        </div>
+                                        <div style={{ fontSize: 16, color: "#818cf8", flexShrink: 0 }}>→</div>
+                                    </a>
+                                </div>
                             )}
 
                             <div style={{ display: "flex", gap: 10 }}>
