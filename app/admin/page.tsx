@@ -805,8 +805,6 @@ export default function AdminPage() {
                             </button>
                             {contentMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399" }}>{contentMessage}</div>}
                         </div>
-
-                        </div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>📝 レビュー承認</div>
@@ -874,506 +872,686 @@ export default function AdminPage() {
                 {activeTab === "requests" && (
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT REQUESTS</div>
-                        {requestsList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>申請はありません</div> : (
+                    {requestsList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>申請はありません</div> : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {requestsList.map((req) => (
+                                <div key={req.id} style={{ padding: "16px 20px", borderRadius: 12, background: req.status === "pending" ? "rgba(251,191,36,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${req.status === "pending" ? "rgba(251,191,36,0.3)" : req.status === "approved" ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}` }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                                <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{req.userName}</span>
+                                                <span style={{ fontSize: 12, color: "#6b7280" }}>→</span>
+                                                <span style={{ fontSize: 14, fontWeight: 600, color: "#c7d2fe" }}>{req.itemTitle}</span>
+                                            </div>
+                                            <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6b7280" }}>
+                                                <span>{req.cost} pt</span>
+                                                <span>{formatDateTime(req.created_at)}</span>
+                                                {req.note && <span>備考: {req.note}</span>}
+                                            </div>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            {req.status === "pending" ? (
+                                                <>
+                                                    <button onClick={() => handleApproveRequest(req, true)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認</button>
+                                                    <button onClick={() => handleApproveRequest(req, false)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
+                                                </>
+                                            ) : (
+                                                <div style={{ padding: "6px 14px", borderRadius: 8, background: req.status === "approved" ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)", color: req.status === "approved" ? "#34d399" : "#f87171", fontSize: 13, fontWeight: 700 }}>
+                                                    {req.status === "approved" ? "✅ 承認済" : "❌ 却下"}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {activeTab === "teams" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>👥 新規チーム作成</div>
+                        <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+                            <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="代理店名を入力（例：〇〇代理店）" style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
+                            <button onClick={handleCreateTeam} disabled={teamSaving} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                {teamSaving ? "作成中..." : "作成"}
+                            </button>
+                        </div>
+                        {teamMessage && <div style={{ fontSize: 13, color: "#34d399", fontWeight: 600 }}>{teamMessage}</div>}
+                    </div>
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>メンバー割り当て</div>
+                        {teams.length === 0 ? (
+                            <div style={{ color: "#6b7280", fontSize: 14 }}>チームがありません。先にチームを作成してください。</div>
+                        ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                {requestsList.map((req) => (
-                                    <div key={req.id} style={{ padding: "16px 20px", borderRadius: 12, background: req.status === "pending" ? "rgba(251,191,36,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${req.status === "pending" ? "rgba(251,191,36,0.3)" : req.status === "approved" ? "rgba(52,211,153,0.2)" : "rgba(248,113,113,0.2)"}` }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{req.userName}</span>
-                                                    <span style={{ fontSize: 12, color: "#6b7280" }}>→</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 600, color: "#c7d2fe" }}>{req.itemTitle}</span>
-                                                </div>
-                                                <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6b7280" }}>
-                                                    <span>{req.cost} pt</span>
-                                                    <span>{formatDateTime(req.created_at)}</span>
-                                                    {req.note && <span>備考: {req.note}</span>}
-                                                </div>
+                                {userDetails.map((u) => (
+                                    <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                            {u.avatar_url ? (
+                                                <img src={u.avatar_url} alt={u.name} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", border: "2px solid rgba(99,102,241,0.4)" }} />
+                                            ) : (
+                                                <div style={{ width: 36, height: 36, borderRadius: 8, background: teams.find(t => t.id === u.team_id)?.color || "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
+                                            )}
+                                            <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb" }}>{u.name}</div>
+                                        </div>
+                                        <select value={u.team_id || ""} onChange={(e) => handleAssignTeam(u.id, e.target.value)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", cursor: "pointer" }}>
+                                            <option value="">チームなし</option>
+                                            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </select>
+                                        <button
+                                            onClick={async () => {
+                                                const userTeam = teams.find(t => t.id === u.team_id);
+                                                if (!userTeam) return;
+                                                await supabase.from("teams").update({ leader_id: u.id }).eq("id", userTeam.id);
+                                                setTeams(prev => prev.map(t => t.id === userTeam.id ? { ...t, leader_id: u.id } : t));
+                                            }}
+                                            style={{
+                                                padding: "6px 12px", borderRadius: 8, border: "none",
+                                                background: teams.find(t => t.id === u.team_id)?.leader_id === u.id ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.05)",
+                                                color: teams.find(t => t.id === u.team_id)?.leader_id === u.id ? "#f59e0b" : "#6b7280",
+                                                fontSize: 12, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap"
+                                            }}
+                                        >
+                                            {teams.find(t => t.id === u.team_id)?.leader_id === u.id ? "👑 リーダー" : "リーダーにする"}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🏆 チームランキング</div>
+                        {teams.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>チームがありません</div> : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {teams.map((team) => {
+                                    const members = userDetails.filter(u => u.team_id === team.id);
+                                    const totalPoints = members.reduce((sum, u) => sum + u.points, 0);
+                                    return { ...team, members, totalPoints };
+                                }).sort((a, b) => b.totalPoints - a.totalPoints).map((team, i) => (
+                                    <div key={team.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${team.color}40` }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                <div style={{ width: 12, height: 12, borderRadius: "50%", background: team.color }} />
+                                                <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`} {team.name}</span>
+                                                <span style={{ fontSize: 12, color: "#6b7280" }}>{team.members.length}人</span>
                                             </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                {req.status === "pending" ? (
-                                                    <>
-                                                        <button onClick={() => handleApproveRequest(req, true)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認</button>
-                                                        <button onClick={() => handleApproveRequest(req, false)} disabled={processingRequest === req.id} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
-                                                    </>
-                                                ) : (
-                                                    <div style={{ padding: "6px 14px", borderRadius: 8, background: req.status === "approved" ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)", color: req.status === "approved" ? "#34d399" : "#f87171", fontSize: 13, fontWeight: 700 }}>
-                                                        {req.status === "approved" ? "✅ 承認済" : "❌ 却下"}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <span style={{ fontSize: 20, fontWeight: 800, color: team.color }}>{team.totalPoints.toLocaleString()}pt</span>
+                                        </div>
+                                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                            {team.members.map(m => (
+                                                <div key={m.id} style={{ padding: "4px 10px", borderRadius: 6, background: `${team.color}20`, border: `1px solid ${team.color}40`, fontSize: 12, color: "#d1d5db" }}>{m.name} {m.points}pt</div>
+                                            ))}
+                                            {team.members.length === 0 && <div style={{ fontSize: 12, color: "#6b7280" }}>メンバーなし</div>}
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         )}
                     </div>
-                )}
+                </div>
+            )}
 
-                {activeTab === "teams" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>👥 新規チーム作成</div>
-                            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-                                <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="代理店名を入力（例：〇〇代理店）" style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none" }} />
-                                <button onClick={handleCreateTeam} disabled={teamSaving} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-                                    {teamSaving ? "作成中..." : "作成"}
-                                </button>
+            {activeTab === "dashboard" && (
+                <>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+                        {(["today", "week", "month"] as const).map((p) => (
+                            <button key={p} onClick={() => setPeriod(p)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: period === p ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)", color: period === p ? "#fff" : "#9ca3af" }}>
+                                {p === "today" ? "今日" : p === "week" ? "今週" : "今月"}
+                            </button>
+                        ))}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+                        {[
+                            { label: "TOTAL USERS", value: userCount, unit: "人", color: "#818cf8" },
+                            { label: "SUBMISSIONS", value: reportCount, unit: "件", color: "#34d399" },
+                            { label: `${periodLabel.toUpperCase()} RATE`, value: `${submitRate}%`, unit: "", color: submitRate >= 80 ? "#34d399" : submitRate >= 50 ? "#f59e0b" : "#f87171" },
+                            { label: "NOT SUBMITTED", value: notSubmittedUsers.length, unit: "人", color: "#f87171" },
+                        ].map((card, i) => (
+                            <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>{card.label}</div>
+                                <div style={{ fontSize: 40, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.value}</div>
+                                {card.unit && <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>{card.unit}</div>}
                             </div>
-                            {teamMessage && <div style={{ fontSize: 13, color: "#34d399", fontWeight: 600 }}>{teamMessage}</div>}
+                        ))}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TOTAL POINT GROWTH</div>
+                            {pointGraphData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={160}>
+                                    <LineChart data={pointGraphData}>
+                                        <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
+                                        <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
+                                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計"]} />
+                                        <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 3 }} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
                         </div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>メンバー割り当て</div>
-                            {teams.length === 0 ? (
-                                <div style={{ color: "#6b7280", fontSize: 14 }}>チームがありません。先にチームを作成してください。</div>
-                            ) : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                    {userDetails.map((u) => (
-                                        <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                {u.avatar_url ? (
-                                                    <img src={u.avatar_url} alt={u.name} style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", border: "2px solid rgba(99,102,241,0.4)" }} />
-                                                ) : (
-                                                    <div style={{ width: 36, height: 36, borderRadius: 8, background: teams.find(t => t.id === u.team_id)?.color || "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{u.name.charAt(0)}</div>
-                                                )}
-                                                <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb" }}>{u.name}</div>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>DAILY SUBMISSIONS</div>
+                            {submitGraphData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={160}>
+                                    <BarChart data={submitGraphData}>
+                                        <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
+                                        <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
+                                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(52,211,153,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}件`, "提出数"]} />
+                                        <Bar dataKey="count" fill="#34d399" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
+                        </div>
+                    </div>
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI ACHIEVEMENT</div>
+                        {kpiStatuses.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPIデータがありません</div> : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {kpiStatuses.slice(0, 10).map((s, i) => (
+                                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${s.value >= s.target ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.05)"}` }}>
+                                        <div>
+                                            <span style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{s.userName}</span>
+                                            <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 8 }}>- {s.kpiTitle}</span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <span style={{ fontSize: 14, fontWeight: 700, color: s.value >= s.target ? "#34d399" : "#f9fafb" }}>{s.value}{s.unit}</span>
+                                            <span style={{ fontSize: 12, color: "#6b7280" }}>/ {s.target}{s.unit}</span>
+                                            {s.value >= s.target && <span style={{ fontSize: 11, color: "#34d399", fontWeight: 700 }}>✅ 達成</span>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>LEARNING COMPLETIONS</div>
+                            {contentCompletions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>完了記録がありません</div> : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {contentCompletions.slice(0, 8).map((c, i) => (
+                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                                            <div>
+                                                <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{c.userName}</div>
+                                                <div style={{ fontSize: 11, color: "#6b7280" }}>{c.contentTitle}</div>
                                             </div>
-                                            <select value={u.team_id || ""} onChange={(e) => handleAssignTeam(u.id, e.target.value)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", cursor: "pointer" }}>
-                                                <option value="">チームなし</option>
-                                                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                            </select>
-                                            <button
-                                                onClick={async () => {
-                                                    const userTeam = teams.find(t => t.id === u.team_id);
-                                                    if (!userTeam) return;
-                                                    await supabase.from("teams").update({ leader_id: u.id }).eq("id", userTeam.id);
-                                                    setTeams(prev => prev.map(t => t.id === userTeam.id ? { ...t, leader_id: u.id } : t));
-                                                }}
-                                                style={{
-                                                    padding: "6px 12px", borderRadius: 8, border: "none",
-                                                    background: teams.find(t => t.id === u.team_id)?.leader_id === u.id ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.05)",
-                                                    color: teams.find(t => t.id === u.team_id)?.leader_id === u.id ? "#f59e0b" : "#6b7280",
-                                                    fontSize: 12, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap"
-                                                }}
-                                            >
-                                                {teams.find(t => t.id === u.team_id)?.leader_id === u.id ? "👑 リーダー" : "リーダーにする"}
-                                            </button>
+                                            <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700 }}>✅ 完了</div>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🏆 チームランキング</div>
-                            {teams.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>チームがありません</div> : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                    {teams.map((team) => {
-                                        const members = userDetails.filter(u => u.team_id === team.id);
-                                        const totalPoints = members.reduce((sum, u) => sum + u.points, 0);
-                                        return { ...team, members, totalPoints };
-                                    }).sort((a, b) => b.totalPoints - a.totalPoints).map((team, i) => (
-                                        <div key={team.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${team.color}40` }}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                    <div style={{ width: 12, height: 12, borderRadius: "50%", background: team.color }} />
-                                                    <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{["🥇", "🥈", "🥉"][i] || `${i + 1}.`} {team.name}</span>
-                                                    <span style={{ fontSize: 12, color: "#6b7280" }}>{team.members.length}人</span>
-                                                </div>
-                                                <span style={{ fontSize: 20, fontWeight: 800, color: team.color }}>{team.totalPoints.toLocaleString()}pt</span>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>THANKS HISTORY</div>
+                            {thanksList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>サンキューはありません</div> : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {thanksList.slice(0, 8).map((t) => (
+                                        <div key={t.id} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.15)" }}>
+                                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 2 }}>
+                                                <span style={{ color: "#818cf8", fontWeight: 600 }}>{t.fromName}</span>
+                                                <span> → </span>
+                                                <span style={{ color: "#fbbf24", fontWeight: 600 }}>{t.toName}</span>
                                             </div>
-                                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                                {team.members.map(m => (
-                                                    <div key={m.id} style={{ padding: "4px 10px", borderRadius: 6, background: `${team.color}20`, border: `1px solid ${team.color}40`, fontSize: 12, color: "#d1d5db" }}>{m.name} {m.points}pt</div>
-                                                ))}
-                                                {team.members.length === 0 && <div style={{ fontSize: 12, color: "#6b7280" }}>メンバーなし</div>}
-                                            </div>
+                                            <div style={{ fontSize: 13, color: "#d1d5db" }}>{t.message}</div>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
                     </div>
-                )}
-
-                {activeTab === "dashboard" && (
-                    <>
-                        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-                            {(["today", "week", "month"] as const).map((p) => (
-                                <button key={p} onClick={() => setPeriod(p)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: period === p ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)", color: period === p ? "#fff" : "#9ca3af" }}>
-                                    {p === "today" ? "今日" : p === "week" ? "今週" : "今月"}
-                                </button>
-                            ))}
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
-                            {[
-                                { label: "TOTAL USERS", value: userCount, unit: "人", color: "#818cf8" },
-                                { label: "SUBMISSIONS", value: reportCount, unit: "件", color: "#34d399" },
-                                { label: `${periodLabel.toUpperCase()} RATE`, value: `${submitRate}%`, unit: "", color: submitRate >= 80 ? "#34d399" : submitRate >= 50 ? "#f59e0b" : "#f87171" },
-                                { label: "NOT SUBMITTED", value: notSubmittedUsers.length, unit: "人", color: "#f87171" },
-                            ].map((card, i) => (
-                                <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>{card.label}</div>
-                                    <div style={{ fontSize: 40, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.value}</div>
-                                    {card.unit && <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>{card.unit}</div>}
-                                </div>
-                            ))}
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>TOTAL POINT GROWTH</div>
-                                {pointGraphData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={160}>
-                                        <LineChart data={pointGraphData}>
-                                            <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
-                                            <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
-                                            <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計"]} />
-                                            <Line type="monotone" dataKey="points" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 3 }} />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
-                            </div>
-                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>DAILY SUBMISSIONS</div>
-                                {submitGraphData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={160}>
-                                        <BarChart data={submitGraphData}>
-                                            <XAxis dataKey="date" stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
-                                            <YAxis stroke="#4b5563" tick={{ fill: "#6b7280", fontSize: 10 }} />
-                                            <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(52,211,153,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}件`, "提出数"]} />
-                                            <Bar dataKey="count" fill="#34d399" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>データがありません</div>}
-                            </div>
-                        </div>
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>KPI ACHIEVEMENT</div>
-                            {kpiStatuses.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPIデータがありません</div> : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                    {kpiStatuses.slice(0, 10).map((s, i) => (
-                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${s.value >= s.target ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.05)"}` }}>
-                                            <div>
-                                                <span style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{s.userName}</span>
-                                                <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 8 }}>- {s.kpiTitle}</span>
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>REPORT CONTENTS</div>
+                        {reports.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>{periodLabel}の日報はまだありません</div> : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {reports.map((report) => (
+                                    <div key={report.id} style={{ borderRadius: 12, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                                        <div onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "rgba(255,255,255,0.02)", cursor: "pointer" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{report.userName?.charAt(0) || "?"}</div>
+                                                <div>
+                                                    <div style={{ fontSize: 14, fontWeight: 600, color: "#d1d5db" }}>{report.userName}</div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>{formatDateTime(report.created_at)}</div>
+                                                </div>
                                             </div>
                                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <span style={{ fontSize: 14, fontWeight: 700, color: s.value >= s.target ? "#34d399" : "#f9fafb" }}>{s.value}{s.unit}</span>
-                                                <span style={{ fontSize: 12, color: "#6b7280" }}>/ {s.target}{s.unit}</span>
-                                                {s.value >= s.target && <span style={{ fontSize: 11, color: "#34d399", fontWeight: 700 }}>✅ 達成</span>}
+                                                <div style={{ fontSize: 12, color: "#9ca3af", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{report.content}</div>
+                                                <span style={{ color: "#6b7280", fontSize: 12 }}>{expandedReport === report.id ? "▲" : "▼"}</span>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>LEARNING COMPLETIONS</div>
-                                {contentCompletions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>完了記録がありません</div> : (
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                        {contentCompletions.slice(0, 8).map((c, i) => (
-                                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.15)" }}>
-                                                <div>
-                                                    <div style={{ fontSize: 13, fontWeight: 600, color: "#d1d5db" }}>{c.userName}</div>
-                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>{c.contentTitle}</div>
-                                                </div>
-                                                <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700 }}>✅ 完了</div>
+                                        {expandedReport === report.id && (
+                                            <div style={{ padding: "16px", background: "rgba(99,102,241,0.05)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                                <p style={{ margin: 0, fontSize: 14, color: "#c7d2fe", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{report.content}</p>
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
-                                )}
+                                ))}
                             </div>
-                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>THANKS HISTORY</div>
-                                {thanksList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>サンキューはありません</div> : (
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                        {thanksList.slice(0, 8).map((t) => (
-                                            <div key={t.id} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.15)" }}>
-                                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 2 }}>
-                                                    <span style={{ color: "#818cf8", fontWeight: 600 }}>{t.fromName}</span>
-                                                    <span> → </span>
-                                                    <span style={{ color: "#fbbf24", fontWeight: 600 }}>{t.toName}</span>
-                                                </div>
-                                                <div style={{ fontSize: 13, color: "#d1d5db" }}>{t.message}</div>
-                                            </div>
-                                        ))}
+                        )}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>MISSING REPORTS</div>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    <button onClick={async () => { await navigator.clipboard.writeText(copyText); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{copied ? "✅ コピー済" : "名前コピー"}</button>
+                                    <button onClick={async () => { await navigator.clipboard.writeText(reminderText); }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>リマインド文</button>
+                                </div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {notSubmittedUsers.length > 0 ? notSubmittedUsers.map((u) => (
+                                    <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+                                        <span style={{ fontWeight: 600, color: "#fca5a5", fontSize: 14 }}>{u.name || "名前未設定"}</span>
+                                        <a href={`https://line.me/R/msg/text/?${encodeURIComponent(`${u.name || ""}さん、日報の提出をお願いします。`)}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#818cf8", textDecoration: "none", fontWeight: 600 }}>連絡 →</a>
                                     </div>
-                                )}
+                                )) : <div style={{ padding: 16, borderRadius: 10, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#34d399", fontSize: 14, fontWeight: 600 }}>✅ 全員提出済み（{periodLabel}）</div>}
                             </div>
                         </div>
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>REPORT CONTENTS</div>
-                            {reports.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>{periodLabel}の日報はまだありません</div> : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                    {reports.map((report) => (
-                                        <div key={report.id} style={{ borderRadius: 12, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                                            <div onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "rgba(255,255,255,0.02)", cursor: "pointer" }}>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{report.userName?.charAt(0) || "?"}</div>
-                                                    <div>
-                                                        <div style={{ fontSize: 14, fontWeight: 600, color: "#d1d5db" }}>{report.userName}</div>
-                                                        <div style={{ fontSize: 11, color: "#6b7280" }}>{formatDateTime(report.created_at)}</div>
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                    <div style={{ fontSize: 12, color: "#9ca3af", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{report.content}</div>
-                                                    <span style={{ color: "#6b7280", fontSize: 12 }}>{expandedReport === report.id ? "▲" : "▼"}</span>
-                                                </div>
-                                            </div>
-                                            {expandedReport === report.id && (
-                                                <div style={{ padding: "16px", background: "rgba(99,102,241,0.05)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                                                    <p style={{ margin: 0, fontSize: 14, color: "#c7d2fe", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{report.content}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>MISSING REPORTS</div>
-                                    <div style={{ display: "flex", gap: 8 }}>
-                                        <button onClick={async () => { await navigator.clipboard.writeText(copyText); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{copied ? "✅ コピー済" : "名前コピー"}</button>
-                                        <button onClick={async () => { await navigator.clipboard.writeText(reminderText); }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>リマインド文</button>
-                                    </div>
-                                </div>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>POINT RANKING</div>
                                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                    {notSubmittedUsers.length > 0 ? notSubmittedUsers.map((u) => (
-                                        <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
-                                            <span style={{ fontWeight: 600, color: "#fca5a5", fontSize: 14 }}>{u.name || "名前未設定"}</span>
-                                            <a href={`https://line.me/R/msg/text/?${encodeURIComponent(`${u.name || ""}さん、日報の提出をお願いします。`)}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#818cf8", textDecoration: "none", fontWeight: 600 }}>連絡 →</a>
+                                    {topUsers.length > 0 ? topUsers.map((u, i) => (
+                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                            <span style={{ fontSize: 14, color: "#d1d5db", fontWeight: 600 }}>{rankMedals[i]} {u.name}</span>
+                                            <span style={{ fontSize: 16, fontWeight: 700, color: "#818cf8" }}>{u.points.toLocaleString()}pt</span>
                                         </div>
-                                    )) : <div style={{ padding: 16, borderRadius: 10, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#34d399", fontSize: 14, fontWeight: 600 }}>✅ 全員提出済み（{periodLabel}）</div>}
+                                    )) : <div style={{ color: "#6b7280", fontSize: 14 }}>データがありません</div>}
                                 </div>
                             </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>POINT RANKING</div>
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                        {topUsers.length > 0 ? topUsers.map((u, i) => (
-                                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                                                <span style={{ fontSize: 14, color: "#d1d5db", fontWeight: 600 }}>{rankMedals[i]} {u.name}</span>
-                                                <span style={{ fontSize: 16, fontWeight: 700, color: "#818cf8" }}>{u.points.toLocaleString()}pt</span>
-                                            </div>
-                                        )) : <div style={{ color: "#6b7280", fontSize: 14 }}>データがありません</div>}
-                                    </div>
-                                </div>
-                                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SUBMISSION RANKING</div>
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                        {topSubmitters.length > 0 ? topSubmitters.map((u, i) => (
-                                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                                                <span style={{ fontSize: 14, color: "#d1d5db", fontWeight: 600 }}>{rankMedals[i]} {u.name}</span>
-                                                <span style={{ fontSize: 16, fontWeight: 700, color: "#34d399" }}>{u.count}回</span>
-                                            </div>
-                                        )) : <div style={{ color: "#6b7280", fontSize: 14 }}>データがありません</div>}
-                                    </div>
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SUBMISSION RANKING</div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {topSubmitters.length > 0 ? topSubmitters.map((u, i) => (
+                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                            <span style={{ fontSize: 14, color: "#d1d5db", fontWeight: 600 }}>{rankMedals[i]} {u.name}</span>
+                                            <span style={{ fontSize: 16, fontWeight: 700, color: "#34d399" }}>{u.count}回</span>
+                                        </div>
+                                    )) : <div style={{ color: "#6b7280", fontSize: 14 }}>データがありません</div>}
                                 </div>
                             </div>
                         </div>
-                    </>
-                )}
+                    </div>
+                </>
+            )}
 
-                {activeTab === "dept_stats" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
-                            {[
-                                { label: "CB事業部", path: "/admin/cb", color: "#6366f1" },
-                                { label: "IP事業部", path: "/admin/ip", color: "#06b6d4" },
-                                { label: "SP事業部", path: "/admin/sp", color: "#34d399" },
-                                { label: "HR事業部", path: "/admin/hr", color: "#f59e0b" },
-                            ].map((dept) => (
-                                <button
-                                    key={dept.path}
-                                    onClick={() => router.push(dept.path)}
-                                    style={{ padding: "10px 24px", borderRadius: 10, border: `1px solid ${dept.color}50`, background: `${dept.color}15`, color: dept.color, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
-                                >
-                                    📊 {dept.label}
-                                </button>
-                            ))}
-                        </div>
-                        <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📝 月次レポート投稿</div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                                <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>事業部</div>
-                                    <select
-                                        value={reportDeptId}
-                                        onChange={(e) => setReportDeptId(e.target.value)}
-                                        style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: reportDeptId ? "#f9fafb" : "#6b7280", fontSize: 14, outline: "none" }}
-                                    >
-                                        <option value="">選択してください</option>
-                                        {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>対象月</div>
-                                    <select
-                                        value={reportMonth}
-                                        onChange={(e) => setReportMonth(e.target.value)}
-                                        style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 14, outline: "none" }}
-                                    >
-                                        {Array.from({ length: 12 }, (_, i) => {
-                                            const d = new Date();
-                                            d.setMonth(d.getMonth() - i);
-                                            const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-                                            return <option key={ym} value={ym}>{ym}</option>;
-                                        })}
-                                    </select>
-                                </div>
-                            </div>
-                            <div style={{ marginBottom: 12 }}>
-                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>レポート内容</div>
-                                <textarea
-                                    value={reportContent}
-                                    onChange={(e) => setReportContent(e.target.value)}
-                                    placeholder="月次レポートをここに貼り付けてください..."
-                                    style={{ width: "100%", height: 200, padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "monospace", lineHeight: 1.8 }}
-                                />
-                            </div>
+            {activeTab === "dept_stats" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
+                        {[
+                            { label: "CB事業部", path: "/admin/cb", color: "#6366f1" },
+                            { label: "IP事業部", path: "/admin/ip", color: "#06b6d4" },
+                            { label: "SP事業部", path: "/admin/sp", color: "#34d399" },
+                            { label: "HR事業部", path: "/admin/hr", color: "#f59e0b" },
+                        ].map((dept) => (
                             <button
-                                onClick={async () => {
-                                    if (!reportDeptId) { setReportMessage("事業部を選択してください"); return; }
-                                    if (!reportContent.trim()) { setReportMessage("内容を入力してください"); return; }
-                                    setReportSaving(true);
-                                    setReportMessage("");
-                                    const { data: { user } } = await supabase.auth.getUser();
-                                    await supabase.from("dept_reports").insert({
-                                        department_id: reportDeptId,
-                                        year_month: reportMonth,
-                                        content: reportContent.trim(),
-                                        created_by: user?.id,
-                                    });
-                                    const { data: rows } = await supabase.from("dept_reports").select("*").order("year_month", { ascending: false });
-                                    const { data: deptRows } = await supabase.from("departments").select("*");
-                                    setDeptReports((rows || []).map((r: any) => ({ ...r, deptName: deptRows?.find((d: any) => d.id === r.department_id)?.name || "不明" })));
-                                    setReportContent("");
-                                    setReportMessage("✅ レポートを投稿しました！");
-                                    setReportSaving(false);
-                                }}
-                                disabled={reportSaving}
-                                style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: reportSaving ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: reportSaving ? "not-allowed" : "pointer", fontSize: 14 }}
+                                key={dept.path}
+                                onClick={() => router.push(dept.path)}
+                                style={{ padding: "10px 24px", borderRadius: 10, border: `1px solid ${dept.color}50`, background: `${dept.color}15`, color: dept.color, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
                             >
-                                {reportSaving ? "投稿中..." : "📤 投稿する"}
+                                📊 {dept.label}
                             </button>
-                            {reportMessage && <div style={{ marginTop: 12, fontSize: 13, color: reportMessage.includes("✅") ? "#34d399" : "#f87171", fontWeight: 600 }}>{reportMessage}</div>}
-                        </div>
-
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>🏢 部署別成績（全期間）</div>
-
-                        {deptStats.length === 0 ? (
-                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
-                                KPIデータがありません
+                        ))}
+                    </div>
+                    <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📝 月次レポート投稿</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>事業部</div>
+                                <select
+                                    value={reportDeptId}
+                                    onChange={(e) => setReportDeptId(e.target.value)}
+                                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: reportDeptId ? "#f9fafb" : "#6b7280", fontSize: 14, outline: "none" }}
+                                >
+                                    <option value="">選択してください</option>
+                                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                </select>
                             </div>
-                        ) : deptStats.map((dept, di) => {
-                            const overallColor = dept.overallAvg >= 100 ? "#34d399" : dept.overallAvg >= 80 ? "#f59e0b" : dept.overallAvg >= 60 ? "#f97316" : "#f87171";
-                            const thisReports = deptReports.filter(r => r.department_id === dept.deptId);
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>対象月</div>
+                                <select
+                                    value={reportMonth}
+                                    onChange={(e) => setReportMonth(e.target.value)}
+                                    style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 14, outline: "none" }}
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => {
+                                        const d = new Date();
+                                        d.setMonth(d.getMonth() - i);
+                                        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                                        return <option key={ym} value={ym}>{ym}</option>;
+                                    })}
+                                </select>
+                            </div>
+                        </div>
+                        <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>レポート内容</div>
+                            <textarea
+                                value={reportContent}
+                                onChange={(e) => setReportContent(e.target.value)}
+                                placeholder="月次レポートをここに貼り付けてください..."
+                                style={{ width: "100%", height: 200, padding: "12px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "monospace", lineHeight: 1.8 }}
+                            />
+                        </div>
+                        <button
+                            onClick={async () => {
+                                if (!reportDeptId) { setReportMessage("事業部を選択してください"); return; }
+                                if (!reportContent.trim()) { setReportMessage("内容を入力してください"); return; }
+                                setReportSaving(true);
+                                setReportMessage("");
+                                const { data: { user } } = await supabase.auth.getUser();
+                                await supabase.from("dept_reports").insert({
+                                    department_id: reportDeptId,
+                                    year_month: reportMonth,
+                                    content: reportContent.trim(),
+                                    created_by: user?.id,
+                                });
+                                const { data: rows } = await supabase.from("dept_reports").select("*").order("year_month", { ascending: false });
+                                const { data: deptRows } = await supabase.from("departments").select("*");
+                                setDeptReports((rows || []).map((r: any) => ({ ...r, deptName: deptRows?.find((d: any) => d.id === r.department_id)?.name || "不明" })));
+                                setReportContent("");
+                                setReportMessage("✅ レポートを投稿しました！");
+                                setReportSaving(false);
+                            }}
+                            disabled={reportSaving}
+                            style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: reportSaving ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: reportSaving ? "not-allowed" : "pointer", fontSize: 14 }}
+                        >
+                            {reportSaving ? "投稿中..." : "📤 投稿する"}
+                        </button>
+                        {reportMessage && <div style={{ marginTop: 12, fontSize: 13, color: reportMessage.includes("✅") ? "#34d399" : "#f87171", fontWeight: 600 }}>{reportMessage}</div>}
+                    </div>
 
-                            return (
-                                <div key={dept.deptId} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                <div style={{ fontSize: 20 }}>{["🥇", "🥈", "🥉"][di] || "🏢"}</div>
-                                                <div>
-                                                    <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb" }}>{dept.deptName}</div>
-                                                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{dept.monthlyStats.length}ヶ月のデータ</div>
-                                                </div>
-                                            </div>
-                                            <div style={{ textAlign: "right" }}>
-                                                <div style={{ fontSize: 32, fontWeight: 900, color: overallColor }}>{dept.overallAvg}%</div>
-                                                <div style={{ fontSize: 12, color: "#6b7280" }}>全期間平均達成率</div>
+                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>🏢 部署別成績（全期間）</div>
+
+                    {deptStats.length === 0 ? (
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
+                            KPIデータがありません
+                        </div>
+                    ) : deptStats.map((dept, di) => {
+                        const overallColor = dept.overallAvg >= 100 ? "#34d399" : dept.overallAvg >= 80 ? "#f59e0b" : dept.overallAvg >= 60 ? "#f97316" : "#f87171";
+                        const thisReports = deptReports.filter(r => r.department_id === dept.deptId);
+
+                        return (
+                            <div key={dept.deptId} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                            <div style={{ fontSize: 20 }}>{["🥇", "🥈", "🥉"][di] || "🏢"}</div>
+                                            <div>
+                                                <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb" }}>{dept.deptName}</div>
+                                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{dept.monthlyStats.length}ヶ月のデータ</div>
                                             </div>
                                         </div>
-
-                                        <div style={{ overflowX: "auto" }}>
-                                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                                <thead>
-                                                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                                                        {["月", "平均達成率", "100%達成", "承認済", "達成状況"].map(h => (
-                                                            <th key={h} style={{ padding: "8px 12px", fontSize: 11, color: "#6b7280", fontWeight: 700, textAlign: "left", letterSpacing: 1 }}>{h}</th>
-                                                        ))}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {dept.monthlyStats.map(m => {
-                                                        const rc = m.avgRate >= 100 ? "#34d399" : m.avgRate >= 80 ? "#f59e0b" : m.avgRate >= 60 ? "#f97316" : "#f87171";
-                                                        return (
-                                                            <tr key={m.ym} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                                                                <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{m.ym}</td>
-                                                                <td style={{ padding: "12px" }}>
-                                                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                                        <div style={{ width: 100, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
-                                                                            <div style={{ height: "100%", width: `${Math.min(m.avgRate, 100)}%`, background: rc, borderRadius: 999 }} />
-                                                                        </div>
-                                                                        <span style={{ fontSize: 14, fontWeight: 700, color: rc }}>{m.avgRate}%</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td style={{ padding: "12px", fontSize: 13, color: m.achievedCount > 0 ? "#34d399" : "#6b7280", fontWeight: 700 }}>{m.achievedCount}/{m.total}件</td>
-                                                                <td style={{ padding: "12px", fontSize: 13, color: "#818cf8", fontWeight: 700 }}>{m.approved}/{m.total}件</td>
-                                                                <td style={{ padding: "12px" }}>
-                                                                    <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: m.avgRate >= 100 ? "rgba(52,211,153,0.15)" : m.avgRate >= 80 ? "rgba(245,158,11,0.15)" : "rgba(248,113,113,0.15)", color: m.avgRate >= 100 ? "#34d399" : m.avgRate >= 80 ? "#f59e0b" : "#f87171" }}>
-                                                                        {m.avgRate >= 100 ? "✅ 達成" : m.avgRate >= 80 ? "⚡ 惜しい" : "📉 要改善"}
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
+                                        <div style={{ textAlign: "right" }}>
+                                            <div style={{ fontSize: 32, fontWeight: 900, color: overallColor }}>{dept.overallAvg}%</div>
+                                            <div style={{ fontSize: 12, color: "#6b7280" }}>全期間平均達成率</div>
                                         </div>
                                     </div>
 
-                                    {thisReports.length > 0 && (
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingLeft: 16 }}>
-                                            {thisReports.map(report => (
+                                    <div style={{ overflowX: "auto" }}>
+                                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                                                    {["月", "平均達成率", "100%達成", "承認済", "達成状況"].map(h => (
+                                                        <th key={h} style={{ padding: "8px 12px", fontSize: 11, color: "#6b7280", fontWeight: 700, textAlign: "left", letterSpacing: 1 }}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {dept.monthlyStats.map(m => {
+                                                    const rc = m.avgRate >= 100 ? "#34d399" : m.avgRate >= 80 ? "#f59e0b" : m.avgRate >= 60 ? "#f97316" : "#f87171";
+                                                    return (
+                                                        <tr key={m.ym} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                                                            <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{m.ym}</td>
+                                                            <td style={{ padding: "12px" }}>
+                                                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                                    <div style={{ width: 100, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
+                                                                        <div style={{ height: "100%", width: `${Math.min(m.avgRate, 100)}%`, background: rc, borderRadius: 999 }} />
+                                                                    </div>
+                                                                    <span style={{ fontSize: 14, fontWeight: 700, color: rc }}>{m.avgRate}%</span>
+                                                                </div>
+                                                            </td>
+                                                            <td style={{ padding: "12px", fontSize: 13, color: m.achievedCount > 0 ? "#34d399" : "#6b7280", fontWeight: 700 }}>{m.achievedCount}/{m.total}件</td>
+                                                            <td style={{ padding: "12px", fontSize: 13, color: "#818cf8", fontWeight: 700 }}>{m.approved}/{m.total}件</td>
+                                                            <td style={{ padding: "12px" }}>
+                                                                <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: m.avgRate >= 100 ? "rgba(52,211,153,0.15)" : m.avgRate >= 80 ? "rgba(245,158,11,0.15)" : "rgba(248,113,113,0.15)", color: m.avgRate >= 100 ? "#34d399" : m.avgRate >= 80 ? "#f59e0b" : "#f87171" }}>
+                                                                    {m.avgRate >= 100 ? "✅ 達成" : m.avgRate >= 80 ? "⚡ 惜しい" : "📉 要改善"}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {thisReports.length > 0 && (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingLeft: 16 }}>
+                                        {thisReports.map(report => (
+                                            <div key={report.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 20 }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{report.deptName}</span>
+                                                        <span style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{report.year_month}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={async () => {
+                                                            await supabase.from("dept_reports").delete().eq("id", report.id);
+                                                            setDeptReports(prev => prev.filter(r => r.id !== report.id));
+                                                        }}
+                                                        style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700 }}
+                                                    >
+                                                        削除
+                                                    </button>
+                                                </div>
+                                                <pre style={{ margin: 0, fontSize: 13, color: "#d1d5db", lineHeight: 1.8, whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{report.content}</pre>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                    {deptReports.filter(r => !deptStats.find(d => d.deptId === r.department_id)).length > 0 && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>その他のレポート</div>
+                            {[...new Set(deptReports.filter(r => !deptStats.find(d => d.deptId === r.department_id)).map(r => r.department_id))].map(deptId => {
+                                const reports = deptReports.filter(r => r.department_id === deptId);
+                                const deptName = reports[0]?.deptName || "不明";
+                                return (
+                                    <div key={deptId} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                        <div style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb", marginBottom: 16 }}>🏢 {deptName}</div>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                            {reports.map(report => (
                                                 <div key={report.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 20 }}>
                                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                            <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{report.deptName}</span>
-                                                            <span style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{report.year_month}</span>
-                                                        </div>
-                                                        <button
-                                                            onClick={async () => {
-                                                                await supabase.from("dept_reports").delete().eq("id", report.id);
-                                                                setDeptReports(prev => prev.filter(r => r.id !== report.id));
-                                                            }}
-                                                            style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700 }}
-                                                        >
-                                                            削除
-                                                        </button>
+                                                        <span style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{report.year_month}</span>
+                                                        <button onClick={async () => { await supabase.from("dept_reports").delete().eq("id", report.id); setDeptReports(prev => prev.filter(r => r.id !== report.id)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>削除</button>
                                                     </div>
                                                     <pre style={{ margin: 0, fontSize: 13, color: "#d1d5db", lineHeight: 1.8, whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{report.content}</pre>
                                                 </div>
                                             ))}
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
 
-                        {deptReports.filter(r => !deptStats.find(d => d.deptId === r.department_id)).length > 0 && (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>その他のレポート</div>
-                                {[...new Set(deptReports.filter(r => !deptStats.find(d => d.deptId === r.department_id)).map(r => r.department_id))].map(deptId => {
-                                    const reports = deptReports.filter(r => r.department_id === deptId);
-                                    const deptName = reports[0]?.deptName || "不明";
-                                    return (
-                                        <div key={deptId} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                            <div style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb", marginBottom: 16 }}>🏢 {deptName}</div>
-                                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                                {reports.map(report => (
-                                                    <div key={report.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 20 }}>
-                                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                                                            <span style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{report.year_month}</span>
-                                                            <button onClick={async () => { await supabase.from("dept_reports").delete().eq("id", report.id); setDeptReports(prev => prev.filter(r => r.id !== report.id)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>削除</button>
-                                                        </div>
-                                                        <pre style={{ margin: 0, fontSize: 13, color: "#d1d5db", lineHeight: 1.8, whiteSpace: "pre-wrap", fontFamily: "inherit" }}>{report.content}</pre>
-                                                    </div>
+            {/* ✅ Fix 3: monthly_kpi タブの <select> から challenges の JSX を分離 */}
+            {activeTab === "monthly_kpi" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>月次KPI管理</div>
+                        <select value={kpiMonth} onChange={(e) => setKpiMonth(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none" }}>
+                            {Array.from({ length: 12 }, (_, i) => {
+                                const d = new Date();
+                                d.setMonth(d.getMonth() - i);
+                                const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                                return <option key={ym} value={ym}>{ym}</option>;
+                            })}
+                        </select>
+                    </div>
+
+                    {(() => {
+                        const deptIds = [...new Set(monthlyKpis.map(k => k.department_id))];
+                        if (deptIds.length === 0) return null;
+                        const deptSummaries = deptIds.map(deptId => {
+                            const deptKpis = monthlyKpis.filter(k => k.department_id === deptId);
+                            const deptName = deptKpis[0]?.deptName || "不明";
+                            const userCount = [...new Set(deptKpis.map(k => k.user_id))].length;
+                            const rates = deptKpis.map(kpi => {
+                                const officialTarget = monthlyTargets.find(t => t.user_id === kpi.user_id && t.department_id === kpi.department_id && t.year_month === kpiMonth)?.target || kpi.target;
+                                return officialTarget > 0 ? Math.round((kpi.result / officialTarget) * 100) : 0;
+                            });
+                            const avgRate = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0;
+                            const achievedCount = rates.filter(r => r >= 100).length;
+                            const totalPts = deptKpis.filter(k => k.approved).reduce((sum, k) => {
+                                const officialTarget = monthlyTargets.find(t => t.user_id === k.user_id && t.department_id === k.department_id && t.year_month === kpiMonth)?.target || k.target;
+                                const rate = officialTarget > 0 ? Math.round((k.result / officialTarget) * 100) : 0;
+                                const pts = rate >= 120 ? 50 : rate >= 100 ? 30 : rate >= 80 ? 20 : rate >= 60 ? 10 : 0;
+                                return sum + pts;
+                            }, 0);
+                            const rateColor = avgRate >= 100 ? "#34d399" : avgRate >= 80 ? "#f59e0b" : avgRate >= 60 ? "#f97316" : "#f87171";
+                            return { deptId, deptName, userCount, avgRate, achievedCount, totalPts, rateColor, kpiCount: deptKpis.length };
+                        }).sort((a, b) => b.avgRate - a.avgRate);
+
+                        return (
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🏢 事業部別ダッシュボード</div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
+                                    {deptSummaries.map((dept, i) => (
+                                        <div key={dept.deptId} style={{ padding: "16px 20px", borderRadius: 12, background: `${dept.rateColor}10`, border: `1px solid ${dept.rateColor}40`, position: "relative", overflow: "hidden" }}>
+                                            {i === 0 && <div style={{ position: "absolute", top: 8, right: 10, fontSize: 16 }}>🥇</div>}
+                                            <div style={{ fontSize: 13, fontWeight: 800, color: "#f9fafb", marginBottom: 4 }}>{dept.deptName}</div>
+                                            <div style={{ fontSize: 32, fontWeight: 900, color: dept.rateColor, lineHeight: 1, marginBottom: 4 }}>{dept.avgRate}%</div>
+                                            <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 10 }}>平均達成率</div>
+                                            <div style={{ height: 4, borderRadius: 999, background: "rgba(255,255,255,0.08)", marginBottom: 10 }}>
+                                                <div style={{ height: "100%", width: `${Math.min(dept.avgRate, 100)}%`, background: dept.rateColor, borderRadius: 999 }} />
+                                            </div>
+                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af" }}>
+                                                <span>{dept.userCount}人参加</span>
+                                                <span style={{ color: "#818cf8" }}>{dept.totalPts}pt付与</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ overflowX: "auto" }}>
+                                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                                                {["事業部", "参加人数", "平均達成率", "100%達成", "承認済pt", "達成状況"].map(h => (
+                                                    <th key={h} style={{ padding: "8px 12px", fontSize: 11, color: "#6b7280", fontWeight: 700, textAlign: "left", letterSpacing: 1 }}>{h}</th>
                                                 ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {deptSummaries.map(dept => (
+                                                <tr key={dept.deptId} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                                                    <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{dept.deptName}</td>
+                                                    <td style={{ padding: "12px", fontSize: 13, color: "#9ca3af" }}>{dept.userCount}人</td>
+                                                    <td style={{ padding: "12px" }}>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                            <div style={{ width: 80, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
+                                                                <div style={{ height: "100%", width: `${Math.min(dept.avgRate, 100)}%`, background: dept.rateColor, borderRadius: 999 }} />
+                                                            </div>
+                                                            <span style={{ fontSize: 14, fontWeight: 700, color: dept.rateColor }}>{dept.avgRate}%</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: "12px", fontSize: 13, color: "#9ca3af" }}>
+                                                        <span style={{ color: dept.achievedCount > 0 ? "#34d399" : "#6b7280", fontWeight: 700 }}>{dept.achievedCount}/{dept.kpiCount}件</span>
+                                                    </td>
+                                                    <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#818cf8" }}>{dept.totalPts}pt</td>
+                                                    <td style={{ padding: "12px" }}>
+                                                        <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: dept.avgRate >= 100 ? "rgba(52,211,153,0.15)" : dept.avgRate >= 80 ? "rgba(245,158,11,0.15)" : "rgba(248,113,113,0.15)", color: dept.avgRate >= 100 ? "#34d399" : dept.avgRate >= 80 ? "#f59e0b" : "#f87171" }}>
+                                                            {dept.avgRate >= 100 ? "✅ 達成" : dept.avgRate >= 80 ? "⚡ 惜しい" : "📉 要改善"}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>🎯 目標設定</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {userDetails.map((u) => (
+                                <div key={u.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <div>
+                                            <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{u.name}</div>
+                                            <div style={{ fontSize: 12, color: "#6b7280" }}>役割: {u.role}</div>
+                                        </div>
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                            {monthlyKpis.filter(k => k.user_id === u.id).map(kpi => {
+                                                const key = `${u.id}_${kpi.department_id}`;
+                                                const currentTarget = monthlyTargets.find(t => t.user_id === u.id && t.department_id === kpi.department_id && t.year_month === kpiMonth)?.target || kpi.target;
+                                                return (
+                                                    <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <span style={{ fontSize: 12, color: "#9ca3af" }}>{kpi.deptName}目標:</span>
+                                                        <input type="number" defaultValue={currentTarget} onChange={(e) => setTargetInputs(prev => ({ ...prev, [key]: Number(e.target.value) }))} style={{ width: 70, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                                        <button onClick={async () => {
+                                                            const val = targetInputs[key] ?? currentTarget;
+                                                            await handleSetTarget(u.id, kpi.department_id, val);
+                                                            setMonthlyTargets(prev => {
+                                                                const exists = prev.find(t => t.user_id === u.id && t.department_id === kpi.department_id && t.year_month === kpiMonth);
+                                                                if (exists) return prev.map(t => t.user_id === u.id && t.department_id === kpi.department_id && t.year_month === kpiMonth ? { ...t, target: val } : t);
+                                                                return [...prev, { user_id: u.id, department_id: kpi.department_id, year_month: kpiMonth, target: val }];
+                                                            });
+                                                        }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>設定</button>
+                                                    </div>
+                                                );
+                                            })}
+                                            {monthlyKpis.filter(k => k.user_id === u.id).length === 0 && <div style={{ fontSize: 12, color: "#6b7280" }}>KPI未入力</div>}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>✅ KPI承認</div>
+                        {monthlyKpis.length === 0 ? (
+                            <div style={{ textAlign: "center", color: "#6b7280", fontSize: 14, padding: 20 }}>{kpiMonth}のKPIデータがありません</div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {monthlyKpis.map((kpi) => {
+                                    const officialTarget = monthlyTargets.find(t => t.user_id === kpi.user_id && t.department_id === kpi.department_id && t.year_month === kpiMonth)?.target || kpi.target;
+                                    const rate = officialTarget > 0 ? Math.round((kpi.result / officialTarget) * 100) : 0;
+                                    const pts = rate >= 120 ? 50 : rate >= 100 ? 30 : rate >= 80 ? 20 : rate >= 60 ? 10 : 0;
+                                    const rateColor = rate >= 100 ? "#34d399" : rate >= 80 ? "#f59e0b" : rate >= 60 ? "#f97316" : "#f87171";
+                                    return (
+                                        <div key={kpi.id} style={{ padding: "20px 24px", borderRadius: 16, background: kpi.approved ? "rgba(52,211,153,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${kpi.approved ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.08)"}` }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                <div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                                                        <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{kpi.userName}</span>
+                                                        <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{kpi.deptName}</span>
+                                                        {kpi.approved && <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, fontWeight: 700 }}>✅ 承認済</span>}
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 20, fontSize: 13, color: "#9ca3af" }}>
+                                                        <span>目標: <strong style={{ color: "#f9fafb" }}>{officialTarget}件</strong></span>
+                                                        <span>実績: <strong style={{ color: "#f9fafb" }}>{kpi.result}件</strong></span>
+                                                        <span>達成率: <strong style={{ color: rateColor }}>{rate}%</strong></span>
+                                                        <span>獲得予定: <strong style={{ color: "#818cf8" }}>{pts}pt</strong></span>
+                                                    </div>
+                                                    <div style={{ marginTop: 10, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", width: 300 }}>
+                                                        <div style={{ height: "100%", width: `${Math.min(rate, 100)}%`, background: rateColor, borderRadius: 999 }} />
+                                                    </div>
+                                                </div>
+                                                {!kpi.approved && (
+                                                    <button onClick={() => handleApproveKpi({ ...kpi, target: officialTarget, points_awarded: pts })} disabled={approvingKpi === kpi.id} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: pts > 0 ? "linear-gradient(135deg, #10b981, #34d399)" : "rgba(255,255,255,0.1)", color: pts > 0 ? "#0a0a0f" : "#6b7280", fontWeight: 700, cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" }}>
+                                                        {approvingKpi === kpi.id ? "処理中..." : `承認 +${pts}pt`}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -1381,379 +1559,198 @@ export default function AdminPage() {
                             </div>
                         )}
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* ✅ Fix 3: monthly_kpi タブの <select> から challenges の JSX を分離 */}
-                {activeTab === "monthly_kpi" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>月次KPI管理</div>
-                            <select value={kpiMonth} onChange={(e) => setKpiMonth(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none" }}>
-                                {Array.from({ length: 12 }, (_, i) => {
-                                    const d = new Date();
-                                    d.setMonth(d.getMonth() - i);
-                                    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-                                    return <option key={ym} value={ym}>{ym}</option>;
-                                })}
-                            </select>
+            {activeTab === "resources" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>📁 新規資料追加</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイトル</div>
+                                <input value={resourceTitle} onChange={(e) => setResourceTitle(e.target.value)} placeholder="資料のタイトル" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>カテゴリ</div>
+                                <input value={resourceCategory} onChange={(e) => setResourceCategory(e.target.value)} placeholder="例：営業資料・研修資料" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
                         </div>
+                        <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>説明</div>
+                            <input value={resourceDesc} onChange={(e) => setResourceDesc(e.target.value)} placeholder="資料の説明（任意）" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                        </div>
+                        <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイプ</div>
+                            <div style={{ display: "flex", gap: 8 }}>
+                                {[{ key: "link", label: "🔗 リンク" }, { key: "pdf", label: "📄 PDF" }, { key: "image", label: "🖼️ 画像" }].map(t => (
+                                    <button key={t.key} onClick={() => setResourceType(t.key as any)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: resourceType === t.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: resourceType === t.key ? "#fff" : "#9ca3af" }}>
+                                        {t.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>URL</div>
+                            <input value={resourceUrl} onChange={(e) => setResourceUrl(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                        </div>
+                        <button onClick={async () => {
+                            if (!resourceTitle.trim()) { setResourceMessage("タイトルを入力してください"); return; }
+                            setResourceSaving(true);
+                            const { data: { user } } = await supabase.auth.getUser();
+                            await supabase.from("resources").insert({ title: resourceTitle.trim(), description: resourceDesc.trim() || null, resource_type: resourceType, url: resourceUrl.trim() || null, category: resourceCategory.trim() || null, is_active: true, created_by: user?.id });
+                            const { data: rows } = await supabase.from("resources").select("*").order("created_at", { ascending: false });
+                            setResources((rows || []) as Resource[]);
+                            setResourceTitle(""); setResourceDesc(""); setResourceUrl(""); setResourceCategory("");
+                            setResourceMessage("✅ 資料を追加しました！");
+                            setResourceSaving(false);
+                        }} disabled={resourceSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                            {resourceSaving ? "追加中..." : "📁 追加する"}
+                        </button>
+                        {resourceMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{resourceMessage}</div>}
+                    </div>
 
-                        {(() => {
-                            const deptIds = [...new Set(monthlyKpis.map(k => k.department_id))];
-                            if (deptIds.length === 0) return null;
-                            const deptSummaries = deptIds.map(deptId => {
-                                const deptKpis = monthlyKpis.filter(k => k.department_id === deptId);
-                                const deptName = deptKpis[0]?.deptName || "不明";
-                                const userCount = [...new Set(deptKpis.map(k => k.user_id))].length;
-                                const rates = deptKpis.map(kpi => {
-                                    const officialTarget = monthlyTargets.find(t => t.user_id === kpi.user_id && t.department_id === kpi.department_id && t.year_month === kpiMonth)?.target || kpi.target;
-                                    return officialTarget > 0 ? Math.round((kpi.result / officialTarget) * 100) : 0;
-                                });
-                                const avgRate = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0;
-                                const achievedCount = rates.filter(r => r >= 100).length;
-                                const totalPts = deptKpis.filter(k => k.approved).reduce((sum, k) => {
-                                    const officialTarget = monthlyTargets.find(t => t.user_id === k.user_id && t.department_id === k.department_id && t.year_month === kpiMonth)?.target || k.target;
-                                    const rate = officialTarget > 0 ? Math.round((k.result / officialTarget) * 100) : 0;
-                                    const pts = rate >= 120 ? 50 : rate >= 100 ? 30 : rate >= 80 ? 20 : rate >= 60 ? 10 : 0;
-                                    return sum + pts;
-                                }, 0);
-                                const rateColor = avgRate >= 100 ? "#34d399" : avgRate >= 80 ? "#f59e0b" : avgRate >= 60 ? "#f97316" : "#f87171";
-                                return { deptId, deptName, userCount, avgRate, achievedCount, totalPts, rateColor, kpiCount: deptKpis.length };
-                            }).sort((a, b) => b.avgRate - a.avgRate);
-
-                            return (
-                                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🏢 事業部別ダッシュボード</div>
-                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
-                                        {deptSummaries.map((dept, i) => (
-                                            <div key={dept.deptId} style={{ padding: "16px 20px", borderRadius: 12, background: `${dept.rateColor}10`, border: `1px solid ${dept.rateColor}40`, position: "relative", overflow: "hidden" }}>
-                                                {i === 0 && <div style={{ position: "absolute", top: 8, right: 10, fontSize: 16 }}>🥇</div>}
-                                                <div style={{ fontSize: 13, fontWeight: 800, color: "#f9fafb", marginBottom: 4 }}>{dept.deptName}</div>
-                                                <div style={{ fontSize: 32, fontWeight: 900, color: dept.rateColor, lineHeight: 1, marginBottom: 4 }}>{dept.avgRate}%</div>
-                                                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 10 }}>平均達成率</div>
-                                                <div style={{ height: 4, borderRadius: 999, background: "rgba(255,255,255,0.08)", marginBottom: 10 }}>
-                                                    <div style={{ height: "100%", width: `${Math.min(dept.avgRate, 100)}%`, background: dept.rateColor, borderRadius: 999 }} />
-                                                </div>
-                                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af" }}>
-                                                    <span>{dept.userCount}人参加</span>
-                                                    <span style={{ color: "#818cf8" }}>{dept.totalPts}pt付与</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div style={{ overflowX: "auto" }}>
-                                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                            <thead>
-                                                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                                                    {["事業部", "参加人数", "平均達成率", "100%達成", "承認済pt", "達成状況"].map(h => (
-                                                        <th key={h} style={{ padding: "8px 12px", fontSize: 11, color: "#6b7280", fontWeight: 700, textAlign: "left", letterSpacing: 1 }}>{h}</th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {deptSummaries.map(dept => (
-                                                    <tr key={dept.deptId} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                                                        <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{dept.deptName}</td>
-                                                        <td style={{ padding: "12px", fontSize: 13, color: "#9ca3af" }}>{dept.userCount}人</td>
-                                                        <td style={{ padding: "12px" }}>
-                                                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                                <div style={{ width: 80, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)" }}>
-                                                                    <div style={{ height: "100%", width: `${Math.min(dept.avgRate, 100)}%`, background: dept.rateColor, borderRadius: 999 }} />
-                                                                </div>
-                                                                <span style={{ fontSize: 14, fontWeight: 700, color: dept.rateColor }}>{dept.avgRate}%</span>
-                                                            </div>
-                                                        </td>
-                                                        <td style={{ padding: "12px", fontSize: 13, color: "#9ca3af" }}>
-                                                            <span style={{ color: dept.achievedCount > 0 ? "#34d399" : "#6b7280", fontWeight: 700 }}>{dept.achievedCount}/{dept.kpiCount}件</span>
-                                                        </td>
-                                                        <td style={{ padding: "12px", fontSize: 14, fontWeight: 700, color: "#818cf8" }}>{dept.totalPts}pt</td>
-                                                        <td style={{ padding: "12px" }}>
-                                                            <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: dept.avgRate >= 100 ? "rgba(52,211,153,0.15)" : dept.avgRate >= 80 ? "rgba(245,158,11,0.15)" : "rgba(248,113,113,0.15)", color: dept.avgRate >= 100 ? "#34d399" : dept.avgRate >= 80 ? "#f59e0b" : "#f87171" }}>
-                                                                {dept.avgRate >= 100 ? "✅ 達成" : dept.avgRate >= 80 ? "⚡ 惜しい" : "📉 要改善"}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>🎯 目標設定</div>
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RESOURCES</div>
+                        {resources.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>資料がありません</div> : (
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                {userDetails.map((u) => (
-                                    <div key={u.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div>
-                                                <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{u.name}</div>
-                                                <div style={{ fontSize: 12, color: "#6b7280" }}>役割: {u.role}</div>
+                                {resources.map(r => (
+                                    <div key={r.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${r.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                                <span style={{ fontSize: 14, fontWeight: 700, color: r.is_active ? "#f9fafb" : "#6b7280" }}>{r.title}</span>
+                                                {r.category && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{r.category}</span>}
+                                                <span style={{ fontSize: 11, color: "#6b7280" }}>{r.resource_type}</span>
                                             </div>
-                                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                                                {monthlyKpis.filter(k => k.user_id === u.id).map(kpi => {
-                                                    const key = `${u.id}_${kpi.department_id}`;
-                                                    const currentTarget = monthlyTargets.find(t => t.user_id === u.id && t.department_id === kpi.department_id && t.year_month === kpiMonth)?.target || kpi.target;
-                                                    return (
-                                                        <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                            <span style={{ fontSize: 12, color: "#9ca3af" }}>{kpi.deptName}目標:</span>
-                                                            <input type="number" defaultValue={currentTarget} onChange={(e) => setTargetInputs(prev => ({ ...prev, [key]: Number(e.target.value) }))} style={{ width: 70, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
-                                                            <button onClick={async () => {
-                                                                const val = targetInputs[key] ?? currentTarget;
-                                                                await handleSetTarget(u.id, kpi.department_id, val);
-                                                                setMonthlyTargets(prev => {
-                                                                    const exists = prev.find(t => t.user_id === u.id && t.department_id === kpi.department_id && t.year_month === kpiMonth);
-                                                                    if (exists) return prev.map(t => t.user_id === u.id && t.department_id === kpi.department_id && t.year_month === kpiMonth ? { ...t, target: val } : t);
-                                                                    return [...prev, { user_id: u.id, department_id: kpi.department_id, year_month: kpiMonth, target: val }];
-                                                                });
-                                                            }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>設定</button>
-                                                        </div>
-                                                    );
-                                                })}
-                                                {monthlyKpis.filter(k => k.user_id === u.id).length === 0 && <div style={{ fontSize: 12, color: "#6b7280" }}>KPI未入力</div>}
+                                            {r.description && <div style={{ fontSize: 12, color: "#6b7280" }}>{r.description}</div>}
+                                        </div>
+                                        <button onClick={async () => {
+                                            await supabase.from("resources").update({ is_active: !r.is_active }).eq("id", r.id);
+                                            setResources(prev => prev.map(res => res.id === r.id ? { ...res, is_active: !res.is_active } : res));
+                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: r.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: r.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                            {r.is_active ? "非表示" : "表示する"}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ✅ Fix 4: challenges タブを独立した条件分岐として正しい位置に配置 */}
+            {activeTab === "challenges" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🎯 新規チャレンジ追加</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイトル</div>
+                                <input value={challengeTitle} onChange={(e) => setChallengeTitle(e.target.value)} placeholder="例：有名なラーメンを食べる" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>カテゴリ</div>
+                                <input value={challengeCategory} onChange={(e) => setChallengeCategory(e.target.value)} placeholder="例：食・旅・スポーツ" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px", gap: 12, marginBottom: 16 }}>
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>説明</div>
+                                <input value={challengeDesc} onChange={(e) => setChallengeDesc(e.target.value)} placeholder="チャレンジの説明（任意）" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>アイコン</div>
+                                <input value={challengeIcon} onChange={(e) => setChallengeIcon(e.target.value)} placeholder="🎯" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 20, outline: "none", boxSizing: "border-box", textAlign: "center" }} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>ポイント</div>
+                                <input type="number" value={challengePoints} onChange={(e) => setChallengePoints(Number(e.target.value))} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                        </div>
+                        <button onClick={async () => {
+                            if (!challengeTitle.trim()) { setChallengeMessage("タイトルを入力してください"); return; }
+                            setChallengeSaving(true);
+                            await supabase.from("challenges").insert({ title: challengeTitle.trim(), description: challengeDesc.trim() || null, category: challengeCategory.trim() || null, points: challengePoints, icon: challengeIcon || "🎯", is_active: true });
+                            const { data: rows } = await supabase.from("challenges").select("*").order("created_at");
+                            setChallenges((rows || []) as Challenge[]);
+                            setChallengeTitle(""); setChallengeDesc(""); setChallengeCategory(""); setChallengePoints(10); setChallengeIcon("🎯");
+                            setChallengeMessage("✅ チャレンジを追加しました！");
+                            setChallengeSaving(false);
+                        }} disabled={challengeSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                            {challengeSaving ? "追加中..." : "🎯 追加する"}
+                        </button>
+                        {challengeMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{challengeMessage}</div>}
+                    </div>
+
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📋 達成申請一覧</div>
+                        {challengeSubmissions.filter(s => s.status === "pending").length === 0 ? (
+                            <div style={{ color: "#6b7280", fontSize: 14 }}>申請中の達成報告はありません</div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {challengeSubmissions.filter(s => s.status === "pending").map(sub => (
+                                    <div key={sub.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{sub.userName}</span>
+                                                    <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{sub.challengeTitle}</span>
+                                                </div>
+                                                {sub.comment && <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 8 }}>{sub.comment}</div>}
+                                                {sub.image_url && <img src={sub.image_url} alt="達成写真" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, marginBottom: 8 }} />}
+                                            </div>
+                                            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                                                <button onClick={async () => {
+                                                    const nowIso = new Date().toISOString();
+                                                    await supabase.from("challenge_submissions").update({ status: "approved", approved_at: nowIso }).eq("id", sub.id);
+                                                    const challenge = challenges.find(c => c.id === sub.challenge_id);
+                                                    if (challenge) {
+                                                        const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", sub.user_id).single();
+                                                        const current = pointRow?.points || 0;
+                                                        await supabase.from("user_points").update({ points: current + challenge.points }).eq("id", sub.user_id);
+                                                        await supabase.from("points_history").insert({ user_id: sub.user_id, change: challenge.points, reason: "challenge_complete", created_at: nowIso });
+                                                    }
+                                                    setChallengeSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, status: "approved" } : s));
+                                                }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認</button>
+                                                <button onClick={async () => {
+                                                    await supabase.from("challenge_submissions").update({ status: "rejected" }).eq("id", sub.id);
+                                                    setChallengeSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, status: "rejected" } : s));
+                                                }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
-
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>✅ KPI承認</div>
-                            {monthlyKpis.length === 0 ? (
-                                <div style={{ textAlign: "center", color: "#6b7280", fontSize: 14, padding: 20 }}>{kpiMonth}のKPIデータがありません</div>
-                            ) : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                    {monthlyKpis.map((kpi) => {
-                                        const officialTarget = monthlyTargets.find(t => t.user_id === kpi.user_id && t.department_id === kpi.department_id && t.year_month === kpiMonth)?.target || kpi.target;
-                                        const rate = officialTarget > 0 ? Math.round((kpi.result / officialTarget) * 100) : 0;
-                                        const pts = rate >= 120 ? 50 : rate >= 100 ? 30 : rate >= 80 ? 20 : rate >= 60 ? 10 : 0;
-                                        const rateColor = rate >= 100 ? "#34d399" : rate >= 80 ? "#f59e0b" : rate >= 60 ? "#f97316" : "#f87171";
-                                        return (
-                                            <div key={kpi.id} style={{ padding: "20px 24px", borderRadius: 16, background: kpi.approved ? "rgba(52,211,153,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${kpi.approved ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.08)"}` }}>
-                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                    <div>
-                                                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                                                            <span style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{kpi.userName}</span>
-                                                            <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 12, fontWeight: 700 }}>{kpi.deptName}</span>
-                                                            {kpi.approved && <span style={{ padding: "2px 10px", borderRadius: 6, background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 12, fontWeight: 700 }}>✅ 承認済</span>}
-                                                        </div>
-                                                        <div style={{ display: "flex", gap: 20, fontSize: 13, color: "#9ca3af" }}>
-                                                            <span>目標: <strong style={{ color: "#f9fafb" }}>{officialTarget}件</strong></span>
-                                                            <span>実績: <strong style={{ color: "#f9fafb" }}>{kpi.result}件</strong></span>
-                                                            <span>達成率: <strong style={{ color: rateColor }}>{rate}%</strong></span>
-                                                            <span>獲得予定: <strong style={{ color: "#818cf8" }}>{pts}pt</strong></span>
-                                                        </div>
-                                                        <div style={{ marginTop: 10, height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", width: 300 }}>
-                                                            <div style={{ height: "100%", width: `${Math.min(rate, 100)}%`, background: rateColor, borderRadius: 999 }} />
-                                                        </div>
-                                                    </div>
-                                                    {!kpi.approved && (
-                                                        <button onClick={() => handleApproveKpi({ ...kpi, target: officialTarget, points_awarded: pts })} disabled={approvingKpi === kpi.id} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: pts > 0 ? "linear-gradient(135deg, #10b981, #34d399)" : "rgba(255,255,255,0.1)", color: pts > 0 ? "#0a0a0f" : "#6b7280", fontWeight: 700, cursor: "pointer", fontSize: 14, whiteSpace: "nowrap" }}>
-                                                            {approvingKpi === kpi.id ? "処理中..." : `承認 +${pts}pt`}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </div>
-                )}
 
-                {activeTab === "resources" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>📁 新規資料追加</div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                                <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイトル</div>
-                                    <input value={resourceTitle} onChange={(e) => setResourceTitle(e.target.value)} placeholder="資料のタイトル" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>カテゴリ</div>
-                                    <input value={resourceCategory} onChange={(e) => setResourceCategory(e.target.value)} placeholder="例：営業資料・研修資料" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                                </div>
-                            </div>
-                            <div style={{ marginBottom: 12 }}>
-                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>説明</div>
-                                <input value={resourceDesc} onChange={(e) => setResourceDesc(e.target.value)} placeholder="資料の説明（任意）" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                            </div>
-                            <div style={{ marginBottom: 12 }}>
-                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイプ</div>
-                                <div style={{ display: "flex", gap: 8 }}>
-                                    {[{ key: "link", label: "🔗 リンク" }, { key: "pdf", label: "📄 PDF" }, { key: "image", label: "🖼️ 画像" }].map(t => (
-                                        <button key={t.key} onClick={() => setResourceType(t.key as any)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: resourceType === t.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: resourceType === t.key ? "#fff" : "#9ca3af" }}>
-                                            {t.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div style={{ marginBottom: 16 }}>
-                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>URL</div>
-                                <input value={resourceUrl} onChange={(e) => setResourceUrl(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                            </div>
-                            <button onClick={async () => {
-                                if (!resourceTitle.trim()) { setResourceMessage("タイトルを入力してください"); return; }
-                                setResourceSaving(true);
-                                const { data: { user } } = await supabase.auth.getUser();
-                                await supabase.from("resources").insert({ title: resourceTitle.trim(), description: resourceDesc.trim() || null, resource_type: resourceType, url: resourceUrl.trim() || null, category: resourceCategory.trim() || null, is_active: true, created_by: user?.id });
-                                const { data: rows } = await supabase.from("resources").select("*").order("created_at", { ascending: false });
-                                setResources((rows || []) as Resource[]);
-                                setResourceTitle(""); setResourceDesc(""); setResourceUrl(""); setResourceCategory("");
-                                setResourceMessage("✅ 資料を追加しました！");
-                                setResourceSaving(false);
-                            }} disabled={resourceSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-                                {resourceSaving ? "追加中..." : "📁 追加する"}
-                            </button>
-                            {resourceMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{resourceMessage}</div>}
-                        </div>
-
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RESOURCES</div>
-                            {resources.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>資料がありません</div> : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                    {resources.map(r => (
-                                        <div key={r.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${r.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>CHALLENGES</div>
+                        {challenges.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>チャレンジがありません</div> : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {challenges.map(c => (
+                                    <div key={c.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${c.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                            <span style={{ fontSize: 24 }}>{c.icon}</span>
                                             <div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: r.is_active ? "#f9fafb" : "#6b7280" }}>{r.title}</span>
-                                                    {r.category && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{r.category}</span>}
-                                                    <span style={{ fontSize: 11, color: "#6b7280" }}>{r.resource_type}</span>
-                                                </div>
-                                                {r.description && <div style={{ fontSize: 12, color: "#6b7280" }}>{r.description}</div>}
+                                                <div style={{ fontSize: 14, fontWeight: 700, color: c.is_active ? "#f9fafb" : "#6b7280" }}>{c.title}</div>
+                                                <div style={{ fontSize: 12, color: "#6b7280" }}>{c.category} · +{c.points}pt</div>
                                             </div>
-                                            <button onClick={async () => {
-                                                await supabase.from("resources").update({ is_active: !r.is_active }).eq("id", r.id);
-                                                setResources(prev => prev.map(res => res.id === r.id ? { ...res, is_active: !res.is_active } : res));
-                                            }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: r.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: r.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
-                                                {r.is_active ? "非表示" : "表示する"}
-                                            </button>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* ✅ Fix 4: challenges タブを独立した条件分岐として正しい位置に配置 */}
-                {activeTab === "challenges" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🎯 新規チャレンジ追加</div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                                <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイトル</div>
-                                    <input value={challengeTitle} onChange={(e) => setChallengeTitle(e.target.value)} placeholder="例：有名なラーメンを食べる" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>カテゴリ</div>
-                                    <input value={challengeCategory} onChange={(e) => setChallengeCategory(e.target.value)} placeholder="例：食・旅・スポーツ" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                                </div>
+                                        <button onClick={async () => {
+                                            await supabase.from("challenges").update({ is_active: !c.is_active }).eq("id", c.id);
+                                            setChallenges(prev => prev.map(ch => ch.id === c.id ? { ...ch, is_active: !ch.is_active } : ch));
+                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: c.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: c.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>
+                                            {c.is_active ? "非表示" : "表示する"}
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px", gap: 12, marginBottom: 16 }}>
-                                <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>説明</div>
-                                    <input value={challengeDesc} onChange={(e) => setChallengeDesc(e.target.value)} placeholder="チャレンジの説明（任意）" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>アイコン</div>
-                                    <input value={challengeIcon} onChange={(e) => setChallengeIcon(e.target.value)} placeholder="🎯" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 20, outline: "none", boxSizing: "border-box", textAlign: "center" }} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>ポイント</div>
-                                    <input type="number" value={challengePoints} onChange={(e) => setChallengePoints(Number(e.target.value))} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                                </div>
-                            </div>
-                            <button onClick={async () => {
-                                if (!challengeTitle.trim()) { setChallengeMessage("タイトルを入力してください"); return; }
-                                setChallengeSaving(true);
-                                await supabase.from("challenges").insert({ title: challengeTitle.trim(), description: challengeDesc.trim() || null, category: challengeCategory.trim() || null, points: challengePoints, icon: challengeIcon || "🎯", is_active: true });
-                                const { data: rows } = await supabase.from("challenges").select("*").order("created_at");
-                                setChallenges((rows || []) as Challenge[]);
-                                setChallengeTitle(""); setChallengeDesc(""); setChallengeCategory(""); setChallengePoints(10); setChallengeIcon("🎯");
-                                setChallengeMessage("✅ チャレンジを追加しました！");
-                                setChallengeSaving(false);
-                            }} disabled={challengeSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-                                {challengeSaving ? "追加中..." : "🎯 追加する"}
-                            </button>
-                            {challengeMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{challengeMessage}</div>}
-                        </div>
-
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📋 達成申請一覧</div>
-                            {challengeSubmissions.filter(s => s.status === "pending").length === 0 ? (
-                                <div style={{ color: "#6b7280", fontSize: 14 }}>申請中の達成報告はありません</div>
-                            ) : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                    {challengeSubmissions.filter(s => s.status === "pending").map(sub => (
-                                        <div key={sub.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)" }}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                                                        <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{sub.userName}</span>
-                                                        <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{sub.challengeTitle}</span>
-                                                    </div>
-                                                    {sub.comment && <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 8 }}>{sub.comment}</div>}
-                                                    {sub.image_url && <img src={sub.image_url} alt="達成写真" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, marginBottom: 8 }} />}
-                                                </div>
-                                                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                                                    <button onClick={async () => {
-                                                        const nowIso = new Date().toISOString();
-                                                        await supabase.from("challenge_submissions").update({ status: "approved", approved_at: nowIso }).eq("id", sub.id);
-                                                        const challenge = challenges.find(c => c.id === sub.challenge_id);
-                                                        if (challenge) {
-                                                            const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", sub.user_id).single();
-                                                            const current = pointRow?.points || 0;
-                                                            await supabase.from("user_points").update({ points: current + challenge.points }).eq("id", sub.user_id);
-                                                            await supabase.from("points_history").insert({ user_id: sub.user_id, change: challenge.points, reason: "challenge_complete", created_at: nowIso });
-                                                        }
-                                                        setChallengeSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, status: "approved" } : s));
-                                                    }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認</button>
-                                                    <button onClick={async () => {
-                                                        await supabase.from("challenge_submissions").update({ status: "rejected" }).eq("id", sub.id);
-                                                        setChallengeSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, status: "rejected" } : s));
-                                                    }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>CHALLENGES</div>
-                            {challenges.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>チャレンジがありません</div> : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                    {challenges.map(c => (
-                                        <div key={c.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${c.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                <span style={{ fontSize: 24 }}>{c.icon}</span>
-                                                <div>
-                                                    <div style={{ fontSize: 14, fontWeight: 700, color: c.is_active ? "#f9fafb" : "#6b7280" }}>{c.title}</div>
-                                                    <div style={{ fontSize: 12, color: "#6b7280" }}>{c.category} · +{c.points}pt</div>
-                                                </div>
-                                            </div>
-                                            <button onClick={async () => {
-                                                await supabase.from("challenges").update({ is_active: !c.is_active }).eq("id", c.id);
-                                                setChallenges(prev => prev.map(ch => ch.id === c.id ? { ...ch, is_active: !ch.is_active } : ch));
-                                            }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: c.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: c.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>
-                                                {c.is_active ? "非表示" : "表示する"}
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </div>
-                )}
+                </div>
+            )}
 
-            </div>
         </main>
     );
 }
