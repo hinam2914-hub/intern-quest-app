@@ -448,6 +448,7 @@ export default function MyPage() {
                 const now = new Date();
                 const days = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
                 setActiveDays(days);
+                setStartedAt(profile.started_at.slice(0, 10));
             }
         }
 
