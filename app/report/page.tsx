@@ -58,6 +58,7 @@ export default function ReportPage() {
 
     const handleSubmit = async () => {
         if (!text.trim()) { setMessage("日報を書いてください"); return; }
+        if (text.trim().length < 100) { setMessage(`❌ 日報は100文字以上で書いてください（現在${text.trim().length}文字）`); return; }
         setLoading(true);
         setMessage("");
 
@@ -171,7 +172,15 @@ export default function ReportPage() {
                             ))}
                         </div>
                     </div>
-                    <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="今日やったこと、学んだこと、気づきを書いてください..." style={{ width: "100%", height: 280, padding: 16, borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, lineHeight: 1.8, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                    <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="今日やったこと、学んだこと、気づきを書いてください..." style={{ width: "100%", height: 280, padding: 16, borderRadius: 12, border: `1px solid ${text.trim().length >= 100 ? "rgba(52,211,153,0.4)" : "rgba(255,255,255,0.1)"}`, background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, lineHeight: 1.8, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                        <div style={{ fontSize: 12, color: text.trim().length >= 100 ? "#34d399" : text.trim().length >= 50 ? "#f59e0b" : "#6b7280" }}>
+                            {text.trim().length >= 100 ? "✅ OK!" : `あと${100 - text.trim().length}文字`}
+                        </div>
+                        <div style={{ fontSize: 12, color: text.trim().length >= 100 ? "#34d399" : "#6b7280", fontWeight: 700 }}>
+                            {text.trim().length} / 100文字
+                        </div>
+                    </div>
                     <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
                         <button onClick={handleSubmit} disabled={loading} style={{ flex: 1, padding: "14px", borderRadius: 12, border: "none", background: loading ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontSize: 15 }}>
                             {loading ? "送信中..." : "⚡ 日報を送信"}
