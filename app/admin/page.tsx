@@ -19,7 +19,7 @@ type AnnounceRow = { id: string; title: string; content: string; created_at: str
 type RequestRow = { id: string; user_id: string; shop_item_id: string; cost: number; status: string; note: string | null; created_at: string; userName?: string; itemTitle?: string };
 type KpiStatus = { userId: string; userName: string; kpiId: string; kpiTitle: string; unit: string; target: number; value: number };
 type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
-type ContentCompletion = { userId: string; userName: string; contentId: string; contentTitle: string; created_at: string };
+type ContentCompletion = { id: string; userId: string; userName: string; contentId: string; contentTitle: string; created_at: string; status: string; review: string | null };
 type Team = { id: string; name: string; color: string; leader_id?: string };
 type Department = { id: string; name: string; code: string };
 type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; officialTarget?: number; };
@@ -294,11 +294,14 @@ export default function AdminPage() {
             const { data: completionRows } = await supabase.from("content_completions").select("*").order("created_at", { ascending: false });
             if (completionRows && contentsRows) {
                 setContentCompletions(completionRows.map((r: any) => ({
+                    id: r.id,
                     userId: r.user_id,
                     userName: users.find(u => u.id === r.user_id)?.name || "名前未設定",
                     contentId: r.content_id,
                     contentTitle: contentsRows.find((c: any) => c.id === r.content_id)?.title || "不明",
                     created_at: r.created_at,
+                    status: r.status || "pending",
+                    review: r.review || null,
                 })));
             }
 
@@ -801,6 +804,48 @@ export default function AdminPage() {
                                 {contentSaving ? "追加中..." : "📚 追加する"}
                             </button>
                             {contentMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399" }}>{contentMessage}</div>}
+                        </div>
+
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>📝 レビュー承認</div>
+                                <div style={{ fontSize: 12, color: "#fbbf24", fontWeight: 600 }}>審査中: {contentCompletions.filter(c => c.status === "pending" && c.review).length}件</div>
+                            </div>
+                            {contentCompletions.filter(c => c.status === "pending" && c.review).length === 0 ? (
+                                <div style={{ color: "#6b7280", fontSize: 14 }}>審査中のレビューはありません</div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {contentCompletions.filter(c => c.status === "pending" && c.review).map((c) => (
+                                        <div key={c.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)" }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                                                        <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{c.userName}</span>
+                                                        <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{c.contentTitle}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: 13, color: "#c7d2fe", padding: "10px 14px", borderRadius: 8, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.15)" }}>{c.review}</div>
+                                                </div>
+                                                <div style={{ display: "flex", gap: 8, flexShrink: 0, marginLeft: 16 }}>
+                                                    <button onClick={async () => {
+                                                        const nowIso = new Date().toISOString();
+                                                        await supabase.from("content_completions").update({ status: "approved" }).eq("id", c.id);
+                                                        const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", c.userId).single();
+                                                        const current = (pointRow as any)?.points || 0;
+                                                        await supabase.from("user_points").update({ points: current + 2 }).eq("id", c.userId);
+                                                        await supabase.from("points_history").insert({ user_id: c.userId, change: 2, reason: "content_complete", created_at: nowIso });
+                                                        setContentCompletions(prev => prev.map(cc => cc.id === c.id ? { ...cc, status: "approved" } : cc));
+                                                    }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認 +2pt</button>
+                                                    <button onClick={async () => {
+                                                        await supabase.from("content_completions").update({ status: "rejected" }).eq("id", c.id);
+                                                        setContentCompletions(prev => prev.map(cc => cc.id === c.id ? { ...cc, status: "rejected" } : cc));
+                                                    }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>CONTENTS</div>
