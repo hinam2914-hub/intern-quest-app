@@ -157,7 +157,7 @@ function getNextRankInfo(rank: string): string {
     return "Cランクを目指そう";
 }
 function getActionMessage(isSubmitted: boolean, streak: number): string {
-    if (!isSubmitted) return "📋 日報を提出してポイントを獲得しましょう";
+    if (!isSubmitted) return "📋 日報を提出しよう";
     if (streak >= 7) return "🔥 連続提出が素晴らしい。この調子で継続しましょう";
     if (streak >= 3) return "⚡ 継続できています。次は上位を狙いましょう";
     return "📚 学習コンテンツを進めましょう";
