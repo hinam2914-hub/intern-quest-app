@@ -752,7 +752,7 @@ export default function MyPage() {
                 {message && <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>{message}</div>}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
                         {[
                             {
                                 title: "TOTAL POINTS", tip: "獲得したポイントの累計です", ref: pointsCardRef, content: (
@@ -811,7 +811,7 @@ export default function MyPage() {
                         ))}
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
                         {[
                             {
                                 title: "GROWTH STATUS", tip: "管理者が設定する社内育成フェーズです", content: (
