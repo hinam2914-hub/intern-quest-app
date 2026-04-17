@@ -205,9 +205,22 @@ export default function LearnPage() {
                             {selected.description && <p style={{ fontSize: 14, color: "#9ca3af", margin: "0 0 20px" }}>{selected.description}</p>}
 
                             {selected.body && (
-                                <div style={{ fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: 24, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                    {selected.body}
-                                </div>
+                                selected.body.startsWith("http") ? (
+                                    <div style={{ marginBottom: 20 }}>
+                                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>🔗 参考リンク</div>
+                                        <a href={selected.body.trim()} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 12, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)", textDecoration: "none" }}>
+                                            <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🌐</div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: 13, fontWeight: 700, color: "#818cf8", marginBottom: 2 }}>記事を読む →</div>
+                                                <div style={{ fontSize: 11, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected.body.trim()}</div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: 24, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                        {selected.body}
+                                    </div>
+                                )
                             )}
 
                             {selected.url && !getYouTubeId(selected.url) && (
