@@ -811,7 +811,7 @@ export default function MyPage() {
                         ))}
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {[
                             {
                                 title: "GROWTH STATUS", tip: "管理者が設定する社内育成フェーズです", content: (
