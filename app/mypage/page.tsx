@@ -752,12 +752,12 @@ export default function MyPage() {
                 {message && <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>{message}</div>}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                         {[
                             {
                                 title: "TOTAL POINTS", tip: "獲得したポイントの累計です", ref: pointsCardRef, content: (
                                     <div>
-                                        <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{points.toLocaleString()}</div>
+                                        <div style={{ fontSize: 36, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{points.toLocaleString()}</div>
                                         <div style={{ fontSize: 16, color: themeColor, fontWeight: 600, marginTop: 4 }}>pt</div>
                                         <div style={{ marginTop: 12, padding: "6px 12px", background: "rgba(99,102,241,0.1)", borderRadius: 6, display: "inline-block" }}>
                                             <span style={{ fontSize: 12, color: "#818cf8" }}>🏆 順位 {rank || "-"}位</span>
@@ -786,9 +786,9 @@ export default function MyPage() {
                             {
                                 title: "STREAK", tip: "日報を連続提出した日数です", ref: undefined, content: (
                                     <div>
-                                        <div style={{ fontSize: 48, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{streak}</div>
+                                        <div style={{ fontSize: 36, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{streak}</div>
                                         <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 600, marginTop: 4 }}>日連続</div>
-                                        <div style={{ marginTop: 16, fontSize: 13, color: textSecondary }}>{actionMessage}</div>
+                                        <div style={{ marginTop: 8, fontSize: 11, color: textSecondary, lineHeight: 1.4 }}>{actionMessage}</div>
                                     </div>
                                 )
                             },
@@ -797,7 +797,7 @@ export default function MyPage() {
                                 onMouseEnter={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "block"; }}
                                 onMouseLeave={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "none"; }}
                             >
-                                <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24, height: "100%", boxSizing: "border-box" }}>
+                                <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: "16px 12px", height: "100%", boxSizing: "border-box" }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>{card.title}</div>
                                         <div style={{ fontSize: 12, color: textMuted, cursor: "help" }}>💡</div>
@@ -855,7 +855,7 @@ export default function MyPage() {
                                 onMouseEnter={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "block"; }}
                                 onMouseLeave={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "none"; }}
                             >
-                                <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24, height: "100%", boxSizing: "border-box" }}>
+                                <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: "16px 12px", height: "100%", boxSizing: "border-box" }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>{card.title}</div>
                                         <div style={{ fontSize: 12, color: textMuted, cursor: "help" }}>💡</div>
