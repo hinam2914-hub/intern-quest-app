@@ -733,9 +733,9 @@ export default function MyPage() {
                             )}
                         </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => router.push("/report")} style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>📋 日報提出</button>
-                        <button onClick={() => router.push("/menu")} style={{ background: cardBg, color: textPrimary, padding: "8px 16px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>☰ メニュー</button>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => router.push("/report")} style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", padding: "8px 12px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>📋 日報</button>
+                        <button onClick={() => router.push("/menu")} style={{ background: cardBg, color: textPrimary, padding: "8px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>☰ メニュー</button>
                     </div>
                 </div>
 
@@ -752,7 +752,7 @@ export default function MyPage() {
                 {message && <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>{message}</div>}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
                         {[
                             {
                                 title: "TOTAL POINTS", tip: "獲得したポイントの累計です", ref: pointsCardRef, content: (
@@ -811,7 +811,7 @@ export default function MyPage() {
                         ))}
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
                         {[
                             {
                                 title: "GROWTH STATUS", tip: "管理者が設定する社内育成フェーズです", content: (
