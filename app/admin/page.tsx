@@ -30,6 +30,7 @@ type Challenge = { id: string; title: string; description: string | null; catego
 type ShopItem = { id: string; title: string; description: string; cost: number; category: string; };
 type ChallengeSubmission = { id: string; user_id: string; challenge_id: string; comment: string | null; image_url: string | null; status: string; created_at: string; userName?: string; challengeTitle?: string; };
 type WikiTerm = { id: string; term: string; description: string; category: string | null; created_at: string; };
+type CareerItem = { id: string; title: string; description: string | null; category: string; url: string | null; created_at: string; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -93,7 +94,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -184,6 +185,14 @@ export default function AdminPage() {
     const [shopCategory, setShopCategory] = useState("");
     const [shopSaving, setShopSaving] = useState(false);
     const [shopMessage, setShopMessage] = useState("");
+    const [careerItems, setCareerItems] = useState<CareerItem[]>([]);
+    const [careerTitle, setCareerTitle] = useState("");
+    const [careerDesc, setCareerDesc] = useState("");
+    const [careerCategory, setCareerCategory] = useState("");
+    const [careerUrl, setCareerUrl] = useState("");
+    const [careerSaving, setCareerSaving] = useState(false);
+    const [careerMessage, setCareerMessage] = useState("");
+    const [careerSearch, setCareerSearch] = useState("");
 
     // ✅ Fix 1: useEffect は load 関数を内部定義して即呼び出す正しい構造
     useEffect(() => {
@@ -369,6 +378,8 @@ export default function AdminPage() {
             setMtgSessions((mtgSessionRows || []) as MtgSession[]);
             const { data: wikiRows } = await supabase.from("wiki_terms").select("*").order("category").order("term");
             setWikiTerms((wikiRows || []) as WikiTerm[]);
+            const { data: careerRows } = await supabase.from("career_items").select("*").order("category").order("created_at", { ascending: false });
+            setCareerItems((careerRows || []) as CareerItem[]);
             setLoading(false);
         };
         // ✅ Fix 2: load() の呼び出しは useEffect コールバック内、load 定義の直後
@@ -573,6 +584,7 @@ export default function AdminPage() {
                         { key: "shop", label: "ショップ" },
                         { key: "mtg", label: "MTG管理" },
                         { key: "wiki", label: "用語集" },
+                        { key: "career", label: "就活ボックス" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -1673,6 +1685,79 @@ export default function AdminPage() {
                 )}
 
                 {/* ✅ Fix 4: challenges タブを独立した条件分岐として正しい位置に配置 */}
+                {activeTab === "career" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>💼 新規追加</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイトル</div>
+                                    <input value={careerTitle} onChange={(e) => setCareerTitle(e.target.value)} placeholder="例：慶應義塾大学 → 〇〇商事" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>カテゴリ</div>
+                                    <input value={careerCategory} onChange={(e) => setCareerCategory(e.target.value)} placeholder="例：大学別・企業別・資料" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>説明</div>
+                                <textarea value={careerDesc} onChange={(e) => setCareerDesc(e.target.value)} placeholder="詳細情報を入力してください..." style={{ width: "100%", height: 100, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                            </div>
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>URL（任意）</div>
+                                <input value={careerUrl} onChange={(e) => setCareerUrl(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                            </div>
+                            <button onClick={async () => {
+                                if (!careerTitle.trim() || !careerCategory.trim()) { setCareerMessage("タイトルとカテゴリを入力してください"); return; }
+                                setCareerSaving(true);
+                                const { data: { user } } = await supabase.auth.getUser();
+                                await supabase.from("career_items").insert({ title: careerTitle.trim(), description: careerDesc.trim() || null, category: careerCategory.trim(), url: careerUrl.trim() || null, created_by: user?.id });
+                                const { data: rows } = await supabase.from("career_items").select("*").order("category").order("created_at", { ascending: false });
+                                setCareerItems((rows || []) as CareerItem[]);
+                                setCareerTitle(""); setCareerDesc(""); setCareerCategory(""); setCareerUrl("");
+                                setCareerMessage("追加しました");
+                                setCareerSaving(false);
+                            }} disabled={careerSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                {careerSaving ? "追加中..." : "💼 追加する"}
+                            </button>
+                            {careerMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{careerMessage}</div>}
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>就活ボックス一覧</div>
+                                <input value={careerSearch} onChange={(e) => setCareerSearch(e.target.value)} placeholder="検索..." style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", width: 200 }} />
+                            </div>
+                            {careerItems.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>データがありません</div> : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {[...new Set(careerItems.map(c => c.category))].map(cat => {
+                                        const filtered = careerItems.filter(c => c.category === cat && (
+                                            careerSearch === "" || c.title.includes(careerSearch) || (c.description || "").includes(careerSearch)
+                                        ));
+                                        if (filtered.length === 0) return null;
+                                        return (
+                                            <div key={cat} style={{ marginBottom: 12 }}>
+                                                <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>{cat.toUpperCase()}</div>
+                                                {filtered.map(c => (
+                                                    <div key={c.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{c.title}</div>
+                                                            {c.description && <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.6, marginBottom: 4 }}>{c.description}</div>}
+                                                            {c.url && <a href={c.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#818cf8", textDecoration: "none" }}>🔗 リンクを開く</a>}
+                                                        </div>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("career_items").delete().eq("id", c.id);
+                                                            setCareerItems(prev => prev.filter(x => x.id !== c.id));
+                                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700, marginLeft: 12, flexShrink: 0 }}>削除</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
                 {activeTab === "wiki" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
