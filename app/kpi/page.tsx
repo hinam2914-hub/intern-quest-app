@@ -143,7 +143,7 @@ export default function KpiPage() {
                 {/* ヘッダー */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
                     <div>
-                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3 }}>INTERN QUEST</div>
+                        <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, cursor: "pointer" }}>INTERN QUEST</div>
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📊 月次KPI</h1>
                         <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>月次実績を入力してポイントを獲得しよう</p>
                     </div>
