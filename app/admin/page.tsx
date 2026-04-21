@@ -12,7 +12,7 @@ type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
 type UserDetail = {
     id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; growthStatus?: string; growthRank?: string;
-    growthGrade?: string;
+    growthGrade?: string; onboardingDone?: boolean; createdAt?: string;
 };
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
@@ -122,6 +122,7 @@ export default function AdminPage() {
     const [teams, setTeams] = useState<Team[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [selectedDept, setSelectedDept] = useState<string>("all");
+    const [showInactiveOnly, setShowInactiveOnly] = useState(false);
     const [allMonthlyKpis, setAllMonthlyKpis] = useState<MonthlyKpiRow[]>([]);
     const [monthlyKpis, setMonthlyKpis] = useState<MonthlyKpiRow[]>([]);
     const [kpiMonth, setKpiMonth] = useState(() => {
@@ -235,6 +236,8 @@ export default function AdminPage() {
                     growthStatus: p.growth_status || "Onboarding",
                     growthRank: p.growth_rank || "",
                     growthGrade: p.growth_grade || "",
+                    onboardingDone: p.onboarding_done || false,
+                    createdAt: p.created_at || "",
                 };
             });
             setUserDetails(details);
@@ -520,9 +523,18 @@ export default function AdminPage() {
 
     const filteredUsers = useMemo(() => {
         const sorted = [...userDetails].sort((a, b) => b.points - a.points);
-        if (selectedDept === "all") return sorted;
-        return sorted.filter(u => u.department_id === selectedDept);
-    }, [userDetails, selectedDept]);
+        let result = selectedDept === "all" ? sorted : sorted.filter(u => u.department_id === selectedDept);
+        if (showInactiveOnly) {
+            const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+            result = result.filter(u => {
+                const registeredLongAgo = u.createdAt && (Date.now() - new Date(u.createdAt).getTime()) > oneWeekMs;
+                const noReports = u.submissionCount === 0;
+                const onboardingIncomplete = !u.onboardingDone;
+                return (registeredLongAgo && noReports) || onboardingIncomplete;
+            });
+        }
+        return result;
+    }, [userDetails, selectedDept, showInactiveOnly]);
 
     const deptStats = useMemo(() => {
         const deptIds = [...new Set(allMonthlyKpis.map(k => k.department_id))];
@@ -612,6 +624,7 @@ export default function AdminPage() {
                                     USER MANAGEMENT <span style={{ color: "#818cf8", marginLeft: 8 }}>{filteredUsers.length}人</span>
                                 </div>
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                    <button onClick={() => setShowInactiveOnly(!showInactiveOnly)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: showInactiveOnly ? "linear-gradient(135deg, #ef4444, #f87171)" : "rgba(239,68,68,0.1)", color: showInactiveOnly ? "#fff" : "#f87171" }}>⚠️ 未活動層のみ</button>
                                     <button onClick={() => setSelectedDept("all")} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: selectedDept === "all" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: selectedDept === "all" ? "#fff" : "#9ca3af" }}>全員</button>
                                     {departments.map(dept => (
                                         <button key={dept.id} onClick={() => setSelectedDept(dept.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: selectedDept === dept.id ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: selectedDept === dept.id ? "#fff" : "#9ca3af" }}>{dept.name}</button>
