@@ -1741,32 +1741,51 @@ export default function AdminPage() {
                                         return valid.length > 0 ? Math.round((present / valid.length) * 100) : 0;
                                     })()}%
                                 </div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                    {mtgAttendances.map(a => (
-                                        <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                            <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb", flex: 1 }}>{a.userName}</div>
-                                            <div style={{ display: "flex", gap: 6 }}>
-                                                {[
-                                                    { value: "present", label: "⭕️ 出席", color: "#34d399" },
-                                                    { value: "absent", label: "❌ 欠席", color: "#f87171" },
-                                                    { value: "excluded", label: "➖ 除外", color: "#6b7280" },
-                                                ].map(opt => (
-                                                    <button key={opt.value} onClick={async () => {
-                                                        await supabase.from("mtg_attendances").update({ status: opt.value }).eq("id", a.id);
-                                                        setMtgAttendances(prev => prev.map(x => x.id === a.id ? { ...x, status: opt.value } : x));
-                                                    }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: a.status === opt.value ? `${opt.color}30` : "rgba(255,255,255,0.05)", color: a.status === opt.value ? opt.color : "#6b7280", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
-                                                        {opt.label}
-                                                    </button>
+                                {[...teams, { id: "none", name: "チームなし", color: "#6b7280" }].map(team => {
+                                    const teamUserIds = team.id === "none"
+                                        ? userDetails.filter(u => !u.team_id).map(u => u.id)
+                                        : userDetails.filter(u => u.team_id === team.id).map(u => u.id);
+                                    const teamAttendances = mtgAttendances.filter(a => teamUserIds.includes(a.user_id));
+                                    if (teamAttendances.length === 0) return null;
+                                    const validCount = teamAttendances.filter(a => a.status !== "excluded").length;
+                                    const presentCount = teamAttendances.filter(a => a.status === "present").length;
+                                    const rate = validCount > 0 ? Math.round((presentCount / validCount) * 100) : 0;
+                                    return (
+                                        <div key={team.id} style={{ marginBottom: 20 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                                                <div style={{ width: 10, height: 10, borderRadius: "50%", background: team.color }} />
+                                                <span style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{team.name}</span>
+                                                <span style={{ fontSize: 12, color: "#6b7280" }}>{presentCount}/{validCount}人 · {rate}%</span>
+                                            </div>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 20 }}>
+                                                {teamAttendances.map(a => (
+                                                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                                        <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb", flex: 1 }}>{a.userName}</div>
+                                                        <div style={{ display: "flex", gap: 6 }}>
+                                                            {[
+                                                                { value: "present", label: "⭕️ 出席", color: "#34d399" },
+                                                                { value: "absent", label: "❌ 欠席", color: "#f87171" },
+                                                                { value: "excluded", label: "➖ 除外", color: "#6b7280" },
+                                                            ].map(opt => (
+                                                                <button key={opt.value} onClick={async () => {
+                                                                    await supabase.from("mtg_attendances").update({ status: opt.value }).eq("id", a.id);
+                                                                    setMtgAttendances(prev => prev.map(x => x.id === a.id ? { ...x, status: opt.value } : x));
+                                                                }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: a.status === opt.value ? `${opt.color}30` : "rgba(255,255,255,0.05)", color: a.status === opt.value ? opt.color : "#6b7280", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
+                                                                    {opt.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                        <input value={a.reason || ""} onChange={async (e) => {
+                                                            const val = e.target.value;
+                                                            await supabase.from("mtg_attendances").update({ reason: val }).eq("id", a.id);
+                                                            setMtgAttendances(prev => prev.map(x => x.id === a.id ? { ...x, reason: val } : x));
+                                                        }} placeholder="欠席理由" style={{ width: 140, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, outline: "none" }} />
+                                                    </div>
                                                 ))}
                                             </div>
-                                            <input value={a.reason || ""} onChange={async (e) => {
-                                                const val = e.target.value;
-                                                await supabase.from("mtg_attendances").update({ reason: val }).eq("id", a.id);
-                                                setMtgAttendances(prev => prev.map(x => x.id === a.id ? { ...x, reason: val } : x));
-                                            }} placeholder="欠席理由" style={{ width: 140, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, outline: "none" }} />
                                         </div>
-                                    ))}
-                                </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
