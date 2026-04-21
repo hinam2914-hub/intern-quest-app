@@ -29,6 +29,7 @@ type Resource = { id: string; title: string; description: string | null; resourc
 type Challenge = { id: string; title: string; description: string | null; category: string | null; points: number; icon: string; is_active: boolean; };
 type ShopItem = { id: string; title: string; description: string; cost: number; category: string; };
 type ChallengeSubmission = { id: string; user_id: string; challenge_id: string; comment: string | null; image_url: string | null; status: string; created_at: string; userName?: string; challengeTitle?: string; };
+type WikiTerm = { id: string; term: string; description: string; category: string | null; created_at: string; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -92,7 +93,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -169,6 +170,13 @@ export default function AdminPage() {
     const [mtgType, setMtgType] = useState<"monthly" | "special">("monthly");
     const [mtgSaving, setMtgSaving] = useState(false);
     const [mtgMessage, setMtgMessage] = useState("");
+    const [wikiTerms, setWikiTerms] = useState<WikiTerm[]>([]);
+    const [wikiTerm, setWikiTerm] = useState("");
+    const [wikiDesc, setWikiDesc] = useState("");
+    const [wikiCategory, setWikiCategory] = useState("");
+    const [wikiSaving, setWikiSaving] = useState(false);
+    const [wikiMessage, setWikiMessage] = useState("");
+    const [wikiSearch, setWikiSearch] = useState("");
     const [shopItems, setShopItems] = useState<ShopItem[]>([]);
     const [shopTitle, setShopTitle] = useState("");
     const [shopDesc, setShopDesc] = useState("");
@@ -359,6 +367,8 @@ export default function AdminPage() {
             setChallengeSubmissions((challengeSubRows || []) as ChallengeSubmission[]);
             const { data: mtgSessionRows } = await supabase.from("mtg_sessions").select("*").order("mtg_date", { ascending: false });
             setMtgSessions((mtgSessionRows || []) as MtgSession[]);
+            const { data: wikiRows } = await supabase.from("wiki_terms").select("*").order("category").order("term");
+            setWikiTerms((wikiRows || []) as WikiTerm[]);
             setLoading(false);
         };
         // ✅ Fix 2: load() の呼び出しは useEffect コールバック内、load 定義の直後
@@ -562,6 +572,7 @@ export default function AdminPage() {
                         { key: "challenges", label: "チャレンジ" },
                         { key: "shop", label: "ショップ" },
                         { key: "mtg", label: "MTG管理" },
+                        { key: "wiki", label: "用語集" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -1662,6 +1673,74 @@ export default function AdminPage() {
                 )}
 
                 {/* ✅ Fix 4: challenges タブを独立した条件分岐として正しい位置に配置 */}
+                {activeTab === "wiki" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>📖 用語追加</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px", gap: 12, marginBottom: 12 }}>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>用語</div>
+                                    <input value={wikiTerm} onChange={(e) => setWikiTerm(e.target.value)} placeholder="例：架電" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>カテゴリ</div>
+                                    <input value={wikiCategory} onChange={(e) => setWikiCategory(e.target.value)} placeholder="例：営業用語・社内用語" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>説明</div>
+                                <textarea value={wikiDesc} onChange={(e) => setWikiDesc(e.target.value)} placeholder="用語の説明を入力してください..." style={{ width: "100%", height: 100, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                            </div>
+                            <button onClick={async () => {
+                                if (!wikiTerm.trim() || !wikiDesc.trim()) { setWikiMessage("用語と説明を入力してください"); return; }
+                                setWikiSaving(true);
+                                const { data: { user } } = await supabase.auth.getUser();
+                                await supabase.from("wiki_terms").insert({ term: wikiTerm.trim(), description: wikiDesc.trim(), category: wikiCategory.trim() || null, created_by: user?.id });
+                                const { data: rows } = await supabase.from("wiki_terms").select("*").order("category").order("term");
+                                setWikiTerms((rows || []) as WikiTerm[]);
+                                setWikiTerm(""); setWikiDesc(""); setWikiCategory("");
+                                setWikiMessage("追加しました");
+                                setWikiSaving(false);
+                            }} disabled={wikiSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                {wikiSaving ? "追加中..." : "📖 追加する"}
+                            </button>
+                            {wikiMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{wikiMessage}</div>}
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>用語一覧</div>
+                                <input value={wikiSearch} onChange={(e) => setWikiSearch(e.target.value)} placeholder="検索..." style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", width: 200 }} />
+                            </div>
+                            {wikiTerms.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>用語がありません</div> : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {[...new Set(wikiTerms.map(t => t.category || "その他"))].map(cat => {
+                                        const filtered = wikiTerms.filter(t => (t.category || "その他") === cat && (
+                                            wikiSearch === "" || t.term.includes(wikiSearch) || t.description.includes(wikiSearch)
+                                        ));
+                                        if (filtered.length === 0) return null;
+                                        return (
+                                            <div key={cat} style={{ marginBottom: 12 }}>
+                                                <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>{cat.toUpperCase()}</div>
+                                                {filtered.map(t => (
+                                                    <div key={t.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{t.term}</div>
+                                                            <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.6 }}>{t.description}</div>
+                                                        </div>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("wiki_terms").delete().eq("id", t.id);
+                                                            setWikiTerms(prev => prev.filter(w => w.id !== t.id));
+                                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700, marginLeft: 12, flexShrink: 0 }}>削除</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
                 {activeTab === "mtg" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
