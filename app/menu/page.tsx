@@ -44,6 +44,7 @@ export default function MenuPage() {
         { icon: "📁", label: "参考資料BOX", desc: "業務に役立つ資料・リンクをまとめています", path: "/resources", color: "#34d399" },
         { icon: "📖", label: "用語集", desc: "社内・就活用語をまとめました", path: "/wiki", color: "#6366f1" },
         { icon: "🎯", label: "ライフチャレンジ", desc: "人生の経験値を積んでスタンプを集めよう", path: "/challenge", color: "#f59e0b" },
+        { icon: "💼", label: "就活ボックス", desc: "大学別・企業別の就活情報をチェック", path: "/career", color: "#ec4899" },
     ];
 
     if (loading) {
