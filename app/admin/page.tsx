@@ -74,7 +74,8 @@ function getRankColor(rank: string): string {
     if (rank === "C") return "#84cc16";
     return "#6b7280";
 }
-
+type MtgSession = { id: string; title: string; mtg_date: string; mtg_type: string; created_at: string; };
+type MtgAttendance = { id: string; session_id: string; user_id: string; status: string; reason: string | null; userName?: string; };
 export default function AdminPage() {
     const router = useRouter();
     const [userCount, setUserCount] = useState(0);
@@ -91,7 +92,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -160,6 +161,14 @@ export default function AdminPage() {
     const [challengeIcon, setChallengeIcon] = useState("🎯");
     const [challengeSaving, setChallengeSaving] = useState(false);
     const [challengeMessage, setChallengeMessage] = useState("");
+    const [mtgSessions, setMtgSessions] = useState<MtgSession[]>([]);
+    const [mtgAttendances, setMtgAttendances] = useState<MtgAttendance[]>([]);
+    const [selectedSession, setSelectedSession] = useState<string | null>(null);
+    const [mtgTitle, setMtgTitle] = useState("");
+    const [mtgDate, setMtgDate] = useState("");
+    const [mtgType, setMtgType] = useState<"monthly" | "special">("monthly");
+    const [mtgSaving, setMtgSaving] = useState(false);
+    const [mtgMessage, setMtgMessage] = useState("");
     const [shopItems, setShopItems] = useState<ShopItem[]>([]);
     const [shopTitle, setShopTitle] = useState("");
     const [shopDesc, setShopDesc] = useState("");
@@ -348,7 +357,8 @@ export default function AdminPage() {
 
             const { data: challengeSubRows } = await supabase.from("challenge_submissions").select("*").order("created_at", { ascending: false });
             setChallengeSubmissions((challengeSubRows || []) as ChallengeSubmission[]);
-
+            const { data: mtgSessionRows } = await supabase.from("mtg_sessions").select("*").order("mtg_date", { ascending: false });
+            setMtgSessions((mtgSessionRows || []) as MtgSession[]);
             setLoading(false);
         };
         // ✅ Fix 2: load() の呼び出しは useEffect コールバック内、load 定義の直後
@@ -551,6 +561,7 @@ export default function AdminPage() {
                         { key: "resources", label: "資料管理" },
                         { key: "challenges", label: "チャレンジ" },
                         { key: "shop", label: "ショップ" },
+                        { key: "mtg", label: "MTG管理" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -1651,7 +1662,115 @@ export default function AdminPage() {
                 )}
 
                 {/* ✅ Fix 4: challenges タブを独立した条件分岐として正しい位置に配置 */}
+                {activeTab === "mtg" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>📅 MTG作成</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 160px", gap: 12, marginBottom: 16 }}>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイトル</div>
+                                    <input value={mtgTitle} onChange={(e) => setMtgTitle(e.target.value)} placeholder="例：4月度全体MTG" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>日付</div>
+                                    <input type="date" value={mtgDate} onChange={(e) => setMtgDate(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>種別</div>
+                                    <select value={mtgType} onChange={(e) => setMtgType(e.target.value as any)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 14, outline: "none" }}>
+                                        <option value="monthly">月次定例</option>
+                                        <option value="special">特別開催</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button onClick={async () => {
+                                if (!mtgTitle.trim() || !mtgDate) { setMtgMessage("タイトルと日付を入力してください"); return; }
+                                setMtgSaving(true);
+                                const { data: newSession } = await supabase.from("mtg_sessions").insert({ title: mtgTitle.trim(), mtg_date: mtgDate, mtg_type: mtgType }).select().single();
+                                if (newSession) {
+                                    await Promise.all(userDetails.map(u =>
+                                        supabase.from("mtg_attendances").insert({ session_id: newSession.id, user_id: u.id, status: "absent", reason: null })
+                                    ));
+                                }
+                                const { data: rows } = await supabase.from("mtg_sessions").select("*").order("mtg_date", { ascending: false });
+                                setMtgSessions((rows || []) as MtgSession[]);
+                                setMtgTitle(""); setMtgDate(""); setMtgType("monthly");
+                                setMtgMessage("MTGを作成しました");
+                                setSelectedSession(newSession?.id || null);
+                                setMtgSaving(false);
+                            }} disabled={mtgSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                {mtgSaving ? "作成中..." : "📅 作成する"}
+                            </button>
+                            {mtgMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{mtgMessage}</div>}
+                        </div>
 
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>MTG一覧</div>
+                            {mtgSessions.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>MTGがありません</div> : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {mtgSessions.map(s => (
+                                        <button key={s.id} onClick={async () => {
+                                            setSelectedSession(s.id);
+                                            const { data: rows } = await supabase.from("mtg_attendances").select("*").eq("session_id", s.id);
+                                            setMtgAttendances((rows || []).map((r: any) => ({
+                                                ...r,
+                                                userName: userDetails.find(u => u.id === r.user_id)?.name || "名前未設定"
+                                            })));
+                                        }} style={{ padding: "14px 16px", borderRadius: 12, background: selectedSession === s.id ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.02)", border: `1px solid ${selectedSession === s.id ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.08)"}`, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", textAlign: "left" }}>
+                                            <div>
+                                                <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{s.title}</div>
+                                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{s.mtg_date} · {s.mtg_type === "monthly" ? "月次定例" : "特別開催"}</div>
+                                            </div>
+                                            <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>出欠入力 →</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {selectedSession && (
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>出欠入力</div>
+                                <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>
+                                    出席: {mtgAttendances.filter(a => a.status === "present").length}名
+                                    欠席: {mtgAttendances.filter(a => a.status === "absent").length}名
+                                    除外: {mtgAttendances.filter(a => a.status === "excluded").length}名
+                                    出席率: {(() => {
+                                        const valid = mtgAttendances.filter(a => a.status !== "excluded");
+                                        const present = mtgAttendances.filter(a => a.status === "present").length;
+                                        return valid.length > 0 ? Math.round((present / valid.length) * 100) : 0;
+                                    })()}%
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {mtgAttendances.map(a => (
+                                        <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                            <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb", flex: 1 }}>{a.userName}</div>
+                                            <div style={{ display: "flex", gap: 6 }}>
+                                                {[
+                                                    { value: "present", label: "⭕️ 出席", color: "#34d399" },
+                                                    { value: "absent", label: "❌ 欠席", color: "#f87171" },
+                                                    { value: "excluded", label: "➖ 除外", color: "#6b7280" },
+                                                ].map(opt => (
+                                                    <button key={opt.value} onClick={async () => {
+                                                        await supabase.from("mtg_attendances").update({ status: opt.value }).eq("id", a.id);
+                                                        setMtgAttendances(prev => prev.map(x => x.id === a.id ? { ...x, status: opt.value } : x));
+                                                    }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: a.status === opt.value ? `${opt.color}30` : "rgba(255,255,255,0.05)", color: a.status === opt.value ? opt.color : "#6b7280", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
+                                                        {opt.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <input value={a.reason || ""} onChange={async (e) => {
+                                                const val = e.target.value;
+                                                await supabase.from("mtg_attendances").update({ reason: val }).eq("id", a.id);
+                                                setMtgAttendances(prev => prev.map(x => x.id === a.id ? { ...x, reason: val } : x));
+                                            }} placeholder="欠席理由" style={{ width: 140, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, outline: "none" }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
                 {activeTab === "shop" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
