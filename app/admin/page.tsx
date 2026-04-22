@@ -94,7 +94,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -197,6 +197,8 @@ export default function AdminPage() {
     const [managerTests, setManagerTests] = useState<any[]>([]);
     const [managerTestDetail, setManagerTestDetail] = useState<Record<string, { choices: any[]; written: any[] }>>({});
     const [managerTestFilter, setManagerTestFilter] = useState<"pending" | "all">("pending");
+    const [esList, setEsList] = useState<any[]>([]);
+    const [selectedEsUserId, setSelectedEsUserId] = useState<string | null>(null);
 
     // ✅ Fix 1: useEffect は load 関数を内部定義して即呼び出す正しい構造
     useEffect(() => {
@@ -402,6 +404,15 @@ export default function AdminPage() {
                     detailMap[test.id] = { choices: choices || [], written: written || [] };
                 }
                 setManagerTestDetail(detailMap);
+            }
+            // 総合ES一覧
+            const { data: esRows } = await supabase.from("user_es").select("*").order("last_updated_at", { ascending: false });
+            if (esRows && esRows.length > 0) {
+                const esWithUsers = await Promise.all((esRows as any[]).map(async (e: any) => {
+                    const { data: prof } = await supabase.from("profiles").select("name").eq("id", e.user_id).single();
+                    return { ...e, userName: (prof as any)?.name || "名前未設定" };
+                }));
+                setEsList(esWithUsers);
             }
             setLoading(false);
         };
@@ -618,6 +629,7 @@ export default function AdminPage() {
                         { key: "wiki", label: "用語集" },
                         { key: "career", label: "就活ボックス" },
                         { key: "manager_test", label: "マネージャーテスト" },
+                        { key: "es", label: "総合ES" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -1717,7 +1729,121 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+                {activeTab === "es" && (
+                    <div>
+                        <div style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>📝 総合ES 一覧</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.7 }}>各ユーザーのエントリーシート状況を確認できます。クリックで詳細を閲覧できます。</div>
+                        </div>
 
+                        {selectedEsUserId ? (
+                            <div>
+                                <button onClick={() => setSelectedEsUserId(null)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600, marginBottom: 16 }}>← 一覧に戻る</button>
+                                {(() => {
+                                    const es = esList.find((e: any) => e.user_id === selectedEsUserId);
+                                    if (!es) return <div style={{ color: "#6b7280", fontSize: 13 }}>データが見つかりません</div>;
+
+                                    const sections = [
+                                        {
+                                            title: "① 学生時代に力を入れたこと（ガクチカ）", fields: [
+                                                { label: "何を頑張ったのか", value: es.gakuchika_what },
+                                                { label: "目標", value: es.gakuchika_goal },
+                                                { label: "課題", value: es.gakuchika_issue },
+                                                { label: "改善", value: es.gakuchika_improvement },
+                                                { label: "結果", value: es.gakuchika_result },
+                                            ]
+                                        },
+                                        {
+                                            title: "② 就活の軸", fields: [
+                                                { label: "どんな仕事（業界）に関わりたいか", value: es.axis_industry },
+                                                { label: "↑ なぜか", value: es.axis_industry_why },
+                                                { label: "どんな業務に就きたいか", value: es.axis_role },
+                                                { label: "↑ なぜか", value: es.axis_role_why },
+                                                { label: "他に大事にしたいこと", value: es.axis_other },
+                                                { label: "↑ なぜか", value: es.axis_other_why },
+                                            ]
+                                        },
+                                        {
+                                            title: "③ 将来どうなりたいか", fields: [
+                                                { label: "どんな価値を出す人になりたいか", value: es.goal_value },
+                                                { label: "どんな役割の人になりたいか", value: es.goal_role },
+                                                { label: "なぜそうなりたいか", value: es.goal_why },
+                                                { label: "必要なスキル・経験", value: es.goal_skills },
+                                            ]
+                                        },
+                                        {
+                                            title: "④ 自己PR", fields: [
+                                                { label: "強み", value: es.pr_strength },
+                                                { label: "発揮された経験", value: es.pr_experience },
+                                                { label: "再現性", value: es.pr_reproducibility },
+                                            ]
+                                        },
+                                        {
+                                            title: "⑤ 失敗経験・挫折経験", fields: [
+                                                { label: "何が失敗だったか", value: es.failure_what },
+                                                { label: "どう乗り越えたか", value: es.failure_overcome },
+                                            ]
+                                        },
+                                    ];
+
+                                    return (
+                                        <div>
+                                            <div style={{ padding: "20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 16 }}>
+                                                <div style={{ color: "#f9fafb", fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{es.userName}</div>
+                                                <div style={{ color: "#6b7280", fontSize: 12 }}>
+                                                    {es.first_completed_at && <span style={{ marginRight: 12 }}>初回完成: {new Date(es.first_completed_at).toLocaleDateString("ja-JP")}</span>}
+                                                    <span>最終更新: {new Date(es.last_updated_at).toLocaleString("ja-JP")}</span>
+                                                    <span style={{ marginLeft: 12 }}>更新回数: {es.total_updates}</span>
+                                                </div>
+                                            </div>
+                                            {sections.map((sec, si) => (
+                                                <div key={si} style={{ padding: "20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 12 }}>
+                                                    <div style={{ color: "#a78bfa", fontSize: 14, fontWeight: 800, marginBottom: 12 }}>{sec.title}</div>
+                                                    {sec.fields.map((f, fi) => (
+                                                        <div key={fi} style={{ marginBottom: 12 }}>
+                                                            <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 700, marginBottom: 4 }}>{f.label}</div>
+                                                            <div style={{ color: f.value ? "#d1d5db" : "#4b5563", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", padding: "10px 12px", background: "rgba(0,0,0,0.2)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.04)" }}>{f.value || "（未記入）"}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {esList.length === 0 ? (
+                                    <div style={{ textAlign: "center", color: "#6b7280", fontSize: 13, padding: 32 }}>まだ誰もESを作成していません</div>
+                                ) : (
+                                    esList.map((es: any) => {
+                                        const fields = ["gakuchika_what", "gakuchika_goal", "gakuchika_issue", "gakuchika_improvement", "gakuchika_result", "axis_industry", "axis_industry_why", "axis_role", "axis_role_why", "axis_other", "axis_other_why", "goal_value", "goal_role", "goal_why", "goal_skills", "pr_strength", "pr_experience", "pr_reproducibility", "failure_what", "failure_overcome"];
+                                        const filled = fields.filter(f => (es[f] || "").trim().length > 0).length;
+                                        const progress = Math.round((filled / fields.length) * 100);
+                                        const isComplete = filled === fields.length;
+                                        return (
+                                            <div key={es.user_id} onClick={() => setSelectedEsUserId(es.user_id)} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                                    <div>
+                                                        <div style={{ color: "#f9fafb", fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{es.userName}</div>
+                                                        <div style={{ color: "#6b7280", fontSize: 11 }}>最終更新: {new Date(es.last_updated_at).toLocaleString("ja-JP")}　更新 {es.total_updates} 回</div>
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                        {isComplete && <span style={{ padding: "4px 10px", borderRadius: 6, background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 11, fontWeight: 700 }}>✅ 完成</span>}
+                                                        <div style={{ color: isComplete ? "#34d399" : "#818cf8", fontSize: 18, fontWeight: 800 }}>{progress}%</div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.05)", overflow: "hidden" }}>
+                                                    <div style={{ width: `${progress}%`, height: "100%", background: isComplete ? "#34d399" : "linear-gradient(90deg, #6366f1, #8b5cf6)" }} />
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
                 {/* ✅ Fix 4: challenges タブを独立した条件分岐として正しい位置に配置 */}
                 {activeTab === "manager_test" && (
                     <div>

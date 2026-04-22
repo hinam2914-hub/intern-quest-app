@@ -49,6 +49,7 @@ export default function MenuPage() {
         { icon: "🎯", label: "ライフチャレンジ", desc: "人生の経験値を積んでスタンプを集めよう", path: "/challenge", color: "#f59e0b" },
         { icon: "💼", label: "就活ボックス", desc: "大学別・企業別の就活情報をチェック", path: "/career", color: "#ec4899" },
         { icon: "📊", label: "自分の実績", desc: "累計データ・ランク・順位を確認", path: "/stats", color: "#06b6d4" },
+        { icon: "📝", label: "総合ES", desc: "エントリーシートを作成・更新", path: "/es", color: "#8b5cf6" },
         ...(["Manager", "Owner"].includes(userRole) ? [{ icon: "🎖️", label: "マネージャーテスト", desc: "マネージャー認定のための価値観テスト", path: "/manager-test", color: "#ec4899" }] : []),
     ];
 
