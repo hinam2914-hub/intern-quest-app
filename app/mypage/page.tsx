@@ -188,7 +188,7 @@ function buildGraphData(history: PointHistory[]): GraphData[] {
     });
 }
 
-function getBadges(points: number, streak: number): Badge[] {
+function getBadges(points: number, streak: number, contentCompletionCount: number, esCompleted: boolean): Badge[] {
     return [
         { id: "first_step", icon: "🔥", name: "はじめの一歩", description: "3日連続提出", unlocked: streak >= 3 },
         { id: "keep_going", icon: "⚡", name: "継続の力", description: "7日連続提出", unlocked: streak >= 7 },
@@ -198,11 +198,13 @@ function getBadges(points: number, streak: number): Badge[] {
         { id: "ace", icon: "🏆", name: "エース", description: "1000pt達成", unlocked: points >= 1000 },
         { id: "legend", icon: "👑", name: "レジェンド", description: "5000pt達成", unlocked: points >= 5000 },
         { id: "combo", icon: "🎯", name: "コンボ", description: "3日連続＋100pt", unlocked: streak >= 3 && points >= 100 },
+        { id: "es_writer", icon: "📝", name: "ES記入者", description: "総合ES初回完成", unlocked: esCompleted },
+        { id: "learn_habit", icon: "📚", name: "学びの習慣", description: "学習コンテンツ10本完了", unlocked: contentCompletionCount >= 10 },
     ];
 }
 
-function getTrophies(params: { points: number; streak: number; submissionCount: number; thanksCount: number; rank2: string; }): Trophy[] {
-    const { points, streak, submissionCount, thanksCount, rank2 } = params;
+function getTrophies(params: { points: number; streak: number; submissionCount: number; thanksCount: number; rank2: string; contentCompletionCount: number; }): Trophy[] {
+    const { points, streak, submissionCount, thanksCount, rank2, contentCompletionCount } = params;
     return [
         { id: "legend_intern", icon: "👑", name: "伝説のインターン", description: "5000pt達成", rarity: "legendary" as const, unlocked: points >= 5000 },
         { id: "streak_master", icon: "🔥", name: "連続投稿マスター", description: "30日連続提出", rarity: "epic" as const, unlocked: streak >= 30 },
@@ -210,6 +212,7 @@ function getTrophies(params: { points: number; streak: number; submissionCount: 
         { id: "output_king", icon: "📋", name: "アウトプット王", description: "日報50件提出", rarity: "rare" as const, unlocked: submissionCount >= 50 },
         { id: "thanks_hero", icon: "🎉", name: "感謝の人", description: "サンキュー10件受領", rarity: "rare" as const, unlocked: thanksCount >= 10 },
         { id: "s_ranker", icon: "⭐", name: "Sランカー", description: "ランクS到達", rarity: "rare" as const, unlocked: rank2 === "S" || rank2 === "SS" },
+        { id: "learn_master", icon: "📚", name: "学びの達人", description: "学習コンテンツ20本完了", rarity: "rare" as const, unlocked: contentCompletionCount >= 20 },
         { id: "week_streak", icon: "⚡", name: "週間連続賞", description: "7日連続提出", rarity: "common" as const, unlocked: streak >= 7 },
         { id: "first_100", icon: "🌱", name: "100pt突破", description: "100pt達成", rarity: "common" as const, unlocked: points >= 100 },
         { id: "submitter10", icon: "📝", name: "コツコツ提出者", description: "日報10件提出", rarity: "common" as const, unlocked: submissionCount >= 10 },
@@ -343,6 +346,8 @@ export default function MyPage() {
     const [levelUpShow, setLevelUpShow] = useState(false);
     const [prevLevel, setPrevLevel] = useState(0);
     const [submissionCount, setSubmissionCount] = useState(0);
+    const [contentCompletionCount, setContentCompletionCount] = useState(0);
+    const [esCompleted, setEsCompleted] = useState(false);
     const [thanksCount, setThanksCount] = useState(0);
     const [kpiCount, setKpiCount] = useState(0);
     const [activeDays, setActiveDays] = useState(0);
@@ -394,8 +399,8 @@ export default function MyPage() {
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
-    const badges = getBadges(points, streak);
-    const trophies = getTrophies({ points, streak, submissionCount, thanksCount, rank2 });
+    const badges = getBadges(points, streak, contentCompletionCount, esCompleted);
+    const trophies = getTrophies({ points, streak, submissionCount, thanksCount, rank2, contentCompletionCount });
     const unlockedTrophies = trophies.filter(t => t.unlocked);
     const topTrophy = [...unlockedTrophies].sort((a, b) => {
         const order = { legendary: 4, epic: 3, rare: 2, common: 1 };
@@ -489,6 +494,16 @@ export default function MyPage() {
 
         const { count: tCount } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("to_user_id", user.id);
         setThanksCount(tCount || 0);
+
+        const { count: cCount } = await supabase.from("content_completions").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved");
+        setContentCompletionCount(cCount || 0);
+
+        const { data: esRow } = await supabase.from("user_es").select("*").eq("user_id", user.id).maybeSingle();
+        if (esRow) {
+            const fields = ["gakuchika_1","gakuchika_2","gakuchika_3","gakuchika_4","axis_1","axis_2","axis_3","axis_4","future_1","future_2","future_3","future_4","pr_1","pr_2","pr_3","pr_4","fail_1","fail_2","fail_3","fail_4"];
+            const allFilled = fields.every(f => ((esRow as any)[f] || "").trim().length > 0);
+            setEsCompleted(allFilled);
+        }
 
         const { count: kCount } = await supabase.from("kpi_logs").select("*", { count: "exact", head: true }).eq("user_id", user.id);
         setKpiCount(kCount || 0);
