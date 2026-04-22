@@ -209,7 +209,7 @@ export default function EsPage() {
 
                 {/* 報酬説明 */}
                 <div style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", marginBottom: 24, fontSize: 12, color: "#fbbf24", lineHeight: 1.6 }}>
-                    💎 初回完成で <strong>+100pt</strong>　�� 月1アップデートで <strong>+20pt</strong>
+                    ✨ 初回完成で <strong>+100pt</strong>　✨ 月1アップデートで <strong>+20pt</strong>
                 </div>
 
                 {/* セクション切替 */}
