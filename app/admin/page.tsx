@@ -555,6 +555,7 @@ export default function AdminPage() {
     const filteredUsers = useMemo(() => {
         const sorted = [...userDetails].sort((a, b) => b.points - a.points);
         let result = selectedDept === "all" ? sorted : sorted.filter(u => u.department_id === selectedDept);
+        console.log('[デバッグ] showInactiveOnly=', showInactiveOnly, 'userDetails=', userDetails.map(u => ({ name: u.name || u.email, onboardingDone: u.onboardingDone, submissionCount: u.submissionCount, createdAt: u.createdAt })));
         if (showInactiveOnly) {
             const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
             result = result.filter(u => {
