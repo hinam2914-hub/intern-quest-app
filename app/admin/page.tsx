@@ -94,7 +94,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -194,6 +194,9 @@ export default function AdminPage() {
     const [careerSaving, setCareerSaving] = useState(false);
     const [careerMessage, setCareerMessage] = useState("");
     const [careerSearch, setCareerSearch] = useState("");
+    const [managerTests, setManagerTests] = useState<any[]>([]);
+    const [managerTestDetail, setManagerTestDetail] = useState<Record<string, { choices: any[]; written: any[] }>>({});
+    const [managerTestFilter, setManagerTestFilter] = useState<"pending" | "all">("pending");
 
     // ✅ Fix 1: useEffect は load 関数を内部定義して即呼び出す正しい構造
     useEffect(() => {
@@ -383,6 +386,23 @@ export default function AdminPage() {
             setWikiTerms((wikiRows || []) as WikiTerm[]);
             const { data: careerRows } = await supabase.from("career_items").select("*").order("category").order("created_at", { ascending: false });
             setCareerItems((careerRows || []) as CareerItem[]);
+            // マネージャーテスト（提出済み一覧）
+            const { data: testRows } = await supabase.from("manager_tests").select("*").eq("status", "submitted").order("submitted_at", { ascending: false });
+            if (testRows && testRows.length > 0) {
+                const testsWithUsers = await Promise.all((testRows as any[]).map(async (t: any) => {
+                    const { data: prof } = await supabase.from("profiles").select("name").eq("id", t.user_id).single();
+                    return { ...t, userName: (prof as any)?.name || "名前未設定" };
+                }));
+                setManagerTests(testsWithUsers);
+
+                const detailMap: Record<string, { choices: any[]; written: any[] }> = {};
+                for (const test of testsWithUsers) {
+                    const { data: choices } = await supabase.from("manager_test_choice_answers").select("*").eq("test_id", test.id).order("question_num");
+                    const { data: written } = await supabase.from("manager_test_written_answers").select("*").eq("test_id", test.id).order("question_num");
+                    detailMap[test.id] = { choices: choices || [], written: written || [] };
+                }
+                setManagerTestDetail(detailMap);
+            }
             setLoading(false);
         };
         // ✅ Fix 2: load() の呼び出しは useEffect コールバック内、load 定義の直後
@@ -597,6 +617,7 @@ export default function AdminPage() {
                         { key: "mtg", label: "MTG管理" },
                         { key: "wiki", label: "用語集" },
                         { key: "career", label: "就活ボックス" },
+                        { key: "manager_test", label: "マネージャーテスト" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -1698,6 +1719,72 @@ export default function AdminPage() {
                 )}
 
                 {/* ✅ Fix 4: challenges タブを独立した条件分岐として正しい位置に配置 */}
+                {activeTab === "manager_test" && (
+                    <div>
+                        <div style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#ec4899", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>🎖️ マネージャーテスト承認</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.7 }}>選択式14問以上正解で提出された記述式を確認してください。承認で500pt付与＋マネージャー認定となります。</div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                            <button onClick={() => setManagerTestFilter("pending")} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: managerTestFilter === "pending" ? "linear-gradient(135deg, #ec4899, #f472b6)" : "rgba(255,255,255,0.05)", color: managerTestFilter === "pending" ? "#fff" : "#9ca3af" }}>レビュー待ち</button>
+                            <button onClick={() => setManagerTestFilter("all")} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: managerTestFilter === "all" ? "linear-gradient(135deg, #ec4899, #f472b6)" : "rgba(255,255,255,0.05)", color: managerTestFilter === "all" ? "#fff" : "#9ca3af" }}>すべて</button>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            {managerTests.filter((t: any) => managerTestFilter === "all" || t.written_status === "pending").map((test: any) => (
+                                <div key={test.id} style={{ padding: "20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                        <div>
+                                            <div style={{ color: "#f9fafb", fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{test.userName}</div>
+                                            <div style={{ color: "#6b7280", fontSize: 11 }}>提出: {new Date(test.submitted_at).toLocaleString("ja-JP")}</div>
+                                        </div>
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                            <div style={{ padding: "4px 10px", borderRadius: 6, background: test.passed_choice ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)", color: test.passed_choice ? "#34d399" : "#f87171", fontSize: 11, fontWeight: 700 }}>選択式: {test.score_choice}/{test.score_choice_total}</div>
+                                            <div style={{ padding: "4px 10px", borderRadius: 6, background: test.written_status === "approved" ? "rgba(52,211,153,0.15)" : test.written_status === "rejected" ? "rgba(248,113,113,0.15)" : "rgba(251,191,36,0.15)", color: test.written_status === "approved" ? "#34d399" : test.written_status === "rejected" ? "#f87171" : "#fbbf24", fontSize: 11, fontWeight: 700 }}>{test.written_status === "approved" ? "承認済み" : test.written_status === "rejected" ? "却下" : test.written_status === "skipped" ? "選択式不合格" : "レビュー待ち"}</div>
+                                        </div>
+                                    </div>
+
+                                    {managerTestDetail[test.id]?.written && managerTestDetail[test.id].written.length > 0 && (
+                                        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                                            <div style={{ color: "#818cf8", fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>記述式回答</div>
+                                            {managerTestDetail[test.id].written.map((w: any) => (
+                                                <div key={w.id} style={{ padding: "12px 14px", borderRadius: 8, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                                    <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 700, marginBottom: 6 }}>Q{w.question_num}</div>
+                                                    <div style={{ color: "#d1d5db", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{w.answer}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {test.written_status === "pending" && test.passed_choice && (
+                                        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                                            <button onClick={async () => {
+                                                if (!confirm("この提出を承認しますか？ユーザーに500ptが付与されマネージャー認定となります")) return;
+                                                await supabase.from("manager_tests").update({ written_status: "approved", approved_at: new Date().toISOString(), points_awarded: 500 }).eq("id", test.id);
+                                                await supabase.from("profiles").update({ manager_certified: true, manager_certified_at: new Date().toISOString() }).eq("id", test.user_id);
+                                                const { data: currentPoints } = await supabase.from("user_points").select("points").eq("id", test.user_id).single();
+                                                const newPoints = ((currentPoints as any)?.points || 0) + 500;
+                                                await supabase.from("user_points").upsert({ id: test.user_id, points: newPoints });
+                                                await supabase.from("points_history").insert({ user_id: test.user_id, change: 500, reason: "manager_test_certified" });
+                                                setManagerTests(prev => prev.map((t: any) => t.id === test.id ? { ...t, written_status: "approved", points_awarded: 500 } : t));
+                                            }} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認（500pt付与）</button>
+                                            <button onClick={async () => {
+                                                if (!confirm("この提出を却下しますか？3日後に再挑戦可能となります")) return;
+                                                const nextRetry = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+                                                await supabase.from("manager_tests").update({ written_status: "rejected", next_retry_at: nextRetry }).eq("id", test.id);
+                                                setManagerTests(prev => prev.map((t: any) => t.id === test.id ? { ...t, written_status: "rejected" } : t));
+                                            }} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.1)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            {managerTests.filter((t: any) => managerTestFilter === "all" || t.written_status === "pending").length === 0 && (
+                                <div style={{ textAlign: "center", color: "#6b7280", fontSize: 13, padding: 32 }}>該当する提出はありません</div>
+                            )}
+                        </div>
+                    </div>
+                )}
                 {activeTab === "career" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>

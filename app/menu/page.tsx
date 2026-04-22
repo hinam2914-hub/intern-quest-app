@@ -9,18 +9,21 @@ export default function MenuPage() {
     const [name, setName] = useState("");
     const [points, setPoints] = useState(0);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [userRole, setUserRole] = useState("");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const load = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
-            const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).single();
+            const { data: profile } = await supabase.from("profiles").select("name, role").eq("id", user.id).single();
             const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
             setName(profile?.name || "");
             setPoints(pointRow?.points || 0);
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
-            setIsAdmin(!!user.email && adminEmails.includes(user.email)); setLoading(false);
+            setIsAdmin(!!user.email && adminEmails.includes(user.email));
+            setUserRole((profile as any)?.role || "");
+            setLoading(false); setLoading(false);
         };
         load();
     }, [router]);
@@ -46,6 +49,7 @@ export default function MenuPage() {
         { icon: "🎯", label: "ライフチャレンジ", desc: "人生の経験値を積んでスタンプを集めよう", path: "/challenge", color: "#f59e0b" },
         { icon: "💼", label: "就活ボックス", desc: "大学別・企業別の就活情報をチェック", path: "/career", color: "#ec4899" },
         { icon: "📊", label: "自分の実績", desc: "累計データ・ランク・順位を確認", path: "/stats", color: "#06b6d4" },
+        ...(["Manager", "Owner"].includes(userRole) ? [{ icon: "🎖️", label: "マネージャーテスト", desc: "マネージャー認定のための価値観テスト", path: "/manager-test", color: "#ec4899" }] : []),
     ];
 
     if (loading) {
