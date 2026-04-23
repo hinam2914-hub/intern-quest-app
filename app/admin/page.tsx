@@ -2440,64 +2440,49 @@ export default function AdminPage() {
                 {activeTab === "kkc" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                         <div style={{ padding: "20px 24px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 12 }}>💡 新しい課題を作成</div>
-                            <input id="pc-title" placeholder="課題タイトル" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, marginBottom: 8, boxSizing: "border-box" }} />
-                            <textarea id="pc-desc" placeholder="課題の説明（任意）" style={{ width: "100%", minHeight: 80, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, resize: "vertical", fontFamily: "inherit", marginBottom: 10, boxSizing: "border-box" }} />
-                            <button onClick={async () => {
-                                const titleEl = document.getElementById("pc-title") as HTMLInputElement;
-                                const descEl = document.getElementById("pc-desc") as HTMLTextAreaElement;
-                                if (!titleEl.value.trim()) { alert("タイトルを入力してください"); return; }
-                                await supabase.from("problem_cases").insert({ title: titleEl.value.trim(), description: descEl.value.trim() || null, is_active: true });
-                                const { data: pcRows } = await supabase.from("problem_cases").select("*").order("created_at", { ascending: false });
-                                setProblemCases(pcRows || []);
-                                titleEl.value = ""; descEl.value = "";
-                            }} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>課題を作成</button>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>💡 KKC 課題解決案box</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af" }}>ユーザーが投稿した「課題・解決案・結果」を審査。承認すると +1pt 付与されます。</div>
                         </div>
 
                         <div>
-                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>📋 課題一覧</div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {problemCases.map((pc: any) => {
-                                    const subs = problemSolutions.filter(s => s.problem_case_id === pc.id);
-                                    return (
-                                        <div key={pc.id} style={{ padding: 16, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontSize: 14, fontWeight: 700, color: pc.is_active ? "#f9fafb" : "#6b7280", marginBottom: 4 }}>{pc.title}</div>
-                                                    {pc.description && <div style={{ fontSize: 12, color: "#9ca3af", whiteSpace: "pre-wrap", marginBottom: 4 }}>{pc.description}</div>}
-                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>提出 {subs.length} 件 / 承認 {subs.filter(s => s.status === "approved").length} 件</div>
-                                                </div>
-                                                <button onClick={async () => {
-                                                    await supabase.from("problem_cases").update({ is_active: !pc.is_active }).eq("id", pc.id);
-                                                    setProblemCases(prev => prev.map(p => p.id === pc.id ? { ...p, is_active: !p.is_active } : p));
-                                                }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: pc.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: pc.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>{pc.is_active ? "非表示" : "表示する"}</button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                {problemCases.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#6b7280", fontSize: 13 }}>課題がまだありません</div>}
-                            </div>
-                        </div>
-
-                        <div>
-                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>📝 審査待ち解決案</div>
+                            <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>⏳ 審査待ち（{problemSolutions.filter(s => s.status === "pending").length}件）</div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                                 {problemSolutions.filter(s => s.status === "pending").map((s: any) => {
-                                    const pc = problemCases.find(p => p.id === s.problem_case_id);
                                     const submitter = userDetails.find((u: any) => u.id === s.user_id);
                                     return (
                                         <div key={s.id} style={{ padding: 16, borderRadius: 10, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)" }}>
-                                            <div style={{ fontSize: 12, color: "#fbbf24", fontWeight: 700, marginBottom: 4 }}>{pc?.title || "課題削除済み"}</div>
-                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 8 }}>👤 {submitter?.name || "不明"} · {new Date(s.created_at).toLocaleString("ja-JP")}</div>
-                                            <div style={{ fontSize: 13, color: "#f9fafb", whiteSpace: "pre-wrap", lineHeight: 1.6, marginBottom: 10, padding: 10, borderRadius: 6, background: "rgba(0,0,0,0.2)" }}>{s.solution}</div>
+                                            <div style={{ fontSize: 12, color: "#fbbf24", fontWeight: 700, marginBottom: 4 }}>👤 {submitter?.name || "不明"}</div>
+                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 10 }}>{new Date(s.created_at).toLocaleString("ja-JP")}</div>
+
+                                            {s.problem_description && (
+                                                <div style={{ marginBottom: 8 }}>
+                                                    <div style={{ fontSize: 10, color: "#818cf8", fontWeight: 700, letterSpacing: 1, marginBottom: 2 }}>① 課題</div>
+                                                    <div style={{ fontSize: 13, color: "#f9fafb", whiteSpace: "pre-wrap", lineHeight: 1.6, padding: 8, borderRadius: 6, background: "rgba(0,0,0,0.2)" }}>{s.problem_description}</div>
+                                                </div>
+                                            )}
+                                            <div style={{ marginBottom: 8 }}>
+                                                <div style={{ fontSize: 10, color: "#818cf8", fontWeight: 700, letterSpacing: 1, marginBottom: 2 }}>② 解決案</div>
+                                                <div style={{ fontSize: 13, color: "#f9fafb", whiteSpace: "pre-wrap", lineHeight: 1.6, padding: 8, borderRadius: 6, background: "rgba(0,0,0,0.2)" }}>{s.solution}</div>
+                                            </div>
+                                            {s.result && (
+                                                <div style={{ marginBottom: 10 }}>
+                                                    <div style={{ fontSize: 10, color: "#818cf8", fontWeight: 700, letterSpacing: 1, marginBottom: 2 }}>③ 結果</div>
+                                                    <div style={{ fontSize: 13, color: "#f9fafb", whiteSpace: "pre-wrap", lineHeight: 1.6, padding: 8, borderRadius: 6, background: "rgba(0,0,0,0.2)" }}>{s.result}</div>
+                                                </div>
+                                            )}
+
                                             <textarea id={`pc-cmt-${s.id}`} placeholder="コメント（任意）" style={{ width: "100%", minHeight: 50, padding: "8px 12px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, resize: "vertical", fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" }} />
                                             <div style={{ display: "flex", gap: 8 }}>
                                                 <button onClick={async () => {
                                                     const cmtEl = document.getElementById(`pc-cmt-${s.id}`) as HTMLTextAreaElement;
                                                     const nowIso = new Date().toISOString();
                                                     await supabase.from("problem_solutions").update({ status: "approved", admin_comment: cmtEl.value.trim() || null, reviewed_at: nowIso }).eq("id", s.id);
+                                                    const { data: ptRow } = await supabase.from("user_points").select("points").eq("id", s.user_id).maybeSingle();
+                                                    const currentPt = ptRow?.points || 0;
+                                                    await supabase.from("user_points").upsert({ id: s.user_id, points: currentPt + 1 });
+                                                    await supabase.from("points_history").insert({ user_id: s.user_id, change: 1, reason: "KKC 解決案承認" });
                                                     setProblemSolutions(prev => prev.map(p => p.id === s.id ? { ...p, status: "approved", admin_comment: cmtEl.value.trim() || null, reviewed_at: nowIso } : p));
-                                                }} style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✅ 承認</button>
+                                                }} style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✅ 承認 (+1pt)</button>
                                                 <button onClick={async () => {
                                                     const cmtEl = document.getElementById(`pc-cmt-${s.id}`) as HTMLTextAreaElement;
                                                     const nowIso = new Date().toISOString();
@@ -2508,7 +2493,27 @@ export default function AdminPage() {
                                         </div>
                                     );
                                 })}
-                                {problemSolutions.filter(s => s.status === "pending").length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#6b7280", fontSize: 13 }}>審査待ちの解決案はありません</div>}
+                                {problemSolutions.filter(s => s.status === "pending").length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#6b7280", fontSize: 13 }}>審査待ちの投稿はありません</div>}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style={{ fontSize: 11, color: "#10b981", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>📚 処理済み（承認 {problemSolutions.filter(s => s.status === "approved").length}件 / 却下 {problemSolutions.filter(s => s.status === "rejected").length}件）</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {problemSolutions.filter(s => s.status !== "pending").slice(0, 20).map((s: any) => {
+                                    const submitter = userDetails.find((u: any) => u.id === s.user_id);
+                                    const statusColor = s.status === "approved" ? "#10b981" : "#ef4444";
+                                    const statusBg = s.status === "approved" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)";
+                                    return (
+                                        <div key={s.id} style={{ padding: 12, borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                                                <span style={{ fontSize: 12, color: "#f9fafb", fontWeight: 700 }}>👤 {submitter?.name || "不明"}</span>
+                                                <span style={{ padding: "2px 8px", borderRadius: 4, background: statusBg, color: statusColor, fontSize: 11, fontWeight: 700 }}>{s.status === "approved" ? "承認" : "却下"}</span>
+                                            </div>
+                                            <div style={{ fontSize: 12, color: "#9ca3af", whiteSpace: "pre-wrap", lineHeight: 1.4 }}>{s.problem_description || s.solution}</div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
