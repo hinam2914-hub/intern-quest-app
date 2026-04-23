@@ -106,6 +106,9 @@ export default function UserDetailPage() {
     const [streak, setStreak] = useState(0);
     const [role, setRole] = useState("");
     const [education, setEducation] = useState("");
+    const [monthlyKpis, setMonthlyKpis] = useState<any[]>([]);
+    const [kkcSolutions, setKkcSolutions] = useState<any[]>([]);
+    const [esHistoryCount, setEsHistoryCount] = useState(0);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [departmentName, setDepartmentName] = useState("");
     const [startedAt, setStartedAt] = useState<string | null>(null);
@@ -202,6 +205,12 @@ export default function UserDetailPage() {
                 };
             }));
 
+            setMonthlyKpis(monthlyKpiRows || []);
+            const { data: kkcRows } = await supabase.from("problem_solutions").select("*").eq("user_id", userId);
+            setKkcSolutions(kkcRows || []);
+            const { count: esCnt } = await supabase.from("user_es_history").select("*", { count: "exact", head: true }).eq("user_id", userId);
+            setEsHistoryCount(esCnt || 0);
+
             setLoading(false);
         };
         load();
@@ -217,14 +226,16 @@ export default function UserDetailPage() {
 
     const level = getLevel(points);
     const activeDays = startedAt ? Math.floor((Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+    const approvedKpiCount = monthlyKpis.filter((k: any) => k.approved).length;
+    const kkcApprovedCount = kkcSolutions.filter((s: any) => s.status === "approved").length;
     const rankScore = Math.min(Math.round(
         getEducationScore(education) +
-        Math.min(activeDays * 0.5, 15) +
-        Math.min(kpiLogs.length * 3, 15) +
-        Math.min(streak * 2, 20) +
-        Math.min(thanksReceived.length * 2, 10) +
-        Math.min(submissions.length * 2, 20) +
-        Math.min(level, 10)
+        Math.min(activeDays * (15 / 730), 15) +
+        Math.min(approvedKpiCount * 0.75, 15) +
+        Math.min(kkcApprovedCount, 20) +
+        Math.min(Math.floor(thanksReceived.length / 20), 10) +
+        Math.min(Math.floor(esHistoryCount / 10), 20) +
+        Math.min(level * (4 / 15), 10)
     ), 100);
     const rank2 = getRank(rankScore);
     const rankColor = getRankColor(rank2);

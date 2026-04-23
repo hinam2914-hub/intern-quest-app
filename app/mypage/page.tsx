@@ -149,19 +149,18 @@ function getEducationScore(education: string): number {
     return 2; // それ以下
 }
 function getRankScore(params: {
-    level: number; streak: number; points: number; isSubmitted: boolean;
-    submissionCount: number; thanksCount: number; kpiCount: number;
-    activeDays: number; education: string;
+    level: number; thanksCount: number; activeDays: number; education: string;
+    approvedKpiCount: number; kkcApprovedCount: number; esUpdateCount: number;
 }): number {
-    const { level, streak, submissionCount, thanksCount, kpiCount, activeDays, education } = params;
+    const { level, thanksCount, activeDays, education, approvedKpiCount, kkcApprovedCount, esUpdateCount } = params;
     const eduScore = getEducationScore(education);
-    const activityScore = Math.min(activeDays * 0.5, 15);
-    const kpiScore = Math.min(kpiCount * 3, 15);
-    const streakScore = Math.min(streak * 2, 20);
-    const leaderScore = Math.min(thanksCount * 2, 10);
-    const outputScore = Math.min(submissionCount * 2, 20);
-    const metaScore = Math.min(level, 10);
-    return Math.min(Math.round(eduScore + activityScore + kpiScore + streakScore + leaderScore + outputScore + metaScore), 100);
+    const activityScore = Math.min(activeDays * (15 / 730), 15);
+    const kpiScore = Math.min(approvedKpiCount * 0.75, 15);
+    const thinkingScore = Math.min(kkcApprovedCount, 20);
+    const leaderScore = Math.min(Math.floor(thanksCount / 20), 10);
+    const outputScore = Math.min(Math.floor(esUpdateCount / 10), 20);
+    const metaScore = Math.min(level * (4 / 15), 10);
+    return Math.min(Math.round(eduScore + activityScore + kpiScore + thinkingScore + leaderScore + outputScore + metaScore), 100);
 }
 function getNextRankInfo(rank: string): string {
     if (rank === "SS") return "最高ランク到達！";
@@ -365,6 +364,9 @@ export default function MyPage() {
     const [esCompleted, setEsCompleted] = useState(false);
     const [thanksCount, setThanksCount] = useState(0);
     const [kpiCount, setKpiCount] = useState(0);
+    const [approvedKpiCount, setApprovedKpiCount] = useState(0);
+    const [kkcApprovedCount, setKkcApprovedCount] = useState(0);
+    const [esUpdateCount, setEsUpdateCount] = useState(0);
     const [activeDays, setActiveDays] = useState(0);
     const [startedAt, setStartedAt] = useState("");
     const [todayKpiDone, setTodayKpiDone] = useState(false);
@@ -409,7 +411,7 @@ export default function MyPage() {
     const badgeLabel = getBadgeLabel(level);
     const badgeColor = getBadgeColor(level);
     const actionMessage = getActionMessage(isSubmitted, streak);
-    const rankScore = getRankScore({ level, streak, points, isSubmitted, submissionCount, thanksCount, kpiCount, activeDays, education });
+    const rankScore = getRankScore({ level, thanksCount, activeDays, education, approvedKpiCount, kkcApprovedCount, esUpdateCount });
     const rank2 = getRank(rankScore);
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
@@ -522,6 +524,13 @@ export default function MyPage() {
 
         const { count: kCount } = await supabase.from("kpi_logs").select("*", { count: "exact", head: true }).eq("user_id", user.id);
         setKpiCount(kCount || 0);
+
+        const { count: approvedKpiCnt } = await supabase.from("monthly_kpi").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("approved", true);
+        setApprovedKpiCount(approvedKpiCnt || 0);
+        const { count: kkcCnt } = await supabase.from("problem_solutions").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved");
+        setKkcApprovedCount(kkcCnt || 0);
+        const { count: esCnt } = await supabase.from("user_es_history").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+        setEsUpdateCount(esCnt || 0);
 
         const { data: announceRows } = await supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false });
         setAnnouncements((announceRows || []) as { id: string; title: string; content: string }[]);
@@ -973,12 +982,12 @@ export default function MyPage() {
                         <ResponsiveContainer width="100%" height={280}>
                             <RadarChart data={[
                                 { axis: "学歴", value: getEducationScore(education) },
-                                { axis: "活動期間", value: Math.min(activeDays * 0.5, 15) },
-                                { axis: "実績KPI", value: Math.min(kpiCount * 3, 15) },
-                                { axis: "再現性", value: Math.min(streak * 2, 20) },
-                                { axis: "リーダーシップ", value: Math.min(thanksCount * 2, 10) },
-                                { axis: "アウトプット", value: Math.min(submissionCount * 2, 20) },
-                                { axis: "メタ認知", value: Math.min(level, 10) },
+                                { axis: "活動期間", value: Math.min(activeDays * (15 / 730), 15) },
+                                { axis: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15) },
+                                { axis: "メタ認知", value: Math.min(level * (4 / 15), 10) },
+                                { axis: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20) },
+                                { axis: "リーダーシップ", value: Math.min(Math.floor(thanksCount / 20), 10) },
+                                { axis: "思考力", value: Math.min(kkcApprovedCount, 20) },
                             ]}>
                                 <PolarGrid stroke={barBg} />
                                 <PolarAngleAxis dataKey="axis" tick={{ fill: textMuted, fontSize: 11, fontWeight: 600 }} />
@@ -987,13 +996,13 @@ export default function MyPage() {
                         </ResponsiveContainer>
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                             {[
-                                { label: "学歴", value: getEducationScore(education), max: 10, color: "#6366f1", tip: "学歴を登録するとスコアが上がります" },
-                                { label: "活動期間", value: Math.min(activeDays * 0.5, 15), max: 15, color: "#8b5cf6", tip: "インターン参加日数に応じて上がります" },
-                                { label: "実績KPI", value: Math.min(kpiCount * 3, 15), max: 15, color: "#06b6d4", tip: "KPIを入力するたびに上がります" },
-                                { label: "再現性", value: Math.min(streak * 2, 20), max: 20, color: "#f59e0b", tip: "日報を連続提出するほど上がります" },
-                                { label: "リーダーシップ", value: Math.min(thanksCount * 2, 10), max: 10, color: "#ec4899", tip: "サンキューを受け取るほど上がります" },
-                                { label: "アウトプット", value: Math.min(submissionCount * 2, 20), max: 20, color: "#34d399", tip: "日報を提出するたびに上がります" },
-                                { label: "メタ認知", value: Math.min(level, 10), max: 10, color: "#f97316", tip: "レベルアップするたびに上がります" },
+                                { label: "学歴", value: getEducationScore(education), max: 10, color: "#6366f1", tip: "学歴に応じてスコアが決まります" },
+                                { label: "活動期間", value: Math.min(activeDays * (15 / 730), 15), max: 15, color: "#8b5cf6", tip: "2年で満点になります" },
+                                { label: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), max: 15, color: "#06b6d4", tip: "マンスリーKPIが承認されるたびに上がります" },
+                                { label: "思考力", value: Math.min(kkcApprovedCount, 20), max: 20, color: "#f59e0b", tip: "KKC課題解決案が承認されるたびに上がります" },
+                                { label: "リーダーシップ", value: Math.min(Math.floor(thanksCount / 20), 10), max: 10, color: "#ec4899", tip: "サンキュー20件ごとに1点上がります" },
+                                { label: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), max: 20, color: "#10b981", tip: "ES更新10回ごとに1点上がります" },
+                                { label: "メタ認知", value: Math.min(level * (4 / 15), 10), max: 10, color: "#f97316", tip: "Lv15で4点、Lv37で10点になります" },
                             ].map((axis) => (
                                 <div key={axis.label} style={{ position: "relative" }}
                                     onMouseEnter={() => { const tip = document.getElementById(`tip-${axis.label}`); if (tip) tip.style.display = "block"; }}

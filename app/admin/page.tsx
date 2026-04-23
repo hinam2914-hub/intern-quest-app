@@ -12,7 +12,7 @@ type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
 type UserDetail = {
     id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; growthStatus?: string; growthRank?: string;
-    growthGrade?: string; onboardingDone?: boolean; createdAt?: string;
+    growthGrade?: string; onboardingDone?: boolean; createdAt?: string; approvedKpiCount?: number; kkcApprovedCount?: number; esUpdateCount?: number;
 };
 type GraphData = { date: string; points: number };
 type SubmitGraphData = { date: string; count: number };
@@ -56,16 +56,16 @@ function getEducationScore(education: string): number {
     if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修/.test(e)) return 4;
     return 2;
 }
-function getRankScore(params: { level: number; streak: number; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; }): number {
-    const { level, streak, submissionCount, thanksCount, kpiCount, activeDays, education } = params;
+function getRankScore(params: { level: number; thanksCount: number; activeDays: number; education: string; approvedKpiCount: number; kkcApprovedCount: number; esUpdateCount: number; }): number {
+    const { level, thanksCount, activeDays, education, approvedKpiCount, kkcApprovedCount, esUpdateCount } = params;
     const eduScore = getEducationScore(education);
-    const activityScore = Math.min(activeDays * 0.5, 15);
-    const kpiScore = Math.min(kpiCount * 3, 15);
-    const streakScore = Math.min(streak * 2, 20);
-    const leaderScore = Math.min(thanksCount * 2, 10);
-    const outputScore = Math.min(submissionCount * 2, 20);
-    const metaScore = Math.min(level, 10);
-    return Math.min(Math.round(eduScore + activityScore + kpiScore + streakScore + leaderScore + outputScore + metaScore), 100);
+    const activityScore = Math.min(activeDays * (15 / 730), 15);
+    const kpiScore = Math.min(approvedKpiCount * 0.75, 15);
+    const thinkingScore = Math.min(kkcApprovedCount, 20);
+    const leaderScore = Math.min(Math.floor(thanksCount / 20), 10);
+    const outputScore = Math.min(Math.floor(esUpdateCount / 10), 20);
+    const metaScore = Math.min(level * (4 / 15), 10);
+    return Math.min(Math.round(eduScore + activityScore + kpiScore + thinkingScore + leaderScore + outputScore + metaScore), 100);
 }
 
 function getRank(score: number): string {
@@ -252,6 +252,9 @@ export default function AdminPage() {
                     growthGrade: p.growth_grade || "",
                     onboardingDone: p.onboarding_done || false,
                     createdAt: p.created_at || "",
+                    approvedKpiCount: 0,
+                    kkcApprovedCount: 0,
+                    esUpdateCount: 0,
                 };
             });
             setUserDetails(details);
@@ -677,7 +680,7 @@ export default function AdminPage() {
                             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                 {filteredUsers.map((u, i) => {
                                     const level = Math.max(1, Math.floor(u.points / 100) + 1);
-                                    const score = getRankScore({ level, streak: u.streak, submissionCount: u.submissionCount, thanksCount: u.thanksCount, kpiCount: u.kpiCount, activeDays: u.activeDays, education: u.education });
+                                    const score = getRankScore({ level, thanksCount: u.thanksCount, activeDays: u.activeDays, education: u.education, approvedKpiCount: u.approvedKpiCount || 0, kkcApprovedCount: u.kkcApprovedCount || 0, esUpdateCount: u.esUpdateCount || 0 });
                                     const rank = getRank(score);
                                     const rankColor = getRankColor(rank);
                                     return (
