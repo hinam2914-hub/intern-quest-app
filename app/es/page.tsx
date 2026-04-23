@@ -119,6 +119,7 @@ export default function EsPage() {
                 pointReason = "es_first_completed";
             }
             await supabase.from("user_es").insert(payload);
+            await supabase.from("user_es_history").insert({ user_id: userId });
         } else {
             // 更新
             const wasComplete = !!existing.first_completed_at;
@@ -138,6 +139,7 @@ export default function EsPage() {
                 }
             }
             await supabase.from("user_es").update(payload).eq("user_id", userId);
+            await supabase.from("user_es_history").insert({ user_id: userId });
         }
 
         // ポイント付与
