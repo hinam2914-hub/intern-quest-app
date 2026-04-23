@@ -86,7 +86,16 @@ function buildBreakdownData(history: PointHistory[]): BreakdownData[] {
         .map(([key, value]) => ({ name: reasonMap[key]?.label || key, value, color: reasonMap[key]?.color || "#6b7280" }))
         .sort((a, b) => b.value - a.value);
 }
-
+function getEducationScore(education: string): number {
+    if (!education) return 0;
+    const e = education;
+    if (/東京大学|^東大|京都大学|^京大|大阪大学|^阪大|名古屋大学|^名大|東北大学|九州大学|^九大|北海道大学|^北大/.test(e)) return 10;
+    if (/早稲田|慶應|慶応|上智/.test(e)) return 8;
+    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政/.test(e)) return 6;
+    if (/成城|成蹊|明治学院|獨協|國學院|国学院|武蔵大学|武蔵大/.test(e)) return 5;
+    if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修/.test(e)) return 4;
+    return 2;
+}
 export default function UserDetailPage() {
     const router = useRouter();
     const params = useParams();
@@ -209,7 +218,7 @@ export default function UserDetailPage() {
     const level = getLevel(points);
     const activeDays = startedAt ? Math.floor((Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
     const rankScore = Math.min(Math.round(
-        (education ? 8 : 0) +
+        getEducationScore(education) +
         Math.min(activeDays * 0.5, 15) +
         Math.min(kpiLogs.length * 3, 15) +
         Math.min(streak * 2, 20) +

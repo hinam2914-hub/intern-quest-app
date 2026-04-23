@@ -46,10 +46,19 @@ function formatDateTime(value: string): string {
     const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
     return jst.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-
+function getEducationScore(education: string): number {
+    if (!education) return 0;
+    const e = education;
+    if (/東京大学|^東大|京都大学|^京大|大阪大学|^阪大|名古屋大学|^名大|東北大学|九州大学|^九大|北海道大学|^北大/.test(e)) return 10;
+    if (/早稲田|慶應|慶応|上智/.test(e)) return 8;
+    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政/.test(e)) return 6;
+    if (/成城|成蹊|明治学院|獨協|國學院|国学院|武蔵大学|武蔵大/.test(e)) return 5;
+    if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修/.test(e)) return 4;
+    return 2;
+}
 function getRankScore(params: { level: number; streak: number; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; }): number {
     const { level, streak, submissionCount, thanksCount, kpiCount, activeDays, education } = params;
-    const eduScore = education ? 8 : 0;
+    const eduScore = getEducationScore(education);
     const activityScore = Math.min(activeDays * 0.5, 15);
     const kpiScore = Math.min(kpiCount * 3, 15);
     const streakScore = Math.min(streak * 2, 20);

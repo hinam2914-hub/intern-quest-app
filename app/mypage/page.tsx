@@ -133,13 +133,28 @@ function getRankColor(rank: string): string {
     if (rank === "C") return "linear-gradient(135deg, #84cc16, #22c55e)";
     return "linear-gradient(135deg, #374151, #6b7280)";
 }
+function getEducationScore(education: string): number {
+    if (!education) return 0;
+    const e = education;
+    // 旧帝大 10点
+    if (/東京大学|^東大|京都大学|^京大|大阪大学|^阪大|名古屋大学|^名大|東北大学|九州大学|^九大|北海道大学|^北大/.test(e)) return 10;
+    // 早慶上 8点
+    if (/早稲田|慶應|慶応|上智/.test(e)) return 8;
+    // GMARCH 6点
+    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政/.test(e)) return 6;
+    // 成成明学獨國武 5点
+    if (/成城|成蹊|明治学院|獨協|國學院|国学院|武蔵大学|武蔵大/.test(e)) return 5;
+    // 日東駒専 4点
+    if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修/.test(e)) return 4;
+    return 2; // それ以下
+}
 function getRankScore(params: {
     level: number; streak: number; points: number; isSubmitted: boolean;
     submissionCount: number; thanksCount: number; kpiCount: number;
     activeDays: number; education: string;
 }): number {
     const { level, streak, submissionCount, thanksCount, kpiCount, activeDays, education } = params;
-    const eduScore = education ? 8 : 0;
+    const eduScore = getEducationScore(education);
     const activityScore = Math.min(activeDays * 0.5, 15);
     const kpiScore = Math.min(kpiCount * 3, 15);
     const streakScore = Math.min(streak * 2, 20);
@@ -500,7 +515,7 @@ export default function MyPage() {
 
         const { data: esRow } = await supabase.from("user_es").select("*").eq("user_id", user.id).maybeSingle();
         if (esRow) {
-            const fields = ["gakuchika_1","gakuchika_2","gakuchika_3","gakuchika_4","axis_1","axis_2","axis_3","axis_4","future_1","future_2","future_3","future_4","pr_1","pr_2","pr_3","pr_4","fail_1","fail_2","fail_3","fail_4"];
+            const fields = ["gakuchika_1", "gakuchika_2", "gakuchika_3", "gakuchika_4", "axis_1", "axis_2", "axis_3", "axis_4", "future_1", "future_2", "future_3", "future_4", "pr_1", "pr_2", "pr_3", "pr_4", "fail_1", "fail_2", "fail_3", "fail_4"];
             const allFilled = fields.every(f => ((esRow as any)[f] || "").trim().length > 0);
             setEsCompleted(allFilled);
         }
