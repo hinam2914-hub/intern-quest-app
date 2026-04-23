@@ -972,7 +972,7 @@ export default function MyPage() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
                         <ResponsiveContainer width="100%" height={280}>
                             <RadarChart data={[
-                                { axis: "学歴", value: education ? 8 : 0 },
+                                { axis: "学歴", value: getEducationScore(education) },
                                 { axis: "活動期間", value: Math.min(activeDays * 0.5, 15) },
                                 { axis: "実績KPI", value: Math.min(kpiCount * 3, 15) },
                                 { axis: "再現性", value: Math.min(streak * 2, 20) },
@@ -987,7 +987,7 @@ export default function MyPage() {
                         </ResponsiveContainer>
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                             {[
-                                { label: "学歴", value: education ? 8 : 0, max: 10, color: "#6366f1", tip: "学歴を登録するとスコアが上がります" },
+                                { label: "学歴", value: getEducationScore(education), max: 10, color: "#6366f1", tip: "学歴を登録するとスコアが上がります" },
                                 { label: "活動期間", value: Math.min(activeDays * 0.5, 15), max: 15, color: "#8b5cf6", tip: "インターン参加日数に応じて上がります" },
                                 { label: "実績KPI", value: Math.min(kpiCount * 3, 15), max: 15, color: "#06b6d4", tip: "KPIを入力するたびに上がります" },
                                 { label: "再現性", value: Math.min(streak * 2, 20), max: 20, color: "#f59e0b", tip: "日報を連続提出するほど上がります" },
