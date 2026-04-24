@@ -46,7 +46,7 @@ export default function RegisterPage() {
         const { error: profileError } = await supabase.from("profiles").insert({
             id: user.id,
             name: name.trim(),
-            role: "Owner",
+            role: "Member",
         });
 
         if (profileError) {
