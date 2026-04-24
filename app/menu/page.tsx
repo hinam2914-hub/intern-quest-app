@@ -38,7 +38,7 @@ export default function MenuPage() {
         { icon: "📋", label: "日報提出", desc: "今日の活動を記録してポイント獲得", path: "/report", color: "#8b5cf6" },
         { icon: "📸", label: "プロフィール写真", desc: "顔写真をアップロードする", path: "/profile", color: "#ec4899" },
         { icon: "📚", label: "学習コンテンツ", desc: "動画・記事を学習してポイント獲得", path: "/learn", color: "#06b6d4" },
-        { icon: "🧠", label: "確認ワークテスト", desc: "価値観と仕事の基本をチェック", path: "/quiz", color: "#a78bfa" },
+        { icon: "📝", label: "テスト一覧", desc: "価値観・適性を測る各種テスト", path: "/tests", color: "#a78bfa" },
         { icon: "💡", label: "KKC 課題解決案", desc: "ドットの課題に解決案を申請", path: "/kkc", color: "#f59e0b" },
         { icon: "🎉", label: "サンキュー", desc: "感謝を伝えてポイントをプレゼント", path: "/thanks", color: "#f59e0b" },
         { icon: "📊", label: "月次KPI", desc: "月次実績を入力してポイント獲得", path: "/kpi", color: "#06b6d4" },
@@ -52,7 +52,6 @@ export default function MenuPage() {
         { icon: "💼", label: "就活ボックス", desc: "大学別・企業別の就活情報をチェック", path: "/career", color: "#ec4899" },
         { icon: "📊", label: "自分の実績", desc: "累計データ・ランク・順位を確認", path: "/stats", color: "#06b6d4" },
         { icon: "📝", label: "総合ES", desc: "エントリーシートを作成・更新", path: "/es", color: "#8b5cf6" },
-        ...(["Manager", "Owner"].includes(userRole) ? [{ icon: "🎖️", label: "マネージャーテスト", desc: "マネージャー認定のための価値観テスト", path: "/manager-test", color: "#ec4899" }] : []),
     ];
 
     if (loading) {
