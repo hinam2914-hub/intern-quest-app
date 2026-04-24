@@ -135,7 +135,7 @@ export default function RegisterPage() {
 
                     {/* MBTI */}
                     <div style={{ marginBottom: 20 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>MBTI（任意）</div>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>MBTI</div>
                         <select value={mbti} onChange={(e) => setMbti(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
                             <option value="">選択してください</option>
                             <option value="INTJ">INTJ（建築家）</option>
@@ -159,7 +159,7 @@ export default function RegisterPage() {
 
                     {/* 部活 */}
                     <div style={{ marginBottom: 20 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>高校の部活（任意）</div>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>高校の部活</div>
                         <select value={club} onChange={(e) => setClub(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
                             <option value="">選択してください</option>
                             <option value="野球部">⚾ 野球部</option>
@@ -175,7 +175,7 @@ export default function RegisterPage() {
 
                     {/* 趣味 */}
                     <div style={{ marginBottom: 28 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>趣味（任意）</div>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>趣味</div>
                         <select value={hobby} onChange={(e) => setHobby(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
                             <option value="">選択してください</option>
                             <option value="読書・勉強">📚 読書・勉強</option>
