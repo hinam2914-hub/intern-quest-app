@@ -46,6 +46,94 @@ function formatDateTime(value: string): string {
     const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
     return jst.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
+// ============ シビュラシステム用マスター＆計算関数 ============
+const MBTI_SCORES: Record<string, { cog: number; grit: number; social: number; drive: number; create: number }> = {
+    "INTJ": { cog: 10, grit: 8, social: 3, drive: 2, create: 9 },
+    "INTP": { cog: 10, grit: 6, social: 2, drive: 2, create: 10 },
+    "ENTJ": { cog: 9, grit: 9, social: 7, drive: 8, create: 7 },
+    "ENTP": { cog: 9, grit: 6, social: 7, drive: 8, create: 10 },
+    "INFJ": { cog: 8, grit: 7, social: 8, drive: 3, create: 9 },
+    "INFP": { cog: 7, grit: 5, social: 7, drive: 3, create: 10 },
+    "ENFJ": { cog: 7, grit: 7, social: 10, drive: 7, create: 8 },
+    "ENFP": { cog: 6, grit: 5, social: 9, drive: 9, create: 9 },
+    "ISTJ": { cog: 7, grit: 9, social: 4, drive: 3, create: 3 },
+    "ISFJ": { cog: 5, grit: 8, social: 7, drive: 3, create: 3 },
+    "ESTJ": { cog: 7, grit: 9, social: 6, drive: 7, create: 4 },
+    "ESFJ": { cog: 5, grit: 7, social: 9, drive: 6, create: 4 },
+    "ISTP": { cog: 7, grit: 7, social: 3, drive: 9, create: 6 },
+    "ISFP": { cog: 4, grit: 4, social: 6, drive: 6, create: 7 },
+    "ESTP": { cog: 6, grit: 8, social: 7, drive: 10, create: 5 },
+    "ESFP": { cog: 4, grit: 5, social: 9, drive: 10, create: 6 },
+};
+
+const CLUB_SCORES: Record<string, { grit: number; drive: number; social: number }> = {
+    "野球部": { grit: 10, drive: 10, social: 9 },
+    "体育会系（全国レベル）": { grit: 9, drive: 9, social: 7 },
+    "体育会系（一般）": { grit: 8, drive: 7, social: 6 },
+    "チームスポーツ系": { grit: 7, drive: 7, social: 8 },
+    "個人競技系": { grit: 8, drive: 8, social: 3 },
+    "文化部（発表系）": { grit: 6, drive: 5, social: 7 },
+    "文化部（創作系）": { grit: 4, drive: 3, social: 3 },
+    "帰宅部": { grit: 2, drive: 2, social: 2 },
+};
+
+const HOBBY_SCORES: Record<string, { cog: number; social: number; drive: number; create: number }> = {
+    "読書・勉強": { cog: 9, social: 2, drive: 2, create: 5 },
+    "ゲーム（戦略）": { cog: 8, social: 4, drive: 5, create: 5 },
+    "ゲーム（アクション）": { cog: 4, social: 4, drive: 9, create: 3 },
+    "スポーツ・運動": { cog: 3, social: 7, drive: 9, create: 3 },
+    "音楽・楽器": { cog: 5, social: 6, drive: 5, create: 9 },
+    "アート・創作": { cog: 5, social: 3, drive: 3, create: 10 },
+    "旅行": { cog: 4, social: 7, drive: 5, create: 6 },
+    "グルメ・食べ歩き": { cog: 3, social: 8, drive: 5, create: 5 },
+    "映画・ドラマ鑑賞": { cog: 5, social: 4, drive: 2, create: 6 },
+    "アウトドア": { cog: 3, social: 7, drive: 8, create: 4 },
+    "SNS・配信": { cog: 5, social: 9, drive: 6, create: 7 },
+};
+
+function getEducationSibyl(education: string): { cog: number; grit: number } {
+    if (!education) return { cog: 0, grit: 0 };
+    const e = education;
+    if (/東京大学|^東大|京都大学|^京大|大阪大学|^阪大|名古屋大学|^名大|東北大学|九州大学|^九大|北海道大学|^北大/.test(e)) return { cog: 10, grit: 6 };
+    if (/早稲田|慶應|慶応|上智/.test(e)) return { cog: 9, grit: 5 };
+    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政/.test(e)) return { cog: 7, grit: 5 };
+    if (/成城|成蹊|明治学院|獨協|國學院|国学院|武蔵大学|武蔵大/.test(e)) return { cog: 6, grit: 4 };
+    if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修/.test(e)) return { cog: 5, grit: 4 };
+    return { cog: 3, grit: 3 };
+}
+
+function calculateSibyl(params: { mbti: string; education: string; club: string; hobby: string }): { cog: number; grit: number; social: number; drive: number; create: number } {
+    const m = MBTI_SCORES[params.mbti] || { cog: 0, grit: 0, social: 0, drive: 0, create: 0 };
+    const e = getEducationSibyl(params.education);
+    const c = CLUB_SCORES[params.club] || { grit: 0, drive: 0, social: 0 };
+    const h = HOBBY_SCORES[params.hobby] || { cog: 0, social: 0, drive: 0, create: 0 };
+
+    return {
+        cog: Math.min(Math.round(m.cog * 0.5 + e.cog * 0.5 + h.cog * 0.3), 20),
+        grit: Math.min(Math.round(m.grit * 0.5 + e.grit * 0.3 + c.grit * 0.8), 20),
+        social: Math.min(Math.round(m.social * 0.8 + c.social * 0.4 + h.social * 0.4), 20),
+        drive: Math.min(Math.round(m.drive * 0.8 + c.drive * 0.6 + h.drive * 0.4), 20),
+        create: Math.min(Math.round(m.create * 1.0 + h.create * 0.8), 20),
+    };
+}
+
+function calculateDepartmentMatch(s: { cog: number; grit: number; social: number; drive: number; create: number }): { dept: string; score: number }[] {
+    const results = [
+        { dept: "IP（訪問販売）", score: s.grit * 2 + s.drive * 2 + s.social * 1 },
+        { dept: "クローザー（太陽光）", score: s.social * 2 + s.drive * 2 + s.grit * 1 },
+        { dept: "マネージャー", score: s.social * 2 + s.grit * 2 + s.cog * 1 },
+        { dept: "コンサル（社内）", score: s.cog * 2 + s.create * 2 + s.social * 1 },
+        { dept: "テレアポ（美容）", score: s.social * 2 + s.cog * 2 + s.create * 1 + s.grit * 1 },
+        { dept: "人事（採用）", score: s.social * 2 + s.cog * 2 + s.create * 1 },
+    ];
+    results.sort((a, b) => b.score - a.score);
+    const maxScore = results[0]?.score || 0;
+    if (maxScore < 60) {
+        results.push({ dept: "マーケ（総合判定）", score: Math.round((s.cog + s.create) * 2) });
+    }
+    return results;
+}
+// ============ シビュラシステムここまで ============
 function getEducationScore(education: string): number {
     if (!education) return 0;
     const e = education;
@@ -103,7 +191,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -220,7 +308,7 @@ export default function AdminPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status");
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category");
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
@@ -649,7 +737,8 @@ export default function AdminPage() {
                         { key: "career", label: "就活ボックス" },
                         { key: "manager_test", label: "マネージャーテスト" },
                         { key: "es", label: "総合ES" },
-                        { key: "kkc", label: "💡KKC" },
+                        { key: "kkc", label: "KKC" },
+                        { key: "sibyl", label: "シビュラ" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -2516,6 +2605,122 @@ export default function AdminPage() {
                                 })}
                             </div>
                         </div>
+                    </div>
+                )}
+                {activeTab === "sibyl" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                        <div style={{ padding: "20px 24px", borderRadius: 14, background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.2)" }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>👁️ シビュラシステム</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af" }}>学歴・MBTI・部活・趣味をもとに5軸評価（地頭・胆力・対人・瞬発・創造）を算出し、事業部適性を診断します。</div>
+                        </div>
+
+                        {userDetails.map((u: any) => {
+                            const sibyl = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
+                            const matches = calculateDepartmentMatch(sibyl);
+                            const hasData = u.mbti || u.education || u.club_category || u.hobby_category;
+
+                            return (
+                                <div key={u.id} style={{ padding: 20, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                                        <div style={{ fontSize: 16, fontWeight: 700, color: "#f9fafb" }}>👤 {u.name}</div>
+                                        {!hasData && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, fontWeight: 700 }}>データ未入力</span>}
+                                    </div>
+
+                                    {/* 5軸スコア */}
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
+                                        {[
+                                            { label: "地頭", value: sibyl.cog, color: "#6366f1" },
+                                            { label: "胆力", value: sibyl.grit, color: "#ef4444" },
+                                            { label: "対人", value: sibyl.social, color: "#10b981" },
+                                            { label: "瞬発", value: sibyl.drive, color: "#f59e0b" },
+                                            { label: "創造", value: sibyl.create, color: "#a855f7" },
+                                        ].map(ax => (
+                                            <div key={ax.label} style={{ padding: 10, borderRadius: 8, background: "rgba(0,0,0,0.3)", textAlign: "center" }}>
+                                                <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>{ax.label}</div>
+                                                <div style={{ fontSize: 18, fontWeight: 800, color: ax.color }}>{ax.value}</div>
+                                                <div style={{ fontSize: 9, color: "#6b7280" }}>/20</div>
+                                                <div style={{ height: 4, background: "rgba(255,255,255,0.05)", borderRadius: 2, marginTop: 4, overflow: "hidden" }}>
+                                                    <div style={{ height: "100%", width: `${(ax.value / 20) * 100}%`, background: ax.color }} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* 事業部マッチング */}
+                                    <div style={{ marginBottom: 16 }}>
+                                        <div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>🎯 事業部マッチング</div>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                            {matches.map((m, idx) => {
+                                                const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "  ";
+                                                const barColor = idx === 0 ? "#10b981" : idx === 1 ? "#6366f1" : idx === 2 ? "#f59e0b" : "#6b7280";
+                                                const maxPossible = 100;
+                                                return (
+                                                    <div key={m.dept} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                        <div style={{ width: 30, fontSize: 14 }}>{medal}</div>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 600, color: "#d1d5db", marginBottom: 2 }}>
+                                                                <span>{m.dept}</span>
+                                                                <span style={{ color: barColor }}>{m.score}点</span>
+                                                            </div>
+                                                            <div style={{ height: 6, background: "rgba(255,255,255,0.05)", borderRadius: 3, overflow: "hidden" }}>
+                                                                <div style={{ height: "100%", width: `${Math.min((m.score / maxPossible) * 100, 100)}%`, background: barColor }} />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 入力データ編集フォーム */}
+                                    <details style={{ marginTop: 12 }}>
+                                        <summary style={{ fontSize: 12, color: "#9ca3af", cursor: "pointer", fontWeight: 600, padding: "6px 0" }}>📝 データを編集（{[u.mbti, u.education, u.club_category, u.hobby_category].filter(Boolean).length}/4項目入力済み）</summary>
+                                        <div style={{ marginTop: 10, padding: 12, borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                                                <div>
+                                                    <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>MBTI</div>
+                                                    <select id={`sibyl-mbti-${u.id}`} defaultValue={u.mbti || ""} style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12 }}>
+                                                        <option value="">未入力</option>
+                                                        {Object.keys(MBTI_SCORES).map(k => <option key={k} value={k}>{k}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>学歴</div>
+                                                    <input id={`sibyl-edu-${u.id}`} defaultValue={u.education || ""} placeholder="例：青山学院大学" style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, boxSizing: "border-box" }} />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>部活</div>
+                                                    <select id={`sibyl-club-${u.id}`} defaultValue={u.club_category || ""} style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12 }}>
+                                                        <option value="">未入力</option>
+                                                        {Object.keys(CLUB_SCORES).map(k => <option key={k} value={k}>{k}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>趣味</div>
+                                                    <select id={`sibyl-hobby-${u.id}`} defaultValue={u.hobby_category || ""} style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12 }}>
+                                                        <option value="">未入力</option>
+                                                        {Object.keys(HOBBY_SCORES).map(k => <option key={k} value={k}>{k}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <button onClick={async () => {
+                                                const mbtiEl = document.getElementById(`sibyl-mbti-${u.id}`) as HTMLSelectElement;
+                                                const eduEl = document.getElementById(`sibyl-edu-${u.id}`) as HTMLInputElement;
+                                                const clubEl = document.getElementById(`sibyl-club-${u.id}`) as HTMLSelectElement;
+                                                const hobbyEl = document.getElementById(`sibyl-hobby-${u.id}`) as HTMLSelectElement;
+                                                await supabase.from("profiles").update({
+                                                    mbti: mbtiEl.value || null,
+                                                    education: eduEl.value || null,
+                                                    club_category: clubEl.value || null,
+                                                    hobby_category: hobbyEl.value || null,
+                                                }).eq("id", u.id);
+                                                alert("保存しました。ページを再読込して反映を確認してください。");
+                                            }} style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                        </div>
+                                    </details>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
