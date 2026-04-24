@@ -10,6 +10,9 @@ export default function RegisterPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
+    const [mbti, setMbti] = useState("");
+    const [club, setClub] = useState("");
+    const [hobby, setHobby] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [success, setSuccess] = useState(false);
@@ -47,6 +50,9 @@ export default function RegisterPage() {
             id: user.id,
             name: name.trim(),
             role: "Member",
+            mbti: mbti || null,
+            club_category: club || null,
+            hobby_category: hobby || null,
         });
 
         if (profileError) {
@@ -125,6 +131,65 @@ export default function RegisterPage() {
                             onKeyDown={(e) => e.key === "Enter" && handleRegister()}
                             style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
                         />
+                    </div>
+
+                    {/* MBTI */}
+                    <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>MBTI（任意）</div>
+                        <select value={mbti} onChange={(e) => setMbti(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
+                            <option value="">選択してください</option>
+                            <option value="INTJ">INTJ（建築家）</option>
+                            <option value="INTP">INTP（論理学者）</option>
+                            <option value="ENTJ">ENTJ（指揮官）</option>
+                            <option value="ENTP">ENTP（討論者）</option>
+                            <option value="INFJ">INFJ（提唱者）</option>
+                            <option value="INFP">INFP（仲介者）</option>
+                            <option value="ENFJ">ENFJ（主人公）</option>
+                            <option value="ENFP">ENFP（運動家）</option>
+                            <option value="ISTJ">ISTJ（管理者）</option>
+                            <option value="ISFJ">ISFJ（擁護者）</option>
+                            <option value="ESTJ">ESTJ（幹部）</option>
+                            <option value="ESFJ">ESFJ（領事官）</option>
+                            <option value="ISTP">ISTP（巨匠）</option>
+                            <option value="ISFP">ISFP（冒険家）</option>
+                            <option value="ESTP">ESTP（起業家）</option>
+                            <option value="ESFP">ESFP（エンターテイナー）</option>
+                        </select>
+                    </div>
+
+                    {/* 部活 */}
+                    <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>高校の部活（任意）</div>
+                        <select value={club} onChange={(e) => setClub(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
+                            <option value="">選択してください</option>
+                            <option value="野球部">⚾ 野球部</option>
+                            <option value="体育会系（全国レベル）">体育会系（全国レベル）</option>
+                            <option value="体育会系（一般）">体育会系（一般）</option>
+                            <option value="チームスポーツ系">チームスポーツ系（サッカー・バスケ等）</option>
+                            <option value="個人競技系">個人競技系（テニス・陸上・水泳等）</option>
+                            <option value="文化部（発表系）">文化部（吹奏楽・演劇等）</option>
+                            <option value="文化部（創作系）">文化部（美術・文芸等）</option>
+                            <option value="帰宅部">帰宅部</option>
+                        </select>
+                    </div>
+
+                    {/* 趣味 */}
+                    <div style={{ marginBottom: 28 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>趣味（任意）</div>
+                        <select value={hobby} onChange={(e) => setHobby(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
+                            <option value="">選択してください</option>
+                            <option value="読書・勉強">📚 読書・勉強</option>
+                            <option value="ゲーム（戦略）">🎮 ゲーム（戦略・RPG）</option>
+                            <option value="ゲーム（アクション）">🎮 ゲーム（アクション・FPS）</option>
+                            <option value="スポーツ・運動">🏃 スポーツ・運動</option>
+                            <option value="音楽・楽器">🎸 音楽・楽器</option>
+                            <option value="アート・創作">🎨 アート・創作</option>
+                            <option value="旅行">✈️ 旅行</option>
+                            <option value="グルメ・食べ歩き">🍜 グルメ・食べ歩き</option>
+                            <option value="映画・ドラマ鑑賞">🎬 映画・ドラマ鑑賞</option>
+                            <option value="アウトドア">⛺ アウトドア</option>
+                            <option value="SNS・配信">📱 SNS・配信</option>
+                        </select>
                     </div>
 
                     <button
