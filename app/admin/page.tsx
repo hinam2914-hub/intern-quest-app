@@ -11,7 +11,7 @@ type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
 type UserDetail = {
-    id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; growthStatus?: string; growthRank?: string;
+    id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; mbti?: string; club_category?: string; hobby_category?: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; growthStatus?: string; growthRank?: string;
     growthGrade?: string; onboardingDone?: boolean; createdAt?: string; approvedKpiCount?: number; kkcApprovedCount?: number; esUpdateCount?: number;
 };
 type GraphData = { date: string; points: number };
@@ -119,17 +119,17 @@ function calculateSibyl(params: { mbti: string; education: string; club: string;
 
 function calculateDepartmentMatch(s: { cog: number; grit: number; social: number; drive: number; create: number }): { dept: string; score: number }[] {
     const results = [
-        { dept: "IP（訪問販売）", score: s.grit * 2 + s.drive * 2 + s.social * 1 },
-        { dept: "クローザー（太陽光）", score: s.social * 2 + s.drive * 2 + s.grit * 1 },
+        { dept: "IP", score: s.grit * 2 + s.drive * 2 + s.social * 1 },
+        { dept: "クローザー", score: s.social * 2 + s.drive * 2 + s.grit * 1 },
         { dept: "マネージャー", score: s.social * 2 + s.grit * 2 + s.cog * 1 },
-        { dept: "コンサル（社内）", score: s.cog * 2 + s.create * 2 + s.social * 1 },
-        { dept: "テレアポ（美容）", score: s.social * 2 + s.cog * 2 + s.create * 1 + s.grit * 1 },
-        { dept: "人事（採用）", score: s.social * 2 + s.cog * 2 + s.create * 1 },
+        { dept: "コンサル", score: s.cog * 2 + s.create * 2 + s.social * 1 },
+        { dept: "テレアポ", score: s.social * 2 + s.cog * 2 + s.create * 1 + s.grit * 1 },
+        { dept: "人事", score: s.social * 2 + s.cog * 2 + s.create * 1 },
     ];
     results.sort((a, b) => b.score - a.score);
     const maxScore = results[0]?.score || 0;
     if (maxScore < 60) {
-        results.push({ dept: "マーケ（総合判定）", score: Math.round((s.cog + s.create) * 2) });
+        results.push({ dept: "マーケ", score: Math.round((s.cog + s.create) * 2) });
     }
     return results;
 }
@@ -333,6 +333,9 @@ export default function AdminPage() {
                     kpiCount: kpiLogRows?.filter((r: any) => r.user_id === p.id).length || 0,
                     activeDays,
                     education: p.education || "",
+                    mbti: p.mbti || "",
+                    club_category: p.club_category || "",
+                    hobby_category: p.hobby_category || "",
                     team_id: p.team_id || "",
                     avatar_url: p.avatar_url || null,
                     department_id: p.department_id || "",
