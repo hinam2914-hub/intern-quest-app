@@ -75,7 +75,7 @@ export default function EntrepreneurTestPage() {
         else if (score >= 0.80) rank = "B";
         const passed = rank === "A";
 
-        await supabase.from("test_attempts").insert({ user_id: userId, test_key: TEST_KEY, score: Math.round(score * 100), passed });
+        await supabase.from("test_attempts").insert({ user_id: userId, test_key: TEST_KEY, score: Math.round(score * 100), passed, written_answers: written });
 
         if (passed) {
             await supabase.from("profiles").update({ entrepreneur_passed: true, entrepreneur_passed_at: new Date().toISOString() }).eq("id", userId);

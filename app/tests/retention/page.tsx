@@ -72,7 +72,7 @@ export default function RetentionTestPage() {
         const score = correctCount / CHOICE_QUESTIONS.length;
         const passed = score >= PASS_THRESHOLD;
 
-        await supabase.from("test_attempts").insert({ user_id: userId, test_key: TEST_KEY, score: Math.round(score * 100), passed });
+        await supabase.from("test_attempts").insert({ user_id: userId, test_key: TEST_KEY, score: Math.round(score * 100), passed, written_answers: written });
 
         if (passed) {
             await supabase.from("profiles").update({ retention_passed: true, retention_passed_at: new Date().toISOString() }).eq("id", userId);
