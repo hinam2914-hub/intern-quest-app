@@ -183,15 +183,14 @@ export default function EsPage() {
     );
 
     return (
-        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", fontFamily: "'Inter', sans-serif" }}>
+        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ maxWidth: 800, margin: "0 auto" }}>
-                <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>INTERN QUEST</div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                    <div>
-                        <h1 style={{ color: "#f9fafb", fontSize: 28, fontWeight: 800, margin: "0 0 4px" }}>📝 総合ES</h1>
-                        <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>{name} さんのエントリーシート</p>
-                    </div>
-                    <button onClick={() => router.push("/menu")} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>メニューへ</button>
+
+                {/* ===== ヘッダー（統一） ===== */}
+                <div style={{ marginBottom: 16 }}>
+                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                    <h1 style={{ color: "#f9fafb", fontSize: 28, fontWeight: 800, margin: "4px 0 0" }}>📝 総合ES</h1>
+                    <p style={{ color: "#9ca3af", fontSize: 13, margin: "8px 0 0" }}>{name} さんのエントリーシート</p>
                 </div>
 
                 {/* 進捗表示 */}
@@ -299,8 +298,11 @@ export default function EsPage() {
                     )}
                 </div>
 
-                <div style={{ marginTop: 32, textAlign: "center" }}>
-                    <button onClick={() => router.push("/menu")} style={{ padding: "10px 28px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>メニューへ戻る</button>
+                {/* ===== メニューへ戻るボタン（統一） ===== */}
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
+                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                        メニューへ戻る
+                    </button>
                 </div>
             </div>
         </main>
