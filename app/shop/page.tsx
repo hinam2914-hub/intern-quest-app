@@ -94,8 +94,9 @@ export default function ShopPage() {
                         <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>ポイントを使ってアイテムを交換しよう</p>
                     </div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <div style={{ padding: "10px 20px", borderRadius: 12, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", fontSize: 18, fontWeight: 800, color: "#fbbf24" }}>
-                            {points.toLocaleString()} pt
+                        <div style={{ padding: "10px 20px", borderRadius: 12, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", fontWeight: 800, color: "#fbbf24" }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, opacity: 0.7, marginBottom: 2 }}>💰 残高</div>
+                            <div style={{ fontSize: 18 }}>{points.toLocaleString()} pt</div>
                             {requests.filter(r => r.status === "pending").length > 0 && (
                                 <div style={{ fontSize: 11, color: "#f59e0b", marginTop: 4 }}>
                                     審査中: -{requests.filter(r => r.status === "pending").reduce((sum, r) => sum + r.cost, 0)}pt
