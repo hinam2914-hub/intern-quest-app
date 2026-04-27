@@ -163,7 +163,7 @@ export default function ProfileUploadPage() {
                         <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
                         <h1 style={{ fontSize: 24, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>プロフィール設定</h1>
                     </div>
-                    <button onClick={() => router.push("/mypage")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>← 戻る</button>
+                    <button onClick={() => router.push("/menu")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>← メニュー</button>
                 </div>
 
                 {/* 写真アップロード */}
