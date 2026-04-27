@@ -353,9 +353,9 @@ export default function MyPage() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [history, setHistory] = useState<PointHistory[]>([]);
     const [graphData, setGraphData] = useState<GraphData[]>([]);
-    const [kpiItems, setKpiItems] = useState<{ id: string; title: string; unit: string }[]>([]);
-    const [kpiLogs, setKpiLogs] = useState<{ kpi_item_id: string; value: number; created_at: string }[]>([]);
-    const [selectedKpiId, setSelectedKpiId] = useState<string>("");
+    const [kpiDepts, setKpiDepts] = useState<{ id: string; name: string; main_metric: string; unit: string }[]>([]);
+    const [monthlyKpis, setMonthlyKpis] = useState<{ department_id: string; year_month: string; result: number }[]>([]);
+    const [selectedDeptId, setSelectedDeptId] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [showNameModal, setShowNameModal] = useState(false);
@@ -499,14 +499,14 @@ export default function MyPage() {
         const hist = (historyRows || []) as PointHistory[];
         setHistory(hist);
         setGraphData(buildGraphData(hist));
-        // KPI項目とログを取得
-        const { data: kpiItemRows } = await supabase.from("kpi_items").select("id, title, unit");
-        const { data: kpiLogRows } = await supabase.from("kpi_logs").select("kpi_item_id, value, created_at").eq("user_id", user.id).order("created_at", { ascending: true });
-        const usedKpiIds = Array.from(new Set((kpiLogRows || []).map((r: any) => r.kpi_item_id)));
-        const usedKpiItems = (kpiItemRows || []).filter((k: any) => usedKpiIds.includes(k.id));
-        setKpiItems(usedKpiItems as any);
-        setKpiLogs((kpiLogRows || []) as any);
-        if (usedKpiItems.length > 0) setSelectedKpiId((usedKpiItems[0] as any).id);
+        // 月次KPI（事業部別）と部署マスタを取得
+        const { data: kpiDeptMaster } = await supabase.from("departments").select("id, name, main_metric, unit");
+        const { data: monthlyKpiRows } = await supabase.from("monthly_kpi").select("department_id, year_month, result").eq("user_id", user.id).order("year_month", { ascending: true });
+        const usedDeptIds = Array.from(new Set((monthlyKpiRows || []).map((r: any) => r.department_id)));
+        const usedDepts = (kpiDeptMaster || []).filter((d: any) => usedDeptIds.includes(d.id));
+        setKpiDepts(usedDepts as any);
+        setMonthlyKpis((monthlyKpiRows || []) as any);
+        if (usedDepts.length > 0) setSelectedDeptId((usedDepts[0] as any).id);
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
 
@@ -1116,29 +1116,30 @@ export default function MyPage() {
                     <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
                             <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>KPI GROWTH</div>
-                            {kpiItems.length > 0 && (
+                            {kpiDepts.length > 0 && (
                                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                    {kpiItems.map((item) => (
-                                        <button key={item.id} onClick={() => setSelectedKpiId(item.id)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedKpiId === item.id ? themeColor : cardBorder}`, background: selectedKpiId === item.id ? `${themeColor}20` : "transparent", color: selectedKpiId === item.id ? themeColor : textMuted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{item.title}</button>
+                                    {kpiDepts.map((dept) => (
+                                        <button key={dept.id} onClick={() => setSelectedDeptId(dept.id)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedDeptId === dept.id ? themeColor : cardBorder}`, background: selectedDeptId === dept.id ? `${themeColor}20` : "transparent", color: selectedDeptId === dept.id ? themeColor : textMuted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{dept.main_metric}</button>
                                     ))}
                                 </div>
                             )}
                         </div>
-                        {kpiItems.length > 0 && selectedKpiId ? (() => {
-                            const filtered = kpiLogs.filter(l => l.kpi_item_id === selectedKpiId).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                        {kpiDepts.length > 0 && selectedDeptId ? (() => {
+                            const filtered = monthlyKpis.filter(m => m.department_id === selectedDeptId).sort((a, b) => a.year_month.localeCompare(b.year_month));
                             let cumulative = 0;
-                            const data = filtered.map(l => {
-                                cumulative += l.value || 0;
-                                return { date: new Date(l.created_at).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" }), value: cumulative };
+                            const data = filtered.map(m => {
+                                cumulative += m.result || 0;
+                                return { date: m.year_month, value: cumulative };
                             });
-                            const selectedItem = kpiItems.find(k => k.id === selectedKpiId);
-                            const unit = selectedItem?.unit || "件";
+                            const selectedDept = kpiDepts.find(d => d.id === selectedDeptId);
+                            const unit = selectedDept?.unit || "件";
+                            const metricName = selectedDept?.main_metric || "";
                             return data.length > 0 ? (
                                 <ResponsiveContainer width="100%" height={180}>
                                     <LineChart data={data}>
                                         <XAxis dataKey="date" stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
                                         <YAxis stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
-                                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}${unit}`, `累計${selectedItem?.title || ""}`]} />
+                                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}${unit}`, `累計${metricName}`]} />
                                         <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", r: 4 }} activeDot={{ r: 6, fill: "#10b981" }} />
                                     </LineChart>
                                 </ResponsiveContainer>
@@ -1146,74 +1147,61 @@ export default function MyPage() {
                                 <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>このKPIのデータがまだありません</div>
                             );
                         })() : (
-                            <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>KPIを入力すると累計推移グラフが表示されます</div>
+                            <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>月次KPIを入力すると累計推移グラフが表示されます</div>
                         )}
                     </div>
-                    {graphData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={180}>
-                            <LineChart data={graphData}>
-                                <XAxis dataKey="date" stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
-                                <YAxis stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
-                                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計ポイント"]} />
-                                <Line type="monotone" dataKey="points" stroke={themeColor} strokeWidth={2} dot={{ fill: themeColor, r: 4 }} activeDot={{ r: 6, fill: themeColor }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>データが蓄積されるとグラフが表示されます</div>
-                    )}
-                </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 20 }}>
-                            <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
-                            {(mbti || club) && (
-                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                                    {mbti && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 700 }}>🧠 {mbti}</div>}
-                                    {club && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 20 }}>
+                                <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
+                                {(mbti || club) && (
+                                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                                        {mbti && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 700 }}>🧠 {mbti}</div>}
+                                        {club && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
+                                    </div>
+                                )}
+                                <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                                <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="学歴を入力（例：〇〇大学）" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                                <div style={{ marginBottom: 8 }}>
+                                    <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>📅 入社日</div>
+                                    <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
                                 </div>
-                            )}
-                            <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
-                            <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="学歴を入力（例：〇〇大学）" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
-                            <div style={{ marginBottom: 8 }}>
-                                <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>📅 入社日</div>
-                                <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}>
+                                    <option value="">事業部を選択</option>
+                                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                                </select>
+                                <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: saveSuccess ? "linear-gradient(135deg, #10b981, #34d399)" : `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.3s" }}>{savingProfile ? "保存中..." : saveSuccess ? "✅ 保存しました！" : "保存"}</button>
                             </div>
-                            <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}>
-                                <option value="">事業部を選択</option>
-                                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                            </select>
-                            <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: saveSuccess ? "linear-gradient(135deg, #10b981, #34d399)" : `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.3s" }}>{savingProfile ? "保存中..." : saveSuccess ? "✅ 保存しました！" : "保存"}</button>
+                            <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: `1px solid ${cardBorder}`, background: cardBg, color: textSecondary, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
                         </div>
-                        <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: `1px solid ${cardBorder}`, background: cardBg, color: textSecondary, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
-                    </div>
 
-                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RECENT ACTIVITY</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {history.slice(0, 8).map((item, i) => (
-                                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${cardBorder}` }}>
-                                    <div>
-                                        <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{formatReason(item.reason)}</div>
-                                        <div style={{ fontSize: 11, color: textMuted, marginTop: 2 }}>{formatDateTimeJST(item.created_at)}</div>
+                        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RECENT ACTIVITY</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {history.slice(0, 8).map((item, i) => (
+                                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${cardBorder}` }}>
+                                        <div>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{formatReason(item.reason)}</div>
+                                            <div style={{ fontSize: 11, color: textMuted, marginTop: 2 }}>{formatDateTimeJST(item.created_at)}</div>
+                                        </div>
+                                        <div style={{ fontSize: 16, fontWeight: 700, color: item.change >= 0 ? "#34d399" : "#f87171" }}>
+                                            {item.change > 0 ? `+${item.change}` : item.change}pt
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: 16, fontWeight: 700, color: item.change >= 0 ? "#34d399" : "#f87171" }}>
-                                        {item.change > 0 ? `+${item.change}` : item.change}pt
-                                    </div>
-                                </div>
-                            ))}
-                            {history.length === 0 && <div style={{ color: textMuted, fontSize: 14 }}>履歴がありません</div>}
+                                ))}
+                                {history.length === 0 && <div style={{ color: textMuted, fontSize: 14 }}>履歴がありません</div>}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* ✅ ページ下部ホームボタン */}
-            <div style={{ marginTop: 32, textAlign: "center" }}>
-                <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-                    🏠 ホームに戻る
-                </button>
-            </div>
+                {/* ✅ ページ下部ホームボタン */}
+                <div style={{ marginTop: 32, textAlign: "center" }}>
+                    <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                        🏠 ホームに戻る
+                    </button>
+                </div>
         </main>
     );
 }
