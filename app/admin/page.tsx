@@ -313,7 +313,7 @@ export default function AdminPage() {
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
-            const { data: pointRows } = await supabase.from("user_points").select("id, points");
+            const { data: pointRows } = await supabase.from("user_points").select("id, points, total_earned");
             const { data: thanksSentRows } = await supabase.from("thanks").select("to_user_id");
             const { data: kpiLogRows } = await supabase.from("kpi_logs").select("user_id");
             const { data: subCountRows } = await supabase.from("submissions").select("user_id");
@@ -326,7 +326,7 @@ export default function AdminPage() {
                 return {
                     id: p.id,
                     name: p.name || "名前未設定",
-                    points: pointRows?.find((pt: any) => pt.id === p.id)?.points || 0,
+                    points: pointRows?.find((pt: any) => pt.id === p.id)?.total_earned || pointRows?.find((pt: any) => pt.id === p.id)?.points || 0,
                     streak: p.streak || 0,
                     role: p.role || "Owner",
                     submissionCount: subCountRows?.filter((r: any) => r.user_id === p.id).length || 0,
