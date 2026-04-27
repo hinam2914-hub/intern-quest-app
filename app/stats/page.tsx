@@ -50,8 +50,8 @@ export default function StatsPage() {
             }
 
             // ポイント
-            const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
-            setPoints(pointRow?.points || 0);
+            const { data: pointRow } = await supabase.from("user_points").select("total_earned").eq("id", user.id).single();
+            setPoints((pointRow as any)?.total_earned || 0);
 
             // 日報
             const { count: sCount } = await supabase.from("submissions").select("*", { count: "exact", head: true }).eq("user_id", user.id);
@@ -87,7 +87,7 @@ export default function StatsPage() {
             }
 
             // 同期比較（ポイント順位）
-            const { data: allPoints } = await supabase.from("user_points").select("id, points").order("points", { ascending: false });
+            const { data: allPoints } = await supabase.from("user_points").select("id, total_earned").order("total_earned", { ascending: false });
             if (allPoints) {
                 const myIndex = allPoints.findIndex((p: any) => p.id === user.id);
                 setRankAmongPeers(myIndex >= 0 ? myIndex + 1 : 0);
