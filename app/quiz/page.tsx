@@ -168,7 +168,7 @@ export default function QuizPage() {
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ maxWidth: 720, margin: "0 auto" }}>
                 <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>INTERN QUEST</div>
-                <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>�� 確認ワークテスト</h1>
+                <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>🧠🧠 確認ワークテスト</h1>
                 <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 32 }}>価値観と仕事の基本を確認するテストです。選択式15問＋記述式6問。合格ラインは選択式12問以上正解。</p>
 
                 <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24, marginBottom: 24 }}>

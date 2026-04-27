@@ -69,13 +69,11 @@ export default function ResourcesPage() {
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto" }}>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-                    <div>
-                        <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}>INTERN QUEST</div>
-                        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📁 参考資料BOX</h1>
-                        <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>業務に役立つ資料・リンク集</p>
-                    </div>
-                    <button onClick={() => router.push("/mypage")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>← 戻る</button>
+                {/* ===== ヘッダー ===== */}
+                <div style={{ marginBottom: 32 }}>
+                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📁 参考資料BOX</h1>
+                    <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>業務に役立つ資料・リンク集</p>
                 </div>
 
                 {/* カテゴリフィルター */}
@@ -123,6 +121,13 @@ export default function ResourcesPage() {
                         })}
                     </div>
                 )}
+
+                {/* ===== メニューへ戻るボタン ===== */}
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
+                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                        メニューへ戻る
+                    </button>
+                </div>
             </div>
         </main>
     );
