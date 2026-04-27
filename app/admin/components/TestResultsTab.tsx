@@ -17,7 +17,7 @@ type Attempt = {
 const TEST_LABELS: Record<string, { label: string; color: string; icon: string }> = {
     quiz: { label: "確認ワーク", color: "#a78bfa", icon: "🧠" },
     mentor: { label: "メンター", color: "#10b981", icon: "🧭" },
-    retention: { label: "Dot.A残留判定", color: "#ef4444", icon: "🔥" },
+    retention: { label: "Dot.A雇用テスト", color: "#ef4444", icon: "🔥" },
     entrepreneur: { label: "起業適性", color: "#f59e0b", icon: "🚀" },
     marketer: { label: "マーケター適性", color: "#06b6d4", icon: "📊" },
     sales: { label: "営業デビュー", color: "#8b5cf6", icon: "💼" },

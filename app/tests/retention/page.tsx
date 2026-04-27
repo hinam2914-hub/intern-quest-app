@@ -79,7 +79,7 @@ export default function RetentionTestPage() {
             const { data: ptRow } = await supabase.from("user_points").select("points").eq("id", userId).maybeSingle();
             const currentPt = ptRow?.points || 0;
             await supabase.from("user_points").upsert({ id: userId, points: currentPt + REWARD_POINTS });
-            await supabase.from("points_history").insert({ user_id: userId, change: REWARD_POINTS, reason: "Dot.A残留判定テスト合格" });
+            await supabase.from("points_history").insert({ user_id: userId, change: REWARD_POINTS, reason: "Dot.A雇用テスト合格" });
         }
 
         setResult({ passed, score: correctCount, total: CHOICE_QUESTIONS.length });
@@ -93,7 +93,7 @@ export default function RetentionTestPage() {
             <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
                 <div style={{ fontSize: 64, marginBottom: 16 }}>🔥</div>
                 <h1 style={{ fontSize: 28, fontWeight: 800, color: "#ef4444", margin: "0 0 12px" }}>残留確定</h1>
-                <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 32 }}>あなたはすでにDot.A残留判定に合格しています</p>
+                <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 32 }}>あなたはすでにDot.A雇用テストに合格しています</p>
                 <button onClick={() => router.push("/tests")} style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>テスト一覧へ戻る</button>
             </div>
         </main>
@@ -128,7 +128,7 @@ export default function RetentionTestPage() {
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ maxWidth: 720, margin: "0 auto" }}>
                 <div onClick={() => router.push("/tests")} style={{ fontSize: 12, color: "#ef4444", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>← テスト一覧</div>
-                <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>🔥 Dot.A残留判定テスト</h1>
+                <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>🔥 Dot.A雇用テスト</h1>
                 <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 24px" }}>選択式{CHOICE_QUESTIONS.length}問 + 記述{WRITTEN_QUESTIONS.length}問 / 合格: {Math.round(PASS_THRESHOLD * 100)}%以上で +{REWARD_POINTS}pt</p>
 
                 <div style={{ marginBottom: 32 }}>
