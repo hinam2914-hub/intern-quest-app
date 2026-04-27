@@ -407,8 +407,8 @@ export default function MyPage() {
     const barBg = isLightBg ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.06)";
 
     const todayYmd = getTodayJST();
-    const level = getLevel(points);
-    const exp = getExp(points);
+    const level = getLevel(totalEarned);
+    const exp = getExp(totalEarned);
     const badgeLabel = getBadgeLabel(level);
     const badgeColor = getBadgeColor(level);
     const actionMessage = getActionMessage(isSubmitted, streak);
@@ -417,8 +417,8 @@ export default function MyPage() {
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
-    const badges = getBadges(points, streak, contentCompletionCount, esCompleted);
-    const trophies = getTrophies({ points, streak, submissionCount, thanksCount, rank2, contentCompletionCount });
+    const badges = getBadges(totalEarned, streak, contentCompletionCount, esCompleted);
+    const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount });
     const unlockedTrophies = trophies.filter(t => t.unlocked);
     const topTrophy = [...unlockedTrophies].sort((a, b) => {
         const order = { legendary: 4, epic: 3, rare: 2, common: 1 };
