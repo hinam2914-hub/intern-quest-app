@@ -37,13 +37,12 @@ export default function CareerPage() {
     return (
         <main style={{ minHeight: "100vh", background: "#fdf6f0", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ maxWidth: 800, margin: "0 auto" }}>
-                <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>INTERN QUEST</div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-                    <div>
-                        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#1a1a2e", margin: "0 0 4px" }}>💼 就活ボックス</h1>
-                        <p style={{ color: "#6b7280", fontSize: 14, margin: 0 }}>大学別・企業別の就活情報をまとめました</p>
-                    </div>
-                    <button onClick={() => router.push("/menu")} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.1)", background: "#fff", color: "#6b7280", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>メニューへ</button>
+
+                {/* ===== ヘッダー（統一） ===== */}
+                <div style={{ marginBottom: 32 }}>
+                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 4 }}>INTERN QUEST</div>
+                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#1a1a2e", margin: "4px 0 0" }}>💼 就活ボックス</h1>
+                    <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>大学別・企業別の就活情報をまとめました</p>
                 </div>
 
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 検索..." style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.1)", background: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 16 }} />
@@ -72,8 +71,11 @@ export default function CareerPage() {
                     </div>
                 )}
 
-                <div style={{ marginTop: 40, textAlign: "center" }}>
-                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>メニューへ戻る</button>
+                {/* ===== メニューへ戻るボタン（統一） ===== */}
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
+                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                        メニューへ戻る
+                    </button>
                 </div>
             </div>
         </main>

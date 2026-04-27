@@ -83,18 +83,18 @@ export default function OnboardingPage() {
     const isLast = step === STEPS.length - 1;
 
     return (
-        <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', sans-serif", padding: 24 }}>
+        <main style={{ minHeight: "100vh", background: "#0a0a0f", fontFamily: "'Inter', sans-serif", padding: "40px 24px 64px" }}>
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(99,102,241,0.12) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
-            <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 560 }}>
+            <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 560, margin: "0 auto" }}>
 
-                {/* ヘッダー */}
-                <div style={{ textAlign: "center", marginBottom: 40 }}>
-                    <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 4, textTransform: "uppercase", marginBottom: 8 }}>INTERN QUEST</div>
-                    <h1 style={{ fontSize: 28, fontWeight: 900, color: "#f9fafb", margin: "0 0 8px" }}>
-                        {name ? `${name}さん、ようこそ！` : "ようこそ！"}
+                {/* ===== ヘッダー（統一） ===== */}
+                <div style={{ marginBottom: 32 }}>
+                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>
+                        📖 {name ? `${name}さん、ようこそ！` : "ようこそ！"}
                     </h1>
-                    <p style={{ color: "#6b7280", fontSize: 14, margin: 0 }}>まずIntern Questの使い方を確認しましょう</p>
+                    <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>Intern Questの使い方を確認しましょう</p>
                 </div>
 
                 {/* ステップインジケーター */}
@@ -138,21 +138,22 @@ export default function OnboardingPage() {
                     </div>
                 </div>
 
-                {/* ボタン */}
+                {/* ステップ移動ボタン */}
                 <div style={{ display: "flex", gap: 12 }}>
                     {step > 0 && (
                         <button onClick={() => setStep(s => s - 1)} style={{ flex: 1, padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>
-                            ← 戻る
+                            ← 前のステップ
                         </button>
                     )}
                     <button onClick={isLast ? handleComplete : () => setStep(s => s + 1)} style={{ flex: 2, padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>
-                        {isLast ? "🚀 はじめる！" : "次へ →"}
+                        {isLast ? "🚀 はじめる！" : "次のステップ →"}
                     </button>
                 </div>
 
-                <div style={{ textAlign: "center", marginTop: 16 }}>
-                    <button onClick={handleComplete} style={{ background: "none", border: "none", color: "#4b5563", fontSize: 13, cursor: "pointer" }}>
-                        スキップして始める
+                {/* ===== メニューへ戻るボタン（統一） ===== */}
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
+                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                        メニューへ戻る
                     </button>
                 </div>
             </div>

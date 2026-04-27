@@ -109,15 +109,11 @@ export default function LearnPage() {
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", fontFamily: "'Inter', sans-serif" }}>
+            {/* ===== ヘッダー（統一） ===== */}
             <div style={{ padding: "40px 32px 24px", background: "linear-gradient(180deg, rgba(99,102,241,0.15) 0%, transparent 100%)" }}>
-                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>INTERN QUEST</div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                    <div>
-                        <h1 style={{ fontSize: 32, fontWeight: 900, color: "#f9fafb", margin: 0 }}>学習コンテンツ</h1>
-                        <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>視聴・読了してレビューを提出すると <span style={{ color: "#818cf8", fontWeight: 700 }}>+2pt</span>！　{approvedIds.length} / {contents.length} 完了</p>
-                    </div>
-                    <button onClick={() => router.push("/menu")} style={{ background: "rgba(255,255,255,0.08)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>← メニュー</button>
-                </div>
+                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 4 }}>INTERN QUEST</div>
+                <h1 style={{ fontSize: 32, fontWeight: 900, color: "#f9fafb", margin: "4px 0 0" }}>📚 学習コンテンツ</h1>
+                <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>視聴・読了してレビューを提出すると <span style={{ color: "#818cf8", fontWeight: 700 }}>+2pt</span>！　{approvedIds.length} / {contents.length} 完了</p>
             </div>
 
             {message && (
@@ -132,7 +128,7 @@ export default function LearnPage() {
                     <div>コンテンツはまだありません</div>
                 </div>
             ) : (
-                <div style={{ paddingBottom: 64 }}>
+                <div style={{ paddingBottom: 32 }}>
                     {videos.length > 0 && (
                         <div style={{ marginBottom: 40 }}>
                             <div style={{ padding: "24px 32px 16px", fontSize: 20, fontWeight: 800, color: "#f9fafb" }}>▶️ 動画</div>
@@ -200,6 +196,13 @@ export default function LearnPage() {
                     )}
                 </div>
             )}
+
+            {/* ===== メニューへ戻るボタン（統一） ===== */}
+            <div style={{ display: "flex", justifyContent: "center", paddingTop: 16, paddingBottom: 48 }}>
+                <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                    メニューへ戻る
+                </button>
+            </div>
 
             {/* モーダル */}
             {selected && (
