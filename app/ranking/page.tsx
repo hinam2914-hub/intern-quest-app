@@ -31,13 +31,13 @@ export default function RankingPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             setIsAdmin(!!user.email && adminEmails.includes(user.email));
 
-            const { data: pointRows } = await supabase.from("user_points").select("id, points").order("points", { ascending: false });
+            const { data: pointRows } = await supabase.from("user_points").select("id, total_earned").order("total_earned", { ascending: false });
             const totalRows = pointRows || [];
             const { data: profileRows } = await supabase.from("profiles").select("id, name, avatar_url").in("id", totalRows.map((r) => r.id));
             setUsers(totalRows.map((row) => ({
                 id: row.id,
                 name: profileRows?.find((p) => p.id === row.id)?.name || "名前未設定",
-                points: row.points || 0,
+                points: (row as any).total_earned || 0,
                 avatar_url: profileRows?.find((p) => p.id === row.id)?.avatar_url || null,
             })));
 
