@@ -347,6 +347,7 @@ export default function MyPage() {
     const [departmentId, setDepartmentId] = useState("");
     const [departments, setDepartments] = useState<{ id: string; name: string; code: string }[]>([]);
     const [points, setPoints] = useState(0);
+    const [totalEarned, setTotalEarned] = useState(0);
     const [rank, setRank] = useState<number | null>(null);
     const [streak, setStreak] = useState(0);
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -474,9 +475,11 @@ export default function MyPage() {
             }
         }
 
-        const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
+        const { data: pointRow } = await supabase.from("user_points").select("points, total_earned").eq("id", user.id).single();
         const newPoints = pointRow?.points || 0;
+        const newTotalEarned = (pointRow as any)?.total_earned || newPoints;
         setPoints(newPoints);
+        setTotalEarned(newTotalEarned);
 
         // ページを開いたら必ずエフェクト発火（0pt以上なら）
         if (newPoints > 0) {
@@ -797,7 +800,7 @@ export default function MyPage() {
                             {
                                 title: "TOTAL POINTS", tip: "獲得したポイントの累計です", ref: pointsCardRef, content: (
                                     <div>
-                                        <div style={{ fontSize: 36, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{points.toLocaleString()}</div>
+                                        <div style={{ fontSize: 36, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{totalEarned.toLocaleString()}</div>
                                         <div style={{ fontSize: 16, color: themeColor, fontWeight: 600, marginTop: 4 }}>pt</div>
                                         <div style={{ marginTop: 12, padding: "6px 12px", background: "rgba(99,102,241,0.1)", borderRadius: 6, display: "inline-block" }}>
                                             <span style={{ fontSize: 12, color: "#818cf8" }}>🏆 順位 {rank || "-"}位</span>
