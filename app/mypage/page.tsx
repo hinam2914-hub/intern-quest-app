@@ -353,6 +353,9 @@ export default function MyPage() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [history, setHistory] = useState<PointHistory[]>([]);
     const [graphData, setGraphData] = useState<GraphData[]>([]);
+    const [kpiItems, setKpiItems] = useState<{ id: string; title: string; unit: string }[]>([]);
+    const [kpiLogs, setKpiLogs] = useState<{ kpi_item_id: string; value: number; created_at: string }[]>([]);
+    const [selectedKpiId, setSelectedKpiId] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [showNameModal, setShowNameModal] = useState(false);
@@ -496,7 +499,14 @@ export default function MyPage() {
         const hist = (historyRows || []) as PointHistory[];
         setHistory(hist);
         setGraphData(buildGraphData(hist));
-
+        // KPI項目とログを取得
+        const { data: kpiItemRows } = await supabase.from("kpi_items").select("id, title, unit");
+        const { data: kpiLogRows } = await supabase.from("kpi_logs").select("kpi_item_id, value, created_at").eq("user_id", user.id).order("created_at", { ascending: true });
+        const usedKpiIds = Array.from(new Set((kpiLogRows || []).map((r: any) => r.kpi_item_id)));
+        const usedKpiItems = (kpiItemRows || []).filter((k: any) => usedKpiIds.includes(k.id));
+        setKpiItems(usedKpiItems as any);
+        setKpiLogs((kpiLogRows || []) as any);
+        if (usedKpiItems.length > 0) setSelectedKpiId((usedKpiItems[0] as any).id);
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
 
@@ -1103,6 +1113,42 @@ export default function MyPage() {
 
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
+                    <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
+                            <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>KPI GROWTH</div>
+                            {kpiItems.length > 0 && (
+                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                    {kpiItems.map((item) => (
+                                        <button key={item.id} onClick={() => setSelectedKpiId(item.id)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedKpiId === item.id ? themeColor : cardBorder}`, background: selectedKpiId === item.id ? `${themeColor}20` : "transparent", color: selectedKpiId === item.id ? themeColor : textMuted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{item.title}</button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        {kpiItems.length > 0 && selectedKpiId ? (() => {
+                            const filtered = kpiLogs.filter(l => l.kpi_item_id === selectedKpiId).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                            let cumulative = 0;
+                            const data = filtered.map(l => {
+                                cumulative += l.value || 0;
+                                return { date: new Date(l.created_at).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" }), value: cumulative };
+                            });
+                            const selectedItem = kpiItems.find(k => k.id === selectedKpiId);
+                            const unit = selectedItem?.unit || "件";
+                            return data.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={180}>
+                                    <LineChart data={data}>
+                                        <XAxis dataKey="date" stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
+                                        <YAxis stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
+                                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}${unit}`, `累計${selectedItem?.title || ""}`]} />
+                                        <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", r: 4 }} activeDot={{ r: 6, fill: "#10b981" }} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>このKPIのデータがまだありません</div>
+                            );
+                        })() : (
+                            <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>KPIを入力すると累計推移グラフが表示されます</div>
+                        )}
+                    </div>
                     {graphData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={180}>
                             <LineChart data={graphData}>
