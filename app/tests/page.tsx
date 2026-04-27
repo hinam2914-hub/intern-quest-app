@@ -49,11 +49,15 @@ export default function TestsPage() {
     );
 
     return (
-        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", fontFamily: "'Inter', sans-serif" }}>
+        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ maxWidth: 800, margin: "0 auto" }}>
-                <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>INTERN QUEST</div>
-                <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>📝 テスト一覧</h1>
-                <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 32px" }}>あなたの価値観・適性・覚悟を測る8種類のテスト</p>
+
+                {/* ===== ヘッダー（統一） ===== */}
+                <div style={{ marginBottom: 32 }}>
+                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📝 テスト一覧</h1>
+                    <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>あなたの価値観・適性・覚悟を測る8種類のテスト</p>
+                </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {TESTS.map(t => {
@@ -75,8 +79,11 @@ export default function TestsPage() {
                     })}
                 </div>
 
-                <div style={{ marginTop: 40, textAlign: "center" }}>
-                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>メニューへ戻る</button>
+                {/* ===== メニューへ戻るボタン（統一） ===== */}
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
+                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                        メニューへ戻る
+                    </button>
                 </div>
             </div>
         </main>

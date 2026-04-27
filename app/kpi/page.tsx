@@ -140,28 +140,26 @@ export default function KpiPage() {
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(99,102,241,0.08) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
             <div style={{ position: "relative", zIndex: 1, maxWidth: 800, margin: "0 auto" }}>
 
-                {/* ヘッダー */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+                {/* ===== ヘッダー（統一） ===== */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 32 }}>
                     <div>
-                        <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, cursor: "pointer" }}>INTERN QUEST</div>
+                        <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📊 月次KPI</h1>
                         <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>月次実績を入力してポイントを獲得しよう</p>
                     </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <select
-                            value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(e.target.value)}
-                            style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none" }}
-                        >
-                            {Array.from({ length: 6 }, (_, i) => {
-                                const d = new Date();
-                                d.setMonth(d.getMonth() - i);
-                                const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-                                return <option key={ym} value={ym}>{ym}</option>;
-                            })}
-                        </select>
-                        <button onClick={() => router.push("/mypage")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>マイページ</button>
-                    </div>
+                    {/* 月選択は残す */}
+                    <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", flexShrink: 0 }}
+                    >
+                        {Array.from({ length: 6 }, (_, i) => {
+                            const d = new Date();
+                            d.setMonth(d.getMonth() - i);
+                            const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                            return <option key={ym} value={ym}>{ym}</option>;
+                        })}
+                    </select>
                 </div>
 
                 {message && (
@@ -191,7 +189,7 @@ export default function KpiPage() {
                 {/* メインKPI */}
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>
-                        MAIN KPI {myDept ? `— ${myDept.name}（${myDept.main_metric}）` : ""}
+                        MAIN KPI {myDept ? `— ${myDept.name}(${myDept.main_metric})` : ""}
                     </div>
 
                     {!myDeptId ? (
@@ -251,10 +249,10 @@ export default function KpiPage() {
 
                 {/* HR面談数（全員共通） */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>HR KPI — 採用面談数（全員入力）</div>
+                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>HR KPI — 採用面談数(全員入力)</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
                         <div>
-                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>目標（件）</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>目標(件)</div>
                             <input
                                 type="number"
                                 value={hrTarget}
@@ -264,7 +262,7 @@ export default function KpiPage() {
                             />
                         </div>
                         <div>
-                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>実績（件）</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>実績(件)</div>
                             <input
                                 type="number"
                                 value={hrResult}
@@ -295,6 +293,13 @@ export default function KpiPage() {
                         style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: hrSaving ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #f59e0b, #fbbf24)", color: "#0a0a0f", fontWeight: 700, cursor: hrSaving ? "not-allowed" : "pointer", fontSize: 15 }}
                     >
                         {hrSaving ? "保存中..." : "💾 HR面談数を保存"}
+                    </button>
+                </div>
+
+                {/* ===== メニューへ戻るボタン（統一） ===== */}
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
+                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                        メニューへ戻る
                     </button>
                 </div>
             </div>

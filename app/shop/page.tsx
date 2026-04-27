@@ -87,23 +87,22 @@ export default function ShopPage() {
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto" }}>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+                {/* ===== ヘッダー（統一） ===== */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 32 }}>
                     <div>
-                        <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}>INTERN QUEST</div>
+                        <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>🛍️ ポイントショップ</h1>
                         <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>ポイントを使ってアイテムを交換しよう</p>
                     </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <div style={{ padding: "10px 20px", borderRadius: 12, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", fontWeight: 800, color: "#fbbf24" }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, opacity: 0.7, marginBottom: 2 }}>💰 残高</div>
-                            <div style={{ fontSize: 18 }}>{points.toLocaleString()} pt</div>
-                            {requests.filter(r => r.status === "pending").length > 0 && (
-                                <div style={{ fontSize: 11, color: "#f59e0b", marginTop: 4 }}>
-                                    審査中: -{requests.filter(r => r.status === "pending").reduce((sum, r) => sum + r.cost, 0)}pt
-                                </div>
-                            )}
-                        </div>
-                        <button onClick={() => router.push("/mypage")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>マイページ</button>
+                    {/* 残高表示は残す */}
+                    <div style={{ padding: "10px 20px", borderRadius: 12, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", fontWeight: 800, color: "#fbbf24", flexShrink: 0 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, opacity: 0.7, marginBottom: 2 }}>💰 残高</div>
+                        <div style={{ fontSize: 18 }}>{points.toLocaleString()} pt</div>
+                        {requests.filter(r => r.status === "pending").length > 0 && (
+                            <div style={{ fontSize: 11, color: "#f59e0b", marginTop: 4 }}>
+                                審査中: -{requests.filter(r => r.status === "pending").reduce((sum, r) => sum + r.cost, 0)}pt
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -172,6 +171,13 @@ export default function ShopPage() {
                             })}
                         </div>
                     )}
+                </div>
+
+                {/* ===== メニューへ戻るボタン（統一） ===== */}
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
+                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                        メニューへ戻る
+                    </button>
                 </div>
             </div>
         </main>

@@ -121,18 +121,16 @@ export default function StatsPage() {
     ];
 
     return (
-        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", fontFamily: "'Inter', sans-serif" }}>
+        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(99,102,241,0.08) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 800, margin: "0 auto" }}>
-                <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>INTERN QUEST</div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-                    <div>
-                        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>📊 自分の実績</h1>
-                        <p style={{ color: "#9ca3af", fontSize: 14, margin: 0 }}>{name} さんの累計データ</p>
-                    </div>
-                    <button onClick={() => router.push("/mypage")} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>マイページへ</button>
+                {/* ===== ヘッダー（統一） ===== */}
+                <div style={{ marginBottom: 32 }}>
+                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📊 自分の実績</h1>
+                    <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>{name} さんの累計データ</p>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
@@ -150,8 +148,11 @@ export default function StatsPage() {
                     ))}
                 </div>
 
-                <div style={{ marginTop: 40, textAlign: "center" }}>
-                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>メニューへ戻る</button>
+                {/* ===== メニューへ戻るボタン（統一） ===== */}
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
+                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                        メニューへ戻る
+                    </button>
                 </div>
             </div>
         </main>
