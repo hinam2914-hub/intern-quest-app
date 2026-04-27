@@ -1113,45 +1113,59 @@ export default function MyPage() {
 
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
-                    <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
-                            <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>KPI GROWTH</div>
-                            {kpiDepts.length > 0 && (
-                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                    {kpiDepts.map((dept) => (
-                                        <button key={dept.id} onClick={() => setSelectedDeptId(dept.id)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedDeptId === dept.id ? themeColor : cardBorder}`, background: selectedDeptId === dept.id ? `${themeColor}20` : "transparent", color: selectedDeptId === dept.id ? themeColor : textMuted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{dept.main_metric}</button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        {kpiDepts.length > 0 && selectedDeptId ? (() => {
-                            const filtered = monthlyKpis.filter(m => m.department_id === selectedDeptId).sort((a, b) => a.year_month.localeCompare(b.year_month));
-                            let cumulative = 0;
-                            const data = filtered.map(m => {
-                                cumulative += m.result || 0;
-                                return { date: m.year_month, value: cumulative };
-                            });
-                            const selectedDept = kpiDepts.find(d => d.id === selectedDeptId);
-                            const unit = selectedDept?.unit || "件";
-                            const metricName = selectedDept?.main_metric || "";
-                            return data.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={180}>
-                                    <LineChart data={data}>
-                                        <XAxis dataKey="date" stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
-                                        <YAxis stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
-                                        <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}${unit}`, `累計${metricName}`]} />
-                                        <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", r: 4 }} activeDot={{ r: 6, fill: "#10b981" }} />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>このKPIのデータがまだありません</div>
-                            );
-                        })() : (
-                            <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>月次KPIを入力すると累計推移グラフが表示されます</div>
+                    {graphData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={180}>
+                            <LineChart data={graphData}>
+                                <XAxis dataKey="date" stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
+                                <YAxis stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
+                                <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}pt`, "累計ポイント"]} />
+                                <Line type="monotone" dataKey="points" stroke={themeColor} strokeWidth={2} dot={{ fill: themeColor, r: 4 }} activeDot={{ r: 6, fill: themeColor }} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>データが蓄積されるとグラフが表示されます</div>
+                    )}
+                </div>
+
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>KPI GROWTH</div>
+                        {kpiDepts.length > 0 && (
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                {kpiDepts.map((dept) => (
+                                    <button key={dept.id} onClick={() => setSelectedDeptId(dept.id)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${selectedDeptId === dept.id ? themeColor : cardBorder}`, background: selectedDeptId === dept.id ? `${themeColor}20` : "transparent", color: selectedDeptId === dept.id ? themeColor : textMuted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{dept.main_metric}</button>
+                                ))}
+                            </div>
                         )}
                     </div>
+                    {kpiDepts.length > 0 && selectedDeptId ? (() => {
+                        const filtered = monthlyKpis.filter(m => m.department_id === selectedDeptId).sort((a, b) => a.year_month.localeCompare(b.year_month));
+                        let cumulative = 0;
+                        const data = filtered.map(m => {
+                            cumulative += m.result || 0;
+                            return { date: m.year_month, value: cumulative };
+                        });
+                        const selectedDept = kpiDepts.find(d => d.id === selectedDeptId);
+                        const unit = selectedDept?.unit || "件";
+                        const metricName = selectedDept?.main_metric || "";
+                        return data.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={180}>
+                                <LineChart data={data}>
+                                    <XAxis dataKey="date" stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
+                                    <YAxis stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
+                                    <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}${unit}`, `累計${metricName}`]} />
+                                    <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", r: 4 }} activeDot={{ r: 6, fill: "#10b981" }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>このKPIのデータがまだありません</div>
+                        );
+                    })() : (
+                        <div style={{ color: textMuted, fontSize: 14, textAlign: "center", padding: 40 }}>月次KPIを入力すると累計推移グラフが表示されます</div>
+                    )}
+                </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                             <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 20 }}>
                                 <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
