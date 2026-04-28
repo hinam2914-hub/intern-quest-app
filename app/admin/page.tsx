@@ -739,7 +739,6 @@ export default function AdminPage() {
                         { key: "mtg", label: "MTG管理" },
                         { key: "wiki", label: "用語集" },
                         { key: "career", label: "就活ボックス" },
-                        { key: "manager_test", label: "マネージャーテスト" },
                         { key: "es", label: "総合ES" },
                         { key: "kkc", label: "KKC" },
                         { key: "sibyl", label: "シビュラ" },
