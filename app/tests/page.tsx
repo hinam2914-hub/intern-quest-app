@@ -22,6 +22,8 @@ type Attempt = {
     created_at: string;
     written_answers?: any;
     answers?: any;
+    written_evaluation?: "high" | "mid" | "none" | null;
+    written_points_awarded?: number;
 };
 
 const TESTS: TestItem[] = [
@@ -54,17 +56,17 @@ export default function TestsPage() {
             const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
             setProfile(p);
 
-            // 確認ワーク（quiz_attempts）を取得
+            // 確認ワーク（quiz_attempts）を取得（評価情報も含む）
             const { data: quizAttempts } = await supabase
                 .from("quiz_attempts")
-                .select("score, passed, created_at, answers, written_answers")
+                .select("score, passed, created_at, answers, written_answers, written_evaluation, written_points_awarded")
                 .eq("user_id", user.id)
                 .order("created_at", { ascending: false });
 
-            // 他テスト（test_attempts）を取得
+            // 他テスト（test_attempts）を取得（評価情報も含む）
             const { data: testAttempts } = await supabase
                 .from("test_attempts")
-                .select("test_key, score, passed, created_at, written_answers")
+                .select("test_key, score, passed, created_at, written_answers, written_evaluation, written_points_awarded")
                 .eq("user_id", user.id)
                 .order("created_at", { ascending: false });
 
@@ -72,7 +74,14 @@ export default function TestsPage() {
             byKey["quiz"] = (quizAttempts || []) as Attempt[];
             (testAttempts || []).forEach((a: any) => {
                 if (!byKey[a.test_key]) byKey[a.test_key] = [];
-                byKey[a.test_key].push({ score: a.score, passed: a.passed, created_at: a.created_at, written_answers: a.written_answers });
+                byKey[a.test_key].push({
+                    score: a.score,
+                    passed: a.passed,
+                    created_at: a.created_at,
+                    written_answers: a.written_answers,
+                    written_evaluation: a.written_evaluation,
+                    written_points_awarded: a.written_points_awarded,
+                });
             });
             setAttemptsByKey(byKey);
 
@@ -182,14 +191,20 @@ export default function TestsPage() {
                                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                                         {attempts.map((a, i) => (
                                             <div key={i} style={{ padding: 16, borderRadius: 12, background: a.passed ? "rgba(16,185,129,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${a.passed ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.06)"}` }}>
-                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: a.written_answers ? 12 : 0 }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: a.written_answers ? 12 : 0, flexWrap: "wrap", gap: 8 }}>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                                                         <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 700 }}>第{attempts.length - i}回</span>
                                                         <span style={{ fontSize: 13, color: "#9ca3af" }}>{formatDate(a.created_at)}</span>
                                                     </div>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                                         <span style={{ fontSize: 18, fontWeight: 800, color: a.passed ? "#10b981" : "#f59e0b" }}>{a.score}{selectedTest.key === "quiz" ? "/15" : "%"}</span>
                                                         <span style={{ padding: "3px 10px", borderRadius: 6, background: a.passed ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)", color: a.passed ? "#10b981" : "#f59e0b", fontSize: 11, fontWeight: 700 }}>{a.passed ? "✅ 合格" : "❌ 不合格"}</span>
+                                                        {a.written_evaluation === "high" && (
+                                                            <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(251,191,36,0.2)", border: "1px solid rgba(251,191,36,0.4)", color: "#fbbf24", fontSize: 11, fontWeight: 700 }}>🥇 高評価 +{a.written_points_awarded}pt</span>
+                                                        )}
+                                                        {a.written_evaluation === "mid" && (
+                                                            <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(148,163,184,0.2)", border: "1px solid rgba(148,163,184,0.4)", color: "#cbd5e1", fontSize: 11, fontWeight: 700 }}>🥈 中評価 +{a.written_points_awarded}pt</span>
+                                                        )}
                                                     </div>
                                                 </div>
 
@@ -197,6 +212,18 @@ export default function TestsPage() {
                                                 {a.written_answers && (
                                                     <details style={{ marginTop: 8 }}>
                                                         <summary style={{ cursor: "pointer", fontSize: 12, color: "#818cf8", fontWeight: 600, padding: "6px 0" }}>✍️ 記述式回答を振り返る</summary>
+                                                        {a.written_evaluation === "high" && (
+                                                            <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 10, background: "linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.05))", border: "1px solid rgba(251,191,36,0.4)", fontSize: 12, color: "#fbbf24", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                                                                <span style={{ fontSize: 18 }}>🥇</span>
+                                                                <span>この記述、高評価してもらいました！ +{a.written_points_awarded}pt 獲得</span>
+                                                            </div>
+                                                        )}
+                                                        {a.written_evaluation === "mid" && (
+                                                            <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 10, background: "linear-gradient(135deg, rgba(148,163,184,0.15), rgba(148,163,184,0.05))", border: "1px solid rgba(148,163,184,0.4)", fontSize: 12, color: "#cbd5e1", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                                                                <span style={{ fontSize: 18 }}>🥈</span>
+                                                                <span>この記述、中評価してもらいました！ +{a.written_points_awarded}pt 獲得</span>
+                                                            </div>
+                                                        )}
                                                         <div style={{ marginTop: 8, padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                                             {Array.isArray(a.written_answers) ? (
                                                                 a.written_answers.map((ans: string, j: number) => (
