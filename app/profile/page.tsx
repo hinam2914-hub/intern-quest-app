@@ -69,13 +69,18 @@ export default function ProfileUploadPage() {
     const [fontFamily, setFontFamily] = useState("'Inter', sans-serif");
     const [savingAppearance, setSavingAppearance] = useState(false);
     const [appearanceMessage, setAppearanceMessage] = useState("");
+    const [departments, setDepartments] = useState<{ id: string; name: string; code: string }[]>([]);
+    const [departmentId, setDepartmentId] = useState("");
+    const [position, setPosition] = useState<"appointer" | "closer" | "">("");
+    const [savingWork, setSavingWork] = useState(false);
+    const [workMessage, setWorkMessage] = useState("");
 
     useEffect(() => {
         const load = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-            const { data: profile } = await supabase.from("profiles").select("name, avatar_url, mbti, club, theme_color, bg_color, font_family").eq("id", user.id).single();
+            const { data: profile } = await supabase.from("profiles").select("name, avatar_url, mbti, club, theme_color, bg_color, font_family, department_id, position").eq("id", user.id).single();
             if (profile) {
                 setName(profile.name || "");
                 setAvatarUrl(profile.avatar_url || null);
@@ -84,7 +89,14 @@ export default function ProfileUploadPage() {
                 setThemeColor((profile as any)?.theme_color || "#6366f1");
                 setBgColor((profile as any)?.bg_color || "#0a0a0f");
                 setFontFamily((profile as any)?.font_family || "'Inter', sans-serif");
+                setDepartmentId((profile as any)?.department_id || "");
+                setPosition((profile as any)?.position || "");
             }
+
+            // 事業部一覧を取得
+            const { data: depts } = await supabase.from("departments").select("id, name, code").order("created_at");
+            setDepartments(depts || []);
+
             setLoading(false);
         };
         load();
@@ -132,7 +144,20 @@ export default function ProfileUploadPage() {
         setProfileMessage("✅ 保存しました！");
         setSavingProfile(false);
     };
-
+    const handleSaveWork = async () => {
+        if (!userId) return;
+        setSavingWork(true);
+        setWorkMessage("");
+        // CB/SP事業部以外はpositionをクリア
+        const dept = departments.find(d => d.id === departmentId);
+        const validPosition = (dept?.code === "CB" || dept?.code === "SP") ? position : "";
+        await supabase.from("profiles").update({
+            department_id: departmentId || null,
+            position: validPosition || null,
+        }).eq("id", userId);
+        setWorkMessage("✅ 保存しました！");
+        setSavingWork(false);
+    };
     const handleSaveAppearance = async () => {
         if (!userId) return;
         setSavingAppearance(true);
@@ -158,10 +183,12 @@ export default function ProfileUploadPage() {
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 480, margin: "0 auto" }}>
 
-                {/* ===== ヘッダー（統一） ===== */}
-                <div style={{ marginBottom: 32 }}>
-                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
-                    <h1 style={{ fontSize: 24, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>👤 プロフィール設定</h1>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+                    <div>
+                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
+                        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>プロフィール設定</h1>
+                    </div>
+                    <button onClick={() => router.push("/menu")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>← メニュー</button>
                 </div>
 
                 {/* 写真アップロード */}
@@ -191,7 +218,69 @@ export default function ProfileUploadPage() {
                     </div>
                     {message && <div style={{ marginTop: 16, padding: "10px 16px", borderRadius: 8, background: message.includes("✅") ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", border: `1px solid ${message.includes("✅") ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`, fontSize: 13, color: message.includes("✅") ? "#34d399" : "#f87171", fontWeight: 600 }}>{message}</div>}
                 </div>
+                {/* 事業部・ポジション設定 */}
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>💼 事業部・ポジション設定</div>
 
+                    {/* 事業部選択 */}
+                    <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#d1d5db", marginBottom: 10 }}>所属事業部</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                            {departments.map(dept => (
+                                <button key={dept.id} onClick={() => { setDepartmentId(dept.id); if (dept.code !== "CB" && dept.code !== "SP") setPosition(""); }} style={{ padding: "12px", borderRadius: 10, border: `1px solid ${departmentId === dept.id ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"}`, background: departmentId === dept.id ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.02)", color: departmentId === dept.id ? "#fff" : "#9ca3af", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                    {dept.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ポジション選択（CB/SPのみ表示） */}
+                    {(() => {
+                        const dept = departments.find(d => d.id === departmentId);
+                        if (dept?.code !== "CB" && dept?.code !== "SP") return null;
+                        return (
+                            <div style={{ marginBottom: 20 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: "#d1d5db", marginBottom: 10 }}>ポジション</div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                                    {[
+                                        { value: "appointer", label: "📞 アポインター", desc: "商談数" },
+                                        { value: "closer", label: "💼 クローザー", desc: "受注数" },
+                                    ].map(p => (
+                                        <button key={p.value} onClick={() => setPosition(p.value as any)} style={{ padding: "14px", borderRadius: 10, border: `1px solid ${position === p.value ? "rgba(236,72,153,0.6)" : "rgba(255,255,255,0.08)"}`, background: position === p.value ? "linear-gradient(135deg, #ec4899, #f472b6)" : "rgba(255,255,255,0.02)", color: position === p.value ? "#fff" : "#9ca3af", fontWeight: 700, cursor: "pointer", fontSize: 13, textAlign: "center" }}>
+                                            <div>{p.label}</div>
+                                            <div style={{ fontSize: 11, opacity: 0.8, marginTop: 2 }}>KPI: {p.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* KPI項目プレビュー */}
+                    {departmentId && (
+                        <div style={{ marginBottom: 20, padding: "14px 16px", borderRadius: 10, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, marginBottom: 4 }}>📊 あなたのメインKPI</div>
+                            {(() => {
+                                const dept = departments.find(d => d.id === departmentId);
+                                if (!dept) return null;
+                                let kpi = "";
+                                if (dept.code === "IP") kpi = "解除数";
+                                else if (dept.code === "HR") kpi = "面談数";
+                                else if (dept.code === "CB" && position === "appointer") kpi = "商談数";
+                                else if (dept.code === "CB" && position === "closer") kpi = "受注数";
+                                else if (dept.code === "SP" && position === "appointer") kpi = "商談数";
+                                else if (dept.code === "SP" && position === "closer") kpi = "受注数";
+                                else kpi = "ポジションを選択してください";
+                                return <div style={{ fontSize: 14, color: "#f9fafb", fontWeight: 700 }}>{kpi}</div>;
+                            })()}
+                        </div>
+                    )}
+
+                    <button onClick={handleSaveWork} disabled={savingWork} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: savingWork ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: savingWork ? "not-allowed" : "pointer", fontSize: 14 }}>
+                        {savingWork ? "保存中..." : "💾 保存する"}
+                    </button>
+                    {workMessage && <div style={{ marginTop: 12, padding: "10px 16px", borderRadius: 8, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 13, color: "#34d399", fontWeight: 600 }}>{workMessage}</div>}
+                </div>
                 {/* パーソナリティ設定 */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 32, marginBottom: 16 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🧠 パーソナリティ設定</div>
@@ -265,13 +354,6 @@ export default function ProfileUploadPage() {
 
                 <div style={{ fontSize: 12, color: "#6b7280", textAlign: "center", lineHeight: 1.8 }}>
                     設定した情報はマイページやユーザー詳細ページに表示されます
-                </div>
-
-                {/* ===== メニューへ戻るボタン（統一） ===== */}
-                <div style={{ display: "flex", justifyContent: "center", marginTop: 32, marginBottom: 16 }}>
-                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
-                        メニューへ戻る
-                    </button>
                 </div>
             </div>
         </main>
