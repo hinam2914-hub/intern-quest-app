@@ -213,7 +213,7 @@ type ProfileFlags = {
     retention_passed?: boolean;
 };
 
-function getBadges(points: number, streak: number, esCompleted: boolean, flags: ProfileFlags): Badge[] {
+function getBadges(points: number, streak: number, esCompleted: boolean, flags: ProfileFlags, contentCompletionCount: number): Badge[] {
     return [
         // テスト合格バッジ（8個）
         { id: "quiz_passed", icon: "🧠", name: "確認ワーク合格", description: "確認ワークテスト合格", unlocked: !!flags.quiz_passed },
@@ -228,24 +228,35 @@ function getBadges(points: number, streak: number, esCompleted: boolean, flags: 
         { id: "newbie", icon: "🌟", name: "新人", description: "100pt達成", unlocked: points >= 100 },
         { id: "growing", icon: "⭐", name: "成長中", description: "500pt達成", unlocked: points >= 500 },
         { id: "ace", icon: "🏆", name: "エース", description: "1000pt達成", unlocked: points >= 1000 },
-        // 継続・基本系（3個）
+        // 継続・基本系（4個）
         { id: "first_step", icon: "🔥", name: "はじめの一歩", description: "3日連続提出", unlocked: streak >= 3 },
         { id: "keep_going", icon: "⚡", name: "継続の力", description: "7日連続提出", unlocked: streak >= 7 },
         { id: "es_writer", icon: "📝", name: "ES記入者", description: "総合ES初回完成", unlocked: esCompleted },
+        { id: "learn_debut", icon: "📚", name: "学習デビュー", description: "学習コンテンツ初完了", unlocked: contentCompletionCount >= 1 },
     ];
 }
 
-function getTrophies(params: { points: number; streak: number; submissionCount: number; thanksCount: number; rank2: string; contentCompletionCount: number; challengeCount: number; }): Trophy[] {
-    const { points, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount } = params;
+function getTrophies(params: { points: number; streak: number; submissionCount: number; thanksCount: number; rank2: string; contentCompletionCount: number; challengeCount: number; approvedKpiCount: number; kkcApprovedCount: number; esUpdateCount: number; }): Trophy[] {
+    const { points, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount, approvedKpiCount, kkcApprovedCount, esUpdateCount } = params;
     return [
+        // LEGENDARY（2個）
         { id: "legend_intern", icon: "🏆", name: "伝説のインターン", description: "5000pt達成", rarity: "legendary" as const, unlocked: points >= 5000 },
+        { id: "hundred_days", icon: "🌟", name: "百日修行", description: "100日連続提出", rarity: "legendary" as const, unlocked: streak >= 100 },
+        // EPIC（5個）
         { id: "ss_ranker", icon: "💎", name: "SSランカー", description: "ランクSS到達", rarity: "epic" as const, unlocked: rank2 === "SS" },
         { id: "s_ranker", icon: "⭐", name: "Sランカー", description: "ランクS到達", rarity: "epic" as const, unlocked: rank2 === "S" || rank2 === "SS" },
         { id: "streak_master", icon: "🔥", name: "連続投稿マスター", description: "30日連続提出", rarity: "epic" as const, unlocked: streak >= 30 },
+        { id: "point_hunter", icon: "💰", name: "ポイントハンター", description: "3000pt達成", rarity: "epic" as const, unlocked: points >= 3000 },
+        { id: "thanks_master", icon: "💖", name: "サンキューマスター", description: "サンキュー50件受領", rarity: "epic" as const, unlocked: thanksCount >= 50 },
+        // RARE（8個）
+        { id: "a_ranker", icon: "🎖️", name: "A級ランカー", description: "ランクA到達", rarity: "rare" as const, unlocked: ["A", "S", "SS"].includes(rank2) },
         { id: "output_king", icon: "📋", name: "アウトプット王", description: "日報50件提出", rarity: "rare" as const, unlocked: submissionCount >= 50 },
         { id: "thanks_hero", icon: "🎉", name: "感謝の人", description: "サンキュー10件受領", rarity: "rare" as const, unlocked: thanksCount >= 10 },
         { id: "learn_master", icon: "📚", name: "学びの達人", description: "学習コンテンツ20本完了", rarity: "rare" as const, unlocked: contentCompletionCount >= 20 },
         { id: "challenge_master", icon: "🎯", name: "ライフチャレンジマスター", description: "チャレンジ10個達成", rarity: "rare" as const, unlocked: challengeCount >= 10 },
+        { id: "kkc_contributor", icon: "💡", name: "KKCコントリビューター", description: "KKC承認10件", rarity: "rare" as const, unlocked: kkcApprovedCount >= 10 },
+        { id: "kpi_king", icon: "📊", name: "KPI達成王", description: "月次KPI承認10回", rarity: "rare" as const, unlocked: approvedKpiCount >= 10 },
+        { id: "es_expert", icon: "✍️", name: "ES熟練者", description: "ES更新10回", rarity: "rare" as const, unlocked: esUpdateCount >= 10 },
     ];
 }
 
@@ -438,8 +449,8 @@ export default function MyPage() {
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
-    const badges = getBadges(totalEarned, streak, esCompleted, profileFlags);
-    const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount });
+    const badges = getBadges(totalEarned, streak, esCompleted, profileFlags, contentCompletionCount);
+    const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount, approvedKpiCount, kkcApprovedCount, esUpdateCount });
     const unlockedTrophies = trophies.filter(t => t.unlocked);
     const topTrophy = [...unlockedTrophies].sort((a, b) => {
         const order = { legendary: 4, epic: 3, rare: 2, common: 1 };
