@@ -29,7 +29,7 @@ type DeptReport = { id: string; department_id: string; year_month: string; conte
 type Resource = { id: string; title: string; description: string | null; resource_type: string; url: string | null; category: string | null; is_active: boolean; created_at: string; };
 type Challenge = { id: string; title: string; description: string | null; category: string | null; points: number; icon: string; is_active: boolean; };
 type ShopItem = { id: string; title: string; description: string; cost: number; category: string; };
-type ChallengeSubmission = { id: string; user_id: string; challenge_id: string; comment: string | null; image_url: string | null; status: string; created_at: string; userName?: string; challengeTitle?: string; };
+type ChallengeSubmission = { id: string; user_id: string; challenge_id: string; comment: string | null; image_url: string | null; status: string; created_at: string; userName?: string; challengeTitle?: string; challengeIcon?: string; challengeCategory?: string; challengePoints?: number; };
 type WikiTerm = { id: string; term: string; description: string; category: string | null; created_at: string; };
 type CareerItem = { id: string; title: string; description: string | null; category: string; url: string | null; created_at: string; };
 
@@ -492,7 +492,14 @@ export default function AdminPage() {
             setProblemSolutions(psRows || []);
 
             const { data: challengeSubRows } = await supabase.from("challenge_submissions").select("*").order("created_at", { ascending: false });
-            setChallengeSubmissions((challengeSubRows || []) as ChallengeSubmission[]);
+            setChallengeSubmissions((challengeSubRows || []).map((s: any) => ({
+                ...s,
+                userName: users.find(u => u.id === s.user_id)?.name || "名前未設定",
+                challengeTitle: (challengeRows || [])?.find((c: any) => c.id === s.challenge_id)?.title || "不明なチャレンジ",
+                challengeIcon: (challengeRows || [])?.find((c: any) => c.id === s.challenge_id)?.icon || "🎯",
+                challengeCategory: (challengeRows || [])?.find((c: any) => c.id === s.challenge_id)?.category || "",
+                challengePoints: (challengeRows || [])?.find((c: any) => c.id === s.challenge_id)?.points || 0,
+            })) as ChallengeSubmission[]);
             const { data: mtgSessionRows } = await supabase.from("mtg_sessions").select("*").order("mtg_date", { ascending: false });
             setMtgSessions((mtgSessionRows || []) as MtgSession[]);
             const { data: wikiRows } = await supabase.from("wiki_terms").select("*").order("category").order("term");
@@ -2404,15 +2411,46 @@ export default function AdminPage() {
                             ) : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {challengeSubmissions.filter(s => s.status === "pending").map(sub => (
-                                        <div key={sub.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)" }}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                                                        <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{sub.userName}</span>
-                                                        <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{sub.challengeTitle}</span>
+                                        <div key={sub.id} style={{ padding: "20px", borderRadius: 12, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)" }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+                                                <div style={{ flex: 1, minWidth: 280 }}>
+                                                    {/* チャレンジ情報を強調表示 */}
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)" }}>
+                                                        <span style={{ fontSize: 24 }}>{sub.challengeIcon || "🎯"}</span>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ fontSize: 14, fontWeight: 800, color: "#f9fafb" }}>{sub.challengeTitle}</div>
+                                                            <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+                                                                {sub.challengeCategory && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(168,85,247,0.2)", color: "#a855f7", fontSize: 11, fontWeight: 600 }}>{sub.challengeCategory}</span>}
+                                                                <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(52,211,153,0.2)", color: "#34d399", fontSize: 11, fontWeight: 700 }}>+{sub.challengePoints || 0}pt</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    {sub.comment && <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 8 }}>{sub.comment}</div>}
-                                                    {sub.image_url && <img src={sub.image_url} alt="達成写真" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, marginBottom: 8 }} />}
+
+                                                    {/* ユーザー情報 */}
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                                                        <span style={{ fontSize: 13, color: "#9ca3af" }}>👤 申請者:</span>
+                                                        <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{sub.userName}</span>
+                                                        <span style={{ fontSize: 11, color: "#6b7280" }}>{formatDateTime(sub.created_at)}</span>
+                                                    </div>
+
+                                                    {/* コメント */}
+                                                    {sub.comment && (
+                                                        <div style={{ marginBottom: 8, padding: "10px 14px", borderRadius: 8, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>💬 コメント</div>
+                                                            <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{sub.comment}</div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* 写真 */}
+                                                    {sub.image_url && (
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, marginBottom: 6 }}>📷 達成写真</div>
+                                                            <a href={sub.image_url} target="_blank" rel="noreferrer" style={{ display: "inline-block" }}>
+                                                                <img src={sub.image_url} alt="達成写真" style={{ maxWidth: 240, maxHeight: 180, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }} />
+                                                            </a>
+                                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>クリックで拡大表示</div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                                                     <button onClick={async () => {
