@@ -477,6 +477,69 @@ export default function UserDetailPage() {
 
                 {activeTab === "monthly_kpi" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {/* ===== 達成率推移グラフ ===== */}
+                        {monthlyKpiHistory.length > 0 && (() => {
+                            // 月ごとに平均達成率を計算（昇順）
+                            const monthlyAvg: { ym: string; rate: number; deptCount: number }[] = [];
+                            const grouped = [...new Set(monthlyKpiHistory.map(k => k.year_month))].sort();
+                            grouped.forEach(ym => {
+                                const monthKpis = monthlyKpiHistory.filter(k => k.year_month === ym);
+                                const avgRate = Math.round(monthKpis.reduce((sum, k) => sum + (k.rate || 0), 0) / monthKpis.length);
+                                monthlyAvg.push({ ym, rate: avgRate, deptCount: monthKpis.length });
+                            });
+
+                            // 全体平均
+                            const overallAvg = monthlyAvg.length > 0 ? Math.round(monthlyAvg.reduce((sum, m) => sum + m.rate, 0) / monthlyAvg.length) : 0;
+                            const overallColor = overallAvg >= 100 ? "#34d399" : overallAvg >= 80 ? "#f59e0b" : overallAvg >= 60 ? "#f97316" : "#f87171";
+
+                            return (
+                                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>📈 KPI達成率推移</div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <span style={{ fontSize: 12, color: "#9ca3af" }}>全期間平均</span>
+                                            <span style={{ fontSize: 24, fontWeight: 800, color: overallColor }}>{overallAvg}%</span>
+                                        </div>
+                                    </div>
+
+                                    {monthlyAvg.length === 1 ? (
+                                        <div style={{ padding: 32, textAlign: "center", color: "#6b7280", fontSize: 13 }}>
+                                            📊 1ヶ月分のデータのみ。複数月のデータがあると推移グラフが表示されます。
+                                        </div>
+                                    ) : (
+                                        <ResponsiveContainer width="100%" height={240}>
+                                            <LineChart data={monthlyAvg} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                                                <XAxis dataKey="ym" stroke="#4b5563" tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                                                <YAxis stroke="#4b5563" tick={{ fill: "#9ca3af", fontSize: 11 }} domain={[0, 'dataMax + 20']} />
+                                                <Tooltip
+                                                    contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }}
+                                                    formatter={(value: any) => [`${value}%`, "達成率"]}
+                                                    labelFormatter={(label) => `${label}`}
+                                                />
+                                                {/* 100%ライン（目標達成ライン） */}
+                                                <Line type="monotone" dataKey={() => 100} stroke="#34d399" strokeWidth={1} strokeDasharray="4 4" dot={false} legendType="none" />
+                                                {/* 達成率推移 */}
+                                                <Line type="monotone" dataKey="rate" stroke="#6366f1" strokeWidth={3} dot={{ fill: "#6366f1", r: 5 }} activeDot={{ r: 7, fill: "#8b5cf6" }} />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    )}
+
+                                    {/* 月別サマリー */}
+                                    <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                        {monthlyAvg.map(m => {
+                                            const c = m.rate >= 100 ? "#34d399" : m.rate >= 80 ? "#f59e0b" : m.rate >= 60 ? "#f97316" : "#f87171";
+                                            return (
+                                                <div key={m.ym} style={{ padding: "6px 12px", borderRadius: 8, background: `${c}10`, border: `1px solid ${c}30`, fontSize: 12 }}>
+                                                    <span style={{ color: "#9ca3af" }}>{m.ym}: </span>
+                                                    <span style={{ color: c, fontWeight: 700 }}>{m.rate}%</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         {monthlyKpiHistory.length === 0 ? (
                             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14 }}>
                                 月次KPIデータがありません
