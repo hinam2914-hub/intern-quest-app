@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
 type Department = { id: string; name: string; code: string; main_metric: string; unit: string };
+type Position = "appointer" | "closer" | "";
 type MonthlyKpi = { id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number };
 
 function getYearMonth(): string {
@@ -25,7 +26,15 @@ function getPoints(rate: number): number {
     if (rate >= 60) return 10;
     return 0;
 }
-
+function getKpiInfo(deptCode: string, position: string): { metric: string; unit: string } {
+    if (deptCode === "IP") return { metric: "解除数", unit: "件" };
+    if (deptCode === "HR") return { metric: "面談数", unit: "件" };
+    if (deptCode === "CB" && position === "appointer") return { metric: "商談数", unit: "件" };
+    if (deptCode === "CB" && position === "closer") return { metric: "受注数", unit: "件" };
+    if (deptCode === "SP" && position === "appointer") return { metric: "商談数", unit: "件" };
+    if (deptCode === "SP" && position === "closer") return { metric: "受注数", unit: "件" };
+    return { metric: "未設定", unit: "件" };
+}
 function getRateColor(rate: number): string {
     if (rate >= 100) return "#34d399";
     if (rate >= 80) return "#f59e0b";
@@ -38,6 +47,7 @@ export default function KpiPage() {
     const [userId, setUserId] = useState("");
     const [departments, setDepartments] = useState<Department[]>([]);
     const [myDeptId, setMyDeptId] = useState("");
+    const [myPosition, setMyPosition] = useState<Position>("");
     const [kpiList, setKpiList] = useState<MonthlyKpi[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -62,8 +72,9 @@ export default function KpiPage() {
             const { data: depts } = await supabase.from("departments").select("*").order("created_at");
             setDepartments((depts || []) as Department[]);
 
-            const { data: profile } = await supabase.from("profiles").select("department_id").eq("id", user.id).single();
+            const { data: profile } = await supabase.from("profiles").select("department_id, position").eq("id", user.id).single();
             setMyDeptId(profile?.department_id || "");
+            setMyPosition((profile as any)?.position || "");
 
             const { data: kpiRows } = await supabase.from("monthly_kpi")
                 .select("*")
@@ -189,18 +200,26 @@ export default function KpiPage() {
                 {/* メインKPI */}
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>
-                        MAIN KPI {myDept ? `— ${myDept.name}(${myDept.main_metric})` : ""}
+                        MAIN KPI
+                        {myDept && ` — ${myDept.name}`}
+                        {myDept && myPosition === "appointer" && " アポインター"}
+                        {myDept && myPosition === "closer" && " クローザー"}
+                        {myDept && `(${getKpiInfo(myDept.code, myPosition).metric})`}
                     </div>
 
                     {!myDeptId ? (
                         <div style={{ padding: "16px", borderRadius: 10, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", fontSize: 14 }}>
-                            💡 事業部が設定されていません。マイページのプロフィールから事業部を選択してください。
+                            💡 事業部が設定されていません。<a href="/profile" style={{ color: "#fbbf24", textDecoration: "underline", fontWeight: 700 }}>プロフィール</a>から設定してください。
+                        </div>
+                    ) : (myDept?.code === "CB" || myDept?.code === "SP") && !myPosition ? (
+                        <div style={{ padding: "16px", borderRadius: 10, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", fontSize: 14 }}>
+                            💡 ポジションが設定されていません。<a href="/profile" style={{ color: "#fbbf24", textDecoration: "underline", fontWeight: 700 }}>プロフィール</a>からアポインター/クローザーを選択してください。
                         </div>
                     ) : (
                         <>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
                                 <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>目標 ({myDept?.unit})</div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>目標 ({myDept ? getKpiInfo(myDept.code, myPosition).unit : "件"})</div>
                                     <input
                                         type="number"
                                         value={mainTarget}
@@ -210,7 +229,7 @@ export default function KpiPage() {
                                     />
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>実績 ({myDept?.unit})</div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>実績 ({myDept ? getKpiInfo(myDept.code, myPosition).unit : "件"})</div>
                                     <input
                                         type="number"
                                         value={mainResult}
