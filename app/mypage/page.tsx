@@ -202,34 +202,50 @@ function buildGraphData(history: PointHistory[]): GraphData[] {
     });
 }
 
-function getBadges(points: number, streak: number, contentCompletionCount: number, esCompleted: boolean): Badge[] {
+type ProfileFlags = {
+    quiz_passed?: boolean;
+    mentor_passed?: boolean;
+    marketer_passed?: boolean;
+    sales_passed?: boolean;
+    planner_passed?: boolean;
+    entrepreneur_passed?: boolean;
+    manager_passed?: boolean;
+    retention_passed?: boolean;
+};
+
+function getBadges(points: number, streak: number, esCompleted: boolean, flags: ProfileFlags): Badge[] {
     return [
-        { id: "first_step", icon: "🔥", name: "はじめの一歩", description: "3日連続提出", unlocked: streak >= 3 },
-        { id: "keep_going", icon: "⚡", name: "継続の力", description: "7日連続提出", unlocked: streak >= 7 },
-        { id: "habit_master", icon: "💎", name: "習慣マスター", description: "30日連続提出", unlocked: streak >= 30 },
-        { id: "newbie", icon: "🌱", name: "新人", description: "100pt達成", unlocked: points >= 100 },
+        // テスト合格バッジ（8個）
+        { id: "quiz_passed", icon: "🧠", name: "確認ワーク合格", description: "確認ワークテスト合格", unlocked: !!flags.quiz_passed },
+        { id: "mentor_passed", icon: "🌱", name: "メンター合格", description: "メンターテスト合格", unlocked: !!flags.mentor_passed },
+        { id: "marketer_passed", icon: "📊", name: "マーケター適性", description: "マーケター適性テストAランク", unlocked: !!flags.marketer_passed },
+        { id: "sales_passed", icon: "💼", name: "営業デビュー", description: "営業デビュー適性テストAランク", unlocked: !!flags.sales_passed },
+        { id: "planner_passed", icon: "💡", name: "企画職適性", description: "企画職適性テストAランク", unlocked: !!flags.planner_passed },
+        { id: "entrepreneur_passed", icon: "🚀", name: "起業適性", description: "起業適性テストAランク", unlocked: !!flags.entrepreneur_passed },
+        { id: "manager_passed", icon: "👔", name: "マネージャー", description: "マネージャーテスト合格", unlocked: !!flags.manager_passed },
+        { id: "retention_passed", icon: "🔥", name: "Dot.A雇用", description: "Dot.A雇用テスト合格", unlocked: !!flags.retention_passed },
+        // ポイント達成系（3個）
+        { id: "newbie", icon: "🌟", name: "新人", description: "100pt達成", unlocked: points >= 100 },
         { id: "growing", icon: "⭐", name: "成長中", description: "500pt達成", unlocked: points >= 500 },
         { id: "ace", icon: "🏆", name: "エース", description: "1000pt達成", unlocked: points >= 1000 },
-        { id: "legend", icon: "👑", name: "レジェンド", description: "5000pt達成", unlocked: points >= 5000 },
-        { id: "combo", icon: "🎯", name: "コンボ", description: "3日連続＋100pt", unlocked: streak >= 3 && points >= 100 },
+        // 継続・基本系（3個）
+        { id: "first_step", icon: "🔥", name: "はじめの一歩", description: "3日連続提出", unlocked: streak >= 3 },
+        { id: "keep_going", icon: "⚡", name: "継続の力", description: "7日連続提出", unlocked: streak >= 7 },
         { id: "es_writer", icon: "📝", name: "ES記入者", description: "総合ES初回完成", unlocked: esCompleted },
-        { id: "learn_habit", icon: "📚", name: "学びの習慣", description: "学習コンテンツ10本完了", unlocked: contentCompletionCount >= 10 },
     ];
 }
 
-function getTrophies(params: { points: number; streak: number; submissionCount: number; thanksCount: number; rank2: string; contentCompletionCount: number; }): Trophy[] {
-    const { points, streak, submissionCount, thanksCount, rank2, contentCompletionCount } = params;
+function getTrophies(params: { points: number; streak: number; submissionCount: number; thanksCount: number; rank2: string; contentCompletionCount: number; challengeCount: number; }): Trophy[] {
+    const { points, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount } = params;
     return [
-        { id: "legend_intern", icon: "👑", name: "伝説のインターン", description: "5000pt達成", rarity: "legendary" as const, unlocked: points >= 5000 },
-        { id: "streak_master", icon: "🔥", name: "連続投稿マスター", description: "30日連続提出", rarity: "epic" as const, unlocked: streak >= 30 },
+        { id: "legend_intern", icon: "🏆", name: "伝説のインターン", description: "5000pt達成", rarity: "legendary" as const, unlocked: points >= 5000 },
         { id: "ss_ranker", icon: "💎", name: "SSランカー", description: "ランクSS到達", rarity: "epic" as const, unlocked: rank2 === "SS" },
+        { id: "s_ranker", icon: "⭐", name: "Sランカー", description: "ランクS到達", rarity: "epic" as const, unlocked: rank2 === "S" || rank2 === "SS" },
+        { id: "streak_master", icon: "🔥", name: "連続投稿マスター", description: "30日連続提出", rarity: "epic" as const, unlocked: streak >= 30 },
         { id: "output_king", icon: "📋", name: "アウトプット王", description: "日報50件提出", rarity: "rare" as const, unlocked: submissionCount >= 50 },
         { id: "thanks_hero", icon: "🎉", name: "感謝の人", description: "サンキュー10件受領", rarity: "rare" as const, unlocked: thanksCount >= 10 },
-        { id: "s_ranker", icon: "⭐", name: "Sランカー", description: "ランクS到達", rarity: "rare" as const, unlocked: rank2 === "S" || rank2 === "SS" },
         { id: "learn_master", icon: "📚", name: "学びの達人", description: "学習コンテンツ20本完了", rarity: "rare" as const, unlocked: contentCompletionCount >= 20 },
-        { id: "week_streak", icon: "⚡", name: "週間連続賞", description: "7日連続提出", rarity: "common" as const, unlocked: streak >= 7 },
-        { id: "first_100", icon: "🌱", name: "100pt突破", description: "100pt達成", rarity: "common" as const, unlocked: points >= 100 },
-        { id: "submitter10", icon: "📝", name: "コツコツ提出者", description: "日報10件提出", rarity: "common" as const, unlocked: submissionCount >= 10 },
+        { id: "challenge_master", icon: "🎯", name: "ライフチャレンジマスター", description: "チャレンジ10個達成", rarity: "rare" as const, unlocked: challengeCount >= 10 },
     ];
 }
 
@@ -372,6 +388,8 @@ export default function MyPage() {
     const [kkcApprovedCount, setKkcApprovedCount] = useState(0);
     const [esUpdateCount, setEsUpdateCount] = useState(0);
     const [activeDays, setActiveDays] = useState(0);
+    const [profileFlags, setProfileFlags] = useState<ProfileFlags>({});
+    const [challengeCount, setChallengeCount] = useState(0);
     const [startedAt, setStartedAt] = useState("");
     const [todayKpiDone, setTodayKpiDone] = useState(false);
     const [todayThanksDone, setTodayThanksDone] = useState(false);
@@ -420,8 +438,8 @@ export default function MyPage() {
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
-    const badges = getBadges(totalEarned, streak, contentCompletionCount, esCompleted);
-    const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount });
+    const badges = getBadges(totalEarned, streak, esCompleted, profileFlags);
+    const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount });
     const unlockedTrophies = trophies.filter(t => t.unlocked);
     const topTrophy = [...unlockedTrophies].sort((a, b) => {
         const order = { legendary: 4, epic: 3, rare: 2, common: 1 };
@@ -469,6 +487,16 @@ export default function MyPage() {
             setGrowthGrade((profileData as any)?.growth_grade || "");
             setMbti((profileData as any)?.mbti || "");
             setClub((profileData as any)?.club || "");
+            setProfileFlags({
+                quiz_passed: !!(profileData as any)?.quiz_passed,
+                mentor_passed: !!(profileData as any)?.mentor_passed,
+                marketer_passed: !!(profileData as any)?.marketer_passed,
+                sales_passed: !!(profileData as any)?.sales_passed,
+                planner_passed: !!(profileData as any)?.planner_passed,
+                entrepreneur_passed: !!(profileData as any)?.entrepreneur_passed,
+                manager_passed: !!(profileData as any)?.manager_passed,
+                retention_passed: !!(profileData as any)?.retention_passed,
+            });
             if (profile.started_at) {
                 const start = new Date(profile.started_at);
                 const now = new Date();
@@ -541,6 +569,8 @@ export default function MyPage() {
         const { count: approvedKpiCnt } = await supabase.from("monthly_kpi").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("approved", true);
         setApprovedKpiCount(approvedKpiCnt || 0);
         const { count: kkcCnt } = await supabase.from("problem_solutions").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved");
+        const { count: chalCnt } = await supabase.from("challenge_submissions").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved");
+        setChallengeCount(chalCnt || 0);
         setKkcApprovedCount(kkcCnt || 0);
         const { count: esCnt } = await supabase.from("user_es_history").select("*", { count: "exact", head: true }).eq("user_id", user.id);
         setEsUpdateCount(esCnt || 0);
@@ -1166,56 +1196,49 @@ export default function MyPage() {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 20 }}>
-                                <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
-                                {(mbti || club) && (
-                                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                                        {mbti && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 700 }}>🧠 {mbti}</div>}
-                                        {club && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
-                                    </div>
-                                )}
-                                <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
-                                <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="学歴を入力（例：〇〇大学）" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
-                                <div style={{ marginBottom: 8 }}>
-                                    <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>📅 入社日</div>
-                                    <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 20 }}>
+                            <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
+                            {(mbti || club) && (
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                                    {mbti && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 700 }}>🧠 {mbti}</div>}
+                                    {club && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
                                 </div>
-                                <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}>
-                                    <option value="">事業部を選択</option>
-                                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                                </select>
-                                <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: saveSuccess ? "linear-gradient(135deg, #10b981, #34d399)" : `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.3s" }}>{savingProfile ? "保存中..." : saveSuccess ? "✅ 保存しました！" : "保存"}</button>
+                            )}
+                            <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                            <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="学歴を入力（例：〇〇大学）" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                            <div style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>📅 入社日</div>
+                                <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
                             </div>
-                            <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: `1px solid ${cardBorder}`, background: cardBg, color: textSecondary, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
+                            <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}>
+                                <option value="">事業部を選択</option>
+                                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                            </select>
+                            <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: saveSuccess ? "linear-gradient(135deg, #10b981, #34d399)" : `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.3s" }}>{savingProfile ? "保存中..." : saveSuccess ? "✅ 保存しました！" : "保存"}</button>
                         </div>
+                        <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: `1px solid ${cardBorder}`, background: cardBg, color: textSecondary, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
+                    </div>
 
-                        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RECENT ACTIVITY</div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {history.slice(0, 8).map((item, i) => (
-                                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${cardBorder}` }}>
-                                        <div>
-                                            <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{formatReason(item.reason)}</div>
-                                            <div style={{ fontSize: 11, color: textMuted, marginTop: 2 }}>{formatDateTimeJST(item.created_at)}</div>
-                                        </div>
-                                        <div style={{ fontSize: 16, fontWeight: 700, color: item.change >= 0 ? "#34d399" : "#f87171" }}>
-                                            {item.change > 0 ? `+${item.change}` : item.change}pt
-                                        </div>
+                    <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RECENT ACTIVITY</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            {history.slice(0, 8).map((item, i) => (
+                                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${cardBorder}` }}>
+                                    <div>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{formatReason(item.reason)}</div>
+                                        <div style={{ fontSize: 11, color: textMuted, marginTop: 2 }}>{formatDateTimeJST(item.created_at)}</div>
                                     </div>
-                                ))}
-                                {history.length === 0 && <div style={{ color: textMuted, fontSize: 14 }}>履歴がありません</div>}
-                            </div>
+                                    <div style={{ fontSize: 16, fontWeight: 700, color: item.change >= 0 ? "#34d399" : "#f87171" }}>
+                                        {item.change > 0 ? `+${item.change}` : item.change}pt
+                                    </div>
+                                </div>
+                            ))}
+                            {history.length === 0 && <div style={{ color: textMuted, fontSize: 14 }}>履歴がありません</div>}
                         </div>
                     </div>
                 </div>
-
-                {/* ✅ ページ下部ホームボタン */}
-                <div style={{ marginTop: 32, textAlign: "center" }}>
-                    <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-                        🏠 ホームに戻る
-                    </button>
-                </div>
+            </div>
         </main>
     );
 }
