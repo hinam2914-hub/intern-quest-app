@@ -210,6 +210,10 @@ export default function AdminPage() {
     const [kpiTarget, setKpiTarget] = useState(0);
     const [kpiSaving, setKpiSaving] = useState(false);
     const [kpiMessage, setKpiMessage] = useState("");
+    const [editingKpiId, setEditingKpiId] = useState<string | null>(null);
+    const [editKpiTitle, setEditKpiTitle] = useState("");
+    const [editKpiUnit, setEditKpiUnit] = useState("件");
+    const [editKpiTarget, setEditKpiTarget] = useState(0);
     const [contentsList, setContentsList] = useState<{ id: string; title: string; description: string; content_type: string; url: string; body: string; is_active: boolean }[]>([]);
     const [contentTitle, setContentTitle] = useState("");
     const [contentDesc, setContentDesc] = useState("");
@@ -261,6 +265,11 @@ export default function AdminPage() {
     const [resourceCategory, setResourceCategory] = useState("");
     const [resourceSaving, setResourceSaving] = useState(false);
     const [resourceMessage, setResourceMessage] = useState("");
+    const [editingResourceId, setEditingResourceId] = useState<string | null>(null);
+    const [editResourceTitle, setEditResourceTitle] = useState("");
+    const [editResourceDesc, setEditResourceDesc] = useState("");
+    const [editResourceUrl, setEditResourceUrl] = useState("");
+    const [editResourceCategory, setEditResourceCategory] = useState("");
     const [challenges, setChallenges] = useState<Challenge[]>([]);
     const [problemCases, setProblemCases] = useState<any[]>([]);
     const [problemSolutions, setProblemSolutions] = useState<any[]>([]);
@@ -304,6 +313,11 @@ export default function AdminPage() {
     const [shopCategory, setShopCategory] = useState("");
     const [shopSaving, setShopSaving] = useState(false);
     const [shopMessage, setShopMessage] = useState("");
+    const [editingShopId, setEditingShopId] = useState<string | null>(null);
+    const [editShopTitle, setEditShopTitle] = useState("");
+    const [editShopDesc, setEditShopDesc] = useState("");
+    const [editShopCost, setEditShopCost] = useState(100);
+    const [editShopCategory, setEditShopCategory] = useState("");
     const [careerItems, setCareerItems] = useState<CareerItem[]>([]);
     const [careerTitle, setCareerTitle] = useState("");
     const [careerDesc, setCareerDesc] = useState("");
@@ -1133,14 +1147,58 @@ export default function AdminPage() {
                             {kpiItems.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>KPI項目がありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {kpiItems.map((item) => (
-                                        <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${item.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div>
-                                                <div style={{ fontSize: 14, fontWeight: 700, color: item.is_active ? "#f9fafb" : "#6b7280" }}>{item.title}</div>
-                                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>単位: {item.unit}　目標: {item.target_value}{item.unit}</div>
-                                            </div>
-                                            <button onClick={async () => { await supabase.from("kpi_items").update({ is_active: !item.is_active }).eq("id", item.id); setKpiItems(prev => prev.map(k => k.id === item.id ? { ...k, is_active: !k.is_active } : k)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>
-                                                {item.is_active ? "無効にする" : "有効にする"}
-                                            </button>
+                                        <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${item.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}` }}>
+                                            {editingKpiId === item.id ? (
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>📝 編集中</div>
+                                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px", gap: 8 }}>
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>KPI名</div>
+                                                            <input value={editKpiTitle} onChange={(e) => setEditKpiTitle(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>単位</div>
+                                                            <input value={editKpiUnit} onChange={(e) => setEditKpiUnit(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>目標値</div>
+                                                            <input type="number" value={editKpiTarget} onChange={(e) => setEditKpiTarget(Number(e.target.value))} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 8 }}>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("kpi_items").update({
+                                                                title: editKpiTitle.trim(),
+                                                                unit: editKpiUnit.trim() || "件",
+                                                                target_value: editKpiTarget,
+                                                            }).eq("id", item.id);
+                                                            setKpiItems(prev => prev.map(k => k.id === item.id ? { ...k, title: editKpiTitle.trim(), unit: editKpiUnit.trim() || "件", target_value: editKpiTarget } : k));
+                                                            setEditingKpiId(null);
+                                                        }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                                        <button onClick={() => setEditingKpiId(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                    <div>
+                                                        <div style={{ fontSize: 14, fontWeight: 700, color: item.is_active ? "#f9fafb" : "#6b7280" }}>{item.title}</div>
+                                                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>単位: {item.unit}　目標: {item.target_value}{item.unit}</div>
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 6 }}>
+                                                        <button onClick={() => {
+                                                            setEditingKpiId(item.id);
+                                                            setEditKpiTitle(item.title || "");
+                                                            setEditKpiUnit(item.unit || "件");
+                                                            setEditKpiTarget(item.target_value || 0);
+                                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>
+                                                            ✏️ 編集
+                                                        </button>
+                                                        <button onClick={async () => { await supabase.from("kpi_items").update({ is_active: !item.is_active }).eq("id", item.id); setKpiItems(prev => prev.map(k => k.id === item.id ? { ...k, is_active: !k.is_active } : k)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>
+                                                            {item.is_active ? "無効にする" : "有効にする"}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -2217,6 +2275,73 @@ export default function AdminPage() {
                                                 {r.is_active ? "非表示" : "表示する"}
                                             </button>
                                         </div>
+                                    ))}{resources.map(r => (
+                                        <div key={r.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${r.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}` }}>
+                                            {editingResourceId === r.id ? (
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>📝 編集中</div>
+                                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>タイトル</div>
+                                                            <input value={editResourceTitle} onChange={(e) => setEditResourceTitle(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>カテゴリ</div>
+                                                            <input value={editResourceCategory} onChange={(e) => setEditResourceCategory(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>説明</div>
+                                                        <input value={editResourceDesc} onChange={(e) => setEditResourceDesc(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>URL</div>
+                                                        <input value={editResourceUrl} onChange={(e) => setEditResourceUrl(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 8 }}>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("resources").update({
+                                                                title: editResourceTitle.trim(),
+                                                                description: editResourceDesc.trim() || null,
+                                                                url: editResourceUrl.trim() || null,
+                                                                category: editResourceCategory.trim() || null,
+                                                            }).eq("id", r.id);
+                                                            setResources(prev => prev.map(res => res.id === r.id ? { ...res, title: editResourceTitle.trim(), description: editResourceDesc.trim() || null, url: editResourceUrl.trim() || null, category: editResourceCategory.trim() || null } : res));
+                                                            setEditingResourceId(null);
+                                                        }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                                        <button onClick={() => setEditingResourceId(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                    <div>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                                            <span style={{ fontSize: 14, fontWeight: 700, color: r.is_active ? "#f9fafb" : "#6b7280" }}>{r.title}</span>
+                                                            {r.category && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{r.category}</span>}
+                                                            <span style={{ fontSize: 11, color: "#6b7280" }}>{r.resource_type}</span>
+                                                        </div>
+                                                        {r.description && <div style={{ fontSize: 12, color: "#6b7280" }}>{r.description}</div>}
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 6 }}>
+                                                        <button onClick={() => {
+                                                            setEditingResourceId(r.id);
+                                                            setEditResourceTitle(r.title || "");
+                                                            setEditResourceDesc(r.description || "");
+                                                            setEditResourceUrl(r.url || "");
+                                                            setEditResourceCategory(r.category || "");
+                                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                                            ✏️ 編集
+                                                        </button>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("resources").update({ is_active: !r.is_active }).eq("id", r.id);
+                                                            setResources(prev => prev.map(res => res.id === r.id ? { ...res, is_active: !res.is_active } : res));
+                                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: r.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: r.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                                            {r.is_active ? "非表示" : "表示する"}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
                             )}
@@ -2747,21 +2872,67 @@ export default function AdminPage() {
                             {shopItems.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>景品がありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {shopItems.map((item) => (
-                                        <div key={item.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{item.title}</span>
-                                                    {item.category && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{item.category}</span>}
+                                        <div key={item.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                            {editingShopId === item.id ? (
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>📝 編集中</div>
+                                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>タイトル</div>
+                                                            <input value={editShopTitle} onChange={(e) => setEditShopTitle(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>カテゴリ</div>
+                                                            <input value={editShopCategory} onChange={(e) => setEditShopCategory(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>説明</div>
+                                                        <input value={editShopDesc} onChange={(e) => setEditShopDesc(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>必要ポイント</div>
+                                                        <input type="number" value={editShopCost} onChange={(e) => setEditShopCost(Number(e.target.value))} style={{ width: 120, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 8 }}>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("shop_items").update({
+                                                                title: editShopTitle.trim(),
+                                                                description: editShopDesc.trim(),
+                                                                cost: editShopCost,
+                                                                category: editShopCategory.trim() || "other",
+                                                            }).eq("id", item.id);
+                                                            setShopItems(prev => prev.map(s => s.id === item.id ? { ...s, title: editShopTitle.trim(), description: editShopDesc.trim(), cost: editShopCost, category: editShopCategory.trim() || "other" } : s));
+                                                            setEditingShopId(null);
+                                                        }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                                        <button onClick={() => setEditingShopId(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
+                                                    </div>
                                                 </div>
-                                                {item.description && <div style={{ fontSize: 12, color: "#6b7280" }}>{item.description}</div>}
-                                            </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                <span style={{ fontSize: 18, fontWeight: 800, color: "#818cf8" }}>{item.cost}pt</span>
-                                                <button onClick={async () => {
-                                                    await supabase.from("shop_items").delete().eq("id", item.id);
-                                                    setShopItems(prev => prev.filter(s => s.id !== item.id));
-                                                }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>削除</button>
-                                            </div>
+                                            ) : (
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                    <div>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                                            <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{item.title}</span>
+                                                            {item.category && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{item.category}</span>}
+                                                        </div>
+                                                        {item.description && <div style={{ fontSize: 12, color: "#6b7280" }}>{item.description}</div>}
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                        <span style={{ fontSize: 18, fontWeight: 800, color: "#818cf8" }}>{item.cost}pt</span>
+                                                        <button onClick={() => {
+                                                            setEditingShopId(item.id);
+                                                            setEditShopTitle(item.title || "");
+                                                            setEditShopDesc(item.description || "");
+                                                            setEditShopCost(item.cost || 0);
+                                                            setEditShopCategory(item.category || "");
+                                                        }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>✏️ 編集</button>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("shop_items").delete().eq("id", item.id);
+                                                            setShopItems(prev => prev.filter(s => s.id !== item.id));
+                                                        }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>削除</button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -2810,21 +2981,67 @@ export default function AdminPage() {
                             {shopItems.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>景品がありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {shopItems.map((item) => (
-                                        <div key={item.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{item.title}</span>
-                                                    {item.category && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{item.category}</span>}
+                                        <div key={item.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                            {editingShopId === item.id ? (
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>📝 編集中</div>
+                                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>タイトル</div>
+                                                            <input value={editShopTitle} onChange={(e) => setEditShopTitle(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>カテゴリ</div>
+                                                            <input value={editShopCategory} onChange={(e) => setEditShopCategory(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>説明</div>
+                                                        <input value={editShopDesc} onChange={(e) => setEditShopDesc(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>必要ポイント</div>
+                                                        <input type="number" value={editShopCost} onChange={(e) => setEditShopCost(Number(e.target.value))} style={{ width: 120, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 8 }}>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("shop_items").update({
+                                                                title: editShopTitle.trim(),
+                                                                description: editShopDesc.trim(),
+                                                                cost: editShopCost,
+                                                                category: editShopCategory.trim() || "other",
+                                                            }).eq("id", item.id);
+                                                            setShopItems(prev => prev.map(s => s.id === item.id ? { ...s, title: editShopTitle.trim(), description: editShopDesc.trim(), cost: editShopCost, category: editShopCategory.trim() || "other" } : s));
+                                                            setEditingShopId(null);
+                                                        }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                                        <button onClick={() => setEditingShopId(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
+                                                    </div>
                                                 </div>
-                                                {item.description && <div style={{ fontSize: 12, color: "#6b7280" }}>{item.description}</div>}
-                                            </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                <span style={{ fontSize: 18, fontWeight: 800, color: "#818cf8" }}>{item.cost}pt</span>
-                                                <button onClick={async () => {
-                                                    await supabase.from("shop_items").delete().eq("id", item.id);
-                                                    setShopItems(prev => prev.filter(s => s.id !== item.id));
-                                                }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>削除</button>
-                                            </div>
+                                            ) : (
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                    <div>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                                            <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{item.title}</span>
+                                                            {item.category && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{item.category}</span>}
+                                                        </div>
+                                                        {item.description && <div style={{ fontSize: 12, color: "#6b7280" }}>{item.description}</div>}
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                        <span style={{ fontSize: 18, fontWeight: 800, color: "#818cf8" }}>{item.cost}pt</span>
+                                                        <button onClick={() => {
+                                                            setEditingShopId(item.id);
+                                                            setEditShopTitle(item.title || "");
+                                                            setEditShopDesc(item.description || "");
+                                                            setEditShopCost(item.cost || 0);
+                                                            setEditShopCategory(item.category || "");
+                                                        }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>✏️ 編集</button>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("shop_items").delete().eq("id", item.id);
+                                                            setShopItems(prev => prev.filter(s => s.id !== item.id));
+                                                        }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>削除</button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
