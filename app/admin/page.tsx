@@ -215,6 +215,11 @@ export default function AdminPage() {
     const [contentBody, setContentBody] = useState("");
     const [contentSaving, setContentSaving] = useState(false);
     const [contentMessage, setContentMessage] = useState("");
+    const [editingContentId, setEditingContentId] = useState<string | null>(null);
+    const [editContentTitle, setEditContentTitle] = useState("");
+    const [editContentDesc, setEditContentDesc] = useState("");
+    const [editContentUrl, setEditContentUrl] = useState("");
+    const [editContentBody, setEditContentBody] = useState("");
     const [requestsList, setRequestsList] = useState<RequestRow[]>([]);
     const [processingRequest, setProcessingRequest] = useState<string | null>(null);
     const [teams, setTeams] = useState<Team[]>([]);
@@ -1181,17 +1186,71 @@ export default function AdminPage() {
                             {contentsList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>コンテンツがありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                                     {contentsList.map((item) => (
-                                        <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${item.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                    <span>{item.content_type === "video" ? "▶️" : "📄"}</span>
-                                                    <span style={{ fontSize: 14, fontWeight: 700, color: item.is_active ? "#f9fafb" : "#6b7280" }}>{item.title}</span>
+                                        <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${item.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}` }}>
+                                            {editingContentId === item.id ? (
+                                                /* ===== 編集モード ===== */
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>📝 編集中</div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>タイトル</div>
+                                                        <input value={editContentTitle} onChange={(e) => setEditContentTitle(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>説明</div>
+                                                        <input value={editContentDesc} onChange={(e) => setEditContentDesc(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                    </div>
+                                                    {item.content_type === "video" && (
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>YouTube URL</div>
+                                                            <input value={editContentUrl} onChange={(e) => setEditContentUrl(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                        </div>
+                                                    )}
+                                                    {item.content_type === "article" && (
+                                                        <div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>本文</div>
+                                                            <textarea value={editContentBody} onChange={(e) => setEditContentBody(e.target.value)} style={{ width: "100%", height: 140, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                                                        </div>
+                                                    )}
+                                                    <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("contents").update({
+                                                                title: editContentTitle.trim(),
+                                                                description: editContentDesc.trim(),
+                                                                url: editContentUrl.trim() || null,
+                                                                body: editContentBody.trim() || null,
+                                                            }).eq("id", item.id);
+                                                            setContentsList(prev => prev.map(c => c.id === item.id ? { ...c, title: editContentTitle.trim(), description: editContentDesc.trim(), url: editContentUrl.trim(), body: editContentBody.trim() } : c));
+                                                            setEditingContentId(null);
+                                                        }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                                        <button onClick={() => setEditingContentId(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
+                                                    </div>
                                                 </div>
-                                                {item.description && <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>{item.description}</div>}
-                                            </div>
-                                            <button onClick={async () => { await supabase.from("contents").update({ is_active: !item.is_active }).eq("id", item.id); setContentsList(prev => prev.map(c => c.id === item.id ? { ...c, is_active: !c.is_active } : c)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
-                                                {item.is_active ? "非表示" : "表示する"}
-                                            </button>
+                                            ) : (
+                                                /* ===== 通常モード ===== */
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                            <span>{item.content_type === "video" ? "▶️" : "📄"}</span>
+                                                            <span style={{ fontSize: 14, fontWeight: 700, color: item.is_active ? "#f9fafb" : "#6b7280" }}>{item.title}</span>
+                                                        </div>
+                                                        {item.description && <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>{item.description}</div>}
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 6 }}>
+                                                        <button onClick={() => {
+                                                            setEditingContentId(item.id);
+                                                            setEditContentTitle(item.title || "");
+                                                            setEditContentDesc(item.description || "");
+                                                            setEditContentUrl(item.url || "");
+                                                            setEditContentBody(item.body || "");
+                                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                                            ✏️ 編集
+                                                        </button>
+                                                        <button onClick={async () => { await supabase.from("contents").update({ is_active: !item.is_active }).eq("id", item.id); setContentsList(prev => prev.map(c => c.id === item.id ? { ...c, is_active: !c.is_active } : c)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                                            {item.is_active ? "非表示" : "表示する"}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
