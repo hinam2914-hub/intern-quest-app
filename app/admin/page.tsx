@@ -12,7 +12,7 @@ type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
 type UserDetail = {
-    id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; mbti?: string; club_category?: string; hobby_category?: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; growthStatus?: string; growthRank?: string;
+    id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; mbti?: string; club_category?: string; hobby_category?: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; deptCode?: string; position?: string; growthStatus?: string; growthRank?: string;
     growthGrade?: string; onboardingDone?: boolean; createdAt?: string; approvedKpiCount?: number; kkcApprovedCount?: number; esUpdateCount?: number;
 };
 type GraphData = { date: string; points: number };
@@ -309,7 +309,7 @@ export default function AdminPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category, onboarding_done, created_at");
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category, onboarding_done, created_at, position");
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
@@ -341,6 +341,8 @@ export default function AdminPage() {
                     avatar_url: p.avatar_url || null,
                     department_id: p.department_id || "",
                     deptName: deptRows?.find((d: any) => d.id === p.department_id)?.name || "",
+                    deptCode: deptRows?.find((d: any) => d.id === p.department_id)?.code || "",
+                    position: p.position || "",
                     growthStatus: p.growth_status || "Onboarding",
                     growthRank: p.growth_rank || "",
                     growthGrade: p.growth_grade || "",
@@ -841,6 +843,23 @@ export default function AdminPage() {
                                                         </div>
                                                     </div>
                                                     <div style={{ display: "flex", gap: 4 }}>
+                                                        {(u.deptCode === "CB" || u.deptCode === "SP") ? (
+                                                            <select
+                                                                value={u.position || ""}
+                                                                onChange={async (e) => {
+                                                                    const val = e.target.value;
+                                                                    await supabase.from("profiles").update({ position: val || null }).eq("id", u.id);
+                                                                    setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, position: val } : u2));
+                                                                }}
+                                                                style={{ padding: "6px 8px", borderRadius: 8, border: `1px solid ${u.position ? "rgba(236,72,153,0.5)" : "rgba(251,191,36,0.4)"}`, background: u.position ? "rgba(236,72,153,0.1)" : "rgba(251,191,36,0.08)", color: u.position ? "#f9fafb" : "#fbbf24", fontSize: 12, outline: "none", cursor: "pointer", fontWeight: 700 }}
+                                                            >
+                                                                <option value="">⚠️ 未設定</option>
+                                                                <option value="appointer">📞 アポ</option>
+                                                                <option value="closer">💼 クロ</option>
+                                                            </select>
+                                                        ) : (
+                                                            <div style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)", color: "#6b7280", fontSize: 11, fontWeight: 600 }}>─</div>
+                                                        )}
                                                         <select
                                                             value={u.growthRank || ""}
                                                             onChange={async (e) => {
