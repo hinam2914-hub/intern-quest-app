@@ -312,6 +312,11 @@ export default function AdminPage() {
     const [careerSaving, setCareerSaving] = useState(false);
     const [careerMessage, setCareerMessage] = useState("");
     const [careerSearch, setCareerSearch] = useState("");
+    const [editingCareerId, setEditingCareerId] = useState<string | null>(null);
+    const [editCareerTitle, setEditCareerTitle] = useState("");
+    const [editCareerDesc, setEditCareerDesc] = useState("");
+    const [editCareerCategory, setEditCareerCategory] = useState("");
+    const [editCareerUrl, setEditCareerUrl] = useState("");
     const [managerTests, setManagerTests] = useState<any[]>([]);
     const [managerTestDetail, setManagerTestDetail] = useState<Record<string, { choices: any[]; written: any[] }>>({});
     const [managerTestFilter, setManagerTestFilter] = useState<"pending" | "all">("pending");
@@ -2387,16 +2392,68 @@ export default function AdminPage() {
                                             <div key={cat} style={{ marginBottom: 12 }}>
                                                 <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>{cat.toUpperCase()}</div>
                                                 {filtered.map(c => (
-                                                    <div key={c.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{c.title}</div>
-                                                            {c.description && <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.6, marginBottom: 4 }}>{c.description}</div>}
-                                                            {c.url && <a href={c.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#818cf8", textDecoration: "none" }}>🔗 リンクを開く</a>}
-                                                        </div>
-                                                        <button onClick={async () => {
-                                                            await supabase.from("career_items").delete().eq("id", c.id);
-                                                            setCareerItems(prev => prev.filter(x => x.id !== c.id));
-                                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700, marginLeft: 12, flexShrink: 0 }}>削除</button>
+                                                    <div key={c.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 6 }}>
+                                                        {editingCareerId === c.id ? (
+                                                            /* ===== 編集モード ===== */
+                                                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                                <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>📝 編集中</div>
+                                                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                                                    <div>
+                                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>タイトル</div>
+                                                                        <input value={editCareerTitle} onChange={(e) => setEditCareerTitle(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>カテゴリ</div>
+                                                                        <input value={editCareerCategory} onChange={(e) => setEditCareerCategory(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>説明</div>
+                                                                    <textarea value={editCareerDesc} onChange={(e) => setEditCareerDesc(e.target.value)} style={{ width: "100%", height: 80, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                                                                </div>
+                                                                <div>
+                                                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>URL</div>
+                                                                    <input value={editCareerUrl} onChange={(e) => setEditCareerUrl(e.target.value)} placeholder="https://..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                                </div>
+                                                                <div style={{ display: "flex", gap: 8 }}>
+                                                                    <button onClick={async () => {
+                                                                        await supabase.from("career_items").update({
+                                                                            title: editCareerTitle.trim(),
+                                                                            description: editCareerDesc.trim() || null,
+                                                                            category: editCareerCategory.trim(),
+                                                                            url: editCareerUrl.trim() || null,
+                                                                        }).eq("id", c.id);
+                                                                        setCareerItems(prev => prev.map(x => x.id === c.id ? { ...x, title: editCareerTitle.trim(), description: editCareerDesc.trim() || null, category: editCareerCategory.trim(), url: editCareerUrl.trim() || null } : x));
+                                                                        setEditingCareerId(null);
+                                                                    }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                                                    <button onClick={() => setEditingCareerId(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            /* ===== 通常モード ===== */
+                                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                                                <div style={{ flex: 1 }}>
+                                                                    <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{c.title}</div>
+                                                                    {c.description && <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.6, marginBottom: 4 }}>{c.description}</div>}
+                                                                    {c.url && <a href={c.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#818cf8", textDecoration: "none" }}>🔗 リンクを開く</a>}
+                                                                </div>
+                                                                <div style={{ display: "flex", gap: 6, marginLeft: 12, flexShrink: 0 }}>
+                                                                    <button onClick={() => {
+                                                                        setEditingCareerId(c.id);
+                                                                        setEditCareerTitle(c.title || "");
+                                                                        setEditCareerDesc(c.description || "");
+                                                                        setEditCareerCategory(c.category || "");
+                                                                        setEditCareerUrl(c.url || "");
+                                                                    }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                                                        ✏️ 編集
+                                                                    </button>
+                                                                    <button onClick={async () => {
+                                                                        await supabase.from("career_items").delete().eq("id", c.id);
+                                                                        setCareerItems(prev => prev.filter(x => x.id !== c.id));
+                                                                    }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>削除</button>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
