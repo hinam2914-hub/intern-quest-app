@@ -293,6 +293,10 @@ export default function AdminPage() {
     const [wikiSaving, setWikiSaving] = useState(false);
     const [wikiMessage, setWikiMessage] = useState("");
     const [wikiSearch, setWikiSearch] = useState("");
+    const [editingWikiId, setEditingWikiId] = useState<string | null>(null);
+    const [editWikiTerm, setEditWikiTerm] = useState("");
+    const [editWikiDesc, setEditWikiDesc] = useState("");
+    const [editWikiCategory, setEditWikiCategory] = useState("");
     const [shopItems, setShopItems] = useState<ShopItem[]>([]);
     const [shopTitle, setShopTitle] = useState("");
     const [shopDesc, setShopDesc] = useState("");
@@ -2452,15 +2456,61 @@ export default function AdminPage() {
                                             <div key={cat} style={{ marginBottom: 12 }}>
                                                 <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>{cat.toUpperCase()}</div>
                                                 {filtered.map(t => (
-                                                    <div key={t.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{t.term}</div>
-                                                            <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.6 }}>{t.description}</div>
-                                                        </div>
-                                                        <button onClick={async () => {
-                                                            await supabase.from("wiki_terms").delete().eq("id", t.id);
-                                                            setWikiTerms(prev => prev.filter(w => w.id !== t.id));
-                                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700, marginLeft: 12, flexShrink: 0 }}>削除</button>
+                                                    <div key={t.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 6 }}>
+                                                        {editingWikiId === t.id ? (
+                                                            /* ===== 編集モード ===== */
+                                                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                                <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>📝 編集中</div>
+                                                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                                                    <div>
+                                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>用語</div>
+                                                                        <input value={editWikiTerm} onChange={(e) => setEditWikiTerm(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>カテゴリ</div>
+                                                                        <input value={editWikiCategory} onChange={(e) => setEditWikiCategory(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>説明</div>
+                                                                    <textarea value={editWikiDesc} onChange={(e) => setEditWikiDesc(e.target.value)} style={{ width: "100%", height: 80, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                                                                </div>
+                                                                <div style={{ display: "flex", gap: 8 }}>
+                                                                    <button onClick={async () => {
+                                                                        await supabase.from("wiki_terms").update({
+                                                                            term: editWikiTerm.trim(),
+                                                                            description: editWikiDesc.trim(),
+                                                                            category: editWikiCategory.trim() || null,
+                                                                        }).eq("id", t.id);
+                                                                        setWikiTerms(prev => prev.map(w => w.id === t.id ? { ...w, term: editWikiTerm.trim(), description: editWikiDesc.trim(), category: editWikiCategory.trim() || null } : w));
+                                                                        setEditingWikiId(null);
+                                                                    }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                                                    <button onClick={() => setEditingWikiId(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            /* ===== 通常モード ===== */
+                                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                                                <div style={{ flex: 1 }}>
+                                                                    <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{t.term}</div>
+                                                                    <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.6 }}>{t.description}</div>
+                                                                </div>
+                                                                <div style={{ display: "flex", gap: 6, marginLeft: 12, flexShrink: 0 }}>
+                                                                    <button onClick={() => {
+                                                                        setEditingWikiId(t.id);
+                                                                        setEditWikiTerm(t.term || "");
+                                                                        setEditWikiDesc(t.description || "");
+                                                                        setEditWikiCategory(t.category || "");
+                                                                    }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                                                        ✏️ 編集
+                                                                    </button>
+                                                                    <button onClick={async () => {
+                                                                        await supabase.from("wiki_terms").delete().eq("id", t.id);
+                                                                        setWikiTerms(prev => prev.filter(w => w.id !== t.id));
+                                                                    }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>削除</button>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
