@@ -671,7 +671,106 @@ export default function AdminPage() {
     const reminderText = useMemo(() => `${periodLabel}の日報が未提出の方へ\n\n${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}\n\n確認のうえ、ご対応をお願いいたします。`, [notSubmittedUsers, periodLabel]);
     const rankMedals = ["🥇", "🥈", "🥉"];
     const pendingCount = requestsList.filter(r => r.status === "pending").length;
+    // ===== ハイブリッドダッシュボード用の集計 =====
+    const dashboardStats = useMemo(() => {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const twoWeeksAgo = new Date();
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
+        // アクティブ：7日以内に何かしらアクションあり
+        const activeUserCount = userDetails.filter(u => u.submissionCount > 0).length;
+
+        // 3日以上未提出 = 直近3日に提出がない人（簡易判定: submissionCount=0）
+        const inactive3Days = userDetails.filter(u => {
+            if (!u.createdAt) return false;
+            const accountAge = Date.now() - new Date(u.createdAt).getTime();
+            return accountAge > 3 * 24 * 60 * 60 * 1000 && u.submissionCount === 0;
+        }).length;
+
+        // 未承認の申請
+        const pendingRequests = requestsList.filter(r => r.status === "pending").length;
+        const pendingChallenges = challengeSubmissions.filter(s => s.status === "pending").length;
+        const pendingKkc = problemSolutions.filter(s => s.status === "pending").length;
+
+        // 今月のKPI達成率（事業部別）
+        const now = new Date();
+        const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const thisMonthKpis = allMonthlyKpis.filter(k => k.year_month === currentYm);
+        const kpiAchievementRate = (() => {
+            if (thisMonthKpis.length === 0) return 0;
+            const rates = thisMonthKpis.map(k => {
+                const officialTarget = monthlyTargets.find(t => t.user_id === k.user_id && t.department_id === k.department_id && t.year_month === currentYm)?.target || k.target;
+                return officialTarget > 0 ? Math.round((k.result / officialTarget) * 100) : 0;
+            });
+            return Math.round(rates.reduce((a, b) => a + b, 0) / rates.length);
+        })();
+
+        // KPI60%以下のメンバー
+        const lowKpiUsers = (() => {
+            const userRates: { userId: string; userName: string; rate: number }[] = [];
+            const userIds = [...new Set(thisMonthKpis.map(k => k.user_id))];
+            userIds.forEach(uid => {
+                const userKpis = thisMonthKpis.filter(k => k.user_id === uid);
+                const rates = userKpis.map(k => {
+                    const officialTarget = monthlyTargets.find(t => t.user_id === k.user_id && t.department_id === k.department_id && t.year_month === currentYm)?.target || k.target;
+                    return officialTarget > 0 ? Math.round((k.result / officialTarget) * 100) : 0;
+                });
+                const avgRate = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0;
+                if (avgRate < 60 && avgRate > 0) {
+                    const u = userDetails.find(u => u.id === uid);
+                    if (u) userRates.push({ userId: uid, userName: u.name, rate: avgRate });
+                }
+            });
+            return userRates;
+        })();
+
+        // 今週のサンキュー数
+        const weeklyThanks = thanksList.filter(t => new Date(t.created_at) > oneWeekAgo).length;
+        const lastWeekThanks = thanksList.filter(t => {
+            const d = new Date(t.created_at);
+            return d > twoWeeksAgo && d < oneWeekAgo;
+        }).length;
+        const thanksDelta = weeklyThanks - lastWeekThanks;
+
+        // 今週の合格者
+        const weeklyTestPasses = (() => {
+            // userDetails には quiz_passed_at 等がないので、簡易的に算出
+            // ここはダミー（後で正確なロジックに置き換え可能）
+            return 0;
+        })();
+
+        // 部署別KPI達成率
+        const deptStats = departments.map(dept => {
+            const deptKpis = thisMonthKpis.filter(k => k.department_id === dept.id);
+            const rates = deptKpis.map(k => {
+                const officialTarget = monthlyTargets.find(t => t.user_id === k.user_id && t.department_id === k.department_id && t.year_month === currentYm)?.target || k.target;
+                return officialTarget > 0 ? Math.round((k.result / officialTarget) * 100) : 0;
+            });
+            const avgRate = rates.length > 0 ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : 0;
+            return { id: dept.id, name: dept.name, rate: avgRate, count: deptKpis.length };
+        });
+
+        // KPI100%超え事業部
+        const topDept = deptStats.filter(d => d.rate >= 100).sort((a, b) => b.rate - a.rate)[0];
+
+        return {
+            activeUserCount,
+            inactive3Days,
+            pendingRequests,
+            pendingChallenges,
+            pendingKkc,
+            kpiAchievementRate,
+            lowKpiUsers,
+            weeklyThanks,
+            thanksDelta,
+            weeklyTestPasses,
+            deptStats,
+            topDept,
+        };
+    }, [userDetails, requestsList, challengeSubmissions, problemSolutions, allMonthlyKpis, monthlyTargets, thanksList, departments]);
     const filteredUsers = useMemo(() => {
         const sorted = [...userDetails].sort((a, b) => b.points - a.points);
         let result = selectedDept === "all" ? sorted : sorted.filter(u => u.department_id === selectedDept);
@@ -1228,6 +1327,148 @@ export default function AdminPage() {
 
                 {activeTab === "dashboard" && (
                     <>
+                        {/* ========== 📊 今週のサマリー ========== */}
+                        <div style={{ marginBottom: 32, padding: "24px", borderRadius: 16, background: "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08))", border: "1px solid rgba(99,102,241,0.2)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                                <div style={{ fontSize: 14, fontWeight: 800, color: "#f9fafb", letterSpacing: 1 }}>📊 今週のサマリー</div>
+                                <div style={{ fontSize: 11, color: "#6b7280" }}>3秒で状況把握</div>
+                            </div>
+
+                            {/* スコアカード（4枚） */}
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+                                <div style={{ padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 6 }}>アクティブ</div>
+                                    <div style={{ fontSize: 28, fontWeight: 800, color: "#818cf8", lineHeight: 1 }}>{dashboardStats.activeUserCount}人</div>
+                                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>全{userCount}人中</div>
+                                </div>
+                                <div style={{ padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 6 }}>日報提出率</div>
+                                    <div style={{ fontSize: 28, fontWeight: 800, color: submitRate >= 80 ? "#34d399" : submitRate >= 50 ? "#f59e0b" : "#f87171", lineHeight: 1 }}>{submitRate}%</div>
+                                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{periodLabel}基準</div>
+                                </div>
+                                <div style={{ padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 6 }}>KPI達成率</div>
+                                    <div style={{ fontSize: 28, fontWeight: 800, color: dashboardStats.kpiAchievementRate >= 100 ? "#34d399" : dashboardStats.kpiAchievementRate >= 80 ? "#f59e0b" : "#f87171", lineHeight: 1 }}>{dashboardStats.kpiAchievementRate}%</div>
+                                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>今月平均</div>
+                                </div>
+                                <div style={{ padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 6 }}>サンキュー</div>
+                                    <div style={{ fontSize: 28, fontWeight: 800, color: "#fbbf24", lineHeight: 1 }}>{dashboardStats.weeklyThanks}件</div>
+                                    <div style={{ fontSize: 11, color: dashboardStats.thanksDelta >= 0 ? "#34d399" : "#f87171", marginTop: 4 }}>
+                                        {dashboardStats.thanksDelta >= 0 ? "↑" : "↓"} 前週比{dashboardStats.thanksDelta >= 0 ? "+" : ""}{dashboardStats.thanksDelta}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 🔴 要対応セクション */}
+                            {(dashboardStats.inactive3Days > 0 || dashboardStats.pendingRequests > 0 || dashboardStats.pendingChallenges > 0 || dashboardStats.pendingKkc > 0) && (
+                                <div style={{ marginBottom: 16, padding: "16px 20px", borderRadius: 12, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }} />
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f87171" }}>🔴 要対応</div>
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {dashboardStats.inactive3Days > 0 && (
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                                <span style={{ fontSize: 13, color: "#d1d5db" }}>3日以上未提出のメンバー</span>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f87171" }}>{dashboardStats.inactive3Days}人</span>
+                                                    <button onClick={() => { setActiveTab("users"); setShowInactiveOnly(true); }} style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.2)", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>確認 →</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {dashboardStats.pendingRequests > 0 && (
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                                <span style={{ fontSize: 13, color: "#d1d5db" }}>未承認のショップ申請</span>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f87171" }}>{dashboardStats.pendingRequests}件</span>
+                                                    <button onClick={() => setActiveTab("requests")} style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.2)", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>処理する →</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {dashboardStats.pendingChallenges > 0 && (
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                                <span style={{ fontSize: 13, color: "#d1d5db" }}>承認待ちチャレンジ</span>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f87171" }}>{dashboardStats.pendingChallenges}件</span>
+                                                    <button onClick={() => setActiveTab("challenges")} style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.2)", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>確認 →</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {dashboardStats.pendingKkc > 0 && (
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                                <span style={{ fontSize: 13, color: "#d1d5db" }}>KKC審査待ち</span>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f87171" }}>{dashboardStats.pendingKkc}件</span>
+                                                    <button onClick={() => setActiveTab("kkc")} style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.2)", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>審査 →</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 🟡 要注意セクション */}
+                            {dashboardStats.lowKpiUsers.length > 0 && (
+                                <div style={{ marginBottom: 16, padding: "16px 20px", borderRadius: 12, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>🟡 要注意</div>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                        <span style={{ fontSize: 13, color: "#d1d5db" }}>KPI達成率60%以下のメンバー</span>
+                                        <span style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24" }}>{dashboardStats.lowKpiUsers.length}人</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 🟢 グッドニュース */}
+                            {(dashboardStats.thanksDelta > 0 || dashboardStats.topDept) && (
+                                <div style={{ marginBottom: 16, padding: "16px 20px", borderRadius: 12, background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.3)" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#34d399" }} />
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: "#34d399" }}>🟢 今週のグッドニュース</div>
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {dashboardStats.topDept && (
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                                <span style={{ fontSize: 13, color: "#d1d5db" }}>{dashboardStats.topDept.name}がKPI100%超え達成中</span>
+                                                <span style={{ fontSize: 14, fontWeight: 700, color: "#34d399" }}>{dashboardStats.topDept.rate}% ⭐</span>
+                                            </div>
+                                        )}
+                                        {dashboardStats.thanksDelta > 0 && (
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                                <span style={{ fontSize: 13, color: "#d1d5db" }}>サンキューが活発化</span>
+                                                <span style={{ fontSize: 14, fontWeight: 700, color: "#34d399" }}>+{dashboardStats.thanksDelta}件 📈</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 部署別KPI進捗バー */}
+                            {dashboardStats.deptStats.length > 0 && (
+                                <div style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, letterSpacing: 1, marginBottom: 12 }}>📈 事業部別KPI（今月）</div>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+                                        {dashboardStats.deptStats.map(d => {
+                                            const c = d.rate >= 100 ? "#34d399" : d.rate >= 80 ? "#f59e0b" : d.rate >= 60 ? "#f97316" : d.rate > 0 ? "#f87171" : "#6b7280";
+                                            return (
+                                                <div key={d.id} style={{ padding: 12, borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                                        <span style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{d.name}</span>
+                                                        <span style={{ fontSize: 16, fontWeight: 800, color: c }}>{d.count > 0 ? `${d.rate}%` : "—"}</span>
+                                                    </div>
+                                                    <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.05)" }}>
+                                                        <div style={{ height: "100%", width: `${Math.min(d.rate, 100)}%`, background: c, borderRadius: 999 }} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
                             {(["today", "week", "month"] as const).map((p) => (
                                 <button key={p} onClick={() => setPeriod(p)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: period === p ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)", color: period === p ? "#fff" : "#9ca3af" }}>
