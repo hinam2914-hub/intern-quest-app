@@ -98,7 +98,23 @@ export default function ResourcesPage() {
                         {filteredResources.map((resource) => {
                             const catColor = CATEGORY_COLORS[resource.category || "その他"] || "#6b7280";
                             return (
-                                <div key={resource.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div key={resource.id}
+                                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 12, transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 0 0 rgba(0,0,0,0)", cursor: "pointer" }}
+                                    onMouseEnter={(e) => {
+                                        const el = e.currentTarget as HTMLDivElement;
+                                        el.style.transform = "scale(1.04) translateY(-3px)";
+                                        el.style.boxShadow = `0 16px 32px ${catColor}40, 0 0 24px ${catColor}30`;
+                                        el.style.borderColor = `${catColor}80`;
+                                        el.style.zIndex = "10";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        const el = e.currentTarget as HTMLDivElement;
+                                        el.style.transform = "scale(1) translateY(0)";
+                                        el.style.boxShadow = "0 0 0 rgba(0,0,0,0)";
+                                        el.style.borderColor = "rgba(255,255,255,0.08)";
+                                        el.style.zIndex = "1";
+                                    }}
+                                >
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                                         <div style={{ width: 48, height: 48, borderRadius: 12, background: `${catColor}20`, border: `1px solid ${catColor}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>
                                             {TYPE_ICONS[resource.resource_type] || "📁"}

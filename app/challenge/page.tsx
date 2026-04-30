@@ -175,9 +175,23 @@ export default function ChallengePage() {
                             return (
                                 <div key={challenge.id}
                                     onClick={() => !isApproved && !isPending && setSelectedChallenge(challenge)}
-                                    style={{ background: isApproved ? "rgba(52,211,153,0.08)" : isPending ? "rgba(251,191,36,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${isApproved ? "rgba(52,211,153,0.3)" : isPending ? "rgba(251,191,36,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 20, cursor: isApproved || isPending ? "default" : "pointer", position: "relative", transition: "all 0.2s" }}
-                                    onMouseEnter={(e) => { if (!isApproved && !isPending) (e.currentTarget as HTMLDivElement).style.borderColor = `${catColor}60`; }}
-                                    onMouseLeave={(e) => { if (!isApproved && !isPending) (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.08)"; }}
+                                    style={{ background: isApproved ? "rgba(52,211,153,0.08)" : isPending ? "rgba(251,191,36,0.08)" : "rgba(255,255,255,0.03)", border: `1px solid ${isApproved ? "rgba(52,211,153,0.3)" : isPending ? "rgba(251,191,36,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: 16, padding: 20, cursor: isApproved || isPending ? "default" : "pointer", position: "relative", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 0 0 rgba(0,0,0,0)" }}
+                                    onMouseEnter={(e) => {
+                                        if (isApproved || isPending) return;
+                                        const el = e.currentTarget as HTMLDivElement;
+                                        el.style.transform = "scale(1.06) translateY(-3px)";
+                                        el.style.boxShadow = `0 16px 32px ${catColor}50, 0 0 24px ${catColor}40`;
+                                        el.style.borderColor = `${catColor}80`;
+                                        el.style.zIndex = "10";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (isApproved || isPending) return;
+                                        const el = e.currentTarget as HTMLDivElement;
+                                        el.style.transform = "scale(1) translateY(0)";
+                                        el.style.boxShadow = "0 0 0 rgba(0,0,0,0)";
+                                        el.style.borderColor = "rgba(255,255,255,0.08)";
+                                        el.style.zIndex = "1";
+                                    }}
                                 >
                                     <div style={{ fontSize: 40, marginBottom: 12, filter: isApproved ? "none" : "grayscale(0.3)", opacity: isApproved ? 1 : isPending ? 0.7 : 0.6 }}>
                                         {challenge.icon}

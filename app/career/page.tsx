@@ -59,7 +59,21 @@ export default function CareerPage() {
                 ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {filtered.map(item => (
-                            <div key={item.id} style={{ padding: "16px 20px", borderRadius: 12, background: "#fff", border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                            <div key={item.id}
+                                style={{ padding: "16px 20px", borderRadius: 12, background: "#fff", border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", cursor: item.url ? "pointer" : "default" }}
+                                onMouseEnter={(e) => {
+                                    const el = e.currentTarget as HTMLDivElement;
+                                    el.style.transform = "translateY(-4px)";
+                                    el.style.boxShadow = "0 12px 24px rgba(99,102,241,0.15), 0 4px 8px rgba(99,102,241,0.1)";
+                                    el.style.borderColor = "rgba(99,102,241,0.3)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    const el = e.currentTarget as HTMLDivElement;
+                                    el.style.transform = "translateY(0)";
+                                    el.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
+                                    el.style.borderColor = "rgba(0,0,0,0.06)";
+                                }}
+                            >
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                                     <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.1)", color: "#6366f1", fontSize: 11, fontWeight: 600 }}>{item.category}</span>
                                     <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>{item.title}</span>
