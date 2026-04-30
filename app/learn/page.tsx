@@ -139,9 +139,21 @@ export default function LearnPage() {
                                     const thumb = getThumbnail(content);
                                     return (
                                         <div key={content.id} onClick={() => { setSelected(content); setReview(completion?.review || ""); }}
-                                            style={{ flexShrink: 0, width: 260, cursor: "pointer", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.04)", border: `1px solid ${completion?.status === "approved" ? "rgba(52,211,153,0.4)" : completion?.status === "pending" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.08)"}`, transition: "transform 0.2s", position: "relative" }}
-                                            onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)"}
-                                            onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"}
+                                            style={{ flexShrink: 0, width: 260, cursor: "pointer", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.04)", border: `1px solid ${completion?.status === "approved" ? "rgba(52,211,153,0.4)" : completion?.status === "pending" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.08)"}`, transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", position: "relative", boxShadow: "0 0 0 rgba(99,102,241,0)" }}
+                                            onMouseEnter={e => {
+                                                const el = e.currentTarget as HTMLDivElement;
+                                                el.style.transform = "scale(1.08) translateY(-4px)";
+                                                el.style.boxShadow = "0 20px 40px rgba(99,102,241,0.4), 0 0 30px rgba(139,92,246,0.3)";
+                                                el.style.zIndex = "10";
+                                                el.style.borderColor = "rgba(99,102,241,0.6)";
+                                            }}
+                                            onMouseLeave={e => {
+                                                const el = e.currentTarget as HTMLDivElement;
+                                                el.style.transform = "scale(1) translateY(0)";
+                                                el.style.boxShadow = "0 0 0 rgba(99,102,241,0)";
+                                                el.style.zIndex = "1";
+                                                el.style.borderColor = completion?.status === "approved" ? "rgba(52,211,153,0.4)" : completion?.status === "pending" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.08)";
+                                            }}
                                         >
                                             <div style={{ width: "100%", height: 146, background: "rgba(99,102,241,0.15)", position: "relative", overflow: "hidden" }}>
                                                 {thumb ? <img src={thumb} alt={content.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>▶️</div>}
@@ -173,9 +185,21 @@ export default function LearnPage() {
                                     const badge = getStatusBadge(completion);
                                     return (
                                         <div key={content.id} onClick={() => { setSelected(content); setReview(completion?.review || ""); }}
-                                            style={{ flexShrink: 0, width: 220, cursor: "pointer", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.04)", border: `1px solid ${completion?.status === "approved" ? "rgba(52,211,153,0.4)" : completion?.status === "pending" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.08)"}`, transition: "transform 0.2s" }}
-                                            onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.transform = "scale(1.03)"}
-                                            onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"}
+                                            style={{ flexShrink: 0, width: 220, cursor: "pointer", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.04)", border: `1px solid ${completion?.status === "approved" ? "rgba(52,211,153,0.4)" : completion?.status === "pending" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.08)"}`, transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", position: "relative", boxShadow: "0 0 0 rgba(99,102,241,0)" }}
+                                            onMouseEnter={e => {
+                                                const el = e.currentTarget as HTMLDivElement;
+                                                el.style.transform = "scale(1.08) translateY(-4px)";
+                                                el.style.boxShadow = "0 20px 40px rgba(99,102,241,0.4), 0 0 30px rgba(139,92,246,0.3)";
+                                                el.style.zIndex = "10";
+                                                el.style.borderColor = "rgba(99,102,241,0.6)";
+                                            }}
+                                            onMouseLeave={e => {
+                                                const el = e.currentTarget as HTMLDivElement;
+                                                el.style.transform = "scale(1) translateY(0)";
+                                                el.style.boxShadow = "0 0 0 rgba(99,102,241,0)";
+                                                el.style.zIndex = "1";
+                                                el.style.borderColor = completion?.status === "approved" ? "rgba(52,211,153,0.4)" : completion?.status === "pending" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.08)";
+                                            }}
                                         >
                                             <div style={{ width: "100%", height: 120, background: "linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.3))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, position: "relative" }}>
                                                 📄
