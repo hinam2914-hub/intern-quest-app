@@ -375,6 +375,7 @@ export default function AdminPage() {
     // ===== 集計用 =====
     const [showResultsFor, setShowResultsFor] = useState<string | null>(null);
     const [surveyResponses, setSurveyResponses] = useState<{ id: string; survey_id: string; user_id: string; answers: any[]; submitted_at: string; userName?: string }[]>([]);
+    const [resultsTab, setResultsTab] = useState<"summary" | "individual">("summary");
     const [questionSaving, setQuestionSaving] = useState(false);
     const [questionMessage, setQuestionMessage] = useState("");
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
@@ -2866,6 +2867,15 @@ export default function AdminPage() {
 
                                                         return (
                                                             <div style={{ marginTop: 16, padding: 20, borderRadius: 10, background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.2)" }}>
+                                                                {/* タブ切替 */}
+                                                                <div style={{ display: "flex", gap: 6, marginBottom: 16, padding: 4, borderRadius: 10, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", width: "fit-content" }}>
+                                                                    <button onClick={() => setResultsTab("summary")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: resultsTab === "summary" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: resultsTab === "summary" ? "#fff" : "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                                                                        📊 集計サマリー
+                                                                    </button>
+                                                                    <button onClick={() => setResultsTab("individual")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: resultsTab === "individual" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: resultsTab === "individual" ? "#fff" : "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                                                                        👤 個別回答
+                                                                    </button>
+                                                                </div>
                                                                 {/* サマリー */}
                                                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
                                                                     <div style={{ padding: 14, borderRadius: 10, background: "rgba(0,0,0,0.2)", textAlign: "center" }}>
@@ -2884,6 +2894,69 @@ export default function AdminPage() {
 
                                                                 {responses.length === 0 ? (
                                                                     <div style={{ padding: 30, textAlign: "center", color: "#6b7280", fontSize: 13 }}>まだ回答がありません</div>
+                                                                ) : resultsTab === "individual" ? (
+                                                                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                                                                            <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700 }}>👥 個別回答 ({responses.length}件)</div>
+                                                                            <button onClick={() => {
+                                                                                const headers = ["回答者", "回答日時", ...questionsForSurvey.filter(q => q.question_type !== "section").flatMap(q => q.has_followup_text ? [q.question_text, `${q.question_text}（補足）`] : [q.question_text])];
+                                                                                const rows = responses.map(r => {
+                                                                                    const row = [r.userName || "", new Date(r.submitted_at).toLocaleString("ja-JP")];
+                                                                                    questionsForSurvey.filter(q => q.question_type !== "section").forEach(q => {
+                                                                                        const ans = r.answers?.find((a: any) => a.question_id === q.id);
+                                                                                        const val = Array.isArray(ans?.value) ? ans.value.join(" / ") : (ans?.value ?? "");
+                                                                                        row.push(String(val));
+                                                                                        if (q.has_followup_text) row.push(ans?.followup || "");
+                                                                                    });
+                                                                                    return row;
+                                                                                });
+                                                                                const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+                                                                                const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+                                                                                const url = URL.createObjectURL(blob);
+                                                                                const a = document.createElement("a");
+                                                                                a.href = url;
+                                                                                a.download = `${s.title}_${new Date().toISOString().slice(0, 10)}.csv`;
+                                                                                a.click();
+                                                                                URL.revokeObjectURL(url);
+                                                                            }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                                                                                📥 CSV
+                                                                            </button>
+                                                                        </div>
+                                                                        {responses.map((r, ri) => (
+                                                                            <div key={r.id} style={{ padding: 16, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                                                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                                                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>{(r.userName || "?").charAt(0)}</div>
+                                                                                        <div>
+                                                                                            <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{r.userName}</div>
+                                                                                            <div style={{ fontSize: 10, color: "#6b7280" }}>{new Date(r.submitted_at).toLocaleString("ja-JP")}</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700 }}>#{ri + 1}</div>
+                                                                                </div>
+                                                                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                                                                    {questionsForSurvey.filter(q => q.question_type !== "section").map((q, qi) => {
+                                                                                        const ans = r.answers?.find((a: any) => a.question_id === q.id);
+                                                                                        const val = ans?.value;
+                                                                                        return (
+                                                                                            <div key={q.id} style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(0,0,0,0.2)" }}>
+                                                                                                <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, marginBottom: 4 }}>Q{qi + 1}. {q.question_text}</div>
+                                                                                                <div style={{ fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap" }}>
+                                                                                                    {val === undefined || val === null || val === "" ? <span style={{ color: "#6b7280" }}>未回答</span> : Array.isArray(val) ? val.join(" / ") : String(val)}
+                                                                                                </div>
+                                                                                                {ans?.followup && (
+                                                                                                    <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed rgba(168,85,247,0.2)" }}>
+                                                                                                        <div style={{ fontSize: 10, color: "#a855f7", fontWeight: 700 }}>💬 補足</div>
+                                                                                                        <div style={{ fontSize: 12, color: "#d1d5db", whiteSpace: "pre-wrap" }}>{ans.followup}</div>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
                                                                 ) : (
                                                                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                                                                         {questionsForSurvey.map((q, qi) => {
