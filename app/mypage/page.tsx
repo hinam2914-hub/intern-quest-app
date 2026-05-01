@@ -415,6 +415,7 @@ export default function MyPage() {
 
     // タグ state
     const [userTags, setUserTags] = useState<UserTag[]>([]);
+    const [pendingSurveys, setPendingSurveys] = useState<{ id: string; title: string; reward_points: number; question_count: number }[]>([]);
     const [newTag, setNewTag] = useState("");
     const [tagSaving, setTagSaving] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
@@ -617,7 +618,34 @@ export default function MyPage() {
             });
             setMyKpis(kpis);
         }
-
+        // 未回答アンケート取得
+        const { data: surveyRows } = await supabase
+            .from("surveys")
+            .select("*")
+            .eq("is_active", true);
+        const { data: myResponses } = await supabase
+            .from("survey_responses")
+            .select("survey_id")
+            .eq("user_id", user.id);
+        const { data: allQuestions } = await supabase
+            .from("survey_questions")
+            .select("survey_id");
+        const respondedIds = new Set((myResponses || []).map((r: any) => r.survey_id));
+        const nowDate = new Date();
+        const pending = (surveyRows || [])
+            .filter((s: any) => !respondedIds.has(s.id))
+            .filter((s: any) => {
+                if (s.starts_at && new Date(s.starts_at) > nowDate) return false;
+                if (s.ends_at && new Date(s.ends_at) < nowDate) return false;
+                return true;
+            })
+            .map((s: any) => ({
+                id: s.id,
+                title: s.title,
+                reward_points: s.reward_points,
+                question_count: (allQuestions || []).filter((q: any) => q.survey_id === s.id).length,
+            }));
+        setPendingSurveys(pending);
         // タグ取得
         const { data: tagRows } = await supabase.from("user_tags").select("*").eq("user_id", user.id).order("created_at");
         setUserTags((tagRows || []) as UserTag[]);
@@ -684,6 +712,75 @@ export default function MyPage() {
 
             {/* ===== フローティング +Xpt テキスト ===== */}
             <AnimatePresence>
+                {/* ===== 未回答アンケートバナー ===== */}
+                {pendingSurveys.length > 0 && (
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto 24px" }}>
+                        <div
+                            onClick={() => router.push(pendingSurveys.length === 1 ? `/surveys/${pendingSurveys[0].id}` : "/surveys")}
+                            style={{
+                                cursor: "pointer",
+                                padding: "20px 24px",
+                                borderRadius: 16,
+                                background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15))",
+                                border: "2px solid rgba(168,85,247,0.5)",
+                                position: "relative",
+                                overflow: "hidden",
+                                transition: "all 0.2s ease",
+                                boxShadow: "0 0 30px rgba(168,85,247,0.2)",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = "translateY(-2px)";
+                                e.currentTarget.style.boxShadow = "0 4px 40px rgba(168,85,247,0.4)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = "translateY(0)";
+                                e.currentTarget.style.boxShadow = "0 0 30px rgba(168,85,247,0.2)";
+                            }}
+                        >
+                            {/* キラキラ装飾 */}
+                            <div style={{ position: "absolute", top: -20, right: -20, fontSize: 80, opacity: 0.1 }}>📋</div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, position: "relative", zIndex: 1 }}>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(251,191,36,0.2)", color: "#fbbf24", fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>📢 NEW</span>
+                                        <span style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb" }}>
+                                            未回答のアンケートが{pendingSurveys.length}件あります
+                                        </span>
+                                    </div>
+                                    {pendingSurveys.length === 1 ? (
+                                        <div style={{ fontSize: 13, color: "#c7d2fe", marginBottom: 6 }}>
+                                            📋 {pendingSurveys[0].title}（{pendingSurveys[0].question_count}問）
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: 13, color: "#c7d2fe", marginBottom: 6 }}>
+                                            📋 タップして一覧を確認
+                                        </div>
+                                    )}
+                                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(168,85,247,0.25)", color: "#c084fc", fontSize: 12, fontWeight: 800 }}>
+                                            🎁 +{pendingSurveys.reduce((sum, s) => sum + s.reward_points, 0)}pt 獲得可能
+                                        </span>
+                                        <span style={{ fontSize: 11, color: "#9ca3af" }}>所要時間: 約3〜5分</span>
+                                    </div>
+                                </div>
+                                <div style={{
+                                    flexShrink: 0,
+                                    padding: "12px 20px",
+                                    borderRadius: 10,
+                                    background: "linear-gradient(135deg, #6366f1, #a855f7)",
+                                    color: "#fff",
+                                    fontWeight: 800,
+                                    fontSize: 14,
+                                    whiteSpace: "nowrap",
+                                    boxShadow: "0 4px 12px rgba(99,102,241,0.4)",
+                                }}>
+                                    回答する →
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {floatingPoints.map(fp => (
                     <motion.div
                         key={fp.id}
