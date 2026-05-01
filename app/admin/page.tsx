@@ -356,6 +356,26 @@ export default function AdminPage() {
     const [editSurveyStartsAt, setEditSurveyStartsAt] = useState("");
     const [editSurveyEndsAt, setEditSurveyEndsAt] = useState("");
     const [managingQuestionsFor, setManagingQuestionsFor] = useState<string | null>(null);
+    // ===== 質問編集用 =====
+    const [showNewQuestionForm, setShowNewQuestionForm] = useState(false);
+    const [questionText, setQuestionText] = useState("");
+    const [questionType, setQuestionType] = useState<"single_choice" | "multi_choice" | "scale" | "text">("single_choice");
+    const [questionOptions, setQuestionOptions] = useState<string[]>(["", ""]);
+    const [questionScaleMin, setQuestionScaleMin] = useState(1);
+    const [questionScaleMax, setQuestionScaleMax] = useState(5);
+    const [questionScaleMinLabel, setQuestionScaleMinLabel] = useState("全くそう思わない");
+    const [questionScaleMaxLabel, setQuestionScaleMaxLabel] = useState("非常にそう思う");
+    const [questionRequired, setQuestionRequired] = useState(true);
+    const [questionSaving, setQuestionSaving] = useState(false);
+    const [questionMessage, setQuestionMessage] = useState("");
+    const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+    const [editQuestionText, setEditQuestionText] = useState("");
+    const [editQuestionOptions, setEditQuestionOptions] = useState<string[]>([]);
+    const [editQuestionScaleMin, setEditQuestionScaleMin] = useState(1);
+    const [editQuestionScaleMax, setEditQuestionScaleMax] = useState(5);
+    const [editQuestionScaleMinLabel, setEditQuestionScaleMinLabel] = useState("");
+    const [editQuestionScaleMaxLabel, setEditQuestionScaleMaxLabel] = useState("");
+    const [editQuestionRequired, setEditQuestionRequired] = useState(true);
 
     // ✅ Fix 1: useEffect は load 関数を内部定義して即呼び出す正しい構造
     useEffect(() => {
@@ -2537,11 +2557,223 @@ export default function AdminPage() {
                                                         }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.1)", color: "#f87171", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>🗑️ 削除</button>
                                                     </div>
 
-                                                    {/* 質問編集パネル（パート2でここに実装予定） */}
+                                                    {/* 質問編集パネル */}
                                                     {managingQuestionsFor === s.id && (
-                                                        <div style={{ marginTop: 16, padding: 16, borderRadius: 10, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.2)" }}>
-                                                            <div style={{ fontSize: 13, fontWeight: 700, color: "#818cf8", marginBottom: 8 }}>📝 質問編集（パート2で実装予定）</div>
-                                                            <div style={{ fontSize: 12, color: "#9ca3af" }}>このアンケートの質問を追加・編集・削除できる画面がここに入ります。</div>
+                                                        <div style={{ marginTop: 16, padding: 20, borderRadius: 10, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                                                <div style={{ fontSize: 13, fontWeight: 700, color: "#818cf8" }}>📝 質問一覧（{surveyQuestions.filter(q => q.survey_id === s.id).length}問）</div>
+                                                                <button onClick={() => setShowNewQuestionForm(!showNewQuestionForm)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: showNewQuestionForm ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: showNewQuestionForm ? "#9ca3af" : "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                                                                    {showNewQuestionForm ? "✕ 閉じる" : "➕ 質問追加"}
+                                                                </button>
+                                                            </div>
+
+                                                            {/* 新規質問追加フォーム */}
+                                                            {showNewQuestionForm && (
+                                                                <div style={{ marginBottom: 16, padding: 16, borderRadius: 10, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>NEW QUESTION</div>
+
+                                                                    {/* 質問タイプ選択 */}
+                                                                    <div style={{ marginBottom: 12 }}>
+                                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>質問タイプ</div>
+                                                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6 }}>
+                                                                            {[
+                                                                                { key: "single_choice", label: "📻 単一選択", desc: "1つ選ぶ" },
+                                                                                { key: "multi_choice", label: "☑️ 複数選択", desc: "複数選ぶ" },
+                                                                                { key: "scale", label: "📊 尺度評価", desc: "1〜5など" },
+                                                                                { key: "text", label: "📝 自由記述", desc: "テキスト" },
+                                                                            ].map(t => (
+                                                                                <button key={t.key} onClick={() => setQuestionType(t.key as any)} style={{ padding: "10px 8px", borderRadius: 8, border: questionType === t.key ? "1px solid rgba(99,102,241,0.6)" : "1px solid rgba(255,255,255,0.08)", background: questionType === t.key ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.02)", color: questionType === t.key ? "#818cf8" : "#9ca3af", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+                                                                                    <div>{t.label}</div>
+                                                                                    <div style={{ fontSize: 9, marginTop: 2, opacity: 0.7 }}>{t.desc}</div>
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* 質問文 */}
+                                                                    <div style={{ marginBottom: 12 }}>
+                                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>質問文</div>
+                                                                        <input value={questionText} onChange={(e) => setQuestionText(e.target.value)} placeholder="例：このアプリの満足度を教えてください" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                                                    </div>
+
+                                                                    {/* タイプ別の追加設定 */}
+                                                                    {(questionType === "single_choice" || questionType === "multi_choice") && (
+                                                                        <div style={{ marginBottom: 12 }}>
+                                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>選択肢</div>
+                                                                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                                                                {questionOptions.map((opt, i) => (
+                                                                                    <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                                                                        <span style={{ fontSize: 11, color: "#6b7280", width: 24 }}>{i + 1}.</span>
+                                                                                        <input value={opt} onChange={(e) => setQuestionOptions(prev => prev.map((o, idx) => idx === i ? e.target.value : o))} placeholder={`選択肢 ${i + 1}`} style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, outline: "none" }} />
+                                                                                        {questionOptions.length > 2 && (
+                                                                                            <button onClick={() => setQuestionOptions(prev => prev.filter((_, idx) => idx !== i))} style={{ padding: "6px 10px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>×</button>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                            <button onClick={() => setQuestionOptions(prev => [...prev, ""])} style={{ marginTop: 6, padding: "6px 12px", borderRadius: 6, border: "1px dashed rgba(99,102,241,0.4)", background: "transparent", color: "#818cf8", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>+ 選択肢を追加</button>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {questionType === "scale" && (
+                                                                        <div style={{ marginBottom: 12 }}>
+                                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>尺度設定</div>
+                                                                            <div style={{ display: "grid", gridTemplateColumns: "80px 1fr 80px 1fr", gap: 8, alignItems: "center" }}>
+                                                                                <input type="number" value={questionScaleMin} onChange={(e) => setQuestionScaleMin(Number(e.target.value))} placeholder="最小" style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, outline: "none", textAlign: "center" }} />
+                                                                                <input value={questionScaleMinLabel} onChange={(e) => setQuestionScaleMinLabel(e.target.value)} placeholder="最小ラベル" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, outline: "none" }} />
+                                                                                <input type="number" value={questionScaleMax} onChange={(e) => setQuestionScaleMax(Number(e.target.value))} placeholder="最大" style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, outline: "none", textAlign: "center" }} />
+                                                                                <input value={questionScaleMaxLabel} onChange={(e) => setQuestionScaleMaxLabel(e.target.value)} placeholder="最大ラベル" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, outline: "none" }} />
+                                                                            </div>
+                                                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 6 }}>例: 1（{questionScaleMinLabel}） 〜 {questionScaleMax}（{questionScaleMaxLabel}）</div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {questionType === "text" && (
+                                                                        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                                                            <div style={{ fontSize: 11, color: "#6b7280" }}>📝 自由記述形式：ユーザーがテキストで回答できる質問になります</div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* 必須/任意 */}
+                                                                    <div style={{ marginBottom: 12 }}>
+                                                                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>
+                                                                            <input type="checkbox" checked={questionRequired} onChange={(e) => setQuestionRequired(e.target.checked)} style={{ cursor: "pointer" }} />
+                                                                            必須回答にする
+                                                                        </label>
+                                                                    </div>
+
+                                                                    {/* 保存ボタン */}
+                                                                    <button onClick={async () => {
+                                                                        if (!questionText.trim()) { setQuestionMessage("質問文を入力してください"); return; }
+                                                                        if ((questionType === "single_choice" || questionType === "multi_choice") && questionOptions.filter(o => o.trim()).length < 2) { setQuestionMessage("選択肢を2つ以上入力してください"); return; }
+                                                                        setQuestionSaving(true);
+                                                                        const currentMax = Math.max(0, ...surveyQuestions.filter(q => q.survey_id === s.id).map(q => q.display_order));
+                                                                        await supabase.from("survey_questions").insert({
+                                                                            survey_id: s.id,
+                                                                            question_text: questionText.trim(),
+                                                                            question_type: questionType,
+                                                                            options: (questionType === "single_choice" || questionType === "multi_choice") ? questionOptions.filter(o => o.trim()) : null,
+                                                                            scale_min: questionType === "scale" ? questionScaleMin : null,
+                                                                            scale_max: questionType === "scale" ? questionScaleMax : null,
+                                                                            scale_min_label: questionType === "scale" ? questionScaleMinLabel : null,
+                                                                            scale_max_label: questionType === "scale" ? questionScaleMaxLabel : null,
+                                                                            is_required: questionRequired,
+                                                                            display_order: currentMax + 1,
+                                                                        });
+                                                                        const { data: qRows } = await supabase.from("survey_questions").select("*").order("display_order");
+                                                                        setSurveyQuestions((qRows || []) as SurveyQuestion[]);
+                                                                        setSurveys(prev => prev.map(x => x.id === s.id ? { ...x, question_count: (x.question_count || 0) + 1 } : x));
+                                                                        setQuestionText(""); setQuestionOptions(["", ""]); setQuestionType("single_choice"); setQuestionRequired(true);
+                                                                        setQuestionMessage("✅ 質問を追加しました");
+                                                                        setShowNewQuestionForm(false);
+                                                                        setQuestionSaving(false);
+                                                                    }} disabled={questionSaving} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+                                                                        {questionSaving ? "追加中..." : "📝 質問を追加"}
+                                                                    </button>
+                                                                    {questionMessage && <div style={{ marginTop: 8, fontSize: 12, color: "#34d399", fontWeight: 600 }}>{questionMessage}</div>}
+                                                                </div>
+                                                            )}
+
+                                                            {/* 質問一覧 */}
+                                                            {surveyQuestions.filter(q => q.survey_id === s.id).length === 0 ? (
+                                                                <div style={{ padding: 20, textAlign: "center", color: "#6b7280", fontSize: 13 }}>まだ質問がありません。「➕ 質問追加」から作成してください。</div>
+                                                            ) : (
+                                                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                                                    {surveyQuestions.filter(q => q.survey_id === s.id).map((q, qi) => (
+                                                                        <div key={q.id} style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                                                            {editingQuestionId === q.id ? (
+                                                                                /* ===== 質問編集モード ===== */
+                                                                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>📝 編集中</div>
+                                                                                    <input value={editQuestionText} onChange={(e) => setEditQuestionText(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 12, outline: "none" }} />
+                                                                                    {(q.question_type === "single_choice" || q.question_type === "multi_choice") && (
+                                                                                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                                                                            {editQuestionOptions.map((opt, i) => (
+                                                                                                <div key={i} style={{ display: "flex", gap: 4 }}>
+                                                                                                    <input value={opt} onChange={(e) => setEditQuestionOptions(prev => prev.map((o, idx) => idx === i ? e.target.value : o))} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 11, outline: "none" }} />
+                                                                                                    {editQuestionOptions.length > 2 && (
+                                                                                                        <button onClick={() => setEditQuestionOptions(prev => prev.filter((_, idx) => idx !== i))} style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 10, cursor: "pointer", fontWeight: 700 }}>×</button>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            ))}
+                                                                                            <button onClick={() => setEditQuestionOptions(prev => [...prev, ""])} style={{ padding: "4px 8px", borderRadius: 6, border: "1px dashed rgba(99,102,241,0.4)", background: "transparent", color: "#818cf8", fontSize: 10, cursor: "pointer", fontWeight: 700 }}>+ 選択肢追加</button>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {q.question_type === "scale" && (
+                                                                                        <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 60px 1fr", gap: 6 }}>
+                                                                                            <input type="number" value={editQuestionScaleMin} onChange={(e) => setEditQuestionScaleMin(Number(e.target.value))} style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 11, outline: "none", textAlign: "center" }} />
+                                                                                            <input value={editQuestionScaleMinLabel} onChange={(e) => setEditQuestionScaleMinLabel(e.target.value)} placeholder="最小ラベル" style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 11, outline: "none" }} />
+                                                                                            <input type="number" value={editQuestionScaleMax} onChange={(e) => setEditQuestionScaleMax(Number(e.target.value))} style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 11, outline: "none", textAlign: "center" }} />
+                                                                                            <input value={editQuestionScaleMaxLabel} onChange={(e) => setEditQuestionScaleMaxLabel(e.target.value)} placeholder="最大ラベル" style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 11, outline: "none" }} />
+                                                                                        </div>
+                                                                                    )}
+                                                                                    <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 11, color: "#9ca3af", fontWeight: 600 }}>
+                                                                                        <input type="checkbox" checked={editQuestionRequired} onChange={(e) => setEditQuestionRequired(e.target.checked)} />
+                                                                                        必須回答
+                                                                                    </label>
+                                                                                    <div style={{ display: "flex", gap: 6 }}>
+                                                                                        <button onClick={async () => {
+                                                                                            await supabase.from("survey_questions").update({
+                                                                                                question_text: editQuestionText.trim(),
+                                                                                                options: (q.question_type === "single_choice" || q.question_type === "multi_choice") ? editQuestionOptions.filter(o => o.trim()) : null,
+                                                                                                scale_min: q.question_type === "scale" ? editQuestionScaleMin : null,
+                                                                                                scale_max: q.question_type === "scale" ? editQuestionScaleMax : null,
+                                                                                                scale_min_label: q.question_type === "scale" ? editQuestionScaleMinLabel : null,
+                                                                                                scale_max_label: q.question_type === "scale" ? editQuestionScaleMaxLabel : null,
+                                                                                                is_required: editQuestionRequired,
+                                                                                            }).eq("id", q.id);
+                                                                                            const { data: qRows } = await supabase.from("survey_questions").select("*").order("display_order");
+                                                                                            setSurveyQuestions((qRows || []) as SurveyQuestion[]);
+                                                                                            setEditingQuestionId(null);
+                                                                                        }} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                                                                        <button onClick={() => setEditingQuestionId(null)} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                /* ===== 通常モード ===== */
+                                                                                <div>
+                                                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                                                                                        <div style={{ flex: 1 }}>
+                                                                                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                                                                                                <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 700 }}>Q{qi + 1}</span>
+                                                                                                <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 10, fontWeight: 700 }}>
+                                                                                                    {q.question_type === "single_choice" ? "📻 単一選択" : q.question_type === "multi_choice" ? "☑️ 複数選択" : q.question_type === "scale" ? "📊 尺度" : "📝 自由記述"}
+                                                                                                </span>
+                                                                                                {q.is_required && <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 10, fontWeight: 700 }}>必須</span>}
+                                                                                            </div>
+                                                                                            <div style={{ fontSize: 13, fontWeight: 600, color: "#f9fafb", marginBottom: 4 }}>{q.question_text}</div>
+                                                                                            {(q.question_type === "single_choice" || q.question_type === "multi_choice") && q.options && (
+                                                                                                <div style={{ fontSize: 11, color: "#6b7280" }}>選択肢: {q.options.join(" / ")}</div>
+                                                                                            )}
+                                                                                            {q.question_type === "scale" && (
+                                                                                                <div style={{ fontSize: 11, color: "#6b7280" }}>{q.scale_min}（{q.scale_min_label}）〜 {q.scale_max}（{q.scale_max_label}）</div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
+                                                                                            <button onClick={() => {
+                                                                                                setEditingQuestionId(q.id);
+                                                                                                setEditQuestionText(q.question_text);
+                                                                                                setEditQuestionOptions(q.options || ["", ""]);
+                                                                                                setEditQuestionScaleMin(q.scale_min || 1);
+                                                                                                setEditQuestionScaleMax(q.scale_max || 5);
+                                                                                                setEditQuestionScaleMinLabel(q.scale_min_label || "");
+                                                                                                setEditQuestionScaleMaxLabel(q.scale_max_label || "");
+                                                                                                setEditQuestionRequired(q.is_required);
+                                                                                            }} style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 10, cursor: "pointer", fontWeight: 700 }}>✏️</button>
+                                                                                            <button onClick={async () => {
+                                                                                                if (!confirm("この質問を削除しますか？")) return;
+                                                                                                await supabase.from("survey_questions").delete().eq("id", q.id);
+                                                                                                setSurveyQuestions(prev => prev.filter(x => x.id !== q.id));
+                                                                                                setSurveys(prev => prev.map(x => x.id === s.id ? { ...x, question_count: Math.max(0, (x.question_count || 0) - 1) } : x));
+                                                                                            }} style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 10, cursor: "pointer", fontWeight: 700 }}>🗑️</button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
