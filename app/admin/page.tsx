@@ -32,6 +32,8 @@ type ShopItem = { id: string; title: string; description: string; cost: number; 
 type ChallengeSubmission = { id: string; user_id: string; challenge_id: string; comment: string | null; image_url: string | null; status: string; created_at: string; userName?: string; challengeTitle?: string; challengeIcon?: string; challengeCategory?: string; challengePoints?: number; };
 type WikiTerm = { id: string; term: string; description: string; category: string | null; created_at: string; };
 type CareerItem = { id: string; title: string; description: string | null; category: string; url: string | null; created_at: string; };
+type Survey = { id: string; title: string; description: string | null; reward_points: number; is_active: boolean; starts_at: string | null; ends_at: string | null; created_at: string; question_count?: number; response_count?: number; };
+type SurveyQuestion = { id: string; survey_id: string; question_text: string; question_type: "single_choice" | "multi_choice" | "scale" | "text"; options: string[] | null; scale_min: number | null; scale_max: number | null; scale_min_label: string | null; scale_max_label: string | null; is_required: boolean; display_order: number; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -192,7 +194,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -336,6 +338,24 @@ export default function AdminPage() {
     const [managerTestFilter, setManagerTestFilter] = useState<"pending" | "all">("pending");
     const [esList, setEsList] = useState<any[]>([]);
     const [selectedEsUserId, setSelectedEsUserId] = useState<string | null>(null);
+    // ===== アンケート機能 =====
+    const [surveys, setSurveys] = useState<Survey[]>([]);
+    const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestion[]>([]);
+    const [editingSurveyId, setEditingSurveyId] = useState<string | null>(null);
+    const [showNewSurveyForm, setShowNewSurveyForm] = useState(false);
+    const [surveyTitle, setSurveyTitle] = useState("");
+    const [surveyDesc, setSurveyDesc] = useState("");
+    const [surveyRewardPt, setSurveyRewardPt] = useState(10);
+    const [surveyStartsAt, setSurveyStartsAt] = useState("");
+    const [surveyEndsAt, setSurveyEndsAt] = useState("");
+    const [surveySaving, setSurveySaving] = useState(false);
+    const [surveyMessage, setSurveyMessage] = useState("");
+    const [editSurveyTitle, setEditSurveyTitle] = useState("");
+    const [editSurveyDesc, setEditSurveyDesc] = useState("");
+    const [editSurveyRewardPt, setEditSurveyRewardPt] = useState(10);
+    const [editSurveyStartsAt, setEditSurveyStartsAt] = useState("");
+    const [editSurveyEndsAt, setEditSurveyEndsAt] = useState("");
+    const [managingQuestionsFor, setManagingQuestionsFor] = useState<string | null>(null);
 
     // ✅ Fix 1: useEffect は load 関数を内部定義して即呼び出す正しい構造
     useEffect(() => {
@@ -562,6 +582,18 @@ export default function AdminPage() {
                 }
                 setManagerTestDetail(detailMap);
             }
+            // ===== アンケート読み込み =====
+            const { data: surveyRows } = await supabase.from("surveys").select("*").order("created_at", { ascending: false });
+            const { data: surveyQuestionRows } = await supabase.from("survey_questions").select("*").order("display_order");
+            const { data: surveyResponseRows } = await supabase.from("survey_responses").select("survey_id");
+
+            const enrichedSurveys = (surveyRows || []).map((s: any) => ({
+                ...s,
+                question_count: (surveyQuestionRows || []).filter((q: any) => q.survey_id === s.id).length,
+                response_count: (surveyResponseRows || []).filter((r: any) => r.survey_id === s.id).length,
+            }));
+            setSurveys(enrichedSurveys as Survey[]);
+            setSurveyQuestions((surveyQuestionRows || []) as SurveyQuestion[]);
             // 総合ES一覧
             const { data: esRows } = await supabase.from("user_es").select("*").order("last_updated_at", { ascending: false });
             if (esRows && esRows.length > 0) {
@@ -873,6 +905,7 @@ export default function AdminPage() {
                         { key: "dashboard", label: "ダッシュボード" },
                         { key: "users", label: "ユーザー一覧" },
                         { key: "announce", label: "お知らせ" },
+                        { key: "survey", label: "アンケート" },
                         { key: "kpi", label: "KPI設定" },
                         { key: "contents", label: "コンテンツ" },
                         { key: "teams", label: "チーム" },
@@ -2339,6 +2372,178 @@ export default function AdminPage() {
                                                             {r.is_active ? "非表示" : "表示する"}
                                                         </button>
                                                     </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                {activeTab === "survey" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        {/* ヘッダー */}
+                        <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: "#f9fafb", marginBottom: 4 }}>📋 アンケート管理</div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af" }}>メンバー向けのアンケートを作成・管理できます</div>
+                                </div>
+                                <button onClick={() => setShowNewSurveyForm(!showNewSurveyForm)} style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: showNewSurveyForm ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: showNewSurveyForm ? "#9ca3af" : "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+                                    {showNewSurveyForm ? "✕ 閉じる" : "➕ 新規作成"}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 新規作成フォーム */}
+                        {showNewSurveyForm && (
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>NEW SURVEY</div>
+                                <div style={{ marginBottom: 12 }}>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>タイトル</div>
+                                    <input value={surveyTitle} onChange={(e) => setSurveyTitle(e.target.value)} placeholder="例：5月プレリリース改善アンケート" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div style={{ marginBottom: 12 }}>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>説明</div>
+                                    <textarea value={surveyDesc} onChange={(e) => setSurveyDesc(e.target.value)} placeholder="アンケートの目的や趣旨を記載..." style={{ width: "100%", height: 80, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+                                    <div>
+                                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>報酬ポイント</div>
+                                        <input type="number" value={surveyRewardPt} onChange={(e) => setSurveyRewardPt(Number(e.target.value))} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>開始日</div>
+                                        <input type="date" value={surveyStartsAt} onChange={(e) => setSurveyStartsAt(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>終了日</div>
+                                        <input type="date" value={surveyEndsAt} onChange={(e) => setSurveyEndsAt(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                </div>
+                                <button onClick={async () => {
+                                    if (!surveyTitle.trim()) { setSurveyMessage("タイトルを入力してください"); return; }
+                                    setSurveySaving(true);
+                                    const { data: { user } } = await supabase.auth.getUser();
+                                    await supabase.from("surveys").insert({
+                                        title: surveyTitle.trim(),
+                                        description: surveyDesc.trim() || null,
+                                        reward_points: surveyRewardPt,
+                                        is_active: true,
+                                        starts_at: surveyStartsAt || null,
+                                        ends_at: surveyEndsAt || null,
+                                        created_by: user?.id,
+                                    });
+                                    const { data: rows } = await supabase.from("surveys").select("*").order("created_at", { ascending: false });
+                                    const { data: qRows } = await supabase.from("survey_questions").select("*");
+                                    const { data: rRows } = await supabase.from("survey_responses").select("survey_id");
+                                    setSurveys((rows || []).map((s: any) => ({
+                                        ...s,
+                                        question_count: (qRows || []).filter((q: any) => q.survey_id === s.id).length,
+                                        response_count: (rRows || []).filter((r: any) => r.survey_id === s.id).length,
+                                    })) as Survey[]);
+                                    setSurveyTitle(""); setSurveyDesc(""); setSurveyRewardPt(10); setSurveyStartsAt(""); setSurveyEndsAt("");
+                                    setSurveyMessage("✅ アンケートを作成しました！次は質問を追加してください。");
+                                    setShowNewSurveyForm(false);
+                                    setSurveySaving(false);
+                                }} disabled={surveySaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                                    {surveySaving ? "作成中..." : "📋 作成する"}
+                                </button>
+                                {surveyMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399", fontWeight: 600 }}>{surveyMessage}</div>}
+                            </div>
+                        )}
+
+                        {/* アンケート一覧 */}
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>SURVEYS ({surveys.length}件)</div>
+                            {surveys.length === 0 ? (
+                                <div style={{ color: "#6b7280", fontSize: 14, padding: 20, textAlign: "center" }}>アンケートはまだありません</div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                    {surveys.map(s => (
+                                        <div key={s.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${s.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}` }}>
+                                            {editingSurveyId === s.id ? (
+                                                /* ===== 編集モード ===== */
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>📝 編集中</div>
+                                                    <input value={editSurveyTitle} onChange={(e) => setEditSurveyTitle(e.target.value)} placeholder="タイトル" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                                    <textarea value={editSurveyDesc} onChange={(e) => setEditSurveyDesc(e.target.value)} placeholder="説明" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", height: 60, resize: "vertical", fontFamily: "inherit" }} />
+                                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                                                        <input type="number" value={editSurveyRewardPt} onChange={(e) => setEditSurveyRewardPt(Number(e.target.value))} placeholder="ポイント" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                                        <input type="date" value={editSurveyStartsAt} onChange={(e) => setEditSurveyStartsAt(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                                        <input type="date" value={editSurveyEndsAt} onChange={(e) => setEditSurveyEndsAt(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 8 }}>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("surveys").update({
+                                                                title: editSurveyTitle.trim(),
+                                                                description: editSurveyDesc.trim() || null,
+                                                                reward_points: editSurveyRewardPt,
+                                                                starts_at: editSurveyStartsAt || null,
+                                                                ends_at: editSurveyEndsAt || null,
+                                                            }).eq("id", s.id);
+                                                            setSurveys(prev => prev.map(x => x.id === s.id ? { ...x, title: editSurveyTitle.trim(), description: editSurveyDesc.trim() || null, reward_points: editSurveyRewardPt, starts_at: editSurveyStartsAt || null, ends_at: editSurveyEndsAt || null } : x));
+                                                            setEditingSurveyId(null);
+                                                        }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
+                                                        <button onClick={() => setEditingSurveyId(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                /* ===== 通常モード ===== */
+                                                <div>
+                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                                                                <span style={{ fontSize: 15, fontWeight: 700, color: s.is_active ? "#f9fafb" : "#6b7280" }}>📋 {s.title}</span>
+                                                                {s.is_active ? (
+                                                                    <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 11, fontWeight: 700 }}>公開中</span>
+                                                                ) : (
+                                                                    <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(107,114,128,0.15)", color: "#9ca3af", fontSize: 11, fontWeight: 700 }}>非公開</span>
+                                                                )}
+                                                                <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(251,191,36,0.15)", color: "#fbbf24", fontSize: 11, fontWeight: 700 }}>+{s.reward_points}pt</span>
+                                                            </div>
+                                                            {s.description && <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 6 }}>{s.description}</div>}
+                                                            <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#6b7280" }}>
+                                                                <span>📝 {s.question_count || 0}問</span>
+                                                                <span>👥 {s.response_count || 0}回答</span>
+                                                                {s.starts_at && <span>開始: {s.starts_at}</span>}
+                                                                {s.ends_at && <span>終了: {s.ends_at}</span>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                                        <button onClick={() => setManagingQuestionsFor(managingQuestionsFor === s.id ? null : s.id)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: managingQuestionsFor === s.id ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(99,102,241,0.15)", color: managingQuestionsFor === s.id ? "#fff" : "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
+                                                            {managingQuestionsFor === s.id ? "✕ 閉じる" : "📝 質問編集"}
+                                                        </button>
+                                                        <button onClick={() => {
+                                                            setEditingSurveyId(s.id);
+                                                            setEditSurveyTitle(s.title);
+                                                            setEditSurveyDesc(s.description || "");
+                                                            setEditSurveyRewardPt(s.reward_points);
+                                                            setEditSurveyStartsAt(s.starts_at ? s.starts_at.split("T")[0] : "");
+                                                            setEditSurveyEndsAt(s.ends_at ? s.ends_at.split("T")[0] : "");
+                                                        }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>✏️ 編集</button>
+                                                        <button onClick={async () => {
+                                                            await supabase.from("surveys").update({ is_active: !s.is_active }).eq("id", s.id);
+                                                            setSurveys(prev => prev.map(x => x.id === s.id ? { ...x, is_active: !x.is_active } : x));
+                                                        }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: s.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: s.is_active ? "#f87171" : "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
+                                                            {s.is_active ? "非公開にする" : "公開する"}
+                                                        </button>
+                                                        <button onClick={async () => {
+                                                            if (!confirm("このアンケートを削除しますか？質問と回答も全て削除されます。")) return;
+                                                            await supabase.from("surveys").delete().eq("id", s.id);
+                                                            setSurveys(prev => prev.filter(x => x.id !== s.id));
+                                                        }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.1)", color: "#f87171", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>🗑️ 削除</button>
+                                                    </div>
+
+                                                    {/* 質問編集パネル（パート2でここに実装予定） */}
+                                                    {managingQuestionsFor === s.id && (
+                                                        <div style={{ marginTop: 16, padding: 16, borderRadius: 10, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                                                            <div style={{ fontSize: 13, fontWeight: 700, color: "#818cf8", marginBottom: 8 }}>📝 質問編集（パート2で実装予定）</div>
+                                                            <div style={{ fontSize: 12, color: "#9ca3af" }}>このアンケートの質問を追加・編集・削除できる画面がここに入ります。</div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
