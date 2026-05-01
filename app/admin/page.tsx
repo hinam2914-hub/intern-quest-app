@@ -33,7 +33,7 @@ type ChallengeSubmission = { id: string; user_id: string; challenge_id: string; 
 type WikiTerm = { id: string; term: string; description: string; category: string | null; created_at: string; };
 type CareerItem = { id: string; title: string; description: string | null; category: string; url: string | null; created_at: string; };
 type Survey = { id: string; title: string; description: string | null; reward_points: number; is_active: boolean; starts_at: string | null; ends_at: string | null; created_at: string; question_count?: number; response_count?: number; };
-type SurveyQuestion = { id: string; survey_id: string; question_text: string; question_type: "single_choice" | "multi_choice" | "scale" | "text" | "rating" | "yes_no" | "nps" | "section"; options: string[] | null; scale_min: number | null; scale_max: number | null; scale_min_label: string | null; scale_max_label: string | null; is_required: boolean; display_order: number; };
+type SurveyQuestion = { id: string; survey_id: string; question_text: string; question_type: "single_choice" | "multi_choice" | "scale" | "text" | "rating" | "yes_no" | "nps" | "section"; options: string[] | null; scale_min: number | null; scale_max: number | null; scale_min_label: string | null; scale_max_label: string | null; is_required: boolean; display_order: number; has_followup_text: boolean; followup_text_label: string | null; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -368,6 +368,10 @@ export default function AdminPage() {
     const [questionRatingMax, setQuestionRatingMax] = useState(5);
     const [questionRequired, setQuestionRequired] = useState(true);
     const [editQuestionRatingMax, setEditQuestionRatingMax] = useState(5);
+    const [questionHasFollowup, setQuestionHasFollowup] = useState(false);
+    const [questionFollowupLabel, setQuestionFollowupLabel] = useState("その理由を教えてください");
+    const [editQuestionHasFollowup, setEditQuestionHasFollowup] = useState(false);
+    const [editQuestionFollowupLabel, setEditQuestionFollowupLabel] = useState("");
     const [questionSaving, setQuestionSaving] = useState(false);
     const [questionMessage, setQuestionMessage] = useState("");
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
@@ -2676,7 +2680,22 @@ export default function AdminPage() {
                                                                             必須回答にする
                                                                         </label>
                                                                     </div>
-
+                                                                    {/* 補足記述欄 */}
+                                                                    {questionType !== "section" && questionType !== "text" && (
+                                                                        <div style={{ marginBottom: 12, padding: 12, borderRadius: 8, background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.2)" }}>
+                                                                            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: "#a855f7", fontWeight: 700, marginBottom: questionHasFollowup ? 10 : 0 }}>
+                                                                                <input type="checkbox" checked={questionHasFollowup} onChange={(e) => setQuestionHasFollowup(e.target.checked)} style={{ cursor: "pointer" }} />
+                                                                                💬 補足記述欄を追加する
+                                                                            </label>
+                                                                            {questionHasFollowup && (
+                                                                                <div>
+                                                                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>記述欄の質問文</div>
+                                                                                    <input value={questionFollowupLabel} onChange={(e) => setQuestionFollowupLabel(e.target.value)} placeholder="例：その理由を教えてください" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid rgba(168,85,247,0.3)", background: "rgba(168,85,247,0.05)", color: "#f9fafb", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+                                                                                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>選択した回答の補足や理由を記述してもらえます（任意回答）</div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
                                                                     {/* 保存ボタン */}
                                                                     <button onClick={async () => {
                                                                         if (!questionText.trim()) { setQuestionMessage("質問文を入力してください"); return; }
@@ -2694,12 +2713,15 @@ export default function AdminPage() {
                                                                             scale_min_label: questionType === "scale" ? questionScaleMinLabel : null,
                                                                             scale_max_label: questionType === "scale" ? questionScaleMaxLabel : null,
                                                                             is_required: questionType === "section" ? false : questionRequired,
+                                                                            has_followup_text: questionHasFollowup,
+                                                                            followup_text_label: questionHasFollowup ? questionFollowupLabel.trim() : null,
                                                                             display_order: currentMax + 1,
                                                                         });
                                                                         const { data: qRows } = await supabase.from("survey_questions").select("*").order("display_order");
                                                                         setSurveyQuestions((qRows || []) as SurveyQuestion[]);
                                                                         setSurveys(prev => prev.map(x => x.id === s.id ? { ...x, question_count: (x.question_count || 0) + 1 } : x));
                                                                         setQuestionText(""); setQuestionOptions(["", ""]); setQuestionType("single_choice"); setQuestionRequired(true);
+                                                                        setQuestionHasFollowup(false); setQuestionFollowupLabel("その理由を教えてください");
                                                                         setQuestionMessage("✅ 質問を追加しました");
                                                                         setShowNewQuestionForm(false);
                                                                         setQuestionSaving(false);
@@ -2776,6 +2798,7 @@ export default function AdminPage() {
                                                                                                     {q.question_type === "single_choice" ? "📻 単一選択" : q.question_type === "multi_choice" ? "☑️ 複数選択" : q.question_type === "scale" ? "📊 尺度" : q.question_type === "rating" ? "⭐ 星評価" : q.question_type === "yes_no" ? "✅ はい/いいえ" : q.question_type === "nps" ? "🎯 NPS" : q.question_type === "section" ? "🏗️ セクション" : "📝 自由記述"}
                                                                                                 </span>
                                                                                                 {q.is_required && <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 10, fontWeight: 700 }}>必須</span>}
+                                                                                                {q.has_followup_text && <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(168,85,247,0.15)", color: "#a855f7", fontSize: 10, fontWeight: 700 }}>💬 記述付</span>}
                                                                                             </div>
                                                                                             <div style={{ fontSize: 13, fontWeight: 600, color: "#f9fafb", marginBottom: 4 }}>{q.question_text}</div>
                                                                                             {(q.question_type === "single_choice" || q.question_type === "multi_choice") && q.options && (
