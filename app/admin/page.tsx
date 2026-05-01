@@ -2582,7 +2582,11 @@ export default function AdminPage() {
                                                                                 { key: "single_choice", label: "📻 単一選択", desc: "1つ選ぶ" },
                                                                                 { key: "multi_choice", label: "☑️ 複数選択", desc: "複数選ぶ" },
                                                                                 { key: "scale", label: "📊 尺度評価", desc: "1〜5など" },
+                                                                                { key: "rating", label: "⭐ 星評価", desc: "★で評価" },
+                                                                                { key: "yes_no", label: "✅ はい/いいえ", desc: "2択" },
+                                                                                { key: "nps", label: "🎯 NPS", desc: "0〜10推奨度" },
                                                                                 { key: "text", label: "📝 自由記述", desc: "テキスト" },
+                                                                                { key: "section", label: "🏗️ セクション", desc: "見出し" },
                                                                             ].map(t => (
                                                                                 <button key={t.key} onClick={() => setQuestionType(t.key as any)} style={{ padding: "10px 8px", borderRadius: 8, border: questionType === t.key ? "1px solid rgba(99,102,241,0.6)" : "1px solid rgba(255,255,255,0.08)", background: questionType === t.key ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.02)", color: questionType === t.key ? "#818cf8" : "#9ca3af", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
                                                                                     <div>{t.label}</div>
@@ -2629,7 +2633,36 @@ export default function AdminPage() {
                                                                             <div style={{ fontSize: 10, color: "#6b7280", marginTop: 6 }}>例: 1（{questionScaleMinLabel}） 〜 {questionScaleMax}（{questionScaleMaxLabel}）</div>
                                                                         </div>
                                                                     )}
+                                                                    {questionType === "rating" && (
+                                                                        <div style={{ marginBottom: 12 }}>
+                                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>星の最大数</div>
+                                                                            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                                                                <input type="number" min={3} max={10} value={questionRatingMax} onChange={(e) => setQuestionRatingMax(Number(e.target.value))} style={{ width: 80, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 12, outline: "none", textAlign: "center" }} />
+                                                                                <div style={{ fontSize: 13 }}>{"⭐".repeat(questionRatingMax)}</div>
+                                                                            </div>
+                                                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4 }}>3〜10個まで設定可能</div>
+                                                                        </div>
+                                                                    )}
 
+                                                                    {questionType === "yes_no" && (
+                                                                        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                                                            <div style={{ fontSize: 11, color: "#6b7280" }}>✅ ユーザーは「はい」「いいえ」の2択で回答します</div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {questionType === "nps" && (
+                                                                        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.2)" }}>
+                                                                            <div style={{ fontSize: 11, color: "#a855f7", fontWeight: 700, marginBottom: 4 }}>🎯 NPS（Net Promoter Score）</div>
+                                                                            <div style={{ fontSize: 11, color: "#9ca3af", lineHeight: 1.6 }}>0〜10の11段階で推奨度を測る指標。「友人や同僚にどの程度勧めたいか？」のような質問に最適です。</div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {questionType === "section" && (
+                                                                        <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                                                                            <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700, marginBottom: 4 }}>🏗️ セクション区切り</div>
+                                                                            <div style={{ fontSize: 11, color: "#9ca3af", lineHeight: 1.6 }}>これは質問ではなく、見出しや説明文ブロックです。「タイトル」欄に見出し、必要なら説明を入れてください（必須/任意の設定は無効）。</div>
+                                                                        </div>
+                                                                    )}
                                                                     {questionType === "text" && (
                                                                         <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
                                                                             <div style={{ fontSize: 11, color: "#6b7280" }}>📝 自由記述形式：ユーザーがテキストで回答できる質問になります</div>
@@ -2648,6 +2681,7 @@ export default function AdminPage() {
                                                                     <button onClick={async () => {
                                                                         if (!questionText.trim()) { setQuestionMessage("質問文を入力してください"); return; }
                                                                         if ((questionType === "single_choice" || questionType === "multi_choice") && questionOptions.filter(o => o.trim()).length < 2) { setQuestionMessage("選択肢を2つ以上入力してください"); return; }
+                                                                        if (questionType === "rating" && (questionRatingMax < 3 || questionRatingMax > 10)) { setQuestionMessage("星の数は3〜10で指定してください"); return; }
                                                                         setQuestionSaving(true);
                                                                         const currentMax = Math.max(0, ...surveyQuestions.filter(q => q.survey_id === s.id).map(q => q.display_order));
                                                                         await supabase.from("survey_questions").insert({
@@ -2655,11 +2689,11 @@ export default function AdminPage() {
                                                                             question_text: questionText.trim(),
                                                                             question_type: questionType,
                                                                             options: (questionType === "single_choice" || questionType === "multi_choice") ? questionOptions.filter(o => o.trim()) : null,
-                                                                            scale_min: questionType === "scale" ? questionScaleMin : null,
-                                                                            scale_max: questionType === "scale" ? questionScaleMax : null,
+                                                                            scale_min: questionType === "scale" ? questionScaleMin : (questionType === "rating" ? 1 : (questionType === "nps" ? 0 : null)),
+                                                                            scale_max: questionType === "scale" ? questionScaleMax : (questionType === "rating" ? questionRatingMax : (questionType === "nps" ? 10 : null)),
                                                                             scale_min_label: questionType === "scale" ? questionScaleMinLabel : null,
                                                                             scale_max_label: questionType === "scale" ? questionScaleMaxLabel : null,
-                                                                            is_required: questionRequired,
+                                                                            is_required: questionType === "section" ? false : questionRequired,
                                                                             display_order: currentMax + 1,
                                                                         });
                                                                         const { data: qRows } = await supabase.from("survey_questions").select("*").order("display_order");
@@ -2739,7 +2773,7 @@ export default function AdminPage() {
                                                                                             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                                                                                                 <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 700 }}>Q{qi + 1}</span>
                                                                                                 <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 10, fontWeight: 700 }}>
-                                                                                                    {q.question_type === "single_choice" ? "📻 単一選択" : q.question_type === "multi_choice" ? "☑️ 複数選択" : q.question_type === "scale" ? "📊 尺度" : "📝 自由記述"}
+                                                                                                    {q.question_type === "single_choice" ? "📻 単一選択" : q.question_type === "multi_choice" ? "☑️ 複数選択" : q.question_type === "scale" ? "📊 尺度" : q.question_type === "rating" ? "⭐ 星評価" : q.question_type === "yes_no" ? "✅ はい/いいえ" : q.question_type === "nps" ? "🎯 NPS" : q.question_type === "section" ? "🏗️ セクション" : "📝 自由記述"}
                                                                                                 </span>
                                                                                                 {q.is_required && <span style={{ padding: "2px 6px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 10, fontWeight: 700 }}>必須</span>}
                                                                                             </div>
@@ -2747,8 +2781,17 @@ export default function AdminPage() {
                                                                                             {(q.question_type === "single_choice" || q.question_type === "multi_choice") && q.options && (
                                                                                                 <div style={{ fontSize: 11, color: "#6b7280" }}>選択肢: {q.options.join(" / ")}</div>
                                                                                             )}
-                                                                                            {q.question_type === "scale" && (
-                                                                                                <div style={{ fontSize: 11, color: "#6b7280" }}>{q.scale_min}（{q.scale_min_label}）〜 {q.scale_max}（{q.scale_max_label}）</div>
+                                                                                            {q.question_type === "rating" && (
+                                                                                                <div style={{ fontSize: 11, color: "#6b7280" }}>{"⭐".repeat(q.scale_max || 5)} （最大{q.scale_max || 5}星）</div>
+                                                                                            )}
+                                                                                            {q.question_type === "yes_no" && (
+                                                                                                <div style={{ fontSize: 11, color: "#6b7280" }}>「はい」「いいえ」の2択</div>
+                                                                                            )}
+                                                                                            {q.question_type === "nps" && (
+                                                                                                <div style={{ fontSize: 11, color: "#6b7280" }}>0〜10の11段階評価</div>
+                                                                                            )}
+                                                                                            {q.question_type === "section" && (
+                                                                                                <div style={{ fontSize: 11, color: "#f59e0b" }}>📌 セクション見出し（質問ではありません）</div>
                                                                                             )}
                                                                                         </div>
                                                                                         <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
