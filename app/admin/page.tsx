@@ -372,6 +372,9 @@ export default function AdminPage() {
     const [questionFollowupLabel, setQuestionFollowupLabel] = useState("その理由を教えてください");
     const [editQuestionHasFollowup, setEditQuestionHasFollowup] = useState(false);
     const [editQuestionFollowupLabel, setEditQuestionFollowupLabel] = useState("");
+    // ===== 集計用 =====
+    const [showResultsFor, setShowResultsFor] = useState<string | null>(null);
+    const [surveyResponses, setSurveyResponses] = useState<{ id: string; survey_id: string; user_id: string; answers: any[]; submitted_at: string; userName?: string }[]>([]);
     const [questionSaving, setQuestionSaving] = useState(false);
     const [questionMessage, setQuestionMessage] = useState("");
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
@@ -620,6 +623,13 @@ export default function AdminPage() {
             }));
             setSurveys(enrichedSurveys as Survey[]);
             setSurveyQuestions((surveyQuestionRows || []) as SurveyQuestion[]);
+            // 全アンケート回答取得
+            const { data: allResponses } = await supabase.from("survey_responses").select("*").order("submitted_at", { ascending: false });
+            const enrichedResponses = (allResponses || []).map((r: any) => ({
+                ...r,
+                userName: users.find(u => u.id === r.user_id)?.name || "名前未設定",
+            }));
+            setSurveyResponses(enrichedResponses);
             // 総合ES一覧
             const { data: esRows } = await supabase.from("user_es").select("*").order("last_updated_at", { ascending: false });
             if (esRows && esRows.length > 0) {
@@ -2542,6 +2552,9 @@ export default function AdminPage() {
                                                         <button onClick={() => setManagingQuestionsFor(managingQuestionsFor === s.id ? null : s.id)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: managingQuestionsFor === s.id ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(99,102,241,0.15)", color: managingQuestionsFor === s.id ? "#fff" : "#818cf8", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
                                                             {managingQuestionsFor === s.id ? "✕ 閉じる" : "📝 質問編集"}
                                                         </button>
+                                                        <button onClick={() => setShowResultsFor(showResultsFor === s.id ? null : s.id)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: showResultsFor === s.id ? "linear-gradient(135deg, #10b981, #34d399)" : "rgba(52,211,153,0.15)", color: showResultsFor === s.id ? "#0a0a0f" : "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
+                                                            {showResultsFor === s.id ? "✕ 閉じる" : `📊 集計 (${surveyResponses.filter(r => r.survey_id === s.id).length}件)`}
+                                                        </button>
                                                         <button onClick={() => {
                                                             setEditingSurveyId(s.id);
                                                             setEditSurveyTitle(s.title);
@@ -2844,6 +2857,242 @@ export default function AdminPage() {
                                                             )}
                                                         </div>
                                                     )}
+                                                    {/* 集計パネル */}
+                                                    {showResultsFor === s.id && (() => {
+                                                        const responses = surveyResponses.filter(r => r.survey_id === s.id);
+                                                        const questionsForSurvey = surveyQuestions.filter(q => q.survey_id === s.id);
+                                                        const totalUsers = userDetails.length;
+                                                        const responseRate = totalUsers > 0 ? Math.round((responses.length / totalUsers) * 100) : 0;
+
+                                                        return (
+                                                            <div style={{ marginTop: 16, padding: 20, borderRadius: 10, background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.2)" }}>
+                                                                {/* サマリー */}
+                                                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+                                                                    <div style={{ padding: 14, borderRadius: 10, background: "rgba(0,0,0,0.2)", textAlign: "center" }}>
+                                                                        <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>回答数</div>
+                                                                        <div style={{ fontSize: 24, fontWeight: 800, color: "#34d399" }}>{responses.length}<span style={{ fontSize: 14, color: "#6b7280", fontWeight: 600 }}>/{totalUsers}人</span></div>
+                                                                    </div>
+                                                                    <div style={{ padding: 14, borderRadius: 10, background: "rgba(0,0,0,0.2)", textAlign: "center" }}>
+                                                                        <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>回答率</div>
+                                                                        <div style={{ fontSize: 24, fontWeight: 800, color: responseRate >= 80 ? "#34d399" : responseRate >= 50 ? "#f59e0b" : "#f87171" }}>{responseRate}%</div>
+                                                                    </div>
+                                                                    <div style={{ padding: 14, borderRadius: 10, background: "rgba(0,0,0,0.2)", textAlign: "center" }}>
+                                                                        <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>総獲得pt</div>
+                                                                        <div style={{ fontSize: 24, fontWeight: 800, color: "#fbbf24" }}>{responses.length * s.reward_points}<span style={{ fontSize: 14, color: "#6b7280", fontWeight: 600 }}>pt</span></div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {responses.length === 0 ? (
+                                                                    <div style={{ padding: 30, textAlign: "center", color: "#6b7280", fontSize: 13 }}>まだ回答がありません</div>
+                                                                ) : (
+                                                                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                                                        {questionsForSurvey.map((q, qi) => {
+                                                                            // この質問の全回答を集計
+                                                                            const answers = responses.map(r => {
+                                                                                const ans = r.answers?.find((a: any) => a.question_id === q.id);
+                                                                                return { value: ans?.value, followup: ans?.followup, userName: r.userName };
+                                                                            }).filter(a => a.value !== null && a.value !== undefined);
+
+                                                                            // セクションは見出しのみ
+                                                                            if (q.question_type === "section") {
+                                                                                return (
+                                                                                    <div key={q.id} style={{ padding: "12px 16px", borderRadius: 8, background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                                                                                        <div style={{ fontSize: 14, fontWeight: 800, color: "#f59e0b" }}>🏗️ {q.question_text}</div>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+
+                                                                            return (
+                                                                                <div key={q.id} style={{ padding: 16, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                                                                    <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>Q{qi + 1}</div>
+                                                                                    <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 12 }}>{q.question_text}</div>
+
+                                                                                    {/* 単一選択 / はい・いいえ */}
+                                                                                    {(q.question_type === "single_choice" || q.question_type === "yes_no") && (() => {
+                                                                                        const opts = q.question_type === "yes_no" ? ["はい", "いいえ"] : (q.options || []);
+                                                                                        const counts = opts.map(opt => ({
+                                                                                            label: opt,
+                                                                                            count: answers.filter(a => a.value === opt).length,
+                                                                                        }));
+                                                                                        const total = counts.reduce((sum, c) => sum + c.count, 0);
+                                                                                        return (
+                                                                                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                                                                                {counts.map((c, i) => {
+                                                                                                    const pct = total > 0 ? Math.round((c.count / total) * 100) : 0;
+                                                                                                    return (
+                                                                                                        <div key={i}>
+                                                                                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                                                                                                                <span style={{ color: "#d1d5db" }}>{c.label}</span>
+                                                                                                                <span style={{ color: "#34d399", fontWeight: 700 }}>{c.count}人 ({pct}%)</span>
+                                                                                                            </div>
+                                                                                                            <div style={{ height: 8, borderRadius: 4, background: "rgba(255,255,255,0.05)" }}>
+                                                                                                                <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg, #6366f1, #8b5cf6)", borderRadius: 4 }} />
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    );
+                                                                                                })}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })()}
+
+                                                                                    {/* 複数選択 */}
+                                                                                    {q.question_type === "multi_choice" && q.options && (() => {
+                                                                                        const counts = q.options.map(opt => ({
+                                                                                            label: opt,
+                                                                                            count: answers.filter(a => Array.isArray(a.value) && a.value.includes(opt)).length,
+                                                                                        }));
+                                                                                        return (
+                                                                                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                                                                                {counts.map((c, i) => {
+                                                                                                    const pct = answers.length > 0 ? Math.round((c.count / answers.length) * 100) : 0;
+                                                                                                    return (
+                                                                                                        <div key={i}>
+                                                                                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                                                                                                                <span style={{ color: "#d1d5db" }}>{c.label}</span>
+                                                                                                                <span style={{ color: "#06b6d4", fontWeight: 700 }}>{c.count}人 ({pct}%)</span>
+                                                                                                            </div>
+                                                                                                            <div style={{ height: 8, borderRadius: 4, background: "rgba(255,255,255,0.05)" }}>
+                                                                                                                <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg, #06b6d4, #34d399)", borderRadius: 4 }} />
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    );
+                                                                                                })}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })()}
+
+                                                                                    {/* 尺度評価 */}
+                                                                                    {q.question_type === "scale" && q.scale_min !== null && q.scale_max !== null && (() => {
+                                                                                        const numAnswers = answers.map(a => Number(a.value)).filter(v => !isNaN(v));
+                                                                                        const avg = numAnswers.length > 0 ? (numAnswers.reduce((sum, v) => sum + v, 0) / numAnswers.length).toFixed(2) : "0";
+                                                                                        const counts = Array.from({ length: q.scale_max! - q.scale_min! + 1 }, (_, i) => q.scale_min! + i).map(v => ({
+                                                                                            value: v,
+                                                                                            count: numAnswers.filter(a => a === v).length,
+                                                                                        }));
+                                                                                        return (
+                                                                                            <div>
+                                                                                                <div style={{ fontSize: 18, fontWeight: 800, color: "#fbbf24", marginBottom: 10 }}>平均: {avg} <span style={{ fontSize: 12, color: "#6b7280" }}>/{q.scale_max}</span></div>
+                                                                                                <div style={{ display: "flex", gap: 4 }}>
+                                                                                                    {counts.map(c => {
+                                                                                                        const pct = numAnswers.length > 0 ? Math.round((c.count / numAnswers.length) * 100) : 0;
+                                                                                                        return (
+                                                                                                            <div key={c.value} style={{ flex: 1, textAlign: "center" }}>
+                                                                                                                <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{c.value}</div>
+                                                                                                                <div style={{ height: 60, position: "relative", background: "rgba(255,255,255,0.03)", borderRadius: 6 }}>
+                                                                                                                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${pct}%`, background: "linear-gradient(180deg, #6366f1, #8b5cf6)", borderRadius: 6 }} />
+                                                                                                                </div>
+                                                                                                                <div style={{ fontSize: 10, color: "#34d399", fontWeight: 700, marginTop: 4 }}>{c.count}</div>
+                                                                                                            </div>
+                                                                                                        );
+                                                                                                    })}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })()}
+
+                                                                                    {/* 星評価 */}
+                                                                                    {q.question_type === "rating" && q.scale_max !== null && (() => {
+                                                                                        const numAnswers = answers.map(a => Number(a.value)).filter(v => !isNaN(v));
+                                                                                        const avg = numAnswers.length > 0 ? (numAnswers.reduce((sum, v) => sum + v, 0) / numAnswers.length) : 0;
+                                                                                        const avgStars = Math.round(avg);
+                                                                                        return (
+                                                                                            <div>
+                                                                                                <div style={{ fontSize: 18, fontWeight: 800, color: "#fbbf24", marginBottom: 6 }}>平均: {avg.toFixed(2)} ⭐</div>
+                                                                                                <div style={{ fontSize: 24, marginBottom: 10 }}>{"⭐".repeat(avgStars)}{"☆".repeat(q.scale_max! - avgStars)}</div>
+                                                                                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                                                                                    {Array.from({ length: q.scale_max! }, (_, i) => q.scale_max! - i).map(star => {
+                                                                                                        const count = numAnswers.filter(a => a === star).length;
+                                                                                                        const pct = numAnswers.length > 0 ? Math.round((count / numAnswers.length) * 100) : 0;
+                                                                                                        return (
+                                                                                                            <div key={star} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                                                                                <span style={{ fontSize: 12, width: 50, color: "#9ca3af" }}>{"⭐".repeat(star)}</span>
+                                                                                                                <div style={{ flex: 1, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.05)" }}>
+                                                                                                                    <div style={{ height: "100%", width: `${pct}%`, background: "#fbbf24", borderRadius: 3 }} />
+                                                                                                                </div>
+                                                                                                                <span style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, width: 50, textAlign: "right" }}>{count}人</span>
+                                                                                                            </div>
+                                                                                                        );
+                                                                                                    })}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })()}
+
+                                                                                    {/* NPS */}
+                                                                                    {q.question_type === "nps" && (() => {
+                                                                                        const numAnswers = answers.map(a => Number(a.value)).filter(v => !isNaN(v));
+                                                                                        const promoters = numAnswers.filter(v => v >= 9).length;
+                                                                                        const passives = numAnswers.filter(v => v >= 7 && v <= 8).length;
+                                                                                        const detractors = numAnswers.filter(v => v <= 6).length;
+                                                                                        const total = numAnswers.length;
+                                                                                        const npsScore = total > 0 ? Math.round((promoters / total - detractors / total) * 100) : 0;
+                                                                                        const npsColor = npsScore >= 50 ? "#34d399" : npsScore >= 0 ? "#f59e0b" : "#f87171";
+                                                                                        return (
+                                                                                            <div>
+                                                                                                <div style={{ fontSize: 28, fontWeight: 900, color: npsColor, marginBottom: 12 }}>NPS: {npsScore > 0 ? "+" : ""}{npsScore}</div>
+                                                                                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                                                                                                    <div style={{ padding: 10, borderRadius: 8, background: "rgba(52,211,153,0.1)", textAlign: "center" }}>
+                                                                                                        <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginBottom: 2 }}>推奨者 (9-10)</div>
+                                                                                                        <div style={{ fontSize: 18, fontWeight: 800, color: "#34d399" }}>{promoters}人</div>
+                                                                                                        <div style={{ fontSize: 10, color: "#6b7280" }}>{total > 0 ? Math.round(promoters / total * 100) : 0}%</div>
+                                                                                                    </div>
+                                                                                                    <div style={{ padding: 10, borderRadius: 8, background: "rgba(245,158,11,0.1)", textAlign: "center" }}>
+                                                                                                        <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700, marginBottom: 2 }}>中立者 (7-8)</div>
+                                                                                                        <div style={{ fontSize: 18, fontWeight: 800, color: "#f59e0b" }}>{passives}人</div>
+                                                                                                        <div style={{ fontSize: 10, color: "#6b7280" }}>{total > 0 ? Math.round(passives / total * 100) : 0}%</div>
+                                                                                                    </div>
+                                                                                                    <div style={{ padding: 10, borderRadius: 8, background: "rgba(248,113,113,0.1)", textAlign: "center" }}>
+                                                                                                        <div style={{ fontSize: 11, color: "#f87171", fontWeight: 700, marginBottom: 2 }}>批判者 (0-6)</div>
+                                                                                                        <div style={{ fontSize: 18, fontWeight: 800, color: "#f87171" }}>{detractors}人</div>
+                                                                                                        <div style={{ fontSize: 10, color: "#6b7280" }}>{total > 0 ? Math.round(detractors / total * 100) : 0}%</div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })()}
+
+                                                                                    {/* 自由記述 */}
+                                                                                    {q.question_type === "text" && (
+                                                                                        <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 300, overflowY: "auto" }}>
+                                                                                            {answers.length === 0 ? (
+                                                                                                <div style={{ fontSize: 12, color: "#6b7280" }}>回答なし</div>
+                                                                                            ) : answers.map((a, i) => (
+                                                                                                <div key={i} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                                                                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, marginBottom: 2 }}>👤 {a.userName}</div>
+                                                                                                    <div style={{ fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{a.value}</div>
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    )}
+
+                                                                                    {/* 補足記述（任意） */}
+                                                                                    {q.has_followup_text && (
+                                                                                        (() => {
+                                                                                            const followups = answers.filter(a => a.followup && a.followup.trim());
+                                                                                            if (followups.length === 0) return null;
+                                                                                            return (
+                                                                                                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed rgba(168,85,247,0.3)" }}>
+                                                                                                    <div style={{ fontSize: 11, color: "#a855f7", fontWeight: 700, marginBottom: 8 }}>💬 補足記述（{followups.length}件）</div>
+                                                                                                    <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
+                                                                                                        {followups.map((a, i) => (
+                                                                                                            <div key={i} style={{ padding: "6px 10px", borderRadius: 6, background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.15)" }}>
+                                                                                                                <div style={{ fontSize: 10, color: "#a855f7", fontWeight: 700, marginBottom: 2 }}>👤 {a.userName}</div>
+                                                                                                                <div style={{ fontSize: 12, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{a.followup}</div>
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })()
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             )}
                                         </div>
