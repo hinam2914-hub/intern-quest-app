@@ -33,7 +33,7 @@ type ChallengeSubmission = { id: string; user_id: string; challenge_id: string; 
 type WikiTerm = { id: string; term: string; description: string; category: string | null; created_at: string; };
 type CareerItem = { id: string; title: string; description: string | null; category: string; url: string | null; created_at: string; };
 type Survey = { id: string; title: string; description: string | null; reward_points: number; is_active: boolean; starts_at: string | null; ends_at: string | null; created_at: string; question_count?: number; response_count?: number; };
-type SurveyQuestion = { id: string; survey_id: string; question_text: string; question_type: "single_choice" | "multi_choice" | "scale" | "text"; options: string[] | null; scale_min: number | null; scale_max: number | null; scale_min_label: string | null; scale_max_label: string | null; is_required: boolean; display_order: number; };
+type SurveyQuestion = { id: string; survey_id: string; question_text: string; question_type: "single_choice" | "multi_choice" | "scale" | "text" | "rating" | "yes_no" | "nps" | "section"; options: string[] | null; scale_min: number | null; scale_max: number | null; scale_min_label: string | null; scale_max_label: string | null; is_required: boolean; display_order: number; };
 
 function getTodayJST(): string {
     const now = new Date();
@@ -359,13 +359,15 @@ export default function AdminPage() {
     // ===== 質問編集用 =====
     const [showNewQuestionForm, setShowNewQuestionForm] = useState(false);
     const [questionText, setQuestionText] = useState("");
-    const [questionType, setQuestionType] = useState<"single_choice" | "multi_choice" | "scale" | "text">("single_choice");
+    const [questionType, setQuestionType] = useState<"single_choice" | "multi_choice" | "scale" | "text" | "rating" | "yes_no" | "nps" | "section">("single_choice");
     const [questionOptions, setQuestionOptions] = useState<string[]>(["", ""]);
     const [questionScaleMin, setQuestionScaleMin] = useState(1);
     const [questionScaleMax, setQuestionScaleMax] = useState(5);
     const [questionScaleMinLabel, setQuestionScaleMinLabel] = useState("全くそう思わない");
     const [questionScaleMaxLabel, setQuestionScaleMaxLabel] = useState("非常にそう思う");
+    const [questionRatingMax, setQuestionRatingMax] = useState(5);
     const [questionRequired, setQuestionRequired] = useState(true);
+    const [editQuestionRatingMax, setEditQuestionRatingMax] = useState(5);
     const [questionSaving, setQuestionSaving] = useState(false);
     const [questionMessage, setQuestionMessage] = useState("");
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
