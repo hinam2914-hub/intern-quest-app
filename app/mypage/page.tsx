@@ -1253,13 +1253,12 @@ export default function MyPage() {
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>DAILY MISSIONS</div>
-                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{[true, isSubmitted, todayKpiDone, todayThanksDone, todayLearnDone].filter(Boolean).length} / 5 完了</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{[true, isSubmitted, todayThanksDone, todayLearnDone].filter(Boolean).length} / 4 完了</div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
                             { icon: "🔐", label: "ログインする", done: true, pt: "+1pt", path: null },
                             { icon: "📋", label: "日報を提出する", done: isSubmitted, pt: "+2pt", path: "/report" },
-                            { icon: "📊", label: "KPIを入力する", done: todayKpiDone, pt: "✨", path: "/report" },
                             { icon: "🎉", label: "サンキューを送る", done: todayThanksDone, pt: "✨", path: "/thanks" },
                             { icon: "📚", label: "学習を完了する", done: todayLearnDone, pt: "+2pt", path: "/learn" },
                         ].map((mission) => (
