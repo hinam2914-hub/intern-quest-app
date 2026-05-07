@@ -46,17 +46,28 @@ body {
     /* ステータスカード4枚を2列に */
     .status-cards {
         grid-template-columns: 1fr !important;
+        min-width: 0 !important;
     }
 
-    /* KPI入力フォームのグリッド調整 */
-    .kpi-grid {
-        grid-template-columns: 1fr !important;
+    .status-cards>div {
+        min-width: 0 !important;
+        overflow: hidden !important;
     }
 
-    /* テストの選択肢ボタンのフォント */
-    button {
-        font-size: 13px !important;
+    .status-cards * {
+        max-width: 100% !important;
     }
+}
+
+/* KPI入力フォームのグリッド調整 */
+.kpi-grid {
+    grid-template-columns: 1fr !important;
+}
+
+/* テストの選択肢ボタンのフォント */
+button {
+    font-size: 13px !important;
+}
 }
 
 /* ===== コンパクトスマホ（480px以下） ===== */
