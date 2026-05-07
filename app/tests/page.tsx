@@ -28,7 +28,11 @@ type Attempt = {
 
 const TESTS: TestItem[] = [
     { key: "common_sense", label: "常識・デリカシーテスト", desc: "人として基本のキ", path: "/tests/common-sense", icon: "🧠", color: "#a78bfa", passedField: "common_sense_passed", rewardText: "合格で +100pt", table: "test_attempts" },
+    { key: "social_standard", label: "社会人基準・現実認識", desc: "“まだまだ”を理解する基準テスト", path: "/tests/social-standard", icon: "🎯", color: "#ec4899", passedField: "social_standard_passed", rewardText: "合格で +300pt", table: "test_attempts" },
+    { key: "long_term_thinking", label: "長期思考・複利思考", desc: "未来の自分を優先できるか", path: "/tests/long-term-thinking", icon: "📈", color: "#3b82f6", passedField: "long_term_thinking_passed", rewardText: "合格で +300pt", table: "test_attempts" },
+    { key: "profit_thinking", label: "利益思考・判断センス", desc: "感情ではなく利益で動けるか", path: "/tests/profit-thinking", icon: "💰", color: "#10b981", passedField: "profit_thinking_passed", rewardText: "合格で +300pt", table: "test_attempts" },
     { key: "quiz", label: "確認ワークテスト", desc: "価値観と仕事の基本をチェック", path: "/quiz", icon: "🧠", color: "#a78bfa", passedField: "quiz_passed", rewardText: "合格で +500pt", table: "quiz_attempts" },
+    { key: "teiou", label: "Dot.A 帝王学", desc: "思想・判断・覚悟の最高ランク", path: "/tests/teiou", icon: "👑", color: "#fbbf24", passedField: "teiou_passed", rewardText: "合格で +1000pt", table: "test_attempts" },
     { key: "marketer", label: "マーケター適性テスト", desc: "売れる仕組みを作れるか", path: "/tests/marketer", icon: "📊", color: "#06b6d4", passedField: "marketer_passed", rewardText: "Aランクで +500pt", table: "test_attempts" },
     { key: "sales", label: "営業デビュー適性テスト", desc: "現場に出る準備ができているか", path: "/tests/sales", icon: "💼", color: "#8b5cf6", passedField: "sales_passed", rewardText: "Aランクで +500pt", table: "test_attempts" },
     { key: "mentor", label: "メンターテスト", desc: "育成者としての思考判定", path: "/tests/mentor", icon: "🌱", color: "#10b981", passedField: "mentor_passed", rewardText: "合格で +500pt", table: "test_attempts" },
