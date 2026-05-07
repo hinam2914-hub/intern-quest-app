@@ -1349,7 +1349,7 @@ export default function MyPage() {
                 {/* プロフィール編集モーダル */}
                 {showProfileModal && (
                     <div onClick={() => setShowProfileModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-                        <div onClick={(e) => e.stopPropagation()} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24, maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
+                        <div onClick={(e) => e.stopPropagation()} style={{ background: "#1a1a2e", border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24, maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
                             <button onClick={() => setShowProfileModal(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: textMuted, cursor: "pointer", fontSize: 24 }}>×</button>
                             <div style={{ fontSize: 18, fontWeight: 800, color: textPrimary, marginBottom: 20 }}>✏️ プロフィール編集</div>
                             <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
