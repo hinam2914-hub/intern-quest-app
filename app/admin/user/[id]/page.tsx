@@ -132,7 +132,39 @@ export default function UserDetailPage() {
     const [adviceCategory, setAdviceCategory] = useState<"late" | "absence" | "mistake" | "communication" | "other">("late");
     const [adviceMessage, setAdviceMessage] = useState("");
     const [adviceSending, setAdviceSending] = useState(false);
-
+    const sendAdvice = async () => {
+        if (!adviceMessage.trim()) {
+            alert("メッセージを入力してください");
+            return;
+        }
+        setAdviceSending(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            alert("ログインが必要です");
+            setAdviceSending(false);
+            return;
+        }
+        const { error } = await supabase.from("advice_logs").insert({
+            sender_id: user.id,
+            receiver_id: userId,
+            category: adviceCategory,
+            message: adviceMessage.trim(),
+            status: "approved", // adminは承認不要で即時配信
+            sender_is_admin: true,
+            points_awarded: 0, // adminは報酬なし
+            reviewed_by: user.id,
+            reviewed_at: new Date().toISOString(),
+        });
+        if (error) {
+            alert("送信に失敗しました: " + error.message);
+            setAdviceSending(false);
+            return;
+        }
+        alert("✅ アドバイスを送信しました");
+        setAdviceMessage("");
+        setShowAdviceModal(false);
+        setAdviceSending(false);
+    };
     useEffect(() => {
         const load = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -283,10 +315,53 @@ export default function UserDetailPage() {
                         <div style={{ textAlign: "center", flexShrink: 0 }}>
                             <div style={{ width: 80, height: 80, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, fontWeight: 900, color: "#fff", boxShadow: `0 0 24px ${rankColor}60`, marginBottom: 8 }}>{rank2}</div>
                             <div style={{ fontSize: 12, color: "#9ca3af" }}>スコア {rankScore}/100</div>
+                            <button onClick={() => setShowAdviceModal(true)} style={{ marginTop: 12, padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 12px rgba(245,158,11,0.3)" }}>
+                                💌 アドバイス送信
+                            </button>
                         </div>
                     </div>
                 </div>
+                {/* アドバイス送信モーダル */}
+                {showAdviceModal && (
+                    <div onClick={() => !adviceSending && setShowAdviceModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+                        <div onClick={(e) => e.stopPropagation()} style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24, maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", marginBottom: 8 }}>💌 {name} さんにアドバイス送信</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 20, lineHeight: 1.6 }}>
+                                ⚠️ adminから送るアドバイスは即時相手に通知されます。<br />
+                                送信者名は相手には表示されません（匿名）。
+                            </div>
 
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, marginBottom: 8 }}>カテゴリ</div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                    {[
+                                        { value: "late", label: "⏰ 遅刻" },
+                                        { value: "absence", label: "❌ 欠勤" },
+                                        { value: "mistake", label: "💼 仕事のミス" },
+                                        { value: "communication", label: "💬 コミュニケーション" },
+                                        { value: "other", label: "📝 その他" },
+                                    ].map(c => (
+                                        <button key={c.value} onClick={() => setAdviceCategory(c.value as any)} style={{ padding: "10px 12px", borderRadius: 8, border: adviceCategory === c.value ? "1px solid #f59e0b" : "1px solid rgba(255,255,255,0.1)", background: adviceCategory === c.value ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.03)", color: adviceCategory === c.value ? "#fbbf24" : "#d1d5db", fontSize: 13, fontWeight: 600, cursor: "pointer", textAlign: "left" }}>
+                                            {c.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: 20 }}>
+                                <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, marginBottom: 8 }}>メッセージ</div>
+                                <textarea value={adviceMessage} onChange={(e) => setAdviceMessage(e.target.value)} placeholder="例: 最近遅刻が続いています。改善のため一緒に対策を考えましょう。" style={{ width: "100%", minHeight: 120, padding: 12, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, fontFamily: "inherit", resize: "vertical" }} />
+                            </div>
+
+                            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                                <button onClick={() => setShowAdviceModal(false)} disabled={adviceSending} style={{ padding: "10px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 13, fontWeight: 600, cursor: adviceSending ? "not-allowed" : "pointer" }}>キャンセル</button>
+                                <button onClick={sendAdvice} disabled={adviceSending || !adviceMessage.trim()} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: adviceSending || !adviceMessage.trim() ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #f59e0b, #f97316)", color: adviceSending || !adviceMessage.trim() ? "#6b7280" : "#fff", fontSize: 13, fontWeight: 700, cursor: adviceSending || !adviceMessage.trim() ? "not-allowed" : "pointer" }}>
+                                    {adviceSending ? "送信中..." : "💌 送信する"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* ステータスカード */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
                     {[
