@@ -45,7 +45,7 @@ body {
 
     /* ステータスカード4枚を2列に */
     .status-cards {
-        grid-template-columns: 1fr 1fr !important;
+        grid-template-columns: 1fr !important;
     }
 
     /* KPI入力フォームのグリッド調整 */

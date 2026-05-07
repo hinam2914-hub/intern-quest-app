@@ -985,7 +985,7 @@ export default function MyPage() {
                 {message && <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>{message}</div>}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                    <div className="status-cards" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
                         {[
                             {
                                 title: "TOTAL POINTS", tip: "獲得したポイントの累計です", ref: pointsCardRef, content: (
