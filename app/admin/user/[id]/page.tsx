@@ -152,15 +152,13 @@ export default function UserDetailPage() {
             status: "approved", // adminは承認不要で即時配信
             sender_is_admin: true,
             points_awarded: 0, // adminは報酬なし
-            reviewed_by: user.id,
-            reviewed_at: new Date().toISOString(),
         });
         if (error) {
             alert("送信に失敗しました: " + error.message);
             setAdviceSending(false);
             return;
         }
-        alert("✅ アドバイスを送信しました");
+        alert("✅ アドバイスを送信しました（別の管理者の承認後に相手に届きます）");
         setAdviceMessage("");
         setShowAdviceModal(false);
         setAdviceSending(false);

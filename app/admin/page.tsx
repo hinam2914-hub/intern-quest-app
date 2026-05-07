@@ -194,7 +194,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -377,6 +377,9 @@ export default function AdminPage() {
     const [surveyResponses, setSurveyResponses] = useState<{ id: string; survey_id: string; user_id: string; answers: any[]; submitted_at: string; userName?: string }[]>([]);
     const [resultsTab, setResultsTab] = useState<"summary" | "individual">("summary");
     const [allUserTags, setAllUserTags] = useState<{ user_id: string; tag: string }[]>([]);
+    const [pendingAdvices, setPendingAdvices] = useState<any[]>([]);
+    const [pendingAdviceCount, setPendingAdviceCount] = useState(0);
+    const [adviceFilter, setAdviceFilter] = useState<"pending" | "appconst handleInviteroved" | "rejected" | "all">("pending");
     const [questionSaving, setQuestionSaving] = useState(false);
     const [questionMessage, setQuestionMessage] = useState("");
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
@@ -628,6 +631,22 @@ export default function AdminPage() {
             // 全ユーザーのタグ取得
             const { data: allTagRows } = await supabase.from("user_tags").select("user_id, tag");
             setAllUserTags((allTagRows || []) as { user_id: string; tag: string }[]);
+            // 審査待ちアドバイス取得（送信者・受信者の名前も結合）
+            const { data: adviceRows } = await supabase
+                .from("advice_logs")
+                .select("*")
+                .order("created_at", { ascending: false });
+            const adviceWithNames = (adviceRows || []).map((a: any) => {
+                const sender = (users as any[])?.find((u: any) => u.id === a.sender_id);
+                const receiver = (users as any[])?.find((u: any) => u.id === a.receiver_id);
+                return {
+                    ...a,
+                    senderName: sender?.name || "不明",
+                    receiverName: receiver?.name || "不明",
+                };
+            });
+            setPendingAdvices(adviceWithNames);
+            setPendingAdviceCount(adviceWithNames.filter((a: any) => a.status === "pending").length);
             // 全アンケート回答取得
             const { data: allResponses } = await supabase.from("survey_responses").select("*").order("submitted_at", { ascending: false });
             const enrichedResponses = (allResponses || []).map((r: any) => ({
@@ -728,7 +747,60 @@ export default function AdminPage() {
         await supabase.from("profiles").update({ team_id: teamId || null }).eq("id", userId);
         setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, team_id: teamId } : u));
     };
+    const handleApproveAdvice = async (advice: any) => {
+        if (!confirm(`このアドバイスを承認しますか？\n\n送信者: ${advice.senderName}\n受信者: ${advice.receiverName}`)) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
+        const pointsToAward = advice.sender_is_admin ? 0 : 2;
+
+        // status更新
+        const { error: e1 } = await supabase.from("advice_logs").update({
+            status: "approved",
+            points_awarded: pointsToAward,
+            reviewed_by: user.id,
+            reviewed_at: new Date().toISOString(),
+        }).eq("id", advice.id);
+
+        if (e1) { alert("更新失敗: " + e1.message); return; }
+
+        // メンバー送信なら送信者に+2pt
+        if (!advice.sender_is_admin && pointsToAward > 0) {
+            const { data: up } = await supabase.from("user_points").select("points").eq("user_id", advice.sender_id).single();
+            const currentPoints = (up as any)?.points || 0;
+            await supabase.from("user_points").upsert({
+                user_id: advice.sender_id,
+                points: currentPoints + pointsToAward,
+            });
+            await supabase.from("points_history").insert({
+                user_id: advice.sender_id,
+                change: pointsToAward,
+                reason: "advice_approved",
+            });
+        }
+
+        alert("✅ 承認しました");
+        location.reload();
+    };
+
+    const handleRejectAdvice = async (advice: any) => {
+        const reason = prompt("却下理由を入力してください（送信者に通知されます）", "");
+        if (reason === null) return;
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { error } = await supabase.from("advice_logs").update({
+            status: "rejected",
+            admin_comment: reason || "理由未記入",
+            reviewed_by: user.id,
+            reviewed_at: new Date().toISOString(),
+        }).eq("id", advice.id);
+
+        if (error) { alert("却下失敗: " + error.message); return; }
+        alert("❌ 却下しました");
+        location.reload();
+    };
     const handleInvite = async () => {
         if (!inviteEmail.trim()) { setInviteMessage("メールアドレスを入力してください"); return; }
         setInviting(true);
@@ -962,7 +1034,7 @@ export default function AdminPage() {
                         { key: "kkc", label: "KKC" },
                         { key: "sibyl", label: "シビュラ" },
                         { key: "tests", label: "テスト結果" },
-
+                        { key: "advice", label: `💌アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -3187,6 +3259,95 @@ export default function AdminPage() {
                                         </div>
                                     ))}
                                 </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                {activeTab === "advice" && (
+                    <div>
+                        <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>💌 アドバイス審査</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.7 }}>送信されたアドバイスを審査します。承認すると受信者に通知され、メンバー送信の場合は送信者に+2pt付与されます。</div>
+                        </div>
+
+                        {/* フィルタ */}
+                        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                            {[
+                                { key: "pending", label: `🟡 審査待ち (${pendingAdvices.filter((a: any) => a.status === "pending").length})` },
+                                { key: "approved", label: `✅ 承認済 (${pendingAdvices.filter((a: any) => a.status === "approved").length})` },
+                                { key: "rejected", label: `❌ 却下 (${pendingAdvices.filter((a: any) => a.status === "rejected").length})` },
+                                { key: "all", label: `📋 全て (${pendingAdvices.length})` },
+                            ].map(f => (
+                                <button key={f.key} onClick={() => setAdviceFilter(f.key as any)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: adviceFilter === f.key ? "linear-gradient(135deg, #f59e0b, #f97316)" : "rgba(255,255,255,0.05)", color: adviceFilter === f.key ? "#fff" : "#9ca3af" }}>
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* リスト */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            {pendingAdvices.filter((a: any) => adviceFilter === "all" || a.status === adviceFilter).length === 0 ? (
+                                <div style={{ padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14, background: "rgba(255,255,255,0.02)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)" }}>
+                                    該当するアドバイスはありません
+                                </div>
+                            ) : (
+                                pendingAdvices.filter((a: any) => adviceFilter === "all" || a.status === adviceFilter).map((a: any) => {
+                                    const catLabel: Record<string, string> = {
+                                        late: "⏰ 遅刻",
+                                        absence: "❌ 欠勤",
+                                        mistake: "💼 仕事のミス",
+                                        communication: "💬 コミュニケーション",
+                                        other: "📝 その他",
+                                    };
+                                    const statusBadge: Record<string, { label: string; color: string; bg: string }> = {
+                                        pending: { label: "🟡 審査待ち", color: "#fbbf24", bg: "rgba(245,158,11,0.15)" },
+                                        approved: { label: "✅ 承認済", color: "#34d399", bg: "rgba(52,211,153,0.15)" },
+                                        rejected: { label: "❌ 却下", color: "#f87171", bg: "rgba(239,68,68,0.15)" },
+                                    };
+                                    const sb = statusBadge[a.status];
+                                    return (
+                                        <div key={a.id} style={{ padding: 20, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: a.status === "pending" ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.08)" }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                                    <span style={{ padding: "4px 10px", borderRadius: 6, background: sb.bg, color: sb.color, fontSize: 11, fontWeight: 700 }}>{sb.label}</span>
+                                                    <span style={{ padding: "4px 10px", borderRadius: 6, background: "rgba(245,158,11,0.1)", color: "#fbbf24", fontSize: 11, fontWeight: 600 }}>{catLabel[a.category]}</span>
+                                                    {a.sender_is_admin && <span style={{ padding: "4px 10px", borderRadius: 6, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, fontWeight: 700 }}>admin送信</span>}
+                                                </div>
+                                                <div style={{ fontSize: 11, color: "#6b7280" }}>{new Date(a.created_at).toLocaleString("ja-JP")}</div>
+                                            </div>
+                                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12, padding: 12, borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
+                                                <div>
+                                                    <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>送信者</div>
+                                                    <div style={{ fontSize: 13, color: "#f9fafb", fontWeight: 700 }}>{a.senderName}</div>
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>受信者</div>
+                                                    <div style={{ fontSize: 13, color: "#f9fafb", fontWeight: 700 }}>{a.receiverName}</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ padding: 14, borderRadius: 8, background: "rgba(0,0,0,0.25)", marginBottom: 12 }}>
+                                                <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, marginBottom: 6 }}>メッセージ</div>
+                                                <div style={{ fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{a.message}</div>
+                                            </div>
+                                            {a.admin_comment && (
+                                                <div style={{ padding: 12, borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", marginBottom: 12 }}>
+                                                    <div style={{ fontSize: 10, color: "#f87171", fontWeight: 700, marginBottom: 4 }}>却下理由</div>
+                                                    <div style={{ fontSize: 12, color: "#fca5a5" }}>{a.admin_comment}</div>
+                                                </div>
+                                            )}
+                                            {a.status === "pending" && (
+                                                <div style={{ display: "flex", gap: 8 }}>
+                                                    <button onClick={() => handleApproveAdvice(a)} style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                                                        ✅ 承認 {!a.sender_is_admin && "(送信者に+2pt)"}
+                                                    </button>
+                                                    <button onClick={() => handleRejectAdvice(a)} style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                                                        ❌ 却下
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
                     </div>
