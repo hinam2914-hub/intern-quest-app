@@ -22,7 +22,7 @@ body {
 }
 
 /* ===== スマホ対応（768px以下） ===== */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
 
     /* ヘッダー・タイトル系 */
     h1 {
