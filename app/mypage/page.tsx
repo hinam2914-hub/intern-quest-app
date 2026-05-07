@@ -416,6 +416,7 @@ export default function MyPage() {
     // タグ state
     const [userTags, setUserTags] = useState<UserTag[]>([]);
     const [pendingSurveys, setPendingSurveys] = useState<{ id: string; title: string; reward_points: number; question_count: number }[]>([]);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const [unreadAdvices, setUnreadAdvices] = useState<{ id: string; category: string; message: string; created_at: string }[]>([]);
     const [newTag, setNewTag] = useState("");
     const [tagSaving, setTagSaving] = useState(false);
@@ -967,6 +968,7 @@ export default function MyPage() {
                         </div>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => setShowProfileModal(true)} style={{ background: cardBg, color: textPrimary, padding: "8px 10px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>✏️ プロフィール</button>
                         <button onClick={() => router.push("/report")} style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", padding: "8px 12px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>📋 日報</button>
                         <button onClick={() => router.push("/menu")} style={{ background: cardBg, color: textPrimary, padding: "8px 10px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}>☰</button>
                     </div>
@@ -1344,9 +1346,12 @@ export default function MyPage() {
                     )}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 20 }}>
+                {/* プロフィール編集モーダル */}
+                {showProfileModal && (
+                    <div onClick={() => setShowProfileModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+                        <div onClick={(e) => e.stopPropagation()} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24, maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
+                            <button onClick={() => setShowProfileModal(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: textMuted, cursor: "pointer", fontSize: 24 }}>×</button>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: textPrimary, marginBottom: 20 }}>✏️ プロフィール編集</div>
                             <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
                             {(mbti || club) && (
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
@@ -1366,8 +1371,11 @@ export default function MyPage() {
                             </select>
                             <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: saveSuccess ? "linear-gradient(135deg, #10b981, #34d399)" : `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.3s" }}>{savingProfile ? "保存中..." : saveSuccess ? "✅ 保存しました！" : "保存"}</button>
                         </div>
-                        <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: `1px solid ${cardBorder}`, background: cardBg, color: textSecondary, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
                     </div>
+                )}
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+                    <button onClick={() => router.push("/history")} style={{ padding: "14px", borderRadius: 12, border: `1px solid ${cardBorder}`, background: cardBg, color: textSecondary, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>履歴を見る →</button>
 
                     <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>RECENT ACTIVITY</div>
