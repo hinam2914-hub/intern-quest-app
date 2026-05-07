@@ -128,6 +128,10 @@ export default function UserDetailPage() {
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
     const [userTags, setUserTags] = useState<{ id: string; tag: string }[]>([]);
+    const [showAdviceModal, setShowAdviceModal] = useState(false);
+    const [adviceCategory, setAdviceCategory] = useState<"late" | "absence" | "mistake" | "communication" | "other">("late");
+    const [adviceMessage, setAdviceMessage] = useState("");
+    const [adviceSending, setAdviceSending] = useState(false);
 
     useEffect(() => {
         const load = async () => {

@@ -416,6 +416,7 @@ export default function MyPage() {
     // タグ state
     const [userTags, setUserTags] = useState<UserTag[]>([]);
     const [pendingSurveys, setPendingSurveys] = useState<{ id: string; title: string; reward_points: number; question_count: number }[]>([]);
+    const [unreadAdvices, setUnreadAdvices] = useState<{ id: string; category: string; message: string; created_at: string }[]>([]);
     const [newTag, setNewTag] = useState("");
     const [tagSaving, setTagSaving] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
@@ -650,6 +651,16 @@ export default function MyPage() {
         const { data: tagRows } = await supabase.from("user_tags").select("*").eq("user_id", user.id).order("created_at");
         setUserTags((tagRows || []) as UserTag[]);
 
+        // 未読アドバイス取得
+        const { data: adviceRows } = await supabase
+            .from("advice_logs")
+            .select("id, category, message, created_at")
+            .eq("receiver_id", user.id)
+            .eq("status", "approved")
+            .order("created_at", { ascending: false })
+            .limit(5);
+        setUnreadAdvices((adviceRows || []) as any);
+
         setLoading(false);
     };
 
@@ -712,6 +723,37 @@ export default function MyPage() {
 
             {/* ===== フローティング +Xpt テキスト ===== */}
             <AnimatePresence>
+                {/* ===== アドバイス通知バナー ===== */}
+                {unreadAdvices.length > 0 && (
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto 24px" }}>
+                        <div style={{ padding: "20px 24px", borderRadius: 16, background: "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(249,115,22,0.12))", border: "2px solid rgba(245,158,11,0.4)", boxShadow: "0 0 30px rgba(245,158,11,0.15)" }}>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                                💌 あなたへのアドバイスが届いています ({unreadAdvices.length}件)
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {unreadAdvices.map((a) => {
+                                    const catLabel: Record<string, string> = {
+                                        late: "⏰ 遅刻",
+                                        absence: "❌ 欠勤",
+                                        mistake: "💼 仕事のミス",
+                                        communication: "💬 コミュニケーション",
+                                        other: "📝 その他",
+                                    };
+                                    return (
+                                        <div key={a.id} style={{ padding: 12, borderRadius: 10, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                                <span style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: "rgba(245,158,11,0.15)" }}>{catLabel[a.category] || a.category}</span>
+                                                <span style={{ fontSize: 10, color: "#6b7280" }}>{new Date(a.created_at).toLocaleDateString("ja-JP")}</span>
+                                            </div>
+                                            <div style={{ fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{a.message}</div>
+                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 6, fontStyle: "italic" }}>※ 匿名で送信されています</div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* ===== 未回答アンケートバナー ===== */}
                 {pendingSurveys.length > 0 && (
                     <div style={{ position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto 24px" }}>
