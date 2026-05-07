@@ -33,26 +33,51 @@ export default function MenuPage() {
         router.push("/login");
     };
 
-    const menuItems = [
-        { icon: "🏠", label: "マイページ", desc: "ホーム・ステータス確認", path: "/mypage", color: "#6366f1" },
-        { icon: "📋", label: "日報提出", desc: "今日の活動を記録してポイント獲得", path: "/report", color: "#8b5cf6" },
-        { icon: "📸", label: "プロフィール写真", desc: "顔写真をアップロードする", path: "/profile", color: "#ec4899" },
-        { icon: "📚", label: "学習コンテンツ", desc: "動画・記事を学習してポイント獲得", path: "/learn", color: "#06b6d4" },
-        { icon: "📝", label: "テスト一覧", desc: "価値観・適性を測る各種テスト", path: "/tests", color: "#a78bfa" },
-        { icon: "💡", label: "KKC 課題解決案", desc: "ドットの課題に解決案を申請", path: "/kkc", color: "#f59e0b" },
-        { icon: "🎉", label: "サンキュー", desc: "感謝を伝えてポイントをプレゼント", path: "/thanks", color: "#f59e0b" },
-        { icon: "💌", label: "アドバイス", desc: "改善のための気づきを匿名で送る", path: "/advice", color: "#f97316" },
-        { icon: "📊", label: "月次KPI", desc: "月次実績を入力してポイント獲得", path: "/kpi", color: "#06b6d4" },
-        { icon: "🛍️", label: "ポイントショップ", desc: "ポイントでアイテムと交換", path: "/shop", color: "#10b981" },
-        { icon: "🏆", label: "ランキング", desc: "全員のポイントランキングを確認", path: "/ranking", color: "#ef4444" },
-        { icon: "📜", label: "ポイント履歴", desc: "獲得・使用したポイントの履歴", path: "/history", color: "#6b7280" },
-        { icon: "📖", label: "使い方", desc: "Intern Questの使い方を確認する", path: "/onboarding", color: "#34d399" },
-        { icon: "📁", label: "参考資料BOX", desc: "業務に役立つ資料・リンクをまとめています", path: "/resources", color: "#34d399" },
-        { icon: "📖", label: "用語集", desc: "社内・就活用語をまとめました", path: "/wiki", color: "#6366f1" },
-        { icon: "🎯", label: "ライフチャレンジ", desc: "人生の経験値を積んでスタンプを集めよう", path: "/challenge", color: "#f59e0b" },
-        { icon: "💼", label: "就活ボックス", desc: "大学別・企業別の就活情報をチェック", path: "/career", color: "#ec4899" },
-        { icon: "📊", label: "自分の実績", desc: "累計データ・ランク・順位を確認", path: "/stats", color: "#06b6d4" },
-        { icon: "📝", label: "総合ES", desc: "エントリーシートを作成・更新", path: "/es", color: "#8b5cf6" },
+    const menuSections = [
+        {
+            title: "🌅 デイリー",
+            items: [
+                { icon: "🏠", label: "マイページ", desc: "ホーム・ステータス確認", path: "/mypage", color: "#6366f1" },
+                { icon: "📋", label: "日報提出", desc: "今日の活動を記録してポイント獲得", path: "/report", color: "#8b5cf6" },
+                { icon: "📊", label: "月次KPI", desc: "月次実績を入力してポイント獲得", path: "/kpi", color: "#06b6d4" },
+                { icon: "🎉", label: "サンキュー", desc: "感謝を伝えてポイントをプレゼント", path: "/thanks", color: "#f59e0b" },
+                { icon: "💌", label: "アドバイス", desc: "改善のための気づきを匿名で送る", path: "/advice", color: "#f97316" },
+            ],
+        },
+        {
+            title: "📚 学ぶ・挑む",
+            items: [
+                { icon: "📚", label: "学習コンテンツ", desc: "動画・記事を学習してポイント獲得", path: "/learn", color: "#06b6d4" },
+                { icon: "📝", label: "テスト一覧", desc: "価値観・適性を測る各種テスト", path: "/tests", color: "#a78bfa" },
+                { icon: "💡", label: "KKC 課題解決案", desc: "ドットの課題に解決案を申請", path: "/kkc", color: "#f59e0b" },
+                { icon: "🎯", label: "ライフチャレンジ", desc: "人生の経験値を積んでスタンプを集めよう", path: "/challenge", color: "#f59e0b" },
+                { icon: "📖", label: "用語集", desc: "社内・就活用語をまとめました", path: "/wiki", color: "#6366f1" },
+            ],
+        },
+        {
+            title: "🏆 実績・ご褒美",
+            items: [
+                { icon: "🏆", label: "ランキング", desc: "全員のポイントランキングを確認", path: "/ranking", color: "#ef4444" },
+                { icon: "📊", label: "自分の実績", desc: "累計データ・ランク・順位を確認", path: "/stats", color: "#06b6d4" },
+                { icon: "📜", label: "ポイント履歴", desc: "獲得・使用したポイントの履歴", path: "/history", color: "#6b7280" },
+                { icon: "🛍️", label: "ポイントショップ", desc: "ポイントでアイテムと交換", path: "/shop", color: "#10b981" },
+            ],
+        },
+        {
+            title: "💼 就活・ドキュメント",
+            items: [
+                { icon: "📝", label: "総合ES", desc: "エントリーシートを作成・更新", path: "/es", color: "#8b5cf6" },
+                { icon: "💼", label: "就活ボックス", desc: "大学別・企業別の就活情報をチェック", path: "/career", color: "#ec4899" },
+                { icon: "📁", label: "参考資料BOX", desc: "業務に役立つ資料・リンクをまとめています", path: "/resources", color: "#34d399" },
+            ],
+        },
+        {
+            title: "⚙️ 設定・サポート",
+            items: [
+                { icon: "📸", label: "プロフィール写真", desc: "顔写真をアップロードする", path: "/profile", color: "#ec4899" },
+                { icon: "📖", label: "使い方", desc: "Intern Questの使い方を確認する", path: "/onboarding", color: "#34d399" },
+            ],
+        },
     ];
 
     if (loading) {
@@ -86,26 +111,33 @@ export default function MenuPage() {
                     </div>
                 </div>
 
-                {/* メニューグリッド */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                    {menuItems.map((item) => (
-                        <button
-                            key={item.path}
-                            onClick={() => router.push(item.path)}
-                            style={{ padding: "20px 24px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", cursor: "pointer", textAlign: "left", transition: "all 0.2s" }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.borderColor = `${item.color}40`; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.08)"; }}
-                        >
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${item.color}20`, border: `1px solid ${item.color}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
-                                    {item.icon}
-                                </div>
-                                <div style={{ fontSize: 16, fontWeight: 700, color: "#f9fafb" }}>{item.label}</div>
-                            </div>
-                            <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>{item.desc}</div>
-                        </button>
-                    ))}
-                </div>
+                {/* メニューセクション */}
+                {menuSections.map((section) => (
+                    <div key={section.title} style={{ marginBottom: 32 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12, paddingLeft: 4 }}>
+                            {section.title}
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            {section.items.map((item) => (
+                                <button
+                                    key={item.path}
+                                    onClick={() => router.push(item.path)}
+                                    style={{ padding: "20px 24px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", cursor: "pointer", textAlign: "left", transition: "all 0.2s" }}
+                                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.borderColor = `${item.color}40`; }}
+                                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.08)"; }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                                        <div style={{ width: 44, height: 44, borderRadius: 12, background: `${item.color}20`, border: `1px solid ${item.color}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                                            {item.icon}
+                                        </div>
+                                        <div style={{ fontSize: 16, fontWeight: 700, color: "#f9fafb" }}>{item.label}</div>
+                                    </div>
+                                    <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>{item.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ))}
 
                 {/* 管理者メニュー */}
                 {isAdmin && (
