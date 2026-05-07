@@ -127,6 +127,7 @@ export default function UserDetailPage() {
     const [activeTab, setActiveTab] = useState<"overview" | "monthly_kpi">("overview");
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
+    const [userTags, setUserTags] = useState<{ id: string; tag: string }[]>([]);
 
     useEffect(() => {
         const load = async () => {
@@ -144,7 +145,9 @@ export default function UserDetailPage() {
             setMbti(profile?.mbti || "");
             setClub(profile?.club || "");
             setStartedAt(profile?.started_at || null);
-
+            // ユーザーのタグを取得
+            const { data: tagRows } = await supabase.from("user_tags").select("id, tag").eq("user_id", userId).order("created_at");
+            setUserTags((tagRows || []) as { id: string; tag: string }[]);
             if (profile?.department_id) {
                 const { data: dept } = await supabase.from("departments").select("name").eq("id", profile.department_id).single();
                 setDepartmentName(dept?.name || "");
@@ -268,6 +271,9 @@ export default function UserDetailPage() {
                                 {mbti && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 12, color: "#818cf8", fontWeight: 600 }}>🧠 {mbti}</span>}
                                 {club && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.3)", fontSize: 12, color: "#fbbf24", fontWeight: 600 }}>⚽ {club}</span>}
                                 {startedAt && <span style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 12, color: "#34d399", fontWeight: 600 }}>📅 参加 {activeDays}日目</span>}
+                                {userTags.length > 0 && userTags.map((t) => (
+                                    <span key={t.id} style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.3)", fontSize: 12, color: "#c084fc", fontWeight: 600 }}>🏷️ {t.tag}</span>
+                                ))}
                             </div>
                         </div>
                         <div style={{ textAlign: "center", flexShrink: 0 }}>

@@ -376,6 +376,7 @@ export default function AdminPage() {
     const [showResultsFor, setShowResultsFor] = useState<string | null>(null);
     const [surveyResponses, setSurveyResponses] = useState<{ id: string; survey_id: string; user_id: string; answers: any[]; submitted_at: string; userName?: string }[]>([]);
     const [resultsTab, setResultsTab] = useState<"summary" | "individual">("summary");
+    const [allUserTags, setAllUserTags] = useState<{ user_id: string; tag: string }[]>([]);
     const [questionSaving, setQuestionSaving] = useState(false);
     const [questionMessage, setQuestionMessage] = useState("");
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
@@ -624,6 +625,9 @@ export default function AdminPage() {
             }));
             setSurveys(enrichedSurveys as Survey[]);
             setSurveyQuestions((surveyQuestionRows || []) as SurveyQuestion[]);
+            // 全ユーザーのタグ取得
+            const { data: allTagRows } = await supabase.from("user_tags").select("user_id, tag");
+            setAllUserTags((allTagRows || []) as { user_id: string; tag: string }[]);
             // 全アンケート回答取得
             const { data: allResponses } = await supabase.from("survey_responses").select("*").order("submitted_at", { ascending: false });
             const enrichedResponses = (allResponses || []).map((r: any) => ({
@@ -1037,6 +1041,18 @@ export default function AdminPage() {
                                                             <span>📋 {u.submissionCount}件</span>
                                                             <span>🎉 {u.thanksCount}件</span>
                                                         </div>
+                                                        {(() => {
+                                                            const tags = allUserTags.filter(t => t.user_id === u.id);
+                                                            if (tags.length === 0) return null;
+                                                            return (
+                                                                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+                                                                    {tags.slice(0, 5).map((t, i) => (
+                                                                        <span key={i} style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", color: "#c084fc", fontSize: 10, fontWeight: 600 }}>{t.tag}</span>
+                                                                    ))}
+                                                                    {tags.length > 5 && <span style={{ fontSize: 10, color: "#6b7280" }}>+{tags.length - 5}</span>}
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                                         <div style={{ textAlign: "center" }}>
