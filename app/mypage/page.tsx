@@ -1351,7 +1351,7 @@ export default function MyPage() {
                     <div onClick={() => setShowProfileModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
                         <div onClick={(e) => e.stopPropagation()} style={{ background: "#1a1a2e", border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24, maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
                             <button onClick={() => setShowProfileModal(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: textMuted, cursor: "pointer", fontSize: 24 }}>×</button>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: textPrimary, marginBottom: 20 }}>✏️ プロフィール編集</div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", marginBottom: 20 }}>✏️ プロフィール編集</div>
                             <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>PROFILE</div>
                             {(mbti || club) && (
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
@@ -1359,11 +1359,11 @@ export default function MyPage() {
                                     {club && <div style={{ padding: "4px 12px", borderRadius: 6, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
                                 </div>
                             )}
-                            <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
-                            <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="学歴を入力（例：〇〇大学）" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                            <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                            <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="学歴を入力（例：〇〇大学）" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
                             <div style={{ marginBottom: 8 }}>
                                 <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>📅 入社日</div>
-                                <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
                             </div>
                             <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}>
                                 <option value="">事業部を選択</option>
