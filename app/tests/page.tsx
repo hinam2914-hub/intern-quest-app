@@ -27,6 +27,7 @@ type Attempt = {
 };
 
 const TESTS: TestItem[] = [
+    { key: "common_sense", label: "常識・デリカシーテスト", desc: "人として基本のキ", path: "/tests/common-sense", icon: "🧠", color: "#a78bfa", passedField: "common_sense_passed", rewardText: "合格で +100pt", table: "test_attempts" },
     { key: "quiz", label: "確認ワークテスト", desc: "価値観と仕事の基本をチェック", path: "/quiz", icon: "🧠", color: "#a78bfa", passedField: "quiz_passed", rewardText: "合格で +500pt", table: "quiz_attempts" },
     { key: "marketer", label: "マーケター適性テスト", desc: "売れる仕組みを作れるか", path: "/tests/marketer", icon: "📊", color: "#06b6d4", passedField: "marketer_passed", rewardText: "Aランクで +500pt", table: "test_attempts" },
     { key: "sales", label: "営業デビュー適性テスト", desc: "現場に出る準備ができているか", path: "/tests/sales", icon: "💼", color: "#8b5cf6", passedField: "sales_passed", rewardText: "Aランクで +500pt", table: "test_attempts" },
