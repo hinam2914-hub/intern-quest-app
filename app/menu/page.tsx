@@ -41,6 +41,7 @@ export default function MenuPage() {
         { icon: "📝", label: "テスト一覧", desc: "価値観・適性を測る各種テスト", path: "/tests", color: "#a78bfa" },
         { icon: "💡", label: "KKC 課題解決案", desc: "ドットの課題に解決案を申請", path: "/kkc", color: "#f59e0b" },
         { icon: "🎉", label: "サンキュー", desc: "感謝を伝えてポイントをプレゼント", path: "/thanks", color: "#f59e0b" },
+        { icon: "💌", label: "アドバイス", desc: "改善のための気づきを匿名で送る", path: "/advice", color: "#f97316" },
         { icon: "📊", label: "月次KPI", desc: "月次実績を入力してポイント獲得", path: "/kpi", color: "#06b6d4" },
         { icon: "🛍️", label: "ポイントショップ", desc: "ポイントでアイテムと交換", path: "/shop", color: "#10b981" },
         { icon: "🏆", label: "ランキング", desc: "全員のポイントランキングを確認", path: "/ranking", color: "#ef4444" },
