@@ -8,6 +8,7 @@ body {
 * {
     box-sizing: border-box;
 }
+
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -17,5 +18,55 @@ body {
 @media (max-width: 640px) {
     .stat-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ===== スマホ対応（768px以下） ===== */
+@media (max-width: 768px) {
+
+    /* ヘッダー・タイトル系 */
+    h1 {
+        font-size: 22px !important;
+    }
+
+    h2 {
+        font-size: 18px !important;
+    }
+
+    /* main要素のpadding調整 */
+    main {
+        padding: 24px 16px 48px !important;
+    }
+
+    /* メニューグリッドを1列に */
+    .menu-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ステータスカード4枚を2列に */
+    .status-cards {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    /* KPI入力フォームのグリッド調整 */
+    .kpi-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* テストの選択肢ボタンのフォント */
+    button {
+        font-size: 13px !important;
+    }
+}
+
+/* ===== コンパクトスマホ（480px以下） ===== */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 20px !important;
+    }
+
+    /* ステータスカードを1列に */
+    .status-cards {
+        grid-template-columns: 1fr !important;
     }
 }

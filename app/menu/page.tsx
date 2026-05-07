@@ -117,7 +117,7 @@ export default function MenuPage() {
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12, paddingLeft: 4 }}>
                             {section.title}
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        <div className="menu-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                             {section.items.map((item) => (
                                 <button
                                     key={item.path}
