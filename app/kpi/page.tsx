@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 type Department = { id: string; name: string; code: string; main_metric: string; unit: string };
 type Position = "appointer" | "closer" | "";
@@ -49,6 +50,7 @@ export default function KpiPage() {
     const [myDeptId, setMyDeptId] = useState("");
     const [myPosition, setMyPosition] = useState<Position>("");
     const [kpiList, setKpiList] = useState<MonthlyKpi[]>([]);
+    const [historyData, setHistoryData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState("");
@@ -81,6 +83,28 @@ export default function KpiPage() {
                 .eq("user_id", user.id)
                 .eq("year_month", selectedMonth);
             setKpiList((kpiRows || []) as MonthlyKpi[]);
+            // 過去全期間の達成率データを取得
+            const { data: allKpis } = await supabase.from("monthly_kpi")
+                .select("year_month, target, result, department_id")
+                .eq("user_id", user.id)
+                .order("year_month", { ascending: true });
+
+            if (allKpis) {
+                const hrDept2 = (depts || []).find((d: any) => d.code === "HR");
+                const monthMap: Record<string, any> = {};
+                allKpis.forEach((k: any) => {
+                    if (!monthMap[k.year_month]) {
+                        monthMap[k.year_month] = { month: k.year_month, main: null, hr: null };
+                    }
+                    const rate = k.target > 0 ? Math.round((k.result / k.target) * 100) : 0;
+                    if (k.department_id === hrDept2?.id) {
+                        monthMap[k.year_month].hr = rate;
+                    } else if (k.department_id === profile?.department_id) {
+                        monthMap[k.year_month].main = rate;
+                    }
+                });
+                setHistoryData(Object.values(monthMap));
+            }
 
             // 既存データをフォームに反映
             if (kpiRows) {
@@ -197,6 +221,44 @@ export default function KpiPage() {
                     </div>
                 </div>
 
+                {/* 達成率推移グラフ */}
+                {historyData.length > 0 && (
+                    <div style={{ marginBottom: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>📊 達成率推移</div>
+                            <div style={{ display: "flex", gap: 12, fontSize: 11 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                    <div style={{ width: 12, height: 3, background: "#6366f1", borderRadius: 2 }} />
+                                    <span style={{ color: "#9ca3af" }}>メインKPI</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                    <div style={{ width: 12, height: 3, background: "#f59e0b", borderRadius: 2 }} />
+                                    <span style={{ color: "#9ca3af" }}>HR KPI</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style={{ width: "100%", overflowX: "auto" }}>
+                            <div style={{ minWidth: Math.max(historyData.length * 80, 600), height: 240 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={historyData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                                        <XAxis dataKey="month" stroke="#4b5563" tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                                        <YAxis stroke="#4b5563" tick={{ fill: "#9ca3af", fontSize: 11 }} domain={[0, (dataMax: number) => Math.max(120, dataMax + 20)]} unit="%" />
+                                        <Tooltip
+                                            contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }}
+                                            formatter={(value: any, name: any) => [`${value}%`, name === "main" ? "メインKPI" : "HR KPI"]}
+                                        />
+                                        <ReferenceLine y={100} stroke="#34d399" strokeDasharray="4 4" label={{ value: "目標 100%", fill: "#34d399", fontSize: 10, position: "right" }} />
+                                        <Line type="monotone" dataKey="main" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 4 }} activeDot={{ r: 6, fill: "#6366f1" }} connectNulls />
+                                        <Line type="monotone" dataKey="hr" stroke="#f59e0b" strokeWidth={2} dot={{ fill: "#f59e0b", r: 4 }} activeDot={{ r: 6, fill: "#f59e0b" }} connectNulls />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                        <div style={{ marginTop: 12, fontSize: 11, color: "#6b7280", textAlign: "center" }}>
+                            ※ {historyData.length}ヶ月分のデータを表示中（横スクロール可能）
+                        </div>
+                    </div>
+                )}
                 {/* メインKPI */}
                 <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>
