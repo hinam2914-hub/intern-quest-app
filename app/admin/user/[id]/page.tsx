@@ -128,6 +128,13 @@ export default function UserDetailPage() {
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
     const [userTags, setUserTags] = useState<{ id: string; tag: string }[]>([]);
+    // ===== 就活市場ランク評価 =====
+    const [rankScoreEs, setRankScoreEs] = useState<number>(0);
+    const [rankScorePersonality, setRankScorePersonality] = useState<number>(0);
+    const [rankScoreInterview, setRankScoreInterview] = useState<number>(0);
+    const [rankScoreEducation, setRankScoreEducation] = useState<number>(0);
+    const [rankSaving, setRankSaving] = useState(false);
+    const [rankSaveMessage, setRankSaveMessage] = useState("");
     const [showAdviceModal, setShowAdviceModal] = useState(false);
     const [adviceCategory, setAdviceCategory] = useState<"late" | "absence" | "mistake" | "communication" | "other">("late");
     const [adviceMessage, setAdviceMessage] = useState("");
@@ -182,6 +189,11 @@ export default function UserDetailPage() {
             // ユーザーのタグを取得
             const { data: tagRows } = await supabase.from("user_tags").select("id, tag").eq("user_id", userId).order("created_at");
             setUserTags((tagRows || []) as { id: string; tag: string }[]);
+            // ランクスコアを取得
+            setRankScoreEs((profile as any)?.rank_score_es || 0);
+            setRankScorePersonality((profile as any)?.rank_score_personality || 0);
+            setRankScoreInterview((profile as any)?.rank_score_interview || 0);
+            setRankScoreEducation((profile as any)?.rank_score_education || 0);
             if (profile?.department_id) {
                 const { data: dept } = await supabase.from("departments").select("name").eq("id", profile.department_id).single();
                 setDepartmentName(dept?.name || "");
@@ -253,6 +265,38 @@ export default function UserDetailPage() {
         load();
     }, [userId, router]);
 
+    // ===== 就活市場ランク評価の保存 =====
+    const handleSaveRankScore = async () => {
+        setRankSaving(true);
+        setRankSaveMessage("");
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error } = await supabase.from("profiles").update({
+            rank_score_es: rankScoreEs,
+            rank_score_personality: rankScorePersonality,
+            rank_score_interview: rankScoreInterview,
+            rank_score_education: rankScoreEducation,
+            rank_evaluated_at: new Date().toISOString(),
+            rank_evaluated_by: user?.id || null,
+        } as any).eq("id", userId);
+
+        if (error) {
+            setRankSaveMessage("❌ 保存失敗: " + error.message);
+        } else {
+            setRankSaveMessage("✅ 保存しました！");
+            setTimeout(() => setRankSaveMessage(""), 3000);
+        }
+        setRankSaving(false);
+    };
+
+    // ランク判定関数
+    const calcRank = (total: number) => {
+        if (total >= 17) return { rank: "A", color: "#fbbf24", bg: "rgba(251,191,36,0.15)", desc: "最上位（S難易度）", emoji: "🏆" };
+        if (total >= 13) return { rank: "B", color: "#a855f7", bg: "rgba(168,85,247,0.15)", desc: "上位（A難易度）", emoji: "🥈" };
+        if (total >= 9) return { rank: "C", color: "#06b6d4", bg: "rgba(6,182,212,0.15)", desc: "中位（B〜C難易度）", emoji: "🥉" };
+        if (total >= 5) return { rank: "D", color: "#f97316", bg: "rgba(249,115,22,0.15)", desc: "下位（C〜D難易度）", emoji: "🔻" };
+        return { rank: "E", color: "#6b7280", bg: "rgba(107,114,128,0.15)", desc: "要改善", emoji: "🔻" };
+    };
+
     if (loading) {
         return (
             <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -319,6 +363,60 @@ export default function UserDetailPage() {
                         </div>
                     </div>
                 </div>
+                {/* ===== 就活市場ランク評価 ===== */}
+                {(() => {
+                    const total = rankScoreEs + rankScorePersonality + rankScoreInterview + rankScoreEducation;
+                    const rankInfo = calcRank(total);
+                    return (
+                        <div style={{ marginBottom: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#c084fc", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>🎯 就活市場ランク評価</div>
+                                    <div style={{ fontSize: 12, color: "#6b7280" }}>4軸 × 各5点 = 最大20点 → ランク判定</div>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                    <div style={{ textAlign: "right" }}>
+                                        <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>合計</div>
+                                        <div style={{ fontSize: 24, fontWeight: 800, color: "#f9fafb" }}>{total}<span style={{ fontSize: 14, color: "#6b7280" }}>/20</span></div>
+                                    </div>
+                                    <div style={{ padding: "12px 20px", borderRadius: 12, background: rankInfo.bg, border: `2px solid ${rankInfo.color}66`, textAlign: "center" }}>
+                                        <div style={{ fontSize: 24 }}>{rankInfo.emoji}</div>
+                                        <div style={{ fontSize: 28, fontWeight: 900, color: rankInfo.color, lineHeight: 1 }}>{rankInfo.rank}</div>
+                                        <div style={{ fontSize: 10, color: rankInfo.color, marginTop: 4 }}>{rankInfo.desc}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+                                {[
+                                    { label: "📝 ES", value: rankScoreEs, setter: setRankScoreEs, color: "#06b6d4" },
+                                    { label: "🤝 人間性", value: rankScorePersonality, setter: setRankScorePersonality, color: "#34d399" },
+                                    { label: "💬 面談力", value: rankScoreInterview, setter: setRankScoreInterview, color: "#fbbf24" },
+                                    { label: "🎓 学歴", value: rankScoreEducation, setter: setRankScoreEducation, color: "#a855f7" },
+                                ].map((axis) => (
+                                    <div key={axis.label} style={{ padding: 14, borderRadius: 10, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                        <div style={{ fontSize: 12, color: "#d1d5db", fontWeight: 700, marginBottom: 8 }}>{axis.label}</div>
+                                        <div style={{ display: "flex", gap: 4 }}>
+                                            {[1, 2, 3, 4, 5].map(n => (
+                                                <button key={n} onClick={() => axis.setter(axis.value === n ? 0 : n)} style={{ flex: 1, padding: "8px 0", borderRadius: 6, border: axis.value >= n ? `1px solid ${axis.color}` : "1px solid rgba(255,255,255,0.1)", background: axis.value >= n ? `${axis.color}33` : "rgba(255,255,255,0.02)", color: axis.value >= n ? axis.color : "#6b7280", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{n}</button>
+                                            ))}
+                                        </div>
+                                        <div style={{ marginTop: 6, fontSize: 11, color: "#9ca3af", textAlign: "center" }}>{axis.value}/5点</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 }}>
+                                <div style={{ fontSize: 12, color: rankSaveMessage.includes("✅") ? "#34d399" : rankSaveMessage.includes("❌") ? "#f87171" : "#6b7280", fontWeight: 600 }}>
+                                    {rankSaveMessage}
+                                </div>
+                                <button onClick={handleSaveRankScore} disabled={rankSaving} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: rankSaving ? "rgba(168,85,247,0.4)" : "linear-gradient(135deg, #a855f7, #c084fc)", color: "#fff", fontWeight: 700, cursor: rankSaving ? "not-allowed" : "pointer", fontSize: 13 }}>
+                                    {rankSaving ? "保存中..." : "💾 評価を保存"}
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })()}
                 {/* アドバイス送信モーダル */}
                 {showAdviceModal && (
                     <div onClick={() => !adviceSending && setShowAdviceModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
