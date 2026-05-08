@@ -79,7 +79,14 @@ export default function CompanyManagementTab() {
             if (!n || !t) { skipped++; continue; }
             if (!["S", "A", "B", "C", "D", "E"].includes(t)) { skipped++; continue; }
             if (n === "企業名" || n === "name") { skipped++; continue; }
-            records.push({ name: n, website_url: u || null, industry: i || null, tier: t });
+            // 重複チェック（同じCSV内で同じ企業名がある場合は最後の行を採用）
+            const existingIndex = records.findIndex(r => r.name === n);
+            if (existingIndex !== -1) {
+                records[existingIndex] = { name: n, website_url: u || null, industry: i || null, tier: t };
+                skipped++;
+            } else {
+                records.push({ name: n, website_url: u || null, industry: i || null, tier: t });
+            }
         }
 
         if (records.length === 0) { setImportMessage("❌ 有効なレコードがありません"); setImporting(false); return; }
