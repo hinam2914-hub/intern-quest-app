@@ -194,7 +194,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -379,6 +379,45 @@ export default function AdminPage() {
     const [allUserTags, setAllUserTags] = useState<{ user_id: string; tag: string }[]>([]);
     const [pendingAdvices, setPendingAdvices] = useState<any[]>([]);
     const [pendingAdviceCount, setPendingAdviceCount] = useState(0);
+    // ===== 人材アーカイブ =====
+    const [archiveSubTab, setArchiveSubTab] = useState<"resignations" | "rejected">("resignations");
+    const [resignations, setResignations] = useState<any[]>([]);
+    const [rejectedCandidates, setRejectedCandidates] = useState<any[]>([]);
+    const [showResignModal, setShowResignModal] = useState(false);
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [editingResignId, setEditingResignId] = useState<string | null>(null);
+    const [editingRejectId, setEditingRejectId] = useState<string | null>(null);
+
+    // 離職者フォームstate
+    const [resignName, setResignName] = useState("");
+    const [resignDept, setResignDept] = useState("");
+    const [resignPosition, setResignPosition] = useState("");
+    const [resignStartedAt, setResignStartedAt] = useState("");
+    const [resignResignedAt, setResignResignedAt] = useState("");
+    const [resignReasonCat, setResignReasonCat] = useState("");
+    const [resignReasonDetail, setResignReasonDetail] = useState("");
+    const [resignRetentionAttempted, setResignRetentionAttempted] = useState(false);
+    const [resignRetentionDetail, setResignRetentionDetail] = useState("");
+    const [resignLastKpiRate, setResignLastKpiRate] = useState<number | "">("");
+    const [resignTotalPoints, setResignTotalPoints] = useState<number | "">("");
+    const [resignEducation, setResignEducation] = useState("");
+    const [resignMbti, setResignMbti] = useState("");
+    const [resignCompanyImprovement, setResignCompanyImprovement] = useState("");
+    const [resignRecruitingFeedback, setResignRecruitingFeedback] = useState("");
+    const [resignKnowledgeMemo, setResignKnowledgeMemo] = useState("");
+
+    // 面談落ちフォームstate
+    const [rejectName, setRejectName] = useState("");
+    const [rejectInterviewDate, setRejectInterviewDate] = useState("");
+    const [rejectEducation, setRejectEducation] = useState("");
+    const [rejectMbti, setRejectMbti] = useState("");
+    const [rejectAge, setRejectAge] = useState<number | "">("");
+    const [rejectReasonCat, setRejectReasonCat] = useState("");
+    const [rejectReasonDetail, setRejectReasonDetail] = useState("");
+    const [rejectInterviewerNotes, setRejectInterviewerNotes] = useState("");
+    const [rejectTargetDept, setRejectTargetDept] = useState("");
+    const [rejectLearningMemo, setRejectLearningMemo] = useState("");
+    const [rejectRecruitingCriteriaUpdate, setRejectRecruitingCriteriaUpdate] = useState("");
     const [adviceFilter, setAdviceFilter] = useState<"pending" | "appconst handleInviteroved" | "rejected" | "all">("pending");
     const [questionSaving, setQuestionSaving] = useState(false);
     const [questionMessage, setQuestionMessage] = useState("");
@@ -647,6 +686,18 @@ export default function AdminPage() {
             });
             setPendingAdvices(adviceWithNames);
             setPendingAdviceCount(adviceWithNames.filter((a: any) => a.status === "pending").length);
+            // 人材アーカイブ取得
+            const { data: resignRows } = await supabase
+                .from("resignations")
+                .select("*")
+                .order("resigned_at", { ascending: false });
+            setResignations(resignRows || []);
+
+            const { data: rejectRows } = await supabase
+                .from("rejected_candidates")
+                .select("*")
+                .order("interview_date", { ascending: false });
+            setRejectedCandidates(rejectRows || []);
             // 全アンケート回答取得
             const { data: allResponses } = await supabase.from("survey_responses").select("*").order("submitted_at", { ascending: false });
             const enrichedResponses = (allResponses || []).map((r: any) => ({
@@ -746,6 +797,155 @@ export default function AdminPage() {
     const handleAssignTeam = async (userId: string, teamId: string) => {
         await supabase.from("profiles").update({ team_id: teamId || null }).eq("id", userId);
         setUserDetails(prev => prev.map(u => u.id === userId ? { ...u, team_id: teamId } : u));
+    };
+    // ===== 離職者の保存 =====
+    const handleSaveResignation = async () => {
+        if (!resignName || !resignResignedAt) {
+            alert("名前と離職日は必須です");
+            return;
+        }
+
+        const data = {
+            name: resignName,
+            department_code: resignDept || null,
+            position: resignPosition || null,
+            started_at: resignStartedAt || null,
+            resigned_at: resignResignedAt,
+            reason_category: resignReasonCat || null,
+            reason_detail: resignReasonDetail || null,
+            retention_attempted: resignRetentionAttempted,
+            retention_detail: resignRetentionDetail || null,
+            last_kpi_rate: resignLastKpiRate === "" ? null : resignLastKpiRate,
+            total_points: resignTotalPoints === "" ? null : resignTotalPoints,
+            education: resignEducation || null,
+            mbti: resignMbti || null,
+            company_improvement: resignCompanyImprovement || null,
+            recruiting_feedback: resignRecruitingFeedback || null,
+            knowledge_memo: resignKnowledgeMemo || null,
+        };
+
+        let error;
+        if (editingResignId) {
+            ({ error } = await supabase.from("resignations").update(data).eq("id", editingResignId));
+        } else {
+            ({ error } = await supabase.from("resignations").insert(data));
+        }
+
+        if (error) { alert("保存失敗: " + error.message); return; }
+
+        alert(editingResignId ? "✅ 更新しました" : "✅ 登録しました");
+        setShowResignModal(false);
+        resetResignForm();
+        // 再取得
+        const { data: resignRows } = await supabase.from("resignations").select("*").order("resigned_at", { ascending: false });
+        setResignations(resignRows || []);
+    };
+
+    const resetResignForm = () => {
+        setEditingResignId(null);
+        setResignName(""); setResignDept(""); setResignPosition("");
+        setResignStartedAt(""); setResignResignedAt("");
+        setResignReasonCat(""); setResignReasonDetail("");
+        setResignRetentionAttempted(false); setResignRetentionDetail("");
+        setResignLastKpiRate(""); setResignTotalPoints("");
+        setResignEducation(""); setResignMbti("");
+        setResignCompanyImprovement(""); setResignRecruitingFeedback(""); setResignKnowledgeMemo("");
+    };
+
+    const handleDeleteResignation = async (id: string) => {
+        if (!confirm("本当に削除しますか？この操作は取り消せません。")) return;
+        const { error } = await supabase.from("resignations").delete().eq("id", id);
+        if (error) { alert("削除失敗: " + error.message); return; }
+        setResignations(prev => prev.filter(r => r.id !== id));
+    };
+
+    const handleEditResignation = (r: any) => {
+        setEditingResignId(r.id);
+        setResignName(r.name || "");
+        setResignDept(r.department_code || "");
+        setResignPosition(r.position || "");
+        setResignStartedAt(r.started_at || "");
+        setResignResignedAt(r.resigned_at || "");
+        setResignReasonCat(r.reason_category || "");
+        setResignReasonDetail(r.reason_detail || "");
+        setResignRetentionAttempted(r.retention_attempted || false);
+        setResignRetentionDetail(r.retention_detail || "");
+        setResignLastKpiRate(r.last_kpi_rate ?? "");
+        setResignTotalPoints(r.total_points ?? "");
+        setResignEducation(r.education || "");
+        setResignMbti(r.mbti || "");
+        setResignCompanyImprovement(r.company_improvement || "");
+        setResignRecruitingFeedback(r.recruiting_feedback || "");
+        setResignKnowledgeMemo(r.knowledge_memo || "");
+        setShowResignModal(true);
+    };
+
+    // ===== 面談落ちの保存 =====
+    const handleSaveRejected = async () => {
+        if (!rejectName || !rejectInterviewDate) {
+            alert("名前と面談日は必須です");
+            return;
+        }
+
+        const data = {
+            name: rejectName,
+            interview_date: rejectInterviewDate,
+            education: rejectEducation || null,
+            mbti: rejectMbti || null,
+            age: rejectAge === "" ? null : rejectAge,
+            reject_reason_category: rejectReasonCat || null,
+            reject_reason_detail: rejectReasonDetail || null,
+            interviewer_notes: rejectInterviewerNotes || null,
+            target_department: rejectTargetDept || null,
+            learning_memo: rejectLearningMemo || null,
+            recruiting_criteria_update: rejectRecruitingCriteriaUpdate || null,
+        };
+
+        let error;
+        if (editingRejectId) {
+            ({ error } = await supabase.from("rejected_candidates").update(data).eq("id", editingRejectId));
+        } else {
+            ({ error } = await supabase.from("rejected_candidates").insert(data));
+        }
+
+        if (error) { alert("保存失敗: " + error.message); return; }
+
+        alert(editingRejectId ? "✅ 更新しました" : "✅ 登録しました");
+        setShowRejectModal(false);
+        resetRejectForm();
+        const { data: rejectRows } = await supabase.from("rejected_candidates").select("*").order("interview_date", { ascending: false });
+        setRejectedCandidates(rejectRows || []);
+    };
+
+    const resetRejectForm = () => {
+        setEditingRejectId(null);
+        setRejectName(""); setRejectInterviewDate("");
+        setRejectEducation(""); setRejectMbti(""); setRejectAge("");
+        setRejectReasonCat(""); setRejectReasonDetail(""); setRejectInterviewerNotes("");
+        setRejectTargetDept(""); setRejectLearningMemo(""); setRejectRecruitingCriteriaUpdate("");
+    };
+
+    const handleDeleteRejected = async (id: string) => {
+        if (!confirm("本当に削除しますか？")) return;
+        const { error } = await supabase.from("rejected_candidates").delete().eq("id", id);
+        if (error) { alert("削除失敗: " + error.message); return; }
+        setRejectedCandidates(prev => prev.filter(r => r.id !== id));
+    };
+
+    const handleEditRejected = (r: any) => {
+        setEditingRejectId(r.id);
+        setRejectName(r.name || "");
+        setRejectInterviewDate(r.interview_date || "");
+        setRejectEducation(r.education || "");
+        setRejectMbti(r.mbti || "");
+        setRejectAge(r.age ?? "");
+        setRejectReasonCat(r.reject_reason_category || "");
+        setRejectReasonDetail(r.reject_reason_detail || "");
+        setRejectInterviewerNotes(r.interviewer_notes || "");
+        setRejectTargetDept(r.target_department || "");
+        setRejectLearningMemo(r.learning_memo || "");
+        setRejectRecruitingCriteriaUpdate(r.recruiting_criteria_update || "");
+        setShowRejectModal(true);
     };
     const handleApproveAdvice = async (advice: any) => {
         if (!confirm(`このアドバイスを承認しますか？\n\n送信者: ${advice.senderName}\n受信者: ${advice.receiverName}`)) return;
@@ -1034,7 +1234,8 @@ export default function AdminPage() {
                         { key: "kkc", label: "KKC" },
                         { key: "sibyl", label: "シビュラ" },
                         { key: "tests", label: "テスト結果" },
-                        { key: "advice", label: `💌アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
+                        { key: "advice", label: `アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
+                        { key: "talent_archive", label: "人材アーカイブ" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -3352,6 +3553,133 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+                {activeTab === "talent_archive" && (
+                    <div>
+                        <div style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#c084fc", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>📋 人材アーカイブ</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.7 }}>離職者と面談落ちのデータを蓄積し、ノウハウ化・採用基準改善に活用します。</div>
+                        </div>
+
+                        {/* サブタブ */}
+                        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                            <button onClick={() => setArchiveSubTab("resignations")} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: archiveSubTab === "resignations" ? "linear-gradient(135deg, #a855f7, #c084fc)" : "rgba(255,255,255,0.05)", color: archiveSubTab === "resignations" ? "#fff" : "#9ca3af" }}>
+                                👋 離職者 ({resignations.length})
+                            </button>
+                            <button onClick={() => setArchiveSubTab("rejected")} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: archiveSubTab === "rejected" ? "linear-gradient(135deg, #a855f7, #c084fc)" : "rgba(255,255,255,0.05)", color: archiveSubTab === "rejected" ? "#fff" : "#9ca3af" }}>
+                                ❌ 面談落ち ({rejectedCandidates.length})
+                            </button>
+                        </div>
+
+                        {/* 離職者タブ */}
+                        {archiveSubTab === "resignations" && (
+                            <div>
+                                <button onClick={() => { resetResignForm(); setShowResignModal(true); }} style={{ marginBottom: 16, padding: "10px 20px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #a855f7, #c084fc)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+                                    ➕ 離職者を登録
+                                </button>
+
+                                {/* サマリー */}
+                                {resignations.length > 0 && (
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
+                                        {[
+                                            { label: "総離職者数", value: resignations.length, color: "#c084fc" },
+                                            { label: "今年", value: resignations.filter(r => new Date(r.resigned_at).getFullYear() === new Date().getFullYear()).length, color: "#f87171" },
+                                            { label: "引き止め試行率", value: `${Math.round(resignations.filter(r => r.retention_attempted).length / resignations.length * 100)}%`, color: "#fbbf24" },
+                                            { label: "平均在籍月数", value: resignations.filter(r => r.started_at).length > 0 ? `${Math.round(resignations.filter(r => r.started_at).reduce((sum, r) => sum + (new Date(r.resigned_at).getTime() - new Date(r.started_at).getTime()) / (1000 * 60 * 60 * 24 * 30), 0) / resignations.filter(r => r.started_at).length)}ヶ月` : "-", color: "#34d399" },
+                                        ].map(s => (
+                                            <div key={s.label} style={{ padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                                <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>{s.label}</div>
+                                                <div style={{ fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* リスト */}
+                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                    {resignations.length === 0 ? (
+                                        <div style={{ padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14, background: "rgba(255,255,255,0.02)", borderRadius: 12 }}>
+                                            離職者の記録はまだありません
+                                        </div>
+                                    ) : (
+                                        resignations.map((r: any) => {
+                                            const reasonLabel: Record<string, string> = {
+                                                salary: "💰 給与", relationship: "👥 人間関係", work_content: "💼 業務内容",
+                                                career: "🚀 キャリア", family: "🏠 家庭", health: "💊 健康", other: "📝 その他"
+                                            };
+                                            const monthsWorked = r.started_at ? Math.round((new Date(r.resigned_at).getTime() - new Date(r.started_at).getTime()) / (1000 * 60 * 60 * 24 * 30)) : null;
+                                            return (
+                                                <div key={r.id} style={{ padding: 20, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                                                        <div>
+                                                            <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", marginBottom: 4 }}>{r.name}</div>
+                                                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11 }}>
+                                                                {r.department_code && <span style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontWeight: 700 }}>{r.department_code}</span>}
+                                                                {r.reason_category && <span style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(239,68,68,0.15)", color: "#f87171", fontWeight: 700 }}>{reasonLabel[r.reason_category]}</span>}
+                                                                <span style={{ color: "#9ca3af" }}>離職: {r.resigned_at}</span>
+                                                                {monthsWorked !== null && <span style={{ color: "#6b7280" }}>(在籍 {monthsWorked}ヶ月)</span>}
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ display: "flex", gap: 6 }}>
+                                                            <button onClick={() => handleEditResignation(r)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>✏️ 編集</button>
+                                                            <button onClick={() => handleDeleteResignation(r.id)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🗑️</button>
+                                                        </div>
+                                                    </div>
+                                                    {r.reason_detail && <div style={{ padding: 10, borderRadius: 8, background: "rgba(0,0,0,0.2)", fontSize: 12, color: "#d1d5db", marginBottom: 8, whiteSpace: "pre-wrap" }}>{r.reason_detail}</div>}
+                                                    {r.knowledge_memo && <div style={{ padding: 10, borderRadius: 8, background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", fontSize: 12, color: "#c084fc", marginBottom: 8, whiteSpace: "pre-wrap" }}>📝 ノウハウ: {r.knowledge_memo}</div>}
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 面談落ちタブ */}
+                        {archiveSubTab === "rejected" && (
+                            <div>
+                                <button onClick={() => { resetRejectForm(); setShowRejectModal(true); }} style={{ marginBottom: 16, padding: "10px 20px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #a855f7, #c084fc)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+                                    ➕ 面談落ちを登録
+                                </button>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                    {rejectedCandidates.length === 0 ? (
+                                        <div style={{ padding: 40, textAlign: "center", color: "#6b7280", fontSize: 14, background: "rgba(255,255,255,0.02)", borderRadius: 12 }}>
+                                            面談落ちの記録はまだありません
+                                        </div>
+                                    ) : (
+                                        rejectedCandidates.map((r: any) => {
+                                            const reasonLabel: Record<string, string> = {
+                                                skill: "🎓 スキル", attitude: "😐 姿勢・態度", mismatch: "🔀 ミスマッチ",
+                                                communication: "💬 コミュニケーション", motivation: "🔥 モチベーション", other: "📝 その他"
+                                            };
+                                            return (
+                                                <div key={r.id} style={{ padding: 20, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                                                        <div>
+                                                            <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", marginBottom: 4 }}>{r.name}</div>
+                                                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 11 }}>
+                                                                {r.reject_reason_category && <span style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(239,68,68,0.15)", color: "#f87171", fontWeight: 700 }}>{reasonLabel[r.reject_reason_category]}</span>}
+                                                                {r.target_department && <span style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontWeight: 700 }}>{r.target_department}</span>}
+                                                                {r.education && <span style={{ color: "#9ca3af" }}>🎓 {r.education}</span>}
+                                                                <span style={{ color: "#9ca3af" }}>面談: {r.interview_date}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ display: "flex", gap: 6 }}>
+                                                            <button onClick={() => handleEditRejected(r)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>✏️ 編集</button>
+                                                            <button onClick={() => handleDeleteRejected(r.id)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🗑️</button>
+                                                        </div>
+                                                    </div>
+                                                    {r.reject_reason_detail && <div style={{ padding: 10, borderRadius: 8, background: "rgba(0,0,0,0.2)", fontSize: 12, color: "#d1d5db", marginBottom: 8, whiteSpace: "pre-wrap" }}>{r.reject_reason_detail}</div>}
+                                                    {r.learning_memo && <div style={{ padding: 10, borderRadius: 8, background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", fontSize: 12, color: "#c084fc", marginBottom: 8, whiteSpace: "pre-wrap" }}>📝 学び: {r.learning_memo}</div>}
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
                 {activeTab === "es" && (
                     <div>
                         <div style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
@@ -4345,6 +4673,205 @@ export default function AdminPage() {
                 )}
 
                 {activeTab === "tests" && <TestResultsTab />}
+                {/* ===== 離職者登録モーダル ===== */}
+                {showResignModal && (
+                    <div onClick={() => setShowResignModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+                        <div onClick={(e) => e.stopPropagation()} style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24, maxWidth: 600, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+                            <button onClick={() => setShowResignModal(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: 24 }}>×</button>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", marginBottom: 20 }}>{editingResignId ? "✏️ 離職者を編集" : "➕ 離職者を登録"}</div>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>名前 *</div>
+                                    <input value={resignName} onChange={(e) => setResignName(e.target.value)} placeholder="例: 山田太郎" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>事業部</div>
+                                        <select value={resignDept} onChange={(e) => setResignDept(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }}>
+                                            <option value="">未選択</option>
+                                            <option value="CB">CB</option>
+                                            <option value="SP">SP</option>
+                                            <option value="IP">IP</option>
+                                            <option value="HR">HR</option>
+                                            <option value="MK">MK</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>ポジション</div>
+                                        <select value={resignPosition} onChange={(e) => setResignPosition(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }}>
+                                            <option value="">未選択</option>
+                                            <option value="appointer">アポインター</option>
+                                            <option value="closer">クローザー</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>入社日</div>
+                                        <input type="date" value={resignStartedAt} onChange={(e) => setResignStartedAt(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>離職日 *</div>
+                                        <input type="date" value={resignResignedAt} onChange={(e) => setResignResignedAt(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>離職理由カテゴリ</div>
+                                    <select value={resignReasonCat} onChange={(e) => setResignReasonCat(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }}>
+                                        <option value="">未選択</option>
+                                        <option value="salary">💰 給与</option>
+                                        <option value="relationship">👥 人間関係</option>
+                                        <option value="work_content">💼 業務内容</option>
+                                        <option value="career">🚀 キャリア</option>
+                                        <option value="family">🏠 家庭</option>
+                                        <option value="health">💊 健康</option>
+                                        <option value="other">📝 その他</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>離職理由の詳細</div>
+                                    <textarea value={resignReasonDetail} onChange={(e) => setResignReasonDetail(e.target.value)} placeholder="本人が話した理由・本音・推測" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", minHeight: 80, resize: "vertical", fontFamily: "inherit" }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#d1d5db", cursor: "pointer" }}>
+                                        <input type="checkbox" checked={resignRetentionAttempted} onChange={(e) => setResignRetentionAttempted(e.target.checked)} style={{ cursor: "pointer" }} />
+                                        引き止めを試みた
+                                    </label>
+                                    {resignRetentionAttempted && (
+                                        <textarea value={resignRetentionDetail} onChange={(e) => setResignRetentionDetail(e.target.value)} placeholder="引き止めの内容・結果" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", marginTop: 8, minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
+                                    )}
+                                </div>
+
+                                <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "8px 0" }} />
+                                <div style={{ fontSize: 12, color: "#c084fc", fontWeight: 700, marginBottom: 4 }}>📊 在籍時のデータスナップショット（任意）</div>
+
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>最終KPI達成率(%)</div>
+                                        <input type="number" value={resignLastKpiRate} onChange={(e) => setResignLastKpiRate(e.target.value === "" ? "" : Number(e.target.value))} placeholder="例: 75" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>累計ポイント</div>
+                                        <input type="number" value={resignTotalPoints} onChange={(e) => setResignTotalPoints(e.target.value === "" ? "" : Number(e.target.value))} placeholder="例: 1500" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>学歴</div>
+                                        <input value={resignEducation} onChange={(e) => setResignEducation(e.target.value)} placeholder="例: 青山学院大学" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>MBTI</div>
+                                        <input value={resignMbti} onChange={(e) => setResignMbti(e.target.value)} placeholder="例: INTJ" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                </div>
+
+                                <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "8px 0" }} />
+                                <div style={{ fontSize: 12, color: "#c084fc", fontWeight: 700, marginBottom: 4 }}>💡 振り返り</div>
+
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>会社側の改善ポイント</div>
+                                    <textarea value={resignCompanyImprovement} onChange={(e) => setResignCompanyImprovement(e.target.value)} placeholder="この離職から会社が学べること" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>採用基準への反映</div>
+                                    <textarea value={resignRecruitingFeedback} onChange={(e) => setResignRecruitingFeedback(e.target.value)} placeholder="今後の採用で気をつけるべきポイント" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>ノウハウメモ</div>
+                                    <textarea value={resignKnowledgeMemo} onChange={(e) => setResignKnowledgeMemo(e.target.value)} placeholder="離職予兆の特徴、引き止めの効果的な方法など" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
+                                </div>
+
+                                <button onClick={handleSaveResignation} style={{ marginTop: 8, padding: 14, borderRadius: 10, border: "none", background: "linear-gradient(135deg, #a855f7, #c084fc)", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+                                    💾 {editingResignId ? "更新する" : "登録する"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ===== 面談落ち登録モーダル ===== */}
+                {showRejectModal && (
+                    <div onClick={() => setShowRejectModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+                        <div onClick={(e) => e.stopPropagation()} style={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: 24, maxWidth: 600, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+                            <button onClick={() => setShowRejectModal(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: 24 }}>×</button>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", marginBottom: 20 }}>{editingRejectId ? "✏️ 面談落ちを編集" : "➕ 面談落ちを登録"}</div>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>名前 *</div>
+                                    <input value={rejectName} onChange={(e) => setRejectName(e.target.value)} placeholder="例: 田中花子" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>面談日 *</div>
+                                    <input type="date" value={rejectInterviewDate} onChange={(e) => setRejectInterviewDate(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>学歴</div>
+                                        <input value={rejectEducation} onChange={(e) => setRejectEducation(e.target.value)} placeholder="○○大学" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>MBTI</div>
+                                        <input value={rejectMbti} onChange={(e) => setRejectMbti(e.target.value)} placeholder="ENFP" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>年齢</div>
+                                        <input type="number" value={rejectAge} onChange={(e) => setRejectAge(e.target.value === "" ? "" : Number(e.target.value))} placeholder="22" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>想定配属部署</div>
+                                    <select value={rejectTargetDept} onChange={(e) => setRejectTargetDept(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }}>
+                                        <option value="">未選択</option>
+                                        <option value="CB">CB</option>
+                                        <option value="SP">SP</option>
+                                        <option value="IP">IP</option>
+                                        <option value="HR">HR</option>
+                                        <option value="MK">MK</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>不合格理由カテゴリ</div>
+                                    <select value={rejectReasonCat} onChange={(e) => setRejectReasonCat(e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }}>
+                                        <option value="">未選択</option>
+                                        <option value="skill">🎓 スキル不足</option>
+                                        <option value="attitude">😐 姿勢・態度</option>
+                                        <option value="mismatch">🔀 ミスマッチ</option>
+                                        <option value="communication">💬 コミュニケーション</option>
+                                        <option value="motivation">🔥 モチベーション</option>
+                                        <option value="other">📝 その他</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>不合格理由の詳細</div>
+                                    <textarea value={rejectReasonDetail} onChange={(e) => setRejectReasonDetail(e.target.value)} placeholder="具体的な理由" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>面接官メモ</div>
+                                    <textarea value={rejectInterviewerNotes} onChange={(e) => setRejectInterviewerNotes(e.target.value)} placeholder="面談中に感じたこと・気になった点" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
+                                </div>
+
+                                <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "8px 0" }} />
+                                <div style={{ fontSize: 12, color: "#c084fc", fontWeight: 700, marginBottom: 4 }}>💡 振り返り</div>
+
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>この面談からの学び</div>
+                                    <textarea value={rejectLearningMemo} onChange={(e) => setRejectLearningMemo(e.target.value)} placeholder="今後活かせるポイント" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 700 }}>採用基準への反映</div>
+                                    <textarea value={rejectRecruitingCriteriaUpdate} onChange={(e) => setRejectRecruitingCriteriaUpdate(e.target.value)} placeholder="採用基準・面接質問の改善点" style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box", minHeight: 60, resize: "vertical", fontFamily: "inherit" }} />
+                                </div>
+
+                                <button onClick={handleSaveRejected} style={{ marginTop: 8, padding: 14, borderRadius: 10, border: "none", background: "linear-gradient(135deg, #a855f7, #c084fc)", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+                                    💾 {editingRejectId ? "更新する" : "登録する"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </main>
     );
