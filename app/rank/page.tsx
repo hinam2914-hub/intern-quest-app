@@ -25,6 +25,13 @@ interface RankUser {
     mbti?: string;
     education_str?: string;
 }
+interface Company {
+    id: string;
+    name: string;
+    website_url: string | null;
+    industry: string | null;
+    tier: string;
+}
 
 export default function RankPage() {
     const router = useRouter();
@@ -32,6 +39,7 @@ export default function RankPage() {
     const [myData, setMyData] = useState<RankUser | null>(null);
     const [allUsers, setAllUsers] = useState<RankUser[]>([]);
     const [evaluatedAt, setEvaluatedAt] = useState<string | null>(null);
+    const [companies, setCompanies] = useState<Company[]>([]);
 
     useEffect(() => {
         const load = async () => {
@@ -67,6 +75,12 @@ export default function RankPage() {
 
             const myProfile = profiles?.find((p: any) => p.id === user.id);
             setEvaluatedAt((myProfile as any)?.rank_evaluated_at || null);
+            // 企業データ取得
+            const { data: companyRows } = await supabase
+                .from("companies")
+                .select("*")
+                .order("name");
+            setCompanies(companyRows || []);
 
             setLoading(false);
         };
@@ -186,7 +200,74 @@ export default function RankPage() {
                         </div>
                     </div>
                 )}
+                {/* 狙える企業 */}
+                {(() => {
+                    const tierOrder = ["E", "D", "C", "B", "A", "S"];
+                    const myTierIndex = tierOrder.indexOf(myData.rank);
+                    const sameTierCompanies = companies.filter(c => c.tier === myData.rank);
+                    const stepUpTier = myTierIndex < tierOrder.length - 1 ? tierOrder[myTierIndex + 1] : null;
+                    const stepUpCompanies = stepUpTier ? companies.filter(c => c.tier === stepUpTier) : [];
 
+                    return (
+                        <>
+                            {/* 同ティア企業 */}
+                            <div style={{ marginBottom: 24, padding: 24, borderRadius: 16, background: `linear-gradient(135deg, ${rankInfo.color}10, transparent)`, border: `1px solid ${rankInfo.color}40` }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                                    <div>
+                                        <div style={{ fontSize: 11, color: rankInfo.color, fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>🎯 あなたが狙える企業</div>
+                                        <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb" }}>{rankInfo.rank}ランクの企業</div>
+                                    </div>
+                                    <div style={{ padding: "6px 12px", borderRadius: 999, background: `${rankInfo.color}20`, border: `1px solid ${rankInfo.color}66`, fontSize: 12, fontWeight: 800, color: rankInfo.color }}>
+                                        {sameTierCompanies.length}社
+                                    </div>
+                                </div>
+                                {sameTierCompanies.length === 0 ? (
+                                    <div style={{ padding: 24, textAlign: "center", color: "#6b7280", fontSize: 13 }}>
+                                        まだ {rankInfo.rank} ランクの企業データはありません
+                                    </div>
+                                ) : (
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
+                                        {sameTierCompanies.map(c => (
+                                            <a key={c.id} href={c.website_url || "#"} target="_blank" rel="noopener noreferrer" onClick={(e) => !c.website_url && e.preventDefault()} style={{ padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", textDecoration: "none", display: "block", cursor: c.website_url ? "pointer" : "default", transition: "all 0.2s" }}>
+                                                <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
+                                                <div style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.industry || "業界未設定"}</div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* ステップアップ企業 */}
+                            {stepUpTier && stepUpCompanies.length > 0 && (
+                                <div style={{ marginBottom: 24, padding: 24, borderRadius: 16, background: "linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.02))", border: "1px solid rgba(251,191,36,0.3)" }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                                        <div>
+                                            <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>✨ ステップアップ目標</div>
+                                            <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb" }}>{stepUpTier}ランクを目指そう</div>
+                                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>一つ上のランクで狙える企業</div>
+                                        </div>
+                                        <div style={{ padding: "6px 12px", borderRadius: 999, background: "rgba(251,191,36,0.2)", border: "1px solid rgba(251,191,36,0.66)", fontSize: 12, fontWeight: 800, color: "#fbbf24" }}>
+                                            {stepUpCompanies.length}社
+                                        </div>
+                                    </div>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
+                                        {stepUpCompanies.slice(0, 12).map(c => (
+                                            <a key={c.id} href={c.website_url || "#"} target="_blank" rel="noopener noreferrer" onClick={(e) => !c.website_url && e.preventDefault()} style={{ padding: 12, borderRadius: 10, background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.15)", textDecoration: "none", display: "block", cursor: c.website_url ? "pointer" : "default" }}>
+                                                <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
+                                                <div style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.industry || "業界未設定"}</div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                    {stepUpCompanies.length > 12 && (
+                                        <div style={{ textAlign: "center", marginTop: 12, fontSize: 11, color: "#9ca3af" }}>
+                                            他 {stepUpCompanies.length - 12}社
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    );
+                })()}
                 {/* 評価日 */}
                 {evaluatedAt && (
                     <div style={{ textAlign: "center", marginTop: 16, fontSize: 11, color: "#6b7280" }}>
