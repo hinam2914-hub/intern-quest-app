@@ -40,6 +40,14 @@ const TEST_LABELS: Record<string, { label: string; color: string; icon: string }
     sales: { label: "営業デビュー", color: "#8b5cf6", icon: "💼" },
     planner: { label: "企画職適性", color: "#ec4899", icon: "💡" },
     manager: { label: "マネージャー", color: "#ec4899", icon: "🎖️" },
+    common_sense: { label: "常識・デリカシー", color: "#a78bfa", icon: "🧠" },
+    social_standard: { label: "社会人基準", color: "#ec4899", icon: "🎯" },
+    profit_thinking: { label: "利益思考", color: "#10b981", icon: "💰" },
+    long_term_thinking: { label: "長期思考", color: "#3b82f6", icon: "📈" },
+    teiou: { label: "Dot.A 帝王学", color: "#fbbf24", icon: "👑" },
+    essence_thinking: { label: "本質思考", color: "#06b6d4", icon: "🔍" },
+    standard_keeping: { label: "基準維持", color: "#f97316", icon: "⚖️" },
+    market_value: { label: "市場価値認識", color: "#0891b2", icon: "💪" },
 };
 
 const WRITTEN_QUESTIONS: Record<string, string[]> = {
@@ -50,6 +58,14 @@ const WRITTEN_QUESTIONS: Record<string, string[]> = {
         "「自分がこれまでにサボった経験」と「改善策」を書いてください",
         "「今の自分に足りないもの」と「それをどう補うか」",
         "「このインターンで得たいもの」",
+    ],
+    market_value: [
+        "企業が学生を選ぶ理由を、自分の言葉で説明してください",
+        "「企業に選ばれる人」の特徴を書いてください",
+        "今の自分が企業側から見て弱いと思う点を書いてください",
+        "企業が\"お金を払ってでも欲しい人材\"とはどんな人か説明してください",
+        "「学生気分」と「社会人思考」の違いを書いてください",
+        "今の自分が\"選ばれる側\"になるために必要な行動を書いてください",
     ],
     mentor: [
         "メンターとしての自分の強み・弱み",
