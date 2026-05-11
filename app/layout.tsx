@@ -24,7 +24,7 @@ export default function RootLayout({
       }, TIMEOUT_MS);
     };
 
-    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    const events: (keyof WindowEventMap)[] = ["mousemove", "keydown", "click", "scroll", "touchstart"];
     events.forEach(e => window.addEventListener(e, resetTimer));
     resetTimer();
 
@@ -37,7 +37,6 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <AutoLogout />
         {children}
       </body>
     </html>
