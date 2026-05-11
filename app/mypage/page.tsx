@@ -724,33 +724,65 @@ export default function MyPage() {
 
             {/* ===== フローティング +Xpt テキスト ===== */}
             <AnimatePresence>
-                {/* ===== アドバイス通知バナー ===== */}
+                {/* ===== アドバイス通知バナー（コンパクト版） ===== */}
                 {unreadAdvices.length > 0 && (
                     <div style={{ position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto 24px" }}>
-                        <div style={{ padding: "20px 24px", borderRadius: 16, background: "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(249,115,22,0.12))", border: "2px solid rgba(245,158,11,0.4)", boxShadow: "0 0 30px rgba(245,158,11,0.15)" }}>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: "#fbbf24", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                                💌 あなたへのアドバイスが届いています ({unreadAdvices.length}件)
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                {unreadAdvices.map((a) => {
-                                    const catLabel: Record<string, string> = {
-                                        late: "⏰ 遅刻",
-                                        absence: "❌ 欠勤",
-                                        mistake: "💼 仕事のミス",
-                                        communication: "💬 コミュニケーション",
-                                        other: "📝 その他",
-                                    };
-                                    return (
-                                        <div key={a.id} style={{ padding: 12, borderRadius: 10, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(245,158,11,0.2)" }}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                                                <span style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: "rgba(245,158,11,0.15)" }}>{catLabel[a.category] || a.category}</span>
-                                                <span style={{ fontSize: 10, color: "#6b7280" }}>{new Date(a.created_at).toLocaleDateString("ja-JP")}</span>
-                                            </div>
-                                            <div style={{ fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{a.message}</div>
-                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 6, fontStyle: "italic" }}>※ 匿名で送信されています</div>
-                                        </div>
-                                    );
-                                })}
+                        <div
+                            onClick={() => router.push("/advice?tab=received")}
+                            style={{
+                                padding: "20px 24px",
+                                borderRadius: 16,
+                                background: "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(249,115,22,0.12))",
+                                border: "2px solid rgba(245,158,11,0.4)",
+                                boxShadow: "0 0 30px rgba(245,158,11,0.2)",
+                                cursor: "pointer",
+                                transition: "all 0.3s",
+                                position: "relative",
+                                overflow: "hidden",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = "translateY(-2px)";
+                                e.currentTarget.style.boxShadow = "0 6px 40px rgba(245,158,11,0.3)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = "translateY(0)";
+                                e.currentTarget.style.boxShadow = "0 0 30px rgba(245,158,11,0.2)";
+                            }}
+                        >
+                            {/* キラキラ装飾 */}
+                            <div style={{ position: "absolute", top: -20, right: -20, fontSize: 80, opacity: 0.1 }}>💌</div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, position: "relative", zIndex: 1 }}>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(251,191,36,0.2)", color: "#fbbf24", fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>💌 NEW</span>
+                                        <span style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb" }}>
+                                            あなたへのアドバイスが{unreadAdvices.length}件あります
+                                        </span>
+                                    </div>
+                                    <div style={{ fontSize: 13, color: "#fcd34d", marginBottom: 6 }}>
+                                        💡 改善のヒントが届いています
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(245,158,11,0.25)", color: "#fbbf24", fontSize: 12, fontWeight: 800 }}>
+                                            🎁 成長のヒント
+                                        </span>
+                                        <span style={{ fontSize: 11, color: "#9ca3af" }}>完全匿名で届いています</span>
+                                    </div>
+                                </div>
+                                <div style={{
+                                    flexShrink: 0,
+                                    padding: "12px 20px",
+                                    borderRadius: 10,
+                                    background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                                    color: "#fff",
+                                    fontWeight: 800,
+                                    fontSize: 14,
+                                    whiteSpace: "nowrap",
+                                    boxShadow: "0 4px 12px rgba(245,158,11,0.4)",
+                                }}>
+                                    確認する →
+                                </div>
                             </div>
                         </div>
                     </div>

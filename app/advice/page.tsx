@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
 type Member = {
@@ -22,6 +22,8 @@ const CATEGORIES = [
 
 export default function AdvicePage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialTab = (searchParams.get("tab") as "send" | "received" | "history") || "send";
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState<string>("");
     const [members, setMembers] = useState<Member[]>([]);
@@ -33,7 +35,8 @@ export default function AdvicePage() {
     const [searchQuery, setSearchQuery] = useState("");
 
     const [myAdviceHistory, setMyAdviceHistory] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<"send" | "history">("send");
+    const [receivedAdvices, setReceivedAdvices] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<"send" | "received" | "history">(initialTab);
 
     useEffect(() => {
         const load = async () => {
@@ -64,6 +67,14 @@ export default function AdvicePage() {
                 .eq("sender_id", user.id)
                 .order("created_at", { ascending: false });
             setMyAdviceHistory(history || []);
+            // 受信したアドバイス（承認済みのみ表示）
+            const { data: received } = await supabase
+                .from("advice_logs")
+                .select("*")
+                .eq("receiver_id", user.id)
+                .eq("status", "approved")
+                .order("created_at", { ascending: false });
+            setReceivedAdvices(received || []);
 
             setLoading(false);
         };
@@ -149,9 +160,12 @@ export default function AdvicePage() {
                 </div>
 
                 {/* タブ */}
-                <div style={{ display: "flex", gap: 6, marginBottom: 16, padding: 4, borderRadius: 10, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", width: "fit-content" }}>
+                <div style={{ display: "flex", gap: 6, marginBottom: 16, padding: 4, borderRadius: 10, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)", width: "fit-content", flexWrap: "wrap" }}>
                     <button onClick={() => setActiveTab("send")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: activeTab === "send" ? "linear-gradient(135deg, #f59e0b, #f97316)" : "transparent", color: activeTab === "send" ? "#fff" : "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                         ✏️ 送信する
+                    </button>
+                    <button onClick={() => setActiveTab("received")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: activeTab === "received" ? "linear-gradient(135deg, #f59e0b, #f97316)" : "transparent", color: activeTab === "received" ? "#fff" : "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                        📩 受信 ({receivedAdvices.length})
                     </button>
                     <button onClick={() => setActiveTab("history")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: activeTab === "history" ? "linear-gradient(135deg, #f59e0b, #f97316)" : "transparent", color: activeTab === "history" ? "#fff" : "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                         📜 送信履歴 ({myAdviceHistory.length})
@@ -235,7 +249,35 @@ export default function AdvicePage() {
                         </button>
                     </div>
                 )}
-
+                {activeTab === "received" && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        {receivedAdvices.length === 0 ? (
+                            <div style={{ padding: 40, textAlign: "center", color: "#6b7280", fontSize: 13 }}>
+                                <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.5 }}>💌</div>
+                                まだあなたへのアドバイスはありません
+                            </div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div style={{ fontSize: 12, color: "#fbbf24", fontWeight: 700, marginBottom: 4, padding: "8px 12px", borderRadius: 8, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                                    💡 メンバーからあなたに届いた改善のヒントです（完全匿名）
+                                </div>
+                                {receivedAdvices.map(a => {
+                                    const cat = CATEGORIES.find(c => c.value === a.category);
+                                    return (
+                                        <div key={a.id} style={{ padding: 16, borderRadius: 10, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
+                                                <span style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(245,158,11,0.15)", color: "#fbbf24", fontSize: 11, fontWeight: 700 }}>{cat?.label || a.category}</span>
+                                                <span style={{ fontSize: 10, color: "#6b7280" }}>{new Date(a.created_at).toLocaleString("ja-JP")}</span>
+                                            </div>
+                                            <div style={{ fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{a.message}</div>
+                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 8, fontStyle: "italic" }}>※ 匿名で送信されています</div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
                 {activeTab === "history" && (
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                         {myAdviceHistory.length === 0 ? (
