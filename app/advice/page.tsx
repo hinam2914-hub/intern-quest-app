@@ -27,7 +27,8 @@ export default function AdvicePage() {
     const [members, setMembers] = useState<Member[]>([]);
     const [selectedReceiver, setSelectedReceiver] = useState<string>("");
     const [category, setCategory] = useState<string>("late");
-    const [message, setMessage] = useState<string>("");
+    const [observation, setObservation] = useState<string>("");
+    const [suggestion, setSuggestion] = useState<string>("");
     const [sending, setSending] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -74,8 +75,12 @@ export default function AdvicePage() {
             alert("送信先のメンバーを選んでください");
             return;
         }
-        if (!message.trim()) {
-            alert("メッセージを入力してください");
+        if (!observation.trim()) {
+            alert("「気になった行動」を入力してください");
+            return;
+        }
+        if (!suggestion.trim()) {
+            alert("「こうした方が良いと思うこと」を入力してください");
             return;
         }
         if (!confirm("送信してよろしいですか？\n\n※管理者の承認後、相手に届きます\n※承認時に+2pt獲得")) return;
@@ -85,7 +90,7 @@ export default function AdvicePage() {
             sender_id: userId,
             receiver_id: selectedReceiver,
             category: category,
-            message: message.trim(),
+            message: `📍 気になった行動・現状\n${observation.trim()}\n\n✨ こうした方が良いと思うこと\n${suggestion.trim()}`,
             status: "pending",
             sender_is_admin: false,
             points_awarded: 0,
@@ -99,7 +104,8 @@ export default function AdvicePage() {
 
         alert("✅ アドバイスを送信しました\n管理者の承認後、相手に通知されます");
         setSelectedReceiver("");
-        setMessage("");
+        setObservation("");
+        setSuggestion("");
         setCategory("late");
 
         // 履歴を再読込
@@ -196,14 +202,25 @@ export default function AdvicePage() {
                             </div>
                         </div>
 
-                        {/* メッセージ */}
-                        <div style={{ marginBottom: 20 }}>
-                            <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, marginBottom: 8 }}>✏️ メッセージ</div>
+                        {/* 気になった行動・現状 */}
+                        <div style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, marginBottom: 8 }}>📍 気になった行動・現状</div>
                             <textarea
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                placeholder="例: 最近遅刻が続いているので、改善のため一緒に対策を考えませんか？"
-                                style={{ width: "100%", minHeight: 140, padding: 12, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, fontFamily: "inherit", resize: "vertical", outline: "none" }}
+                                value={observation}
+                                onChange={(e) => setObservation(e.target.value)}
+                                placeholder="例: 朝のミーティングに3回連続で遅刻している"
+                                style={{ width: "100%", minHeight: 100, padding: 12, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, fontFamily: "inherit", resize: "vertical", outline: "none" }}
+                            />
+                        </div>
+
+                        {/* こうした方が良いと思うこと */}
+                        <div style={{ marginBottom: 20 }}>
+                            <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, marginBottom: 8 }}>✨ こうした方が良いと思うこと</div>
+                            <textarea
+                                value={suggestion}
+                                onChange={(e) => setSuggestion(e.target.value)}
+                                placeholder="例: 前日の夜にアラームを2つセットすると安心です"
+                                style={{ width: "100%", minHeight: 100, padding: 12, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 13, fontFamily: "inherit", resize: "vertical", outline: "none" }}
                             />
                             <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>※ 相手の名前・送信者の名前は表示されません（完全匿名）</div>
                         </div>
@@ -211,8 +228,8 @@ export default function AdvicePage() {
                         {/* 送信ボタン */}
                         <button
                             onClick={handleSend}
-                            disabled={sending || !selectedReceiver || !message.trim()}
-                            style={{ width: "100%", padding: "14px 24px", borderRadius: 10, border: "none", background: sending || !selectedReceiver || !message.trim() ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #f59e0b, #f97316)", color: sending || !selectedReceiver || !message.trim() ? "#6b7280" : "#fff", fontSize: 14, fontWeight: 700, cursor: sending || !selectedReceiver || !message.trim() ? "not-allowed" : "pointer", boxShadow: sending || !selectedReceiver || !message.trim() ? "none" : "0 0 20px rgba(245,158,11,0.3)" }}
+                            disabled={sending || !selectedReceiver || !observation.trim() || !suggestion.trim()}
+                            style={{ width: "100%", padding: "14px 24px", borderRadius: 10, border: "none", background: sending || !selectedReceiver || (!observation.trim() || !suggestion.trim()) ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #f59e0b, #f97316)", color: sending || !selectedReceiver || (!observation.trim() || !suggestion.trim()) ? "#6b7280" : "#fff", fontSize: 14, fontWeight: 700, cursor: sending || !selectedReceiver || (!observation.trim() || !suggestion.trim()) ? "not-allowed" : "pointer", boxShadow: sending || !selectedReceiver || (!observation.trim() || !suggestion.trim()) ? "none" : "0 0 20px rgba(245,158,11,0.3)" }}
                         >
                             {sending ? "送信中..." : "💌 送信する"}
                         </button>
