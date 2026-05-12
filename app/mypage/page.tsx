@@ -428,7 +428,14 @@ export default function MyPage() {
     const floatingIdRef = useRef(0);
     const pointsCardRef = useRef<HTMLDivElement>(null);
     const { canvasRef, spawnParticles } = useParticleEffect();
-
+    // 画面幅検出（スマホ判定用）
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
     const isLightBg = useMemo(() =>
         ["#fce4ec", "#f3e5f5", "#e8f5e9", "#e3f2fd", "#fff9e6"].includes(bgColor),
         [bgColor]);
@@ -979,7 +986,7 @@ export default function MyPage() {
 
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 16 : 0, marginBottom: 20 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                         {avatarUrl ? (
                             <img src={avatarUrl} alt={name} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", display: "block", border: "3px solid rgba(99,102,241,0.6)" }} />
@@ -1000,7 +1007,7 @@ export default function MyPage() {
                             )}
                         </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0, justifyContent: isMobile ? "flex-end" : "flex-start" }}>
                         <button onClick={() => setShowProfileModal(true)} style={{ background: cardBg, color: textPrimary, padding: "8px 10px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>✏️ プロフィール</button>
                         <button onClick={() => router.push("/report")} style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", padding: "8px 12px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>📋 日報</button>
                         <button onClick={() => router.push("/menu")} style={{ background: cardBg, color: textPrimary, padding: "8px 10px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}>☰</button>
