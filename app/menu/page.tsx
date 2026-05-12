@@ -77,6 +77,7 @@ export default function MenuPage() {
             items: [
                 { icon: "📸", label: "プロフィール写真", desc: "顔写真をアップロードする", path: "/profile", color: "#ec4899" },
                 { icon: "📖", label: "使い方", desc: "Intern Questの使い方を確認する", path: "/onboarding", color: "#34d399" },
+                { icon: "📖", label: "制度・評価ロジック", desc: "ポイント・ランク・評価基準を公開", path: "/spec", color: "#a78bfa" },
             ],
         },
     ];
