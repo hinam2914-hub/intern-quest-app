@@ -1007,7 +1007,7 @@ export default function MyPage() {
                             )}
                         </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexShrink: 0, justifyContent: isMobile ? "flex-end" : "flex-start" }}>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0, justifyContent: isMobile ? "flex-start" : "flex-end", flexWrap: "wrap" }}>
                         <button onClick={() => setShowProfileModal(true)} style={{ background: cardBg, color: textPrimary, padding: "8px 10px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>✏️ プロフィール</button>
                         <button onClick={() => router.push("/report")} style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", padding: "8px 12px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>📋 日報</button>
                         <button onClick={() => router.push("/menu")} style={{ background: cardBg, color: textPrimary, padding: "8px 10px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}>☰</button>
@@ -1027,7 +1027,7 @@ export default function MyPage() {
                 {message && <div style={{ marginBottom: 20, padding: "12px 20px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, color: "#a5b4fc", fontSize: 14 }}>{message}</div>}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
-                    <div className="status-cards" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                    <div className="status-cards" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 12 }}>
                         {[
                             {
                                 title: "TOTAL POINTS", tip: "獲得したポイントの累計です", ref: pointsCardRef, content: (
@@ -1092,8 +1092,8 @@ export default function MyPage() {
                                             </div>
                                         </div>
 
-                                        {/* レーダーチャート + 軸バー（2列） */}
-                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "center", marginBottom: 12 }}>
+                                        {/* レーダーチャート + 軸バー（PCは2列、スマホは縦並び） */}
+                                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "center", marginBottom: 12 }}>
                                             <ResponsiveContainer width="100%" height={220}>
                                                 <RadarChart data={[
                                                     { axis: "学歴", value: getEducationScore(education), fullMark: 20 },
