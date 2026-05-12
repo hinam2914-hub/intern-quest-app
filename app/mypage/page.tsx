@@ -1058,15 +1058,6 @@ export default function MyPage() {
                                     </div>
                                 )
                             },
-                            {
-                                title: "STREAK", tip: "日報を連続提出した日数です", ref: undefined, content: (
-                                    <div>
-                                        <div style={{ fontSize: 36, fontWeight: 800, color: textPrimary, lineHeight: 1 }}>{streak}</div>
-                                        <div style={{ fontSize: 16, color: "#f59e0b", fontWeight: 600, marginTop: 4 }}>日連続</div>
-                                        <div style={{ marginTop: 8, fontSize: 11, color: textSecondary, lineHeight: 1.4 }}>{actionMessage}</div>
-                                    </div>
-                                )
-                            },
                         ].map((card) => (
                             <div key={card.title} ref={card.ref} style={{ position: "relative" }}
                                 onMouseEnter={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "block"; }}
@@ -1270,9 +1261,25 @@ export default function MyPage() {
 
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>DAILY MISSIONS</div>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎯 今日のミッション</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{[true, isSubmitted, todayThanksDone, todayLearnDone].filter(Boolean).length} / 4 完了</div>
                     </div>
+
+                    {/* STREAK表示 */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 12, background: streak > 0 ? "linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.10))" : isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${streak > 0 ? "rgba(245,158,11,0.3)" : cardBorder}`, marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <span style={{ fontSize: 24 }}>🔥</span>
+                            <div>
+                                <div style={{ fontSize: 11, color: textMuted, fontWeight: 600, letterSpacing: 1 }}>連続提出</div>
+                                <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                                    <span style={{ fontSize: 24, fontWeight: 800, color: streak > 0 ? "#f59e0b" : textMuted, lineHeight: 1 }}>{streak}</span>
+                                    <span style={{ fontSize: 12, color: streak > 0 ? "#f59e0b" : textMuted, fontWeight: 600 }}>日</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style={{ fontSize: 11, color: textSecondary, textAlign: "right", lineHeight: 1.4, maxWidth: 200 }}>{actionMessage}</div>
+                    </div>
+
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
                             { icon: "🔐", label: "ログインする", done: true, pt: "+1pt", path: null },
