@@ -1079,25 +1079,8 @@ export default function MyPage() {
                         ))}
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
                         {[
-                            {
-                                title: "GROWTH STATUS", tip: "管理者が設定する社内育成フェーズです", content: (
-                                    <div>
-                                        {growthRank ? (
-                                            <div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                                                    <div style={{ width: 72, height: 72, borderRadius: 16, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff" }}>{growthRank}</div>
-                                                    <div style={{ fontSize: 28, fontWeight: 800, color: textPrimary }}>{growthGrade}</div>
-                                                </div>
-                                                <div style={{ fontSize: 12, color: textMuted, marginTop: 16 }}>社内育成フェーズ</div>
-                                            </div>
-                                        ) : (
-                                            <div style={{ fontSize: 14, color: textMuted }}>未設定（管理者が設定します）</div>
-                                        )}
-                                    </div>
-                                )
-                            },
                             {
                                 title: "EFFORT RANK", tip: "日々の活動量・質を7軸で総合評価したランクです", content: (
                                     <div>
@@ -1205,7 +1188,7 @@ export default function MyPage() {
                 </div>
 
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>7-AXIS EVALUATION</div>
+                    <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📊 EFFORT RANKの内訳（7軸評価）</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
                         <ResponsiveContainer width="100%" height={280}>
                             <RadarChart data={[
