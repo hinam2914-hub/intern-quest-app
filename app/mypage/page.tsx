@@ -1344,11 +1344,10 @@ export default function MyPage() {
                     </div>
                     {kpiDepts.length > 0 && selectedDeptId ? (() => {
                         const filtered = monthlyKpis.filter(m => m.department_id === selectedDeptId).sort((a, b) => a.year_month.localeCompare(b.year_month));
-                        let cumulative = 0;
-                        const data = filtered.map(m => {
-                            cumulative += m.result || 0;
-                            return { date: m.year_month, value: cumulative };
-                        });
+                        const data = filtered.map(m => ({
+                            date: m.year_month,
+                            value: m.result || 0,
+                        }));
                         const selectedDept = kpiDepts.find(d => d.id === selectedDeptId);
                         const unit = selectedDept?.unit || "件";
                         const metricName = selectedDept?.main_metric || "";
@@ -1357,7 +1356,7 @@ export default function MyPage() {
                                 <LineChart data={data}>
                                     <XAxis dataKey="date" stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
                                     <YAxis stroke={isLightBg ? "#9ca3af" : "#4b5563"} tick={{ fill: textMuted, fontSize: 11 }} />
-                                    <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}${unit}`, `累計${metricName}`]} />
+                                    <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, color: "#f9fafb" }} formatter={(value: unknown) => [`${value}${unit}`, `当月${metricName}`]} />
                                     <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", r: 4 }} activeDot={{ r: 6, fill: "#10b981" }} />
                                 </LineChart>
                             </ResponsiveContainer>
