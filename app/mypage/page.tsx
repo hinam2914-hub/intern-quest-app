@@ -1094,27 +1094,44 @@ export default function MyPage() {
                                             </div>
                                         </div>
 
-                                        {/* 7軸バー */}
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12, padding: 12, borderRadius: 10, background: "rgba(0,0,0,0.15)" }}>
-                                            {[
-                                                { label: "学歴", value: getEducationScore(education), max: 10, color: "#6366f1" },
-                                                { label: "活動期間", value: Math.min(activeDays * (15 / 730), 15), max: 15, color: "#8b5cf6" },
-                                                { label: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), max: 15, color: "#06b6d4" },
-                                                { label: "思考力", value: Math.min(kkcApprovedCount, 20), max: 20, color: "#f59e0b" },
-                                                { label: "リーダー", value: Math.min(Math.floor(thanksCount / 20), 10), max: 10, color: "#ec4899" },
-                                                { label: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), max: 20, color: "#10b981" },
-                                                { label: "メタ認知", value: Math.min(level * (4 / 15), 10), max: 10, color: "#f97316" },
-                                            ].map((axis) => (
-                                                <div key={axis.label}>
-                                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 3 }}>
-                                                        <span style={{ color: textMuted }}>{axis.label}</span>
-                                                        <span style={{ color: axis.color, fontWeight: 700 }}>{Math.round(axis.value)}/{axis.max}</span>
+                                        {/* レーダーチャート + 軸バー（2列） */}
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "center", marginBottom: 12 }}>
+                                            <ResponsiveContainer width="100%" height={220}>
+                                                <RadarChart data={[
+                                                    { axis: "学歴", value: getEducationScore(education), fullMark: 20 },
+                                                    { axis: "活動期間", value: Math.min(activeDays * (15 / 730), 15), fullMark: 20 },
+                                                    { axis: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), fullMark: 20 },
+                                                    { axis: "メタ認知", value: Math.min(level * (4 / 15), 10), fullMark: 20 },
+                                                    { axis: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), fullMark: 20 },
+                                                    { axis: "リーダー", value: Math.min(Math.floor(thanksCount / 20), 10), fullMark: 20 },
+                                                    { axis: "思考力", value: Math.min(kkcApprovedCount, 20), fullMark: 20 },
+                                                ]}>
+                                                    <PolarGrid stroke={barBg} />
+                                                    <PolarAngleAxis dataKey="axis" tick={{ fill: textMuted, fontSize: 10, fontWeight: 600 }} />
+                                                    <Radar name="スコア" dataKey="value" stroke={themeColor} fill={themeColor} fillOpacity={0.3} strokeWidth={2} />
+                                                </RadarChart>
+                                            </ResponsiveContainer>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                                {[
+                                                    { label: "学歴", value: getEducationScore(education), max: 10, color: "#6366f1" },
+                                                    { label: "活動期間", value: Math.min(activeDays * (15 / 730), 15), max: 15, color: "#8b5cf6" },
+                                                    { label: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), max: 15, color: "#06b6d4" },
+                                                    { label: "思考力", value: Math.min(kkcApprovedCount, 20), max: 20, color: "#f59e0b" },
+                                                    { label: "リーダー", value: Math.min(Math.floor(thanksCount / 20), 10), max: 10, color: "#ec4899" },
+                                                    { label: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), max: 20, color: "#10b981" },
+                                                    { label: "メタ認知", value: Math.min(level * (4 / 15), 10), max: 10, color: "#f97316" },
+                                                ].map((axis) => (
+                                                    <div key={axis.label}>
+                                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 2 }}>
+                                                            <span style={{ color: textMuted }}>{axis.label}</span>
+                                                            <span style={{ color: axis.color, fontWeight: 700 }}>{Math.round(axis.value)}/{axis.max}</span>
+                                                        </div>
+                                                        <div style={{ height: 3, borderRadius: 999, background: barBg }}>
+                                                            <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999 }} />
+                                                        </div>
                                                     </div>
-                                                    <div style={{ height: 4, borderRadius: 999, background: barBg }}>
-                                                        <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999 }} />
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
 
                                         {/* 総合スコアバー */}
