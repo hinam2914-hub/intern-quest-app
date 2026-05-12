@@ -1084,7 +1084,8 @@ export default function MyPage() {
                             {
                                 title: "EFFORT RANK", tip: "日々の活動量・質を7軸で総合評価したランクです", content: (
                                     <div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                        {/* スコアセクション */}
+                                        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
                                             <div style={{ width: 72, height: 72, borderRadius: 16, background: rankColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff" }}>{rank2}</div>
                                             <div>
                                                 <div style={{ fontSize: 13, color: textMuted, marginBottom: 4 }}>スコア</div>
@@ -1092,12 +1093,35 @@ export default function MyPage() {
                                                 <div style={{ fontSize: 11, color: textMuted }}>/100</div>
                                             </div>
                                         </div>
-                                        <div style={{ marginTop: 16 }}>
-                                            <div style={{ height: 4, borderRadius: 999, background: barBg }}>
-                                                <div style={{ height: "100%", width: `${rankScore}%`, background: rankColor, borderRadius: 999 }} />
-                                            </div>
-                                            <div style={{ fontSize: 12, color: textMuted, marginTop: 8 }}>{nextRankInfo}</div>
+
+                                        {/* 7軸バー */}
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12, padding: 12, borderRadius: 10, background: "rgba(0,0,0,0.15)" }}>
+                                            {[
+                                                { label: "学歴", value: getEducationScore(education), max: 10, color: "#6366f1" },
+                                                { label: "活動期間", value: Math.min(activeDays * (15 / 730), 15), max: 15, color: "#8b5cf6" },
+                                                { label: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), max: 15, color: "#06b6d4" },
+                                                { label: "思考力", value: Math.min(kkcApprovedCount, 20), max: 20, color: "#f59e0b" },
+                                                { label: "リーダー", value: Math.min(Math.floor(thanksCount / 20), 10), max: 10, color: "#ec4899" },
+                                                { label: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), max: 20, color: "#10b981" },
+                                                { label: "メタ認知", value: Math.min(level * (4 / 15), 10), max: 10, color: "#f97316" },
+                                            ].map((axis) => (
+                                                <div key={axis.label}>
+                                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 3 }}>
+                                                        <span style={{ color: textMuted }}>{axis.label}</span>
+                                                        <span style={{ color: axis.color, fontWeight: 700 }}>{Math.round(axis.value)}/{axis.max}</span>
+                                                    </div>
+                                                    <div style={{ height: 4, borderRadius: 999, background: barBg }}>
+                                                        <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999 }} />
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
+
+                                        {/* 総合スコアバー */}
+                                        <div style={{ height: 4, borderRadius: 999, background: barBg }}>
+                                            <div style={{ height: "100%", width: `${rankScore}%`, background: rankColor, borderRadius: 999 }} />
+                                        </div>
+                                        <div style={{ fontSize: 12, color: textMuted, marginTop: 8 }}>{nextRankInfo}</div>
                                     </div>
                                 )
                             },
@@ -1184,54 +1208,6 @@ export default function MyPage() {
                                 {badge.unlocked && <span style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginLeft: 4 }}>✅</span>}
                             </div>
                         ))}
-                    </div>
-                </div>
-
-                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📊 EFFORT RANKの内訳（7軸評価）</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
-                        <ResponsiveContainer width="100%" height={280}>
-                            <RadarChart data={[
-                                { axis: "学歴", value: getEducationScore(education) },
-                                { axis: "活動期間", value: Math.min(activeDays * (15 / 730), 15) },
-                                { axis: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15) },
-                                { axis: "メタ認知", value: Math.min(level * (4 / 15), 10) },
-                                { axis: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20) },
-                                { axis: "リーダーシップ", value: Math.min(Math.floor(thanksCount / 20), 10) },
-                                { axis: "思考力", value: Math.min(kkcApprovedCount, 20) },
-                            ]}>
-                                <PolarGrid stroke={barBg} />
-                                <PolarAngleAxis dataKey="axis" tick={{ fill: textMuted, fontSize: 11, fontWeight: 600 }} />
-                                <Radar name="スコア" dataKey="value" stroke={themeColor} fill={themeColor} fillOpacity={0.3} strokeWidth={2} />
-                            </RadarChart>
-                        </ResponsiveContainer>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            {[
-                                { label: "学歴", value: getEducationScore(education), max: 10, color: "#6366f1", tip: "学歴に応じてスコアが決まります" },
-                                { label: "活動期間", value: Math.min(activeDays * (15 / 730), 15), max: 15, color: "#8b5cf6", tip: "2年で満点になります" },
-                                { label: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), max: 15, color: "#06b6d4", tip: "マンスリーKPIが承認されるたびに上がります" },
-                                { label: "思考力", value: Math.min(kkcApprovedCount, 20), max: 20, color: "#f59e0b", tip: "KKC課題解決案が承認されるたびに上がります" },
-                                { label: "リーダーシップ", value: Math.min(Math.floor(thanksCount / 20), 10), max: 10, color: "#ec4899", tip: "サンキュー20件ごとに1点上がります" },
-                                { label: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), max: 20, color: "#10b981", tip: "ES更新10回ごとに1点上がります" },
-                                { label: "メタ認知", value: Math.min(level * (4 / 15), 10), max: 10, color: "#f97316", tip: "Lv15で4点、Lv37で10点になります" },
-                            ].map((axis) => (
-                                <div key={axis.label} style={{ position: "relative" }}
-                                    onMouseEnter={() => { const tip = document.getElementById(`tip-${axis.label}`); if (tip) tip.style.display = "block"; }}
-                                    onMouseLeave={() => { const tip = document.getElementById(`tip-${axis.label}`); if (tip) tip.style.display = "none"; }}
-                                >
-                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: textMuted, marginBottom: 4 }}>
-                                        <span style={{ cursor: "help", borderBottom: `1px dashed ${cardBorder}` }}>{axis.label} 💡</span>
-                                        <span style={{ color: axis.color, fontWeight: 700 }}>{Math.round(axis.value)} / {axis.max}</span>
-                                    </div>
-                                    <div style={{ height: 6, borderRadius: 999, background: barBg }}>
-                                        <div style={{ height: "100%", width: `${(axis.value / axis.max) * 100}%`, background: axis.color, borderRadius: 999 }} />
-                                    </div>
-                                    <div id={`tip-${axis.label}`} style={{ display: "none", position: "absolute", top: -36, left: 0, background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#c7d2fe", whiteSpace: "nowrap", zIndex: 10 }}>
-                                        {axis.tip}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </div>
                 </div>
 
