@@ -726,7 +726,7 @@ export default function MyPage() {
             <AnimatePresence>
                 {/* ===== アドバイス通知バナー（コンパクト版） ===== */}
                 {unreadAdvices.length > 0 && (
-                    <div style={{ position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto 24px" }}>
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
                         <div
                             onClick={() => router.push("/advice?tab=received")}
                             style={{
@@ -789,7 +789,7 @@ export default function MyPage() {
                 )}
                 {/* ===== 未回答アンケートバナー ===== */}
                 {pendingSurveys.length > 0 && (
-                    <div style={{ position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto 24px" }}>
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
                         <div
                             onClick={() => router.push(pendingSurveys.length === 1 ? `/surveys/${pendingSurveys[0].id}` : "/surveys")}
                             style={{
