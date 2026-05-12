@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
@@ -20,7 +20,7 @@ const CATEGORIES = [
     { value: "other", label: "📝 その他", desc: "上記以外の気づき" },
 ];
 
-export default function AdvicePage() {
+function AdvicePageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const initialTab = (searchParams.get("tab") as "send" | "received" | "history") || "send";
@@ -317,5 +317,16 @@ export default function AdvicePage() {
                 )}
             </div>
         </main>
+    );
+}
+export default function AdvicePage() {
+    return (
+        <Suspense fallback={
+            <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ color: "#6366f1", fontSize: 18, fontWeight: 700 }}>Loading...</div>
+            </main>
+        }>
+            <AdvicePageContent />
+        </Suspense>
     );
 }
