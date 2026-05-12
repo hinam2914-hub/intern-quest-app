@@ -76,6 +76,17 @@ function AdvicePageContent() {
                 .order("created_at", { ascending: false });
             setReceivedAdvices(received || []);
 
+            // 受信タブを開いた場合、未読を既読化
+            if (initialTab === "received" && received && received.length > 0) {
+                const unreadIds = received.filter(r => !r.is_read).map(r => r.id);
+                if (unreadIds.length > 0) {
+                    await supabase
+                        .from("advice_logs")
+                        .update({ is_read: true })
+                        .in("id", unreadIds);
+                }
+            }
+
             setLoading(false);
         };
         load();

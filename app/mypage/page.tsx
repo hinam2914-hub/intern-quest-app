@@ -652,12 +652,13 @@ export default function MyPage() {
         const { data: tagRows } = await supabase.from("user_tags").select("*").eq("user_id", user.id).order("created_at");
         setUserTags((tagRows || []) as UserTag[]);
 
-        // 未読アドバイス取得
+        // 未読アドバイス取得（is_read=falseのみ）
         const { data: adviceRows } = await supabase
             .from("advice_logs")
             .select("id, category, message, created_at")
             .eq("receiver_id", user.id)
             .eq("status", "approved")
+            .eq("is_read", false)
             .order("created_at", { ascending: false })
             .limit(5);
         setUnreadAdvices((adviceRows || []) as any);
