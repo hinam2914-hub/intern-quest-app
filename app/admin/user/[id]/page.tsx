@@ -130,6 +130,8 @@ export default function UserDetailPage() {
     const [userTags, setUserTags] = useState<{ id: string; tag: string }[]>([]);
     // ===== 就活市場ランク評価 =====
     const [rankScoreEs, setRankScoreEs] = useState<number>(0);
+    const [roadmapData, setRoadmapData] = useState<any>(null);
+    const [roadmapOpen, setRoadmapOpen] = useState(false);
     const [rankScorePersonality, setRankScorePersonality] = useState<number>(0);
     const [rankScoreInterview, setRankScoreInterview] = useState<number>(0);
     const [rankScoreEducation, setRankScoreEducation] = useState<number>(0);
@@ -194,6 +196,13 @@ export default function UserDetailPage() {
             setRankScorePersonality((profile as any)?.rank_score_personality || 0);
             setRankScoreInterview((profile as any)?.rank_score_interview || 0);
             setRankScoreEducation((profile as any)?.rank_score_education || 0);
+            // ロードマップ取得
+            const { data: roadmap } = await supabase
+                .from("roadmaps")
+                .select("*")
+                .eq("user_id", userId)
+                .maybeSingle();
+            setRoadmapData(roadmap);
             if (profile?.department_id) {
                 const { data: dept } = await supabase.from("departments").select("name").eq("id", profile.department_id).single();
                 setDepartmentName(dept?.name || "");
@@ -778,6 +787,109 @@ export default function UserDetailPage() {
                                         </div>
                                     );
                                 })}
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+            {/* 🗺️ ロードマップ閲覧（読み取り専用） */}
+            <div style={{ marginBottom: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                <div
+                    onClick={() => setRoadmapOpen(!roadmapOpen)}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", marginBottom: roadmapOpen ? 20 : 0 }}
+                >
+                    <div>
+                        <div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>🗺️ 人生のロードマップ</div>
+                        <div style={{ fontSize: 12, color: "#6b7280" }}>
+                            {roadmapData ? "本人が描いた未来の道筋" : "未作成"}
+                        </div>
+                    </div>
+                    <span style={{ color: "#9ca3af", fontSize: 14 }}>{roadmapOpen ? "▼" : "▶"}</span>
+                </div>
+
+                {roadmapOpen && (
+                    <div>
+                        {!roadmapData ? (
+                            <div style={{ padding: 24, textAlign: "center", color: "#6b7280", fontSize: 13 }}>
+                                このメンバーはまだロードマップを作成していません。
+                            </div>
+                        ) : (
+                            <>
+                                {/* 現在地 */}
+                                <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                                    <div style={{ fontSize: 10, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 6 }}>📍 現在地</div>
+                                    <div style={{ color: "#f9fafb", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                                        {roadmapData.current_self || <span style={{ color: "#6b7280" }}>未記入</span>}
+                                    </div>
+                                </div>
+
+                                {/* タイムライン */}
+                                <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>🛤️ TIMELINE</div>
+                                {[
+                                    { key: "month3", whyKey: "month3_why", howKey: "month3_how", label: "3ヶ月後", short: "3M", color: "#6366f1" },
+                                    { key: "month6", whyKey: "month6_why", howKey: "month6_how", label: "6ヶ月後", short: "6M", color: "#8b5cf6" },
+                                    { key: "year1", whyKey: "year1_why", howKey: "year1_how", label: "1年後", short: "1Y", color: "#a855f7" },
+                                    { key: "year3", whyKey: "year3_why", howKey: "year3_how", label: "3年後", short: "3Y", color: "#d946ef" },
+                                    { key: "goal", whyKey: "goal_why", howKey: "goal_how", label: "人生ゴール", short: "🏆", color: "#ec4899" },
+                                ].map((step) => (
+                                    <div key={step.key} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${step.color}40`, borderRadius: 10, padding: 12, marginBottom: 10 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: step.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11, fontWeight: 700 }}>
+                                                {step.short}
+                                            </div>
+                                            <div style={{ fontSize: 11, color: step.color, fontWeight: 700, letterSpacing: 1.5 }}>{step.label}</div>
+                                        </div>
+                                        <div style={{ marginBottom: 8, paddingLeft: 36 }}>
+                                            <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 700, marginBottom: 2 }}>🎯 目標</div>
+                                            <div style={{ color: "#f9fafb", fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                                                {roadmapData[step.key] || <span style={{ color: "#6b7280" }}>未記入</span>}
+                                            </div>
+                                        </div>
+                                        <div style={{ marginBottom: 8, paddingLeft: 36 }}>
+                                            <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 700, marginBottom: 2 }}>💭 なぜ？</div>
+                                            <div style={{ color: "#d1d5db", fontSize: 12, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                                                {roadmapData[step.whyKey] || <span style={{ color: "#6b7280" }}>未記入</span>}
+                                            </div>
+                                        </div>
+                                        <div style={{ paddingLeft: 36 }}>
+                                            <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 700, marginBottom: 2 }}>🔧 必要なこと</div>
+                                            <div style={{ color: "#d1d5db", fontSize: 12, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                                                {roadmapData[step.howKey] || <span style={{ color: "#6b7280" }}>未記入</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* 補足項目 */}
+                                <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                    {[
+                                        { key: "life_theme", icon: "🧭", label: "人生のテーマ・価値観" },
+                                        { key: "role_model", icon: "⭐", label: "ロールモデル" },
+                                        { key: "shadow_future", icon: "🌫️", label: "避けたい未来" },
+                                    ].map((sec) => (
+                                        <div key={sec.key} style={{ marginBottom: 12 }}>
+                                            <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>{sec.icon} {sec.label}</div>
+                                            <div style={{ color: "#d1d5db", fontSize: 12, lineHeight: 1.5, whiteSpace: "pre-wrap", paddingLeft: 20 }}>
+                                                {roadmapData[sec.key] || <span style={{ color: "#6b7280" }}>未記入</span>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* 今週の一歩 */}
+                                <div style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.3)", borderRadius: 10, padding: 14, marginTop: 16 }}>
+                                    <div style={{ fontSize: 10, color: "#f9a8d4", fontWeight: 700, letterSpacing: 2, marginBottom: 6 }}>🎯 今週の一歩</div>
+                                    <div style={{ color: "#f9fafb", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                                        {roadmapData.this_week_action || <span style={{ color: "#6b7280" }}>未記入</span>}
+                                    </div>
+                                </div>
+
+                                {/* 最終更新日 */}
+                                {roadmapData.updated_at && (
+                                    <div style={{ marginTop: 16, fontSize: 11, color: "#6b7280", textAlign: "right" }}>
+                                        最終更新: {formatDateTime(roadmapData.updated_at)}
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
