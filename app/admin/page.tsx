@@ -4934,7 +4934,7 @@ export default function AdminPage() {
             </div>
             <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 24 }}>
                 <button
-                    onClick={() => router.push("/mypage")}
+                    onClick={() => router.push("/menu")}
                     style={{
                         background: "rgba(255,255,255,0.05)",
                         color: "#d1d5db",
