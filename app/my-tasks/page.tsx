@@ -344,10 +344,12 @@ export default function MyTasksPage() {
                         {dailyTasks.length === 0 ? (
                             <div style={{ padding: 20, textAlign: "center", color: "#6b7280", fontSize: 13 }}>デイリータスクがありません。下の入力欄から追加できます</div>
                         ) : dailyTasks.map(t => (
-                            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: t.is_done ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${t.is_done ? "rgba(52,211,153,0.25)" : "rgba(255,255,255,0.06)"}` }}>
-                                <input type="checkbox" checked={t.is_done} onChange={() => handleToggleDaily(t)} style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#34d399" }} />
-                                <span style={{ flex: 1, fontSize: 14, color: t.is_done ? "#34d399" : "#f9fafb", textDecoration: t.is_done ? "line-through" : "none" }}>{t.title}</span>
-                                <button onClick={() => handleDeleteDaily(t.id)} style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 14 }} title="削除">🗑️</button>
+                            <div key={t.id} onClick={() => handleToggleDaily(t)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, background: t.is_done ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${t.is_done ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.08)"}`, cursor: "pointer", transition: "all 0.2s" }}>
+                                <div style={{ width: 22, height: 22, borderRadius: "50%", background: t.is_done ? "linear-gradient(135deg, #34d399, #10b981)" : "transparent", border: `2px solid ${t.is_done ? "transparent" : "rgba(255,255,255,0.3)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
+                                    {t.is_done && <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>}
+                                </div>
+                                <span style={{ flex: 1, fontSize: 14, color: t.is_done ? "#34d399" : "#f9fafb", textDecoration: t.is_done ? "line-through" : "none", fontWeight: t.is_done ? 500 : 600 }}>{t.title}</span>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteDaily(t.id); }} style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 14, padding: 4 }} title="削除">🗑️</button>
                             </div>
                         ))}
                     </div>
@@ -386,10 +388,12 @@ export default function MyTasksPage() {
                                 );
                             }
                             return (
-                                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: t.is_done ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${t.is_done ? "rgba(52,211,153,0.25)" : "rgba(255,255,255,0.06)"}` }}>
-                                    <input type="checkbox" checked={t.is_done} onChange={() => handleTogglePersonal(t)} style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#34d399" }} />
-                                    <span style={{ flex: 1, fontSize: 14, color: t.is_done ? "#34d399" : "#f9fafb", textDecoration: t.is_done ? "line-through" : "none" }}>{t.title}</span>
-                                    <button onClick={() => handleDeletePersonal(t.id)} style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 14 }} title="削除">🗑️</button>
+                                <div key={t.id} onClick={() => handleTogglePersonal(t)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, background: t.is_done ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${t.is_done ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.08)"}`, cursor: "pointer", transition: "all 0.2s" }}>
+                                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: t.is_done ? "linear-gradient(135deg, #34d399, #10b981)" : "transparent", border: `2px solid ${t.is_done ? "transparent" : "rgba(255,255,255,0.3)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
+                                        {t.is_done && <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>}
+                                    </div>
+                                    <span style={{ flex: 1, fontSize: 14, color: t.is_done ? "#34d399" : "#f9fafb", textDecoration: t.is_done ? "line-through" : "none", fontWeight: t.is_done ? 500 : 600 }}>{t.title}</span>
+                                    <button onClick={(e) => { e.stopPropagation(); handleDeletePersonal(t.id); }} style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 14, padding: 4 }} title="削除">🗑️</button>
                                 </div>
                             );
                         })}
