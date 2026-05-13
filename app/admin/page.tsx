@@ -1212,11 +1212,10 @@ export default function AdminPage() {
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
                     <div>
-                        <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
+                        <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}>INTERN QUEST</div>
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>管理ダッシュボード</h1>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => router.push("/mypage")} style={{ background: "rgba(255,255,255,0.05)", color: "#d1d5db", padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>マイページ</button>
                         <button onClick={() => router.push("/ranking")} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>ランキング</button>
                     </div>
                 </div>
@@ -4932,6 +4931,23 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 24 }}>
+                <button
+                    onClick={() => router.push("/mypage")}
+                    style={{
+                        background: "rgba(255,255,255,0.05)",
+                        color: "#d1d5db",
+                        padding: "12px 32px",
+                        borderRadius: 10,
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontSize: 14
+                    }}
+                >
+                    ☰ メニューに戻る
+                </button>
             </div>
         </main>
     );
