@@ -7,6 +7,7 @@ import TestResultsTab from "./components/TestResultsTab";
 import { supabase } from "../lib/supabase";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import CompanyManagementTab from "./CompanyManagementTab";
+import TaskManagementTab from "./TaskManagementTab";
 
 type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
@@ -195,7 +196,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -1238,6 +1239,7 @@ export default function AdminPage() {
                         { key: "advice", label: `アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
                         { key: "talent_archive", label: "人材アーカイブ" },
                         { key: "companies", label: "企業管理" },
+                        { key: "task_management", label: "タスク管理" },
                         { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
@@ -3684,6 +3686,9 @@ export default function AdminPage() {
                 )}
                 {activeTab === "companies" && (
                     <CompanyManagementTab />
+                )}
+                {activeTab === "task_management" && (
+                    <TaskManagementTab />
                 )}
                 {activeTab === "es" && (
                     <div>
