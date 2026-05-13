@@ -798,64 +798,63 @@ export default function MyPage() {
                 {/* ===== 未回答アンケートバナー ===== */}
                 {/* ===== 日報未提出バナー ===== */}
                 {!isSubmitted && (
-                    <div onClick={() => router.push("/report")} style={{
-                        position: "relative",
-                        zIndex: 1,
-                        maxWidth: 1100,
-                        margin: "0 auto 24px",
-                        padding: "20px 24px",
-                        background: "linear-gradient(135deg, rgba(236,72,153,0.15), rgba(244,114,182,0.10))",
-                        border: "2px solid rgba(236,72,153,0.4)",
-                        borderRadius: 16,
-                        boxShadow: "0 0 30px rgba(236,72,153,0.2)",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        overflow: "hidden",
-                    }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = "translateY(-2px)";
-                            e.currentTarget.style.boxShadow = "0 6px 40px rgba(236,72,153,0.3)";
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
+                        <div onClick={() => router.push("/report")} style={{
+                            padding: "20px 24px",
+                            background: "linear-gradient(135deg, rgba(236,72,153,0.15), rgba(244,114,182,0.10))",
+                            border: "2px solid rgba(236,72,153,0.4)",
+                            borderRadius: 16,
+                            boxShadow: "0 0 30px rgba(236,72,153,0.2)",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            position: "relative",
+                            overflow: "hidden",
                         }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.boxShadow = "0 0 30px rgba(236,72,153,0.2)";
-                        }}
-                    >
-                        <div style={{ position: "absolute", top: -20, right: -20, fontSize: 80, opacity: 0.1 }}>📋</div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, position: "relative", zIndex: 1, flexWrap: "wrap" }}>
-                            <div style={{ flex: 1, minWidth: 200 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                                    <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(236,72,153,0.2)", color: "#ec4899", fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>📋 TODAY</span>
-                                    <span style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb" }}>
-                                        今日の日報を提出しましょう！
-                                    </span>
-                                </div>
-                                <div style={{ fontSize: 13, color: "#fbb6ce", marginBottom: 6 }}>
-                                    ✨ 1日5分でOK！今日の振り返りで成長を加速
-                                </div>
-                                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                                    <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(236,72,153,0.25)", color: "#ec4899", fontSize: 12, fontWeight: 800 }}>
-                                        🎁 +2pt 獲得
-                                    </span>
-                                    {streak > 0 && (
-                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(245,158,11,0.25)", color: "#f59e0b", fontSize: 12, fontWeight: 800 }}>
-                                            🔥 連続{streak}日記録更新中
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = "translateY(-2px)";
+                                e.currentTarget.style.boxShadow = "0 6px 40px rgba(236,72,153,0.3)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = "translateY(0)";
+                                e.currentTarget.style.boxShadow = "0 0 30px rgba(236,72,153,0.2)";
+                            }}
+                        >
+                            <div style={{ position: "absolute", top: -20, right: -20, fontSize: 80, opacity: 0.1 }}>📋</div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, position: "relative", zIndex: 1, flexWrap: "wrap" }}>
+                                <div style={{ flex: 1, minWidth: 200 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(236,72,153,0.2)", color: "#ec4899", fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>📋 TODAY</span>
+                                        <span style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb" }}>
+                                            今日の日報を提出しましょう！
                                         </span>
-                                    )}
+                                    </div>
+                                    <div style={{ fontSize: 13, color: "#fbb6ce", marginBottom: 6 }}>
+                                        ✨ 1日5分でOK！今日の振り返りで成長を加速
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(236,72,153,0.25)", color: "#ec4899", fontSize: 12, fontWeight: 800 }}>
+                                            🎁 +2pt 獲得
+                                        </span>
+                                        {streak > 0 && (
+                                            <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(245,158,11,0.25)", color: "#f59e0b", fontSize: 12, fontWeight: 800 }}>
+                                                🔥 連続{streak}日記録更新中
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                            <div style={{
-                                flexShrink: 0,
-                                padding: "12px 20px",
-                                borderRadius: 10,
-                                background: "linear-gradient(135deg, #ec4899, #f472b6)",
-                                color: "#fff",
-                                fontWeight: 800,
-                                fontSize: 14,
-                                whiteSpace: "nowrap",
-                                boxShadow: "0 4px 12px rgba(236,72,153,0.4)",
-                            }}>
-                                提出する →
+                                <div style={{
+                                    flexShrink: 0,
+                                    padding: "12px 20px",
+                                    borderRadius: 10,
+                                    background: "linear-gradient(135deg, #ec4899, #f472b6)",
+                                    color: "#fff",
+                                    fontWeight: 800,
+                                    fontSize: 14,
+                                    whiteSpace: "nowrap",
+                                    boxShadow: "0 4px 12px rgba(236,72,153,0.4)",
+                                }}>
+                                    提出する →
+                                </div>
                             </div>
                         </div>
                     </div>
