@@ -70,6 +70,7 @@ export default function MenuPage() {
                 { icon: "📝", label: "総合ES", desc: "エントリーシートを作成・更新", path: "/es", color: "#8b5cf6" },
                 { icon: "💼", label: "就活ボックス", desc: "大学別・企業別の就活情報をチェック", path: "/career", color: "#ec4899" },
                 { icon: "📁", label: "参考資料BOX", desc: "業務に役立つ資料・リンクをまとめています", path: "/resources", color: "#34d399" },
+                { icon: "🗺️", label: "ロードマップ", desc: "現在地から理想の未来までを描く", path: "/roadmap", color: "#8b5cf6" },
                 { icon: "🎯", label: "就活市場ランク", desc: "あなたの就活市場ランクを確認", path: "/rank", color: "#fbbf24" },
             ],
         },
