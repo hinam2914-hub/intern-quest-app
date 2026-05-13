@@ -799,10 +799,7 @@ export default function MyPage() {
                 {/* ===== 日報未提出バナー ===== */}
                 {!isSubmitted && (
                     <div onClick={() => router.push("/report")} style={{
-                        position: "relative",
-                        zIndex: 1,
-                        maxWidth: 1100,
-                        margin: "0 auto 24px",
+                        marginBottom: 24,
                         padding: "20px 24px",
                         background: "linear-gradient(135deg, rgba(236,72,153,0.15), rgba(244,114,182,0.10))",
                         border: "2px solid rgba(236,72,153,0.4)",
@@ -810,6 +807,7 @@ export default function MyPage() {
                         boxShadow: "0 0 30px rgba(236,72,153,0.2)",
                         cursor: "pointer",
                         transition: "all 0.2s ease",
+                        position: "relative",
                         overflow: "hidden",
                     }}
                         onMouseEnter={(e) => {
