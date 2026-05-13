@@ -1215,36 +1215,80 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
                     {[
-                        { key: "dashboard", label: "ダッシュボード" },
-                        { key: "users", label: "ユーザー一覧" },
-                        { key: "announce", label: "お知らせ" },
-                        { key: "survey", label: "アンケート" },
-                        { key: "kpi", label: "KPI設定" },
-                        { key: "contents", label: "コンテンツ" },
-                        { key: "teams", label: "チーム" },
-                        { key: "monthly_kpi", label: "月次KPI" },
-                        { key: "dept_stats", label: "部署別成績" },
-                        { key: "resources", label: "資料管理" },
-                        { key: "challenges", label: "チャレンジ" },
-                        { key: "shop", label: "ショップ" },
-                        { key: "mtg", label: "MTG管理" },
-                        { key: "wiki", label: "用語集" },
-                        { key: "career", label: "就活ボックス" },
-                        { key: "es", label: "総合ES" },
-                        { key: "kkc", label: "KKC" },
-                        { key: "sibyl", label: "シビュラ" },
-                        { key: "tests", label: "テスト結果" },
-                        { key: "advice", label: `アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
-                        { key: "talent_archive", label: "人材アーカイブ" },
-                        { key: "companies", label: "企業管理" },
-                        { key: "task_management", label: "タスク管理" },
-                        { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
-                    ].map((tab) => (
-                        <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
-                            {tab.label}
-                        </button>
+                        {
+                            category: "🏠 メイン",
+                            tabs: [
+                                { key: "dashboard", label: "ダッシュボード" },
+                            ],
+                        },
+                        {
+                            category: "👥 メンバー管理",
+                            tabs: [
+                                { key: "users", label: "ユーザー一覧" },
+                                { key: "teams", label: "チーム" },
+                                { key: "sibyl", label: "シビュラ" },
+                                { key: "talent_archive", label: "人材アーカイブ" },
+                            ],
+                        },
+                        {
+                            category: "📊 KPI・進捗",
+                            tabs: [
+                                { key: "kpi", label: "KPI設定" },
+                                { key: "monthly_kpi", label: "月次KPI" },
+                                { key: "dept_stats", label: "部署別成績" },
+                                { key: "tests", label: "テスト結果" },
+                            ],
+                        },
+                        {
+                            category: "💬 コミュニケーション",
+                            tabs: [
+                                { key: "announce", label: "お知らせ" },
+                                { key: "survey", label: "アンケート" },
+                                { key: "kkc", label: "KKC" },
+                                { key: "advice", label: `アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
+                            ],
+                        },
+                        {
+                            category: "📚 コンテンツ管理",
+                            tabs: [
+                                { key: "contents", label: "コンテンツ" },
+                                { key: "challenges", label: "チャレンジ" },
+                                { key: "resources", label: "資料管理" },
+                                { key: "wiki", label: "用語集" },
+                                { key: "shop", label: "ショップ" },
+                            ],
+                        },
+                        {
+                            category: "🎯 業務管理",
+                            tabs: [
+                                { key: "task_management", label: "タスク管理" },
+                                { key: "mtg", label: "MTG管理" },
+                                { key: "career", label: "就活ボックス" },
+                                { key: "es", label: "総合ES" },
+                                { key: "companies", label: "企業管理" },
+                            ],
+                        },
+                        {
+                            category: "📥 申請",
+                            tabs: [
+                                { key: "requests", label: `申請${pendingCount > 0 ? `(${pendingCount})` : ""}` },
+                            ],
+                        },
+                    ].map((group) => (
+                        <div key={group.category} style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                            <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8, textTransform: "uppercase" }}>
+                                {group.category}
+                            </div>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                {group.tabs.map((tab) => (
+                                    <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : tab.key === "requests" && pendingCount > 0 ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : tab.key === "requests" && pendingCount > 0 ? "#fbbf24" : "#9ca3af" }}>
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     ))}
                 </div>
 
