@@ -495,50 +495,19 @@ export default function MyTasksPage() {
                     </div>
                 );
             })()}
-            {/* ===== 下スクロール時に表示されるフローティングメニューボタン ===== */}
-            <div style={{
-                position: "fixed",
-                bottom: 24,
-                right: 24,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                zIndex: 50,
-            }}>
-                <button onClick={() => router.push("/menu")} title="メニュー" style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: "50%",
-                    border: "none",
-                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                    color: "#fff",
-                    fontSize: 24,
-                    cursor: "pointer",
-                    boxShadow: "0 4px 16px rgba(99,102,241,0.4)",
-                    transition: "all 0.2s",
-                }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-                >
-                    ☰
-                </button>
-                <button onClick={() => router.push("/mypage")} title="マイページ" style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: "50%",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    background: "rgba(26,26,46,0.95)",
-                    backdropFilter: "blur(10px)",
+            {/* ===== ページ下部のメニューに戻るボタン ===== */}
+            <div style={{ marginTop: 40, display: "flex", justifyContent: "center" }}>
+                <button onClick={() => router.push("/menu")} style={{
+                    padding: "12px 32px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.05)",
                     color: "#9ca3af",
-                    fontSize: 18,
+                    fontSize: 14,
                     cursor: "pointer",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                    transition: "all 0.2s",
-                }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-                >
-                    🏠
+                    fontWeight: 600,
+                }}>
+                    ☰ メニューに戻る
                 </button>
             </div>
         </main>
