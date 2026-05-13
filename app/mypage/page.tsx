@@ -418,6 +418,8 @@ export default function MyPage() {
     const [pendingSurveys, setPendingSurveys] = useState<{ id: string; title: string; reward_points: number; question_count: number }[]>([]);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [unreadAdvices, setUnreadAdvices] = useState<{ id: string; category: string; message: string; created_at: string }[]>([]);
+    const [showTrophies, setShowTrophies] = useState(false);
+    const [showBadges, setShowBadges] = useState(false);
     const [newTag, setNewTag] = useState("");
     const [tagSaving, setTagSaving] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
@@ -1246,11 +1248,11 @@ export default function MyPage() {
 
                 {/* ===== トロフィー ===== */}
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🏆 TROPHIES & 称号</div>
+                    <div onClick={() => setShowTrophies(!showTrophies)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showTrophies ? 16 : 0, cursor: "pointer", userSelect: "none" }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🏆 TROPHIES & 称号 {showTrophies ? "▲" : "▼"}</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedTrophies.length} / {trophies.length} 獲得</div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
+                    {showTrophies && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
                         {[...trophies].sort((a, b) => { const order = { legendary: 4, epic: 3, rare: 2, common: 1 }; return order[b.rarity] - order[a.rarity]; }).map(trophy => {
                             const s = getRarityStyle(trophy.rarity);
                             return (
@@ -1266,16 +1268,16 @@ export default function MyPage() {
                                 </div>
                             );
                         })}
-                    </div>
+                    </div>}
                 </div>
 
                 {/* ===== バッジ ===== */}
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎖️ BADGES</div>
+                    <div onClick={() => setShowBadges(!showBadges)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showBadges ? 16 : 0, cursor: "pointer", userSelect: "none" }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎖️ BADGES {showBadges ? "▲" : "▼"}</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{badges.filter(b => b.unlocked).length} / {badges.length} 解除済み</div>
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                    {showBadges && <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                         {badges.map(badge => (
                             <div key={badge.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, background: badge.unlocked ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)", border: `1px solid ${badge.unlocked ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)"}`, opacity: badge.unlocked ? 1 : 0.4 }}>
                                 <span style={{ fontSize: 22, filter: badge.unlocked ? "none" : "grayscale(1)" }}>{badge.icon}</span>
@@ -1286,9 +1288,8 @@ export default function MyPage() {
                                 {badge.unlocked && <span style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginLeft: 4 }}>✅</span>}
                             </div>
                         ))}
-                    </div>
+                    </div>}
                 </div>
-
                 {myKpis.length > 0 && (
                     <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
