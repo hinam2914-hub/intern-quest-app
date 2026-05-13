@@ -328,7 +328,7 @@ export default function MyTasksPage() {
                 <button onClick={() => router.push("/mypage")} style={{ marginBottom: 20, padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>🏠 ホームに戻る</button>
 
                 <div style={{ marginBottom: 32 }}>
-                    <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 4 }}>INTERN QUEST</div>
+                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 4, cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                     <h1 style={{ fontSize: 32, fontWeight: 900, margin: "0 0 8px" }}>📋 タスク管理</h1>
                     <p style={{ color: "#9ca3af", fontSize: 14 }}>デイリー / 自分のタスク / adminからのタスクを管理</p>
                 </div>
@@ -495,6 +495,52 @@ export default function MyTasksPage() {
                     </div>
                 );
             })()}
+            {/* ===== 下スクロール時に表示されるフローティングメニューボタン ===== */}
+            <div style={{
+                position: "fixed",
+                bottom: 24,
+                right: 24,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                zIndex: 50,
+            }}>
+                <button onClick={() => router.push("/menu")} title="メニュー" style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                    color: "#fff",
+                    fontSize: 24,
+                    cursor: "pointer",
+                    boxShadow: "0 4px 16px rgba(99,102,241,0.4)",
+                    transition: "all 0.2s",
+                }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                >
+                    ☰
+                </button>
+                <button onClick={() => router.push("/mypage")} title="マイページ" style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "50%",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    background: "rgba(26,26,46,0.95)",
+                    backdropFilter: "blur(10px)",
+                    color: "#9ca3af",
+                    fontSize: 18,
+                    cursor: "pointer",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                    transition: "all 0.2s",
+                }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                >
+                    🏠
+                </button>
+            </div>
         </main>
     );
 }
