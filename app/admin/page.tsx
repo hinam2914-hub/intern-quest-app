@@ -431,7 +431,13 @@ export default function AdminPage() {
     const [editQuestionScaleMinLabel, setEditQuestionScaleMinLabel] = useState("");
     const [editQuestionScaleMaxLabel, setEditQuestionScaleMaxLabel] = useState("");
     const [editQuestionRequired, setEditQuestionRequired] = useState(true);
-
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
     // ✅ Fix 1: useEffect は load 関数を内部定義して即呼び出す正しい構造
     useEffect(() => {
         const load = async () => {
@@ -1215,7 +1221,7 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 12, marginBottom: 24 }}>
                     {[
                         {
                             category: "🏠 メイン",
@@ -1277,7 +1283,7 @@ export default function AdminPage() {
                             ],
                         },
                     ].map((group) => (
-                        <div key={group.category} style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <div key={group.category} style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", gridColumn: group.category === "📥 申請" && !isMobile ? "span 2" : "auto" }}>
                             <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8, textTransform: "uppercase" }}>
                                 {group.category}
                             </div>
