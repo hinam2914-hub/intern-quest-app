@@ -101,7 +101,11 @@ export default function ThanksPage() {
             setSending(false);
             return;
         }
-
+        if (message.trim().length < 20) {
+            setResult("理由を20文字以上で入力してください 📝");
+            setSending(false);
+            return;
+        }
         const nowIso = new Date().toISOString();
         const { error: thanksError } = await supabase.from("thanks").insert({ from_user_id: myId, to_user_id: toUserId, message: message.trim(), created_at: nowIso });
         if (thanksError) { setResult("送信に失敗しました: " + thanksError.message); setSending(false); return; }
@@ -202,13 +206,16 @@ export default function ThanksPage() {
 
                     <div style={{ marginBottom: 20 }}>
                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>メッセージ</div>
-                        <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="感謝のメッセージを書いてください..." style={{ width: "100%", height: 120, padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }} />
+                        <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="感謝のメッセージを20文字以上で書いてください..." style={{ width: "100%", height: 120, padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }} />
+                        <div style={{ fontSize: 11, color: message.trim().length >= 20 ? "#10b981" : "#9ca3af", textAlign: "right", marginTop: 6, fontWeight: 600 }}>
+                            {message.trim().length} / 20文字{message.trim().length >= 20 ? " ✓" : ""}
+                        </div>
                     </div>
 
                     <div style={{ padding: "10px 16px", borderRadius: 8, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", marginBottom: 16 }}>
                         <span style={{ fontSize: 13, color: "#fbbf24" }}>🎁 送ると相手に +1pt プレゼント！（1日1人まで）</span>
                     </div>
-                    <button onClick={handleSend} disabled={sending} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: sending ? "rgba(251,191,36,0.3)" : "linear-gradient(135deg, #f59e0b, #fbbf24)", color: "#0a0a0f", fontWeight: 800, cursor: sending ? "not-allowed" : "pointer", fontSize: 16 }}>
+                    <button onClick={handleSend} disabled={sending || message.trim().length < 20} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: (sending || message.trim().length < 20) ? "rgba(251,191,36,0.3)" : "linear-gradient(135deg, #f59e0b, #fbbf24)", color: "#0a0a0f", fontWeight: 800, cursor: (sending || message.trim().length < 20) ? "not-allowed" : "pointer", fontSize: 16, opacity: (sending || message.trim().length < 20) ? 0.6 : 1 }}>
                         {sending ? "送信中..." : "🎉 サンキューを送る"}
                     </button>
 
