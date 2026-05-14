@@ -70,8 +70,8 @@ export default function RankingPage() {
     const renderPodium = (list: RankingUser[]) => {
         const top3 = list.slice(0, 3);
         const podiumOrder = [1, 0, 2];
-        const podiumColors = ["#c0c0c0", "#f59e0b", "#cd7f32"];
-        const podiumHeights = [110, 150, 80];
+        const podiumColors = ["#f59e0b", "#c0c0c0", "#cd7f32"];
+        const podiumHeights = [160, 110, 80];
         const medals = ["🥇", "🥈", "🥉"];
 
         return (
