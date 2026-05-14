@@ -466,7 +466,7 @@ export default function AdminPage() {
                     name: p.name || "名前未設定",
                     points: pointRows?.find((pt: any) => pt.id === p.id)?.total_earned || pointRows?.find((pt: any) => pt.id === p.id)?.points || 0,
                     streak: p.streak || 0,
-                    role: p.role || "Owner",
+                    role: p.role || "Member",
                     submissionCount: subCountRows?.filter((r: any) => r.user_id === p.id).length || 0,
                     thanksCount: thanksSentRows?.filter((r: any) => r.to_user_id === p.id).length || 0,
                     kpiCount: kpiLogRows?.filter((r: any) => r.user_id === p.id).length || 0,
