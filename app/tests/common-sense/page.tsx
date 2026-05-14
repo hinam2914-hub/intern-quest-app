@@ -114,13 +114,6 @@ export default function CommonSenseTest() {
                 question: q,
                 answer: writtenAnswers[i] || "",
             })),
-            answers: answers.map((a, i) => ({
-                question: QUESTIONS[i].q,
-                selected: a,
-                correct: QUESTIONS[i].correct,
-                is_correct: a === QUESTIONS[i].correct,
-            })),
-        });
 
         if (error) {
             alert("送信失敗: " + error.message);

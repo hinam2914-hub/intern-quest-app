@@ -107,7 +107,6 @@ export default function TestPage() {
             max_score: 15,
             status: passedSelection ? "pending" : "rejected",
             written_answers: WRITTEN_QUESTIONS.map((q, i) => ({ question: q, answer: writtenAnswers[i] || "" })),
-            answers: answers.map((a, i) => ({ question: QUESTIONS[i].q, selected: a, correct: QUESTIONS[i].correct, is_correct: a === QUESTIONS[i].correct })),
         });
 
         if (error) { alert("送信失敗: " + error.message); setSubmitting(false); return; }
