@@ -104,7 +104,6 @@ export default function TestPage() {
             user_id: userId,
             test_type: TEST_CONFIG.type,
             score: correctCount,
-            max_score: 15,
             status: passedSelection ? "pending" : "rejected",
             written_answers: WRITTEN_QUESTIONS.map((q, i) => ({ question: q, answer: writtenAnswers[i] || "" })),
         });

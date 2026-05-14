@@ -108,7 +108,6 @@ export default function CommonSenseTest() {
             user_id: userId,
             test_type: "common_sense",
             score: correctCount,
-            max_score: 15,
             status: passedSelection ? "pending" : "rejected", // 12問未満なら自動却下
             written_answers: WRITTEN_QUESTIONS.map((q, i) => ({
                 question: q,
