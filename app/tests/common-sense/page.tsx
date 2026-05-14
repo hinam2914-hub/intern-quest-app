@@ -114,7 +114,7 @@ export default function CommonSenseTest() {
                 question: q,
                 answer: writtenAnswers[i] || "",
             })),
-
+        });
         if (error) {
             alert("送信失敗: " + error.message);
             setSubmitting(false);
