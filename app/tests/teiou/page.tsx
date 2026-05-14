@@ -67,7 +67,7 @@ export default function TestPage() {
                 .from("test_attempts")
                 .select("created_at, status")
                 .eq("user_id", user.id)
-                .eq("test_type", TEST_CONFIG.type)
+                .eq("test_key", TEST_CONFIG.type)
                 .order("created_at", { ascending: false })
                 .limit(1);
 
@@ -102,9 +102,9 @@ export default function TestPage() {
 
         const { error } = await supabase.from("test_attempts").insert({
             user_id: userId,
-            test_type: TEST_CONFIG.type,
+            test_key: TEST_CONFIG.type,
             score: correctCount,
-            status: passedSelection ? "pending" : "rejected",
+            passed: passedSelection,
             written_answers: WRITTEN_QUESTIONS.map((q, i) => ({ question: q, answer: writtenAnswers[i] || "" })),
         });
 

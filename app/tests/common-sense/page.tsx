@@ -63,7 +63,7 @@ export default function CommonSenseTest() {
                 .from("test_attempts")
                 .select("created_at, status")
                 .eq("user_id", user.id)
-                .eq("test_type", "common_sense")
+                .eq("test_key", "common_sense")
                 .order("created_at", { ascending: false })
                 .limit(1);
 
@@ -106,9 +106,9 @@ export default function CommonSenseTest() {
         // 記録
         const { error } = await supabase.from("test_attempts").insert({
             user_id: userId,
-            test_type: "common_sense",
+            test_key: "common_sense",
             score: correctCount,
-            status: passedSelection ? "pending" : "rejected", // 12問未満なら自動却下
+            passed: passedSelection, // 12問未満なら自動却下
             written_answers: WRITTEN_QUESTIONS.map((q, i) => ({
                 question: q,
                 answer: writtenAnswers[i] || "",
