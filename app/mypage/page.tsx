@@ -1193,7 +1193,7 @@ export default function MyPage() {
                     <div style={{ display: "flex", gap: 8, flexShrink: 0, justifyContent: isMobile ? "flex-start" : "flex-end", flexWrap: "wrap" }}>
                         <button onClick={() => setShowProfileModal(true)} style={{ background: cardBg, color: textPrimary, padding: "8px 10px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>✏️ プロフィール</button>
                         <button onClick={() => router.push("/report")} style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", padding: "8px 12px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>📋 日報</button>
-                        <button onClick={() => router.push("/menu")} style={{ background: cardBg, color: textPrimary, padding: "8px 10px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}>☰</button>
+                        <button onClick={() => router.push("/menu")} style={{ background: cardBg, color: textPrimary, padding: "8px 10px", borderRadius: 8, border: `1px solid ${cardBorder}`, fontWeight: 600, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}>☰ メニュー</button>
                     </div>
                 </div>
 
