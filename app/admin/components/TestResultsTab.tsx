@@ -68,6 +68,23 @@ const TEST_MAX_SCORES: Record<string, number> = {
     planner: 100,
     manager: 100,
 };
+// 各テストの記述形式に対応するノーマライズ関数（文字列配列とオブジェクト配列両対応）
+const normalizeWrittenAnswers = (raw: any): { question?: string; answer: string }[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+        return raw.map((item: any) => {
+            if (typeof item === "string") return { answer: item };
+            if (typeof item === "object" && item !== null) {
+                return { question: item.question || undefined, answer: String(item.answer || "") };
+            }
+            return { answer: "" };
+        });
+    }
+    if (typeof raw === "object") {
+        return Object.entries(raw).map(([k, v]) => ({ question: k, answer: String(v || "") }));
+    }
+    return [];
+};
 const WRITTEN_QUESTIONS: Record<string, string[]> = {
     quiz: [
         "「信頼を得るために必要な行動」を3つ書いてください",
