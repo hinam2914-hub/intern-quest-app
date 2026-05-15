@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { formatJSTShort } from "../lib/date";
 
 type UserOption = { id: string; name: string; avatar_url?: string | null };
 type ThanksRow = {
@@ -265,7 +266,7 @@ export default function ThanksPage() {
                                                         {isReceived && <span style={{ marginLeft: 6, fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "rgba(251,191,36,0.15)", color: "#fbbf24" }}>あなたへ</span>}
                                                         {isSent && <span style={{ marginLeft: 6, fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>あなたから</span>}
                                                     </div>
-                                                    <div style={{ fontSize: 11, color: "#6b7280", whiteSpace: "nowrap", marginLeft: 12 }}>{formatDateTime(item.created_at)}</div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280", whiteSpace: "nowrap", marginLeft: 12 }}>{formatJSTShort(item.created_at)}</div>
                                                 </div>
                                                 <div style={{ fontSize: 14, color: "#d1d5db", lineHeight: 1.6, background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
                                                     {item.message}
