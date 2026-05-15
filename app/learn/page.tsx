@@ -20,6 +20,7 @@ type Completion = {
     content_id: string;
     status: string;
     review: string | null;
+    feedback: string | null;
 };
 
 export default function LearnPage() {
@@ -40,7 +41,7 @@ export default function LearnPage() {
             setUserId(user.id);
             const { data: contentRows } = await supabase.from("contents").select("*").eq("is_active", true).order("created_at", { ascending: false });
             setContents((contentRows || []) as Content[]);
-            const { data: completionRows } = await supabase.from("content_completions").select("id, content_id, status, review").eq("user_id", user.id);
+            const { data: completionRows } = await supabase.from("content_completions").select("id, content_id, status, review, feedback").eq("user_id", user.id);
             setCompletions((completionRows || []) as Completion[]);
             setLoading(false);
         };
@@ -166,7 +167,7 @@ export default function LearnPage() {
                                                 <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4, lineHeight: 1.4 }}>{content.title}</div>
                                                 {content.description && <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>{content.description}</div>}
                                                 <div style={{ marginTop: 8, fontSize: 12, color: completion?.status === "approved" ? "#34d399" : "#818cf8", fontWeight: 700 }}>
-                                                    {completion?.status === "approved" ? "✅ 承認済み +2pt" : completion?.status === "pending" ? "⏳ レビュー審査中" : "レビューを書いて +2pt"}
+                                                    {completion?.status === "approved" ? "✅ 承認済み +2pt" : completion?.status === "pending" ? "⏳ レビュー審査中" : completion?.status === "rejected" ? "❌ 差戻し（タップして修正）" : "レビューを書いて +2pt"}
                                                 </div>
                                             </div>
                                         </div>
@@ -209,7 +210,7 @@ export default function LearnPage() {
                                                 <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4, lineHeight: 1.4 }}>{content.title}</div>
                                                 {content.description && <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>{content.description}</div>}
                                                 <div style={{ marginTop: 8, fontSize: 12, color: completion?.status === "approved" ? "#34d399" : "#818cf8", fontWeight: 700 }}>
-                                                    {completion?.status === "approved" ? "✅ 承認済み +2pt" : completion?.status === "pending" ? "⏳ レビュー審査中" : "レビューを書いて +2pt"}
+                                                    {completion?.status === "approved" ? "✅ 承認済み +2pt" : completion?.status === "pending" ? "⏳ レビュー審査中" : completion?.status === "rejected" ? "❌ 差戻し（タップして修正）" : "レビューを書いて +2pt"}
                                                 </div>
                                             </div>
                                         </div>
@@ -297,6 +298,13 @@ export default function LearnPage() {
                                 }
                                 return (
                                     <div style={{ marginBottom: 16 }}>
+                                        {completion?.status === "rejected" && completion?.feedback && (
+                                            <div style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.3)", marginBottom: 12 }}>
+                                                <div style={{ fontSize: 12, fontWeight: 700, color: "#f87171", marginBottom: 6 }}>❌ 差戻しされました</div>
+                                                <div style={{ fontSize: 11, color: "#fca5a5", fontWeight: 600, marginBottom: 4 }}>💬 管理者からのコメント</div>
+                                                <div style={{ fontSize: 13, color: "#fef3f3", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{completion.feedback}</div>
+                                            </div>
+                                        )}
                                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>📝 視聴・読了レビュー（必須）</div>
                                         <textarea
                                             value={review}

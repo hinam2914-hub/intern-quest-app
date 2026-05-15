@@ -1695,8 +1695,14 @@ export default function AdminPage() {
                                                         setContentCompletions(prev => prev.map(cc => cc.id === c.id ? { ...cc, status: "approved" } : cc));
                                                     }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認 +2pt</button>
                                                     <button onClick={async () => {
-                                                        await supabase.from("content_completions").update({ status: "rejected" }).eq("id", c.id);
-                                                        setContentCompletions(prev => prev.map(cc => cc.id === c.id ? { ...cc, status: "rejected" } : cc));
+                                                        const feedback = prompt("差戻し理由を記入してください（ユーザーに表示されます）");
+                                                        if (feedback === null) return;
+                                                        if (!feedback.trim()) {
+                                                            alert("差戻し理由を記入してください");
+                                                            return;
+                                                        }
+                                                        await supabase.from("content_completions").update({ status: "rejected", feedback: feedback.trim() }).eq("id", c.id);
+                                                        setContentCompletions(prev => prev.map(cc => cc.id === c.id ? { ...cc, status: "rejected", feedback: feedback.trim() } : cc));
                                                     }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
                                                 </div>
                                             </div>
