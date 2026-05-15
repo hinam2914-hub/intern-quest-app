@@ -195,7 +195,6 @@ export default function ProfilePage() {
             <div style={{ maxWidth: 800, margin: "0 auto" }}>
                 {/* ヘッダー */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-                    <button onClick={() => router.back()} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", cursor: "pointer", fontSize: 14 }}>← 戻る</button>
                     <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                 </div>
 
