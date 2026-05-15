@@ -50,6 +50,24 @@ const TEST_LABELS: Record<string, { label: string; color: string; icon: string }
     market_value: { label: "市場価値認識", color: "#0891b2", icon: "💪" },
 };
 
+const TEST_MAX_SCORES: Record<string, number> = {
+    quiz: 15,
+    common_sense: 15,
+    social_standard: 15,
+    profit_thinking: 15,
+    long_term_thinking: 15,
+    essence_thinking: 15,
+    standard_keeping: 15,
+    market_value: 15,
+    teiou: 15,
+    mentor: 100,
+    retention: 100,
+    entrepreneur: 100,
+    marketer: 100,
+    sales: 100,
+    planner: 100,
+    manager: 100,
+};
 const WRITTEN_QUESTIONS: Record<string, string[]> = {
     quiz: [
         "「信頼を得るために必要な行動」を3つ書いてください",
@@ -385,7 +403,7 @@ export default function TestResultsTab() {
                                         <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{a.userName}</div>
                                         <div style={{ fontSize: 11, color: "#9ca3af" }}>{info.label} / {new Date(a.created_at).toLocaleString("ja-JP")}</div>
                                     </div>
-                                    <div style={{ padding: "4px 10px", borderRadius: 6, background: a.passed ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.1)", color: a.passed ? "#10b981" : "#ef4444", fontSize: 11, fontWeight: 700 }}>{a.score}{a.test_key === "quiz" ? "/15" : "%"}</div>
+                                    <div style={{ padding: "4px 10px", borderRadius: 6, background: a.passed ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.1)", color: a.passed ? "#10b981" : "#ef4444", fontSize: 11, fontWeight: 700 }}>{a.score}/{TEST_MAX_SCORES[a.test_key] || 100}</div>
                                     <div style={{ padding: "4px 10px", borderRadius: 6, background: a.passed ? "rgba(16,185,129,0.2)" : "rgba(107,114,128,0.15)", color: a.passed ? "#10b981" : "#9ca3af", fontSize: 11, fontWeight: 700 }}>{a.passed ? "✓ 合格" : "不合格"}</div>
                                     {evalLabel && evalColor && (
                                         <div style={{ padding: "4px 10px", borderRadius: 6, background: `${evalColor}20`, color: evalColor, fontSize: 11, fontWeight: 700 }}>{evalLabel} +{a.written_points_awarded || 0}pt</div>
