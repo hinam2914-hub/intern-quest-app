@@ -85,7 +85,7 @@ export default function RankingPage() {
                         const height = podiumHeights[rank];
 
                         return (
-                            <div key={rank} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140 }}>
+                            <div key={rank} onClick={() => router.push(`/profile/${user.id}`)} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140, cursor: "pointer", transition: "transform 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")} onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}>
                                 <div style={{ position: "relative", marginBottom: 8 }}>
                                     <div style={{ width: rank === 0 ? 80 : 64, height: rank === 0 ? 80 : 64, borderRadius: "50%", border: `3px solid ${color}`, overflow: "hidden", boxShadow: `0 0 20px ${color}50` }}>
                                         {renderAvatar(user, rank === 0 ? 80 : 64)}
@@ -120,7 +120,7 @@ export default function RankingPage() {
                     {rest.map((user, i) => {
                         const isMe = user.id === myId;
                         return (
-                            <div key={user.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: isMe ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)", border: isMe ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(255,255,255,0.05)" }}>
+                            <div key={user.id} onClick={() => router.push(`/profile/${user.id}`)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: isMe ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)", border: isMe ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(255,255,255,0.05)", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.background = isMe ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.06)")} onMouseLeave={(e) => (e.currentTarget.style.background = isMe ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)")}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                     <div style={{ width: 28, textAlign: "center", fontSize: 13, color: "#6b7280", fontWeight: 700 }}>{i + 4}</div>
                                     <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
