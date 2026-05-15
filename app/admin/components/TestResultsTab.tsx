@@ -408,7 +408,7 @@ export default function TestResultsTab() {
                         const isExpanded = expandedId === a.id;
                         const questions = WRITTEN_QUESTIONS[a.test_key] || [];
                         const hasWritten = a.written_answers && (Array.isArray(a.written_answers) ? a.written_answers.length > 0 : Object.keys(a.written_answers).length > 0);
-                        const writtenArr: string[] = Array.isArray(a.written_answers) ? a.written_answers : a.written_answers ? Object.values(a.written_answers) : [];
+                        const writtenArr = normalizeWrittenAnswers(a.written_answers);
                         const evalLabel = a.written_evaluation === "high" ? "🥇 高評価" : a.written_evaluation === "mid" ? "🥈 中評価" : a.written_evaluation === "none" ? "⚪ 評価なし" : null;
                         const evalColor = a.written_evaluation === "high" ? "#fbbf24" : a.written_evaluation === "mid" ? "#94a3b8" : a.written_evaluation === "none" ? "#6b7280" : null;
 
@@ -430,10 +430,10 @@ export default function TestResultsTab() {
                                 {isExpanded && hasWritten && (
                                     <div style={{ padding: "8px 16px 16px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                                         <div style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, marginBottom: 8, marginTop: 8 }}>📝 記述式回答</div>
-                                        {writtenArr.map((ans, i) => (
+                                        {writtenArr.map((item, i) => (
                                             <div key={i} style={{ marginBottom: 12, padding: 12, borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
-                                                <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 4 }}>Q{i + 1}. {questions[i] || "（質問情報なし）"}</div>
-                                                <div style={{ fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap" }}>{ans || <span style={{ color: "#6b7280", fontStyle: "italic" }}>（未記入）</span>}</div>
+                                                <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 4 }}>Q{i + 1}. {item.question || questions[i] || "（質問情報なし）"}</div>
+                                                <div style={{ fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap" }}>{item.answer || <span style={{ color: "#6b7280", fontStyle: "italic" }}>（未記入）</span>}</div>
                                             </div>
                                         ))}
 
