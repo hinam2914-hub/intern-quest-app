@@ -34,12 +34,16 @@ type Department = {
 type Challenge = {
     id: string;
     title: string;
+    points: number | null;
+    category: string | null;
+    icon: string | null;
 };
 
 type ChallengeSubmission = {
     id: string;
     challenge_id: string;
     comment: string | null;
+    image_url: string | null;
     status: string;
     created_at: string;
     challenges: Challenge | null;
@@ -131,7 +135,7 @@ export default function ProfilePage() {
             // ライフチャレンジ承認済み取得
             const { data: challengesData } = await supabase
                 .from("challenge_submissions")
-                .select("*, challenges(id, title)")
+                .select("*, challenges(id, title, points, category, icon)")
                 .eq("user_id", userId)
                 .eq("status", "approved")
                 .order("created_at", { ascending: false });
@@ -304,14 +308,27 @@ export default function ProfilePage() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                             {challenges.map(c => (
                                 <div key={c.id} style={{ padding: 12, background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.15)", borderRadius: 8 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                                         <span style={{ fontSize: 14 }}>✅</span>
-                                        <div style={{ fontSize: 14, fontWeight: 600, color: "#6ee7b7" }}>{c.challenges?.title || "チャレンジ"}</div>
+                                        <div style={{ fontSize: 14, fontWeight: 600, color: "#6ee7b7", flex: 1, minWidth: 0 }}>{c.challenges?.title || "チャレンジ"}</div>
+                                        {c.challenges?.category && (
+                                            <span style={{ padding: "2px 6px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 4, fontSize: 10, color: "#a5b4fc", fontWeight: 600 }}>
+                                                {c.challenges.category}
+                                            </span>
+                                        )}
+                                        {c.challenges?.points && (
+                                            <span style={{ fontSize: 12, color: "#fbbf24", fontWeight: 700 }}>+{c.challenges.points}pt</span>
+                                        )}
                                     </div>
                                     {c.comment && (
-                                        <div style={{ fontSize: 12, color: "#d1d5db", marginTop: 6, paddingLeft: 22, lineHeight: 1.5 }}>{c.comment}</div>
+                                        <div style={{ fontSize: 12, color: "#d1d5db", marginTop: 6, paddingLeft: 22, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.comment}</div>
                                     )}
-                                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 6, paddingLeft: 22 }}>{new Date(c.created_at).toLocaleDateString("ja-JP")}</div>
+                                    {c.image_url && (
+                                        <div style={{ marginTop: 8, marginLeft: 22 }}>
+                                            <img src={c.image_url} alt={c.challenges?.title || "チャレンジ画像"} style={{ maxWidth: "100%", maxHeight: 240, borderRadius: 6, display: "block" }} />
+                                        </div>
+                                    )}
+                                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 8, paddingLeft: 22 }}>{new Date(c.created_at).toLocaleDateString("ja-JP")}</div>
                                 </div>
                             ))}
                         </div>
