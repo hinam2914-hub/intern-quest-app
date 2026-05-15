@@ -196,7 +196,7 @@ export default function ProfilePage() {
                 {/* ヘッダー */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
                     <button onClick={() => router.back()} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", cursor: "pointer", fontSize: 14 }}>← 戻る</button>
-                    <div style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, letterSpacing: 3 }}>INTERN QUEST</div>
+                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                 </div>
 
                 {/* 基本情報カード */}
