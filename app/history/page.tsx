@@ -23,7 +23,25 @@ const TEST_LIST = [
     { key: "market_value", label: "市場価値認識", icon: "📈", color: "#0891b2" },
     { key: "teiou", label: "Dot.A帝王学", icon: "👑", color: "#fbbf24" },
 ];
-
+// テスト記述のノーマライズ（両形式対応）
+const normalizeWrittenAnswers = (raw: any): { question?: string; answer: string }[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+        return raw.map((item: any) => {
+            if (typeof item === "string") return { answer: item };
+            if (typeof item === "object" && item !== null) {
+                return { question: item.question || undefined, answer: String(item.answer || "") };
+            }
+            return { answer: "" };
+        });
+    }
+    if (typeof raw === "object") {
+        return Object.entries(raw).map(([k, v]) => ({ question: k, answer: String(v || "") }));
+    }
+    return [];
+};
+// テスト記述のノーマライズ（両形式対応）
+// テスト記述のノーマライズ（両形式対応）
 const getTestInfo = (key: string) => TEST_LIST.find(t => t.key === key) || { key, label: key, icon: "📝", color: "#6b7280" };
 
 type PointsHistoryItem = {
@@ -39,7 +57,7 @@ type TestAttempt = {
     score: number | null;
     passed: boolean;
     created_at: string;
-    written_answers: Record<string, string> | null;
+    written_answers: any;
     written_evaluation: string | null;
     written_points_awarded: number | null;
 };
@@ -282,7 +300,7 @@ export default function HistoryPage() {
                             passedTests.map(t => {
                                 const info = getTestInfo(t.test_key);
                                 const isExpanded = expandedTest === t.id;
-                                const hasWritten = t.written_answers && Object.keys(t.written_answers).length > 0;
+                                const hasWritten = t.written_answers && (Array.isArray(t.written_answers) ? t.written_answers.length > 0 : Object.keys(t.written_answers).length > 0);
                                 return (
                                     <div key={t.id} style={{ background: `${info.color}10`, border: `1px solid ${info.color}30`, borderRadius: 8, padding: 12 }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -308,10 +326,10 @@ export default function HistoryPage() {
                                         )}
                                         {isExpanded && hasWritten && (
                                             <div style={{ marginTop: 12, marginLeft: 24, padding: 12, background: "rgba(0,0,0,0.3)", borderRadius: 6 }}>
-                                                {Object.entries(t.written_answers || {}).map(([q, a]) => (
-                                                    <div key={q} style={{ marginBottom: 12 }}>
-                                                        <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 4 }}>Q. {q}</div>
-                                                        <div style={{ fontSize: 12, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.5, paddingLeft: 8, borderLeft: `2px solid ${info.color}` }}>{a as string}</div>
+                                                {normalizeWrittenAnswers(t.written_answers).map((item, i) => (
+                                                    <div key={i} style={{ marginBottom: 12 }}>
+                                                        <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 4 }}>Q{i + 1}. {item.question || "（質問情報なし）"}</div>
+                                                        <div style={{ fontSize: 12, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.5, paddingLeft: 8, borderLeft: `2px solid ${info.color}` }}>{item.answer || <span style={{ color: "#6b7280", fontStyle: "italic" }}>（未記入）</span>}</div>
                                                     </div>
                                                 ))}
                                                 {t.written_evaluation && (
