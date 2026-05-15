@@ -87,8 +87,8 @@ export default function MembersPage() {
             // ポイント一覧
             const { data: pointsData } = await supabase
                 .from("user_points")
-                .select("id, points");
-            const pointsMap = new Map((pointsData || []).map((p: any) => [p.id, p.points || 0]));
+                .select("id, total_earned");
+            const pointsMap = new Map((pointsData || []).map((p: any) => [p.id, p.total_earned || 0]));
 
             // チャレンジ承認数
             const { data: chData } = await supabase
