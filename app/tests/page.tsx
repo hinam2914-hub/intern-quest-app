@@ -4,6 +4,24 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
+const TEST_MAX_SCORES: Record<string, number> = {
+    quiz: 15,
+    common_sense: 15,
+    social_standard: 15,
+    profit_thinking: 15,
+    long_term_thinking: 15,
+    essence_thinking: 15,
+    standard_keeping: 15,
+    market_value: 15,
+    teiou: 15,
+    mentor: 100,
+    retention: 100,
+    entrepreneur: 100,
+    marketer: 100,
+    sales: 100,
+    planner: 100,
+    manager: 100,
+};
 type TestItem = {
     key: string;
     label: string;
@@ -33,6 +51,7 @@ const TESTS: TestItem[] = [
     { key: "profit_thinking", label: "利益思考・判断センス", desc: "感情ではなく利益で動けるか", path: "/tests/profit-thinking", icon: "💰", color: "#10b981", passedField: "profit_thinking_passed", rewardText: "合格で +300pt", table: "test_attempts" },
     { key: "essence_thinking", label: "本質思考・タスク整理", desc: "“余計なことを増やさない人”になる", path: "/tests/essence-thinking", icon: "🔍", color: "#06b6d4", passedField: "essence_thinking_passed", rewardText: "合格で +300pt", table: "test_attempts" },
     { key: "standard_keeping", label: "基準維持・妥協耐性", desc: "“すぐ妥協しない人”になる", path: "/tests/standard-keeping", icon: "⚖️", color: "#f97316", passedField: "standard_keeping_passed", rewardText: "合格で +300pt", table: "test_attempts" },
+    { key: "market_value", label: "市場価値認識テスト", desc: "“選ばれる側”の視点を持てるか", path: "/tests/market-value", icon: "💪", color: "#0891b2", passedField: "market_value_passed", rewardText: "合格で +300pt", table: "test_attempts" },
     { key: "quiz", label: "確認ワークテスト", desc: "価値観と仕事の基本をチェック", path: "/quiz", icon: "🧠", color: "#a78bfa", passedField: "quiz_passed", rewardText: "合格で +500pt", table: "quiz_attempts" },
     { key: "teiou", label: "Dot.A 帝王学", desc: "思想・判断・覚悟の最高ランク", path: "/tests/teiou", icon: "👑", color: "#fbbf24", passedField: "teiou_passed", rewardText: "合格で +1000pt", table: "test_attempts" },
     { key: "marketer", label: "マーケター適性テスト", desc: "売れる仕組みを作れるか", path: "/tests/marketer", icon: "📊", color: "#06b6d4", passedField: "marketer_passed", rewardText: "Aランクで +500pt", table: "test_attempts" },
@@ -146,8 +165,8 @@ export default function TestsPage() {
                                     <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                                         <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#9ca3af", flexWrap: "wrap" }}>
                                             <span>📊 受験 <strong style={{ color: "#f9fafb" }}>{stats.count}回</strong></span>
-                                            <span>🏆 最高 <strong style={{ color: "#fbbf24" }}>{stats.maxScore}{t.key === "quiz" ? "/15" : "%"}</strong></span>
-                                            <span>📅 前回 <strong style={{ color: "#f9fafb" }}>{stats.lastScore}{t.key === "quiz" ? "/15" : "%"}</strong></span>
+                                            <span>🏆 最高 <strong style={{ color: "#fbbf24" }}>{stats.maxScore}/{TEST_MAX_SCORES[t.key] || 100}</strong></span>
+                                            <span>📅 前回 <strong style={{ color: "#f9fafb" }}>{stats.lastScore}/{TEST_MAX_SCORES[t.key] || 100}</strong></span>
                                             <span style={{ color: "#6b7280" }}>{formatDate(stats.lastAt)}</span>
                                         </div>
                                         <button
@@ -204,7 +223,7 @@ export default function TestsPage() {
                                                         <span style={{ fontSize: 13, color: "#9ca3af" }}>{formatDate(a.created_at)}</span>
                                                     </div>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                                        <span style={{ fontSize: 18, fontWeight: 800, color: a.passed ? "#10b981" : "#f59e0b" }}>{a.score}{selectedTest.key === "quiz" ? "/15" : "%"}</span>
+                                                        <span style={{ fontSize: 18, fontWeight: 800, color: a.passed ? "#10b981" : "#f59e0b" }}>{a.score}/{TEST_MAX_SCORES[selectedTest.key] || 100}</span>
                                                         <span style={{ padding: "3px 10px", borderRadius: 6, background: a.passed ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)", color: a.passed ? "#10b981" : "#f59e0b", fontSize: 11, fontWeight: 700 }}>{a.passed ? "✅ 合格" : "❌ 不合格"}</span>
                                                         {a.written_evaluation === "high" && (
                                                             <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(251,191,36,0.2)", border: "1px solid rgba(251,191,36,0.4)", color: "#fbbf24", fontSize: 11, fontWeight: 700 }}>🥇 高評価 +{a.written_points_awarded}pt</span>
