@@ -541,7 +541,7 @@ export default function MyPage() {
             setTimeout(() => triggerPointEffect(newPoints, 0), 800);
         }
 
-        const { data: rankingRows } = await supabase.from("user_points").select("id, points").order("points", { ascending: false });
+        const { data: rankingRows } = await supabase.from("user_points").select("id, total_earned").order("total_earned", { ascending: false });
         if (rankingRows) {
             const myRank = rankingRows.findIndex((row) => row.id === user.id);
             setRank(myRank >= 0 ? myRank + 1 : null);
