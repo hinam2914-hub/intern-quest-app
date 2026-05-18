@@ -49,6 +49,8 @@ export default function ThanksPage() {
     const [users, setUsers] = useState<UserOption[]>([]);
     const [toUserId, setToUserId] = useState("");
     const [message, setMessage] = useState("");
+    const [messageType, setMessageType] = useState<"text" | "stamp">("text");
+    const [selectedStamp, setSelectedStamp] = useState<string>("");
     const [sending, setSending] = useState(false);
     const [result, setResult] = useState("");
     const [success, setSuccess] = useState(false);
@@ -94,7 +96,8 @@ export default function ThanksPage() {
 
     const handleSend = async () => {
         if (!toUserId) { setResult("送り先を選んでください"); return; }
-        if (!message.trim()) { setResult("メッセージを入力してください"); return; }
+        if (messageType === "text" && !message.trim()) { setResult("メッセージを入力してください"); return; }
+        if (messageType === "stamp" && !selectedStamp) { setResult("スタンプを選択してください"); return; }
         if (toUserId === myId) { setResult("自分自身には送れません"); return; }
 
         setSending(true);
@@ -109,13 +112,14 @@ export default function ThanksPage() {
             setSending(false);
             return;
         }
-        if (message.trim().length < 20) {
+        if (messageType === "text" && message.trim().length < 20) {
             setResult("理由を20文字以上で入力してください 📝");
             setSending(false);
             return;
         }
         const nowIso = new Date().toISOString();
-        const { error: thanksError } = await supabase.from("thanks").insert({ from_user_id: myId, to_user_id: toUserId, message: message.trim(), created_at: nowIso });
+        const finalMessage = messageType === "stamp" ? selectedStamp : message.trim();
+        const { error: thanksError } = await supabase.from("thanks").insert({ from_user_id: myId, to_user_id: toUserId, message: finalMessage, message_type: messageType, created_at: nowIso } as any);
         if (thanksError) { setResult("送信に失敗しました: " + thanksError.message); setSending(false); return; }
 
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", toUserId).single();
@@ -214,16 +218,90 @@ export default function ThanksPage() {
 
                     <div style={{ marginBottom: 20 }}>
                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>メッセージ</div>
-                        <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="感謝のメッセージを20文字以上で書いてください..." style={{ width: "100%", height: 120, padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }} />
-                        <div style={{ fontSize: 11, color: message.trim().length >= 20 ? "#10b981" : "#9ca3af", textAlign: "right", marginTop: 6, fontWeight: 600 }}>
-                            {message.trim().length} / 20文字{message.trim().length >= 20 ? " ✓" : ""}
+                        {/* タブ切り替え */}
+                        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                            <button
+                                onClick={() => setMessageType("text")}
+                                style={{
+                                    flex: 1,
+                                    padding: "10px 16px",
+                                    borderRadius: 10,
+                                    border: messageType === "text" ? "2px solid #f59e0b" : "1px solid rgba(255,255,255,0.1)",
+                                    background: messageType === "text" ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.03)",
+                                    color: messageType === "text" ? "#fbbf24" : "#9ca3af",
+                                    fontSize: 14,
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                💬 メッセージ
+                            </button>
+                            <button
+                                onClick={() => setMessageType("stamp")}
+                                style={{
+                                    flex: 1,
+                                    padding: "10px 16px",
+                                    borderRadius: 10,
+                                    border: messageType === "stamp" ? "2px solid #f59e0b" : "1px solid rgba(255,255,255,0.1)",
+                                    background: messageType === "stamp" ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.03)",
+                                    color: messageType === "stamp" ? "#fbbf24" : "#9ca3af",
+                                    fontSize: 14,
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                😄 スタンプ
+                            </button>
                         </div>
-                    </div>
+                        {/* メッセージモード */}
+                        {messageType === "text" && (
+                            <>
+                                <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="感謝のメッセージを20文字以上で書いてください..." style={{ width: "100%", height: 120, padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }} />
+                                <div style={{ fontSize: 11, color: message.trim().length >= 20 ? "#10b981" : "#9ca3af", textAlign: "right", marginTop: 6, fontWeight: 600 }}>
+                                    {message.trim().length} / 20文字{message.trim().length >= 20 ? " ✓" : ""}
+                                </div>
+                            </>
+                        )}
+                        {/* スタンプモード */}
+                        {messageType === "stamp" && (
+                            <div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12, fontWeight: 600 }}>
+                                    スタンプを1つ選んでください
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                                    {["💖", "🙏", "🔥", "👏", "✨", "🎉", "😊", "💪", "🌟", "🍀", "😂", "🎁"].map((stamp) => (
+                                        <button
+                                            key={stamp}
+                                            onClick={() => setSelectedStamp(stamp)}
+                                            style={{
+                                                aspectRatio: "1",
+                                                fontSize: 36,
+                                                borderRadius: 12,
+                                                border: selectedStamp === stamp ? "3px solid #f59e0b" : "1px solid rgba(255,255,255,0.1)",
+                                                background: selectedStamp === stamp ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.03)",
+                                                cursor: "pointer",
+                                                transform: selectedStamp === stamp ? "scale(1.1)" : "scale(1)",
+                                                transition: "all 0.15s",
+                                            }}
+                                        >
+                                            {stamp}
+                                        </button>
+                                    ))}
+                                </div>
+                                {selectedStamp && (
+                                    <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", textAlign: "center" }}>
+                                        <div style={{ fontSize: 12, color: "#10b981", fontWeight: 700 }}>
+                                            選択中: <span style={{ fontSize: 24 }}>{selectedStamp}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                     <div style={{ padding: "10px 16px", borderRadius: 8, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", marginBottom: 16 }}>
                         <span style={{ fontSize: 13, color: "#fbbf24" }}>🎁 送ると相手に +1pt プレゼント！（1日1人まで）</span>
                     </div>
-                    <button onClick={handleSend} disabled={sending || message.trim().length < 20} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: (sending || message.trim().length < 20) ? "rgba(251,191,36,0.3)" : "linear-gradient(135deg, #f59e0b, #fbbf24)", color: "#0a0a0f", fontWeight: 800, cursor: (sending || message.trim().length < 20) ? "not-allowed" : "pointer", fontSize: 16, opacity: (sending || message.trim().length < 20) ? 0.6 : 1 }}>
+                    <button onClick={handleSend} disabled={sending || (messageType === "text" && message.trim().length < 20) || (messageType === "stamp" && !selectedStamp)} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: (sending || (messageType === "text" && message.trim().length < 20) || (messageType === "stamp" && !selectedStamp)) ? "rgba(251,191,36,0.3)" : "linear-gradient(135deg, #f59e0b, #fbbf24)", color: "#0a0a0f", fontWeight: 800, cursor: (sending || (messageType === "text" && message.trim().length < 20) || (messageType === "stamp" && !selectedStamp)) ? "not-allowed" : "pointer", fontSize: 16, opacity: (sending || (messageType === "text" && message.trim().length < 20) || (messageType === "stamp" && !selectedStamp)) ? 0.6 : 1 }}>
                         {sending ? "送信中..." : "🎉 サンキューを送る"}
                     </button>
 
