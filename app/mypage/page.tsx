@@ -266,58 +266,84 @@ function getRarityStyle(rarity: Trophy["rarity"]) {
     if (rarity === "rare") return { bg: "rgba(6,182,212,0.15)", border: "rgba(6,182,212,0.5)", color: "#06b6d4", label: "RARE" };
     return { bg: "rgba(107,114,128,0.15)", border: "rgba(107,114,128,0.4)", color: "#9ca3af", label: "COMMON" };
 }
-// ========== パーティクルエフェクト Hook (派手派手版v2) ==========
+// ========== パーティクルエフェクト Hook (超派手派手版v3) ==========
 function useParticleEffect() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const particlesRef = useRef<Particle[]>([]);
     const animFrameRef = useRef<number>(0);
     const particleIdRef = useRef(0);
-    // 虹色＋ネオン16色（派手派手）
+    const [flashOpacity, setFlashOpacity] = useState(0);
+    // 虹色＋ネオン20色（さらに派手）
     const COLORS = [
         "#ff006e", "#fb5607", "#ffbe0b", "#8338ec", "#3a86ff",
         "#06ffa5", "#ff4081", "#ffd700", "#00d9ff", "#a855f7",
-        "#f472b6", "#34d399", "#fbbf24", "#06b6d4", "#ec4899", "#10b981"
+        "#f472b6", "#34d399", "#fbbf24", "#06b6d4", "#ec4899",
+        "#10b981", "#ff1493", "#00ff7f", "#ff6347", "#7fffd4"
     ];
 
     const spawnParticles = useCallback((x: number, y: number, count = 60) => {
-        // 派手派手化: 段階的に量を増やす
-        // count: 30 → 100, 60 → 200, 100 → 300
-        const actualCount = Math.min(500, Math.floor(count * 3));
+        // 🔥 5倍化（最大1000個）
+        const actualCount = Math.min(1000, Math.floor(count * 5));
+
+        // 💥 画面フラッシュ
+        setFlashOpacity(0.6);
+        setTimeout(() => setFlashOpacity(0.3), 50);
+        setTimeout(() => setFlashOpacity(0.15), 150);
+        setTimeout(() => setFlashOpacity(0), 350);
 
         // 第1波: 爆発（速い・四方八方）
-        const burstCount = Math.floor(actualCount * 0.6);
+        const burstCount = Math.floor(actualCount * 0.5);
         for (let i = 0; i < burstCount; i++) {
             const angle = (Math.PI * 2 * i) / burstCount + (Math.random() - 0.5) * 0.3;
-            const speed = 8 + Math.random() * 16; // 速度2倍
+            const speed = 10 + Math.random() * 20; // さらに速く
             particlesRef.current.push({
                 id: particleIdRef.current++,
                 x, y,
                 vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - Math.random() * 6,
+                vy: Math.sin(angle) * speed - Math.random() * 8,
                 color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                size: 5 + Math.random() * 12, // 大きめ
+                size: 6 + Math.random() * 14, // 大きめ
                 life: 1,
-                maxLife: 1.5 + Math.random() * 1.5, // 長持ち
+                maxLife: 2 + Math.random() * 2, // 長持ち（2-4秒）
                 shape: (["circle", "star", "rect", "sparkle"] as any)[Math.floor(Math.random() * 4)],
             });
         }
 
-        // 第2波: 舞い散り（遅い・上向き）
-        const floatCount = Math.floor(actualCount * 0.4);
+        // 第2波: 舞い散り（中速・上向き）
+        const floatCount = Math.floor(actualCount * 0.3);
         for (let i = 0; i < floatCount; i++) {
-            const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI; // 上向き中心
-            const speed = 3 + Math.random() * 6;
+            const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI;
+            const speed = 4 + Math.random() * 8;
             particlesRef.current.push({
                 id: particleIdRef.current++,
-                x: x + (Math.random() - 0.5) * 100,
+                x: x + (Math.random() - 0.5) * 150,
                 y,
                 vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - 8, // 強い上向き
+                vy: Math.sin(angle) * speed - 10,
                 color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                size: 3 + Math.random() * 8,
+                size: 4 + Math.random() * 10,
                 life: 1,
-                maxLife: 2 + Math.random() * 1.5,
+                maxLife: 2.5 + Math.random() * 2,
                 shape: (["circle", "star", "sparkle"] as any)[Math.floor(Math.random() * 3)],
+            });
+        }
+
+        // 第3波: キラキラ（ゆっくり舞う）
+        const sparkleCount = Math.floor(actualCount * 0.2);
+        for (let i = 0; i < sparkleCount; i++) {
+            const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.5;
+            const speed = 2 + Math.random() * 4;
+            particlesRef.current.push({
+                id: particleIdRef.current++,
+                x: x + (Math.random() - 0.5) * 200,
+                y: y + (Math.random() - 0.5) * 100,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 4,
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                size: 3 + Math.random() * 6,
+                life: 1,
+                maxLife: 3 + Math.random() * 2, // 一番長く（3-5秒）
+                shape: "sparkle" as any,
             });
         }
     }, []);
@@ -335,14 +361,15 @@ function useParticleEffect() {
         ctx.fill();
     };
 
-    // ✨ キラキラ描画追加
     const drawSparkle = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
         ctx.save();
         ctx.translate(x, y);
-        // 縦線
         ctx.fillRect(-size / 8, -size, size / 4, size * 2);
-        // 横線
         ctx.fillRect(-size, -size / 8, size * 2, size / 4);
+        // 斜め線も追加（×形状）
+        ctx.rotate(Math.PI / 4);
+        ctx.fillRect(-size / 8, -size * 0.7, size / 4, size * 1.4);
+        ctx.fillRect(-size * 0.7, -size / 8, size * 1.4, size / 4);
         ctx.restore();
     };
 
@@ -363,16 +390,15 @@ function useParticleEffect() {
             particlesRef.current.forEach(p => {
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vy += 0.18; // 重力少し弱めて長く舞う
-                p.vx *= 0.985; // 空気抵抗少なめ
-                p.life -= 0.012; // ライフ減少緩やか
+                p.vy += 0.15;
+                p.vx *= 0.99;
+                p.life -= 0.008; // さらに長持ち
 
-                // イージング: 後半ゆっくりフェード
-                const alpha = Math.max(0, Math.pow(p.life, 0.7));
+                const alpha = Math.max(0, Math.pow(p.life, 0.6));
                 ctx.globalAlpha = alpha;
                 ctx.fillStyle = p.color;
                 ctx.shadowColor = p.color;
-                ctx.shadowBlur = 16; // 光るオーラ強化
+                ctx.shadowBlur = 24; // 光るオーラさらに強化
 
                 if (p.shape === "circle") {
                     ctx.beginPath();
@@ -385,7 +411,7 @@ function useParticleEffect() {
                 } else {
                     ctx.save();
                     ctx.translate(p.x, p.y);
-                    ctx.rotate(p.life * 12);
+                    ctx.rotate(p.life * 15);
                     ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
                     ctx.restore();
                 }
@@ -401,7 +427,7 @@ function useParticleEffect() {
         };
     }, []);
 
-    return { canvasRef, spawnParticles };
+    return { canvasRef, spawnParticles, flashOpacity };
 }
 export default function MyPage() {
     const router = useRouter();
@@ -470,7 +496,7 @@ export default function MyPage() {
     const [floatingPoints, setFloatingPoints] = useState<FloatingPoint[]>([]);
     const floatingIdRef = useRef(0);
     const pointsCardRef = useRef<HTMLDivElement>(null);
-    const { canvasRef, spawnParticles } = useParticleEffect();
+    const { canvasRef, spawnParticles, flashOpacity } = useParticleEffect();
     // 画面幅検出（スマホ判定用）
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => {
@@ -815,6 +841,16 @@ export default function MyPage() {
                     position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
                     pointerEvents: "none", zIndex: 9999,
                 }}
+            {/* 💥 画面フラッシュ */}
+            <div style={{
+                position: "fixed",
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: "#fff",
+                opacity: flashOpacity,
+                pointerEvents: "none",
+                zIndex: 10000,
+                transition: "opacity 0.2s ease-out"
+            }} />
             />
 
             {/* ===== フローティング +Xpt テキスト ===== */}
