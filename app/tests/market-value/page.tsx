@@ -119,6 +119,9 @@ export default function MarketValueTest() {
             answers,
         });
 
+        if (passed) {
+            await supabase.from("profiles").update({ market_value_passed: true, market_value_passed_at: new Date().toISOString() }).eq("id", userId);
+        }
         setShowResult(true);
         setSubmitting(false);
     };

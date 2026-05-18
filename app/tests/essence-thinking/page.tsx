@@ -111,6 +111,7 @@ export default function TestPage() {
         if (error) { alert("送信失敗: " + error.message); setSubmitting(false); return; }
         if (passedSelection) {
             alert(`✅ 提出しました！\n\n選択式: ${correctCount}/15問正解\n\nadminの審査後、合格時に${TEST_CONFIG.rewardPoints}pt付与されます。`);
+            await supabase.from("profiles").update({ essence_thinking_passed: true, essence_thinking_passed_at: new Date().toISOString() }).eq("id", userId);
         } else {
             alert(`❌ 不合格\n\n選択式: ${correctCount}/15問正解（合格には12問以上必要）\n\n24時間後に再受験できます。`);
         }
