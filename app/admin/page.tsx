@@ -8,6 +8,7 @@ import { supabase } from "../lib/supabase";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import CompanyManagementTab from "./CompanyManagementTab";
 import TaskManagementTab from "./TaskManagementTab";
+import KpiDashboardTab from "./components/KpiDashboardTab";
 
 type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
@@ -1242,6 +1243,7 @@ export default function AdminPage() {
                             tabs: [
                                 { key: "kpi", label: "KPI設定" },
                                 { key: "monthly_kpi", label: "月次KPI" },
+                                { key: "kpi_dashboard", label: "📊 ダッシュボード" },
                                 { key: "dept_stats", label: "部署別成績" },
                                 { key: "tests", label: "テスト結果" },
                             ],
@@ -4743,6 +4745,7 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {activeTab === "kpi_dashboard" && <KpiDashboardTab />}
                 {activeTab === "tests" && <TestResultsTab />}
                 {/* ===== 離職者登録モーダル ===== */}
                 {showResignModal && (
