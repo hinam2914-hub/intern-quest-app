@@ -266,14 +266,15 @@ function getRarityStyle(rarity: Trophy["rarity"]) {
     if (rarity === "rare") return { bg: "rgba(6,182,212,0.15)", border: "rgba(6,182,212,0.5)", color: "#06b6d4", label: "RARE" };
     return { bg: "rgba(107,114,128,0.15)", border: "rgba(107,114,128,0.4)", color: "#9ca3af", label: "COMMON" };
 }
-// ========== パーティクルエフェクト Hook (超派手派手版v3) ==========
+// ========== パーティクルエフェクト Hook (究極派手派手版v4) ==========
 function useParticleEffect() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const particlesRef = useRef<Particle[]>([]);
     const animFrameRef = useRef<number>(0);
     const particleIdRef = useRef(0);
     const [flashOpacity, setFlashOpacity] = useState(0);
-    // 虹色＋ネオン20色（さらに派手）
+    const [overlayOpacity, setOverlayOpacity] = useState(0);
+    // 虹色＋ネオン20色
     const COLORS = [
         "#ff006e", "#fb5607", "#ffbe0b", "#8338ec", "#3a86ff",
         "#06ffa5", "#ff4081", "#ffd700", "#00d9ff", "#a855f7",
@@ -285,31 +286,38 @@ function useParticleEffect() {
         // 🔥 5倍化（最大1000個）
         const actualCount = Math.min(1000, Math.floor(count * 5));
 
-        // 💥 画面フラッシュ
-        setFlashOpacity(0.6);
-        setTimeout(() => setFlashOpacity(0.3), 50);
-        setTimeout(() => setFlashOpacity(0.15), 150);
-        setTimeout(() => setFlashOpacity(0), 350);
+        // 🌑 暗いオーバーレイで背景を一瞬隠す（パーティクルを目立たせる）
+        setOverlayOpacity(0.7);
+        setTimeout(() => setOverlayOpacity(0.5), 200);
+        setTimeout(() => setOverlayOpacity(0.3), 500);
+        setTimeout(() => setOverlayOpacity(0.15), 1000);
+        setTimeout(() => setOverlayOpacity(0), 1800);
+
+        // 🌈 虹色フラッシュ（白じゃなくてビビッド）
+        setFlashOpacity(0.7);
+        setTimeout(() => setFlashOpacity(0.4), 80);
+        setTimeout(() => setFlashOpacity(0.2), 250);
+        setTimeout(() => setFlashOpacity(0), 500);
 
         // 第1波: 爆発（速い・四方八方）
         const burstCount = Math.floor(actualCount * 0.5);
         for (let i = 0; i < burstCount; i++) {
             const angle = (Math.PI * 2 * i) / burstCount + (Math.random() - 0.5) * 0.3;
-            const speed = 10 + Math.random() * 20; // さらに速く
+            const speed = 10 + Math.random() * 20;
             particlesRef.current.push({
                 id: particleIdRef.current++,
                 x, y,
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed - Math.random() * 8,
                 color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                size: 6 + Math.random() * 14, // 大きめ
+                size: 8 + Math.random() * 16, // さらに大きく
                 life: 1,
-                maxLife: 2 + Math.random() * 2, // 長持ち（2-4秒）
+                maxLife: 2 + Math.random() * 2,
                 shape: (["circle", "star", "rect", "sparkle"] as any)[Math.floor(Math.random() * 4)],
             });
         }
 
-        // 第2波: 舞い散り（中速・上向き）
+        // 第2波: 舞い散り
         const floatCount = Math.floor(actualCount * 0.3);
         for (let i = 0; i < floatCount; i++) {
             const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI;
@@ -321,14 +329,14 @@ function useParticleEffect() {
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed - 10,
                 color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                size: 4 + Math.random() * 10,
+                size: 5 + Math.random() * 12,
                 life: 1,
                 maxLife: 2.5 + Math.random() * 2,
                 shape: (["circle", "star", "sparkle"] as any)[Math.floor(Math.random() * 3)],
             });
         }
 
-        // 第3波: キラキラ（ゆっくり舞う）
+        // 第3波: キラキラ
         const sparkleCount = Math.floor(actualCount * 0.2);
         for (let i = 0; i < sparkleCount; i++) {
             const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.5;
@@ -340,9 +348,9 @@ function useParticleEffect() {
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed - 4,
                 color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                size: 3 + Math.random() * 6,
+                size: 4 + Math.random() * 8,
                 life: 1,
-                maxLife: 3 + Math.random() * 2, // 一番長く（3-5秒）
+                maxLife: 3 + Math.random() * 2,
                 shape: "sparkle" as any,
             });
         }
@@ -366,7 +374,6 @@ function useParticleEffect() {
         ctx.translate(x, y);
         ctx.fillRect(-size / 8, -size, size / 4, size * 2);
         ctx.fillRect(-size, -size / 8, size * 2, size / 4);
-        // 斜め線も追加（×形状）
         ctx.rotate(Math.PI / 4);
         ctx.fillRect(-size / 8, -size * 0.7, size / 4, size * 1.4);
         ctx.fillRect(-size * 0.7, -size / 8, size * 1.4, size / 4);
@@ -392,13 +399,13 @@ function useParticleEffect() {
                 p.y += p.vy;
                 p.vy += 0.15;
                 p.vx *= 0.99;
-                p.life -= 0.008; // さらに長持ち
+                p.life -= 0.008;
 
                 const alpha = Math.max(0, Math.pow(p.life, 0.6));
                 ctx.globalAlpha = alpha;
                 ctx.fillStyle = p.color;
                 ctx.shadowColor = p.color;
-                ctx.shadowBlur = 24; // 光るオーラさらに強化
+                ctx.shadowBlur = 30; // さらに眩しく
 
                 if (p.shape === "circle") {
                     ctx.beginPath();
@@ -427,7 +434,7 @@ function useParticleEffect() {
         };
     }, []);
 
-    return { canvasRef, spawnParticles, flashOpacity };
+    return { canvasRef, spawnParticles, flashOpacity, overlayOpacity };
 }
 export default function MyPage() {
     const router = useRouter();
@@ -496,7 +503,7 @@ export default function MyPage() {
     const [floatingPoints, setFloatingPoints] = useState<FloatingPoint[]>([]);
     const floatingIdRef = useRef(0);
     const pointsCardRef = useRef<HTMLDivElement>(null);
-    const { canvasRef, spawnParticles, flashOpacity } = useParticleEffect();
+    const { canvasRef, spawnParticles, flashOpacity, overlayOpacity } = useParticleEffect();
     // 画面幅検出（スマホ判定用）
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => {
@@ -842,16 +849,27 @@ export default function MyPage() {
                     pointerEvents: "none", zIndex: 9999,
                 }}
             />
-            {/* 💥 画面フラッシュ */}
-            <div style={{
-                position: "fixed",
-                top: 0, left: 0, right: 0, bottom: 0,
-                background: "#fff",
-                opacity: flashOpacity,
-                pointerEvents: "none",
-                zIndex: 10000,
-                transition: "opacity 0.2s ease-out"
-            }} />
+           {/* 🌑 暗いオーバーレイ（パーティクルを目立たせる） */}
+<div style={{
+    position: "fixed",
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: "#000",
+    opacity: overlayOpacity,
+    pointerEvents: "none",
+    zIndex: 9998,
+    transition: "opacity 0.3s ease-out"
+}} />
+{/* 🌈 虹色フラッシュ */}
+<div style={{
+    position: "fixed",
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: "radial-gradient(circle at center, #fff 0%, #ffbe0b 20%, #ff006e 45%, #8338ec 70%, transparent 100%)",
+    opacity: flashOpacity,
+    pointerEvents: "none",
+    zIndex: 10000,
+    transition: "opacity 0.2s ease-out",
+    mixBlendMode: "screen"
+}} />
 
             {/* ===== フローティング +Xpt テキスト ===== */}
             <AnimatePresence>
