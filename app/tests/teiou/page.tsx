@@ -36,7 +36,7 @@ const TEST_CONFIG = {
     title: "👑 Dot.A 帝王学",
     color: "#fbbf24",
     passedField: "teiou_passed",
-    rewardPoints: 1000,
+    rewardPoints: 50,
 };
 
 export default function TestPage() {

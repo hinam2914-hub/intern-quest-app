@@ -31,7 +31,7 @@ const WRITTEN_QUESTIONS = [
     { id: "q21", text: "「このインターンで得たいもの」" },
 ];
 
-const PASS_POINTS = 500;
+const PASS_POINTS = 50;
 const PASS_THRESHOLD = 12;
 const COOLDOWN_HOURS = 24;
 

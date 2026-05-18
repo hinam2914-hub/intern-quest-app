@@ -36,7 +36,7 @@ const TEST_CONFIG = {
     title: "📈 長期思考・複利思考",
     color: "#3b82f6",
     passedField: "long_term_thinking_passed",
-    rewardPoints: 300,
+    rewardPoints: 50,
 };
 
 export default function TestPage() {

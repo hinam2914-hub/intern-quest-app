@@ -36,7 +36,7 @@ const TEST_CONFIG = {
     title: "🔍 本質思考・タスク整理",
     color: "#06b6d4",
     passedField: "essence_thinking_passed",
-    rewardPoints: 300,
+    rewardPoints: 50,
 };
 
 export default function TestPage() {

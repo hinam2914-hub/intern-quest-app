@@ -34,7 +34,7 @@ const WRITTEN_QUESTIONS = [
 ];
 
 const PASS_THRESHOLD = 0.90;
-const REWARD_POINTS = 1000;
+const REWARD_POINTS = 50;
 const TEST_KEY = "retention";
 
 export default function RetentionTestPage() {

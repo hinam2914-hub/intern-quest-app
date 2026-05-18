@@ -36,7 +36,7 @@ const TEST_CONFIG = {
     title: "💰 利益思考・判断センス",
     color: "#10b981",
     passedField: "profit_thinking_passed",
-    rewardPoints: 300,
+    rewardPoints: 50,
 };
 
 export default function TestPage() {

@@ -36,7 +36,7 @@ const TEST_CONFIG = {
     title: "⚖️ 基準維持・妥協耐性",
     color: "#f97316",
     passedField: "standard_keeping_passed",
-    rewardPoints: 300,
+    rewardPoints: 50,
 };
 
 export default function TestPage() {

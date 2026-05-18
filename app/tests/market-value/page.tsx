@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase";
 const TEST_KEY = "market_value";
 const TEST_NAME = "💪 市場価値認識テスト";
 const TEST_COLOR = "#0891b2";
-const TEST_POINTS = 300;
+const TEST_POINTS = 50;
 const PASS_THRESHOLD = 12;
 const COOLDOWN_HOURS = 24;
 

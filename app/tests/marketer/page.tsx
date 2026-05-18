@@ -34,7 +34,7 @@ const WRITTEN_QUESTIONS = [
 ];
 
 const A_THRESHOLD = 0.90;
-const REWARD_POINTS = 500;
+const REWARD_POINTS = 50;
 const TEST_KEY = "marketer";
 
 export default function MarketerTestPage() {

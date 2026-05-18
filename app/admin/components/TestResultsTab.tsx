@@ -152,7 +152,7 @@ const WRITTEN_QUESTIONS: Record<string, string[]> = {
     ],
 };
 
-const EVAL_POINTS = { high: 100, mid: 50, none: 0 };
+const EVAL_POINTS = { high: 0, mid: 0, none: 0 };
 
 export default function TestResultsTab() {
     const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -215,7 +215,7 @@ export default function TestResultsTab() {
         const oldPoints = attempt.written_points_awarded || 0;
         const diff = newPoints - oldPoints;
 
-        if (!confirm(`${attempt.userName}さんの記述を「${evaluation === "high" ? "高評価+100pt" : evaluation === "mid" ? "中評価+50pt" : "評価なし"}」にしますか？\n${diff > 0 ? `+${diff}pt 付与されます` : diff < 0 ? `${diff}pt 減算されます` : "ポイント変動なし"}`)) return;
+        if (!confirm(`${attempt.userName}さんの記述を「${evaluation === "high" ? "高評価" : evaluation === "mid" ? "中評価" : "評価なし"}」にしますか？\n${diff > 0 ? `+${diff}pt 付与されます` : diff < 0 ? `${diff}pt 減算されます` : "ポイント変動なし"}`)) return;
 
         setEvaluating(attempt.id);
         const nowIso = new Date().toISOString();
@@ -250,15 +250,15 @@ export default function TestResultsTab() {
     };
 
     const handleApproveManager = async (test: ManagerTest) => {
-        if (!confirm("この提出を承認しますか？ユーザーに500ptが付与されマネージャー認定となります")) return;
+        if (!confirm("この提出を承認しますか？ユーザーに50ptが付与されマネージャー認定となります")) return;
         const nowIso = new Date().toISOString();
-        await supabase.from("manager_tests").update({ written_status: "approved", approved_at: nowIso, points_awarded: 500 }).eq("id", test.id);
+        await supabase.from("manager_tests").update({ written_status: "approved", approved_at: nowIso, points_awarded: 50 }).eq("id", test.id);
         await supabase.from("profiles").update({ manager_certified: true, manager_certified_at: nowIso, manager_passed: true, manager_passed_at: nowIso }).eq("id", test.user_id);
         const { data: ptRow } = await supabase.from("user_points").select("points").eq("id", test.user_id).maybeSingle();
-        const newPoints = ((ptRow as any)?.points || 0) + 500;
+        const newPoints = ((ptRow as any)?.points || 0) + 50;
         await supabase.from("user_points").upsert({ id: test.user_id, points: newPoints });
-        await supabase.from("points_history").insert({ user_id: test.user_id, change: 500, reason: "manager_test_certified" });
-        setManagerTests(prev => prev.map(t => t.id === test.id ? { ...t, written_status: "approved", points_awarded: 500 } : t));
+        await supabase.from("points_history").insert({ user_id: test.user_id, change: 50, reason: "manager_test_certified" });
+        setManagerTests(prev => prev.map(t => t.id === test.id ? { ...t, written_status: "approved", points_awarded: 50 } : t));
     };
 
     const handleRejectManager = async (test: ManagerTest) => {
@@ -315,7 +315,7 @@ export default function TestResultsTab() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                         <div>
                             <div style={{ fontSize: 14, fontWeight: 800, color: "#ec4899" }}>🎖️ マネージャーテスト承認</div>
-                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>選択式合格者の記述を確認 / 承認で500pt付与＋マネージャー認定</div>
+                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>選択式合格者の記述を確認 / 承認で50pt付与＋マネージャー認定</div>
                         </div>
                         <div style={{ display: "flex", gap: 6 }}>
                             <button onClick={() => setManagerFilter("pending")} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 11, background: managerFilter === "pending" ? "linear-gradient(135deg, #ec4899, #f472b6)" : "rgba(255,255,255,0.05)", color: managerFilter === "pending" ? "#fff" : "#9ca3af" }}>レビュー待ち{pendingManagerCount > 0 ? `(${pendingManagerCount})` : ""}</button>
@@ -351,7 +351,7 @@ export default function TestResultsTab() {
 
                                 {test.written_status === "pending" && test.passed_choice && (
                                     <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                                        <button onClick={() => handleApproveManager(test)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✅ 承認（500pt付与）</button>
+                                        <button onClick={() => handleApproveManager(test)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✅ 承認（50pt付与）</button>
                                         <button onClick={() => handleRejectManager(test)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.1)", color: "#f87171", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
                                     </div>
                                 )}
@@ -441,8 +441,8 @@ export default function TestResultsTab() {
                                         <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.2)" }}>
                                             <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, marginBottom: 8, letterSpacing: 1 }}>━━━ 記述評価 ━━━</div>
                                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                                <button onClick={() => handleEvaluate(a, "high")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.4)", background: a.written_evaluation === "high" ? "rgba(251,191,36,0.3)" : "rgba(251,191,36,0.1)", color: "#fbbf24", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥇 高評価 +100pt</button>
-                                                <button onClick={() => handleEvaluate(a, "mid")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.4)", background: a.written_evaluation === "mid" ? "rgba(148,163,184,0.3)" : "rgba(148,163,184,0.1)", color: "#cbd5e1", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥈 中評価 +50pt</button>
+                                                <button onClick={() => handleEvaluate(a, "high")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.4)", background: a.written_evaluation === "high" ? "rgba(251,191,36,0.3)" : "rgba(251,191,36,0.1)", color: "#fbbf24", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥇 高評価</button>
+                                                <button onClick={() => handleEvaluate(a, "mid")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.4)", background: a.written_evaluation === "mid" ? "rgba(148,163,184,0.3)" : "rgba(148,163,184,0.1)", color: "#cbd5e1", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥈 中評価</button>
                                                 <button onClick={() => handleEvaluate(a, "none")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(107,114,128,0.4)", background: a.written_evaluation === "none" ? "rgba(107,114,128,0.3)" : "rgba(107,114,128,0.1)", color: "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>⚪ 評価なし</button>
                                             </div>
                                             {a.evaluated_at && (
