@@ -492,6 +492,10 @@ export default function MyPage() {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [unreadAdvices, setUnreadAdvices] = useState<{ id: string; category: string; message: string; created_at: string }[]>([]);
     const [pendingAdminTasks, setPendingAdminTasks] = useState<{ id: string; title: string; deadline: string | null }[]>([]);
+    const [loginBonusReceived, setLoginBonusReceived] = useState<boolean | null>(null);
+    const [gachaSpinning, setGachaSpinning] = useState(false);
+    const [gachaResult, setGachaResult] = useState<number | null>(null);
+    const [showGachaModal, setShowGachaModal] = useState(false);
     const [showTrophies, setShowTrophies] = useState(false);
     const [showBadges, setShowBadges] = useState(false);
     const [newTag, setNewTag] = useState("");
@@ -504,6 +508,51 @@ export default function MyPage() {
     const floatingIdRef = useRef(0);
     const pointsCardRef = useRef<HTMLDivElement>(null);
     const { canvasRef, spawnParticles, flashOpacity, overlayOpacity } = useParticleEffect();
+    const handleGachaSpin = async () => {
+        if (gachaSpinning || loginBonusReceived) return;
+        setGachaSpinning(true);
+        setShowGachaModal(true);
+        const prizes = [
+            { pt: 1, weight: 5 },
+            { pt: 2, weight: 10 },
+            { pt: 3, weight: 20 },
+            { pt: 4, weight: 20 },
+            { pt: 5, weight: 20 },
+            { pt: 6, weight: 10 },
+            { pt: 7, weight: 5 },
+            { pt: 8, weight: 5 },
+            { pt: 9, weight: 3 },
+            { pt: 10, weight: 2 },
+        ];
+        const totalWeight = prizes.reduce((s, p) => s + p.weight, 0);
+        let random = Math.random() * totalWeight;
+        let selectedPt = 1;
+        for (const prize of prizes) {
+            random -= prize.weight;
+            if (random <= 0) {
+                selectedPt = prize.pt;
+                break;
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setGachaResult(selectedPt);
+        const { data: { user: gachaUser } } = await supabase.auth.getUser();
+        if (gachaUser) {
+            await supabase.from("points_history").insert({
+                user_id: gachaUser.id,
+                change: selectedPt,
+                reason: "login_bonus",
+                created_at: new Date().toISOString(),
+            });
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            if (selectedPt === 10) spawnParticles(cx, cy, 100);
+            else if (selectedPt >= 7) spawnParticles(cx, cy, 60);
+            else spawnParticles(cx, cy, 30);
+        }
+        setGachaSpinning(false);
+        setLoginBonusReceived(true);
+    };
     // 画面幅検出（スマホ判定用）
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => {
@@ -745,6 +794,15 @@ export default function MyPage() {
             .order("created_at", { ascending: false })
             .limit(5);
         setUnreadAdvices((adviceRows || []) as any);
+        // ログインボーナス受取状況をチェック
+        const todayStr = new Date().toISOString().split("T")[0];
+        const { data: bonusHistory } = await supabase.from("points_history")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("reason", "login_bonus")
+            .gte("created_at", todayStr)
+            .limit(1);
+        setLoginBonusReceived((bonusHistory?.length || 0) > 0);
         // adminタスク取得（未提出 + 差戻しのみ）
         const { data: profileForDept } = await supabase
             .from("profiles")
@@ -849,7 +907,77 @@ export default function MyPage() {
                     pointerEvents: "none", zIndex: 9999,
                 }}
             />
-           {/* 🌑 暗いオーバーレイ（パーティクルを目立たせる） */}
+           {/* 🎰 ガチャ結果モーダル */}
+            {showGachaModal && (
+                <div
+                    onClick={() => !gachaSpinning && setShowGachaModal(false)}
+                    style={{
+                        position: "fixed",
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        background: "rgba(0,0,0,0.85)",
+                        zIndex: 20000,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: gachaSpinning ? "wait" : "pointer",
+                    }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: "linear-gradient(135deg, #1f1f2e, #2a1f3d)",
+                            padding: 60,
+                            borderRadius: 24,
+                            textAlign: "center",
+                            border: gachaResult === 10 ? "3px solid #fbbf24" : "2px solid rgba(255,255,255,0.1)",
+                            maxWidth: 400,
+                            boxShadow: gachaResult === 10 ? "0 0 80px rgba(251,191,36,0.5)" : "0 20px 60px rgba(0,0,0,0.5)",
+                        }}
+                    >
+                        {gachaSpinning ? (
+                            <>
+                                <div style={{ fontSize: 80, marginBottom: 16, animation: "gachaSpin 1s linear infinite" }}>🎰</div>
+                                <div style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>運命のガチャを引いています...</div>
+                            </>
+                        ) : (
+                            <>
+                                <div style={{ fontSize: 80, marginBottom: 16 }}>
+                                    {gachaResult === 10 ? "🎉" : gachaResult && gachaResult >= 7 ? "✨" : "🎁"}
+                                </div>
+                                <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 700, letterSpacing: 3, marginBottom: 8 }}>
+                                    {gachaResult === 10 ? "🌟 大当たり！" : gachaResult && gachaResult >= 7 ? "✨ ラッキー！" : "GET!"}
+                                </div>
+                                <div style={{
+                                    color: gachaResult === 10 ? "#fbbf24" : "#ec4899",
+                                    fontSize: 72,
+                                    fontWeight: 900,
+                                    marginBottom: 8,
+                                    textShadow: gachaResult === 10 ? "0 0 40px #fbbf24" : "none",
+                                }}>
+                                    +{gachaResult}
+                                </div>
+                                <div style={{ color: "#fff", fontSize: 20, fontWeight: 800, marginBottom: 24 }}>pt 獲得！</div>
+                                <button
+                                    onClick={() => setShowGachaModal(false)}
+                                    style={{
+                                        padding: "12px 40px",
+                                        borderRadius: 10,
+                                        border: "none",
+                                        background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                                        color: "#fff",
+                                        fontWeight: 700,
+                                        fontSize: 16,
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    OK
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+            {/* 🌑 暗いオーバーレイ（パーティクルを目立たせる） */}
 <div style={{
     position: "fixed",
     top: 0, left: 0, right: 0, bottom: 0,
@@ -1007,6 +1135,55 @@ export default function MyPage() {
                                     確認する →
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )}
+                {/* ===== ログインボーナスガチャ ===== */}
+                {loginBonusReceived === false && (
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
+                        <div style={{
+                            padding: "32px 24px",
+                            borderRadius: 20,
+                            background: "linear-gradient(135deg, #fbbf24 0%, #ec4899 50%, #8b5cf6 100%)",
+                            boxShadow: "0 8px 32px rgba(236,72,153,0.3)",
+                            textAlign: "center",
+                            position: "relative",
+                            overflow: "hidden",
+                        }}>
+                            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontWeight: 700, letterSpacing: 3, marginBottom: 8 }}>
+                                ✨ TODAY'S LOGIN BONUS ✨
+                            </div>
+                            <div style={{ fontSize: 20, color: "#fff", fontWeight: 800, marginBottom: 16 }}>
+                                🎰 今日の運試し！
+                            </div>
+                            <button
+                                onClick={handleGachaSpin}
+                                disabled={gachaSpinning}
+                                style={{
+                                    padding: "20px 60px",
+                                    borderRadius: 100,
+                                    border: "4px solid #fff",
+                                    background: "linear-gradient(135deg, #fff, #fef3c7)",
+                                    color: "#ec4899",
+                                    fontSize: 24,
+                                    fontWeight: 900,
+                                    cursor: gachaSpinning ? "wait" : "pointer",
+                                    boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+                                    animation: gachaSpinning ? "none" : "gachaPulse 2s infinite",
+                                }}
+                            >
+                                {gachaSpinning ? "🎲 ぐるぐる..." : "🎁 ガチャを引く！"}
+                            </button>
+                            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 12, fontWeight: 600 }}>
+                                ランダムで 1〜10pt 獲得！毎日1回挑戦できます
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {loginBonusReceived === true && (
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 16px", padding: "12px 20px", borderRadius: 12, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", textAlign: "center" }}>
+                        <div style={{ fontSize: 12, color: "#22c55e", fontWeight: 700 }}>
+                            ✅ 今日のログインボーナスは受け取り済み！明日また挑戦できます
                         </div>
                     </div>
                 )}

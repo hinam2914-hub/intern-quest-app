@@ -81,3 +81,12 @@ button {
         grid-template-columns: 1fr !important;
     }
 }
+/* ===== ガチャアニメーション ===== */
+@keyframes gachaPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+@keyframes gachaSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

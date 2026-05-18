@@ -28,7 +28,6 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const [bonus, setBonus] = useState(false);
 
     const handleLogin = async () => {
         setLoading(true);
@@ -41,41 +40,8 @@ export default function LoginPage() {
             return;
         }
 
+        setMessage("✅ ログイン成功！");
         const user = data.user;
-        const todayYmd = getTodayJST();
-        const nowIso = new Date().toISOString();
-
-        const { data: historyRows } = await supabase
-            .from("points_history")
-            .select("created_at, reason")
-            .eq("user_id", user.id)
-            .eq("reason", "login_bonus");
-
-        const alreadyReceived = historyRows?.some(
-            (row) => isSameJSTDay(row.created_at, todayYmd)
-        ) || false;
-
-        if (!alreadyReceived) {
-            const { data: pointRow } = await supabase
-                .from("user_points").select("points").eq("id", user.id).single();
-            const current = pointRow?.points || 0;
-
-            await supabase.from("user_points")
-                .update({ points: current + 1 })
-                .eq("id", user.id);
-
-            await supabase.from("points_history").insert({
-                user_id: user.id,
-                change: 1,
-                reason: "login_bonus",
-                created_at: nowIso,
-            });
-
-            setBonus(true);
-            setMessage("🎁 ログインボーナス +1pt 獲得！");
-        } else {
-            setMessage("✅ ログイン成功！");
-        }
 
         const { data: profile } = await supabase
             .from("profiles")
@@ -158,7 +124,7 @@ export default function LoginPage() {
                     </div>
 
                     {message && (
-                        <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: bonus ? "rgba(99,102,241,0.15)" : message.includes("✅") ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", border: `1px solid ${bonus ? "rgba(99,102,241,0.3)" : message.includes("✅") ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`, color: bonus ? "#a5b4fc" : message.includes("✅") ? "#34d399" : "#f87171", fontSize: 14, fontWeight: 600 }}>
+                        <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 10, background: message.includes("✅") ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", border: `1px solid ${message.includes("✅") ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`, color: message.includes("✅") ? "#34d399" : "#f87171", fontSize: 14, fontWeight: 600 }}>
                             {message}
                         </div>
                     )}
