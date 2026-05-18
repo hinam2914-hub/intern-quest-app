@@ -53,6 +53,8 @@ export default function ThanksPage() {
     const [result, setResult] = useState("");
     const [success, setSuccess] = useState(false);
     const [thanksList, setThanksList] = useState<ThanksRow[]>([]);
+    const [totalSentCount, setTotalSentCount] = useState(0);
+    const [totalReceivedCount, setTotalReceivedCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [historyTab, setHistoryTab] = useState<"all" | "sent" | "received">("sent");
     const [isAdmin, setIsAdmin] = useState(false);
@@ -71,6 +73,11 @@ export default function ThanksPage() {
             setUsers(allUsers.filter(u => u.id !== user.id));
 
             const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(50);
+            // 全件カウント取得（表示用）
+            const { count: sentCnt } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("from_user_id", user.id);
+            const { count: receivedCnt } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("to_user_id", user.id);
+            setTotalSentCount(sentCnt || 0);
+            setTotalReceivedCount(receivedCnt || 0);
             if (thanksRows) {
                 setThanksList(thanksRows.map((row: any) => ({
                     ...row,
@@ -153,8 +160,8 @@ export default function ThanksPage() {
         return true;
     });
 
-    const sentCount = thanksList.filter(i => i.from_user_id === myId).length;
-    const receivedCount = thanksList.filter(i => i.to_user_id === myId).length;
+    const sentCount = totalSentCount;
+    const receivedCount = totalReceivedCount;
 
     if (loading) {
         return (
