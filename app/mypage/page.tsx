@@ -55,7 +55,7 @@ type Particle = {
     size: number;
     life: number;
     maxLife: number;
-    shape: "circle" | "star" | "rect";
+    shape: "circle" | "star" | "rect" | "sparkle";
 };
 
 // フローティングポイント型
@@ -266,30 +266,58 @@ function getRarityStyle(rarity: Trophy["rarity"]) {
     if (rarity === "rare") return { bg: "rgba(6,182,212,0.15)", border: "rgba(6,182,212,0.5)", color: "#06b6d4", label: "RARE" };
     return { bg: "rgba(107,114,128,0.15)", border: "rgba(107,114,128,0.4)", color: "#9ca3af", label: "COMMON" };
 }
-
-// ========== パーティクルエフェクト Hook ==========
+// ========== パーティクルエフェクト Hook (派手派手版v2) ==========
 function useParticleEffect() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const particlesRef = useRef<Particle[]>([]);
     const animFrameRef = useRef<number>(0);
     const particleIdRef = useRef(0);
+    // 虹色＋ネオン16色（派手派手）
+    const COLORS = [
+        "#ff006e", "#fb5607", "#ffbe0b", "#8338ec", "#3a86ff",
+        "#06ffa5", "#ff4081", "#ffd700", "#00d9ff", "#a855f7",
+        "#f472b6", "#34d399", "#fbbf24", "#06b6d4", "#ec4899", "#10b981"
+    ];
 
-    const COLORS = ["#6366f1", "#8b5cf6", "#f59e0b", "#34d399", "#ec4899", "#06b6d4", "#f97316", "#fbbf24", "#a855f7"];
+    const spawnParticles = useCallback((x: number, y: number, count = 60) => {
+        // 派手派手化: 段階的に量を増やす
+        // count: 30 → 100, 60 → 200, 100 → 300
+        const actualCount = Math.min(500, Math.floor(count * 3));
 
-    const spawnParticles = useCallback((x: number, y: number, count = 40) => {
-        for (let i = 0; i < count; i++) {
-            const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
-            const speed = 4 + Math.random() * 8;
+        // 第1波: 爆発（速い・四方八方）
+        const burstCount = Math.floor(actualCount * 0.6);
+        for (let i = 0; i < burstCount; i++) {
+            const angle = (Math.PI * 2 * i) / burstCount + (Math.random() - 0.5) * 0.3;
+            const speed = 8 + Math.random() * 16; // 速度2倍
             particlesRef.current.push({
                 id: particleIdRef.current++,
                 x, y,
                 vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - Math.random() * 4,
+                vy: Math.sin(angle) * speed - Math.random() * 6,
                 color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                size: 4 + Math.random() * 8,
+                size: 5 + Math.random() * 12, // 大きめ
                 life: 1,
-                maxLife: 0.6 + Math.random() * 0.8,
-                shape: (["circle", "star", "rect"] as const)[Math.floor(Math.random() * 3)],
+                maxLife: 1.5 + Math.random() * 1.5, // 長持ち
+                shape: (["circle", "star", "rect", "sparkle"] as any)[Math.floor(Math.random() * 4)],
+            });
+        }
+
+        // 第2波: 舞い散り（遅い・上向き）
+        const floatCount = Math.floor(actualCount * 0.4);
+        for (let i = 0; i < floatCount; i++) {
+            const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI; // 上向き中心
+            const speed = 3 + Math.random() * 6;
+            particlesRef.current.push({
+                id: particleIdRef.current++,
+                x: x + (Math.random() - 0.5) * 100,
+                y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 8, // 強い上向き
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                size: 3 + Math.random() * 8,
+                life: 1,
+                maxLife: 2 + Math.random() * 1.5,
+                shape: (["circle", "star", "sparkle"] as any)[Math.floor(Math.random() * 3)],
             });
         }
     }, []);
@@ -307,43 +335,57 @@ function useParticleEffect() {
         ctx.fill();
     };
 
+    // ✨ キラキラ描画追加
+    const drawSparkle = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
+        ctx.save();
+        ctx.translate(x, y);
+        // 縦線
+        ctx.fillRect(-size / 8, -size, size / 4, size * 2);
+        // 横線
+        ctx.fillRect(-size, -size / 8, size * 2, size / 4);
+        ctx.restore();
+    };
+
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
-
         const resize = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         };
         resize();
         window.addEventListener("resize", resize);
-
         const animate = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             particlesRef.current = particlesRef.current.filter(p => p.life > 0);
             particlesRef.current.forEach(p => {
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vy += 0.25; // 重力
-                p.vx *= 0.98;
-                p.life -= 0.018;
-                const alpha = Math.max(0, p.life / 1);
+                p.vy += 0.18; // 重力少し弱めて長く舞う
+                p.vx *= 0.985; // 空気抵抗少なめ
+                p.life -= 0.012; // ライフ減少緩やか
+
+                // イージング: 後半ゆっくりフェード
+                const alpha = Math.max(0, Math.pow(p.life, 0.7));
                 ctx.globalAlpha = alpha;
                 ctx.fillStyle = p.color;
                 ctx.shadowColor = p.color;
-                ctx.shadowBlur = 8;
+                ctx.shadowBlur = 16; // 光るオーラ強化
+
                 if (p.shape === "circle") {
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
                     ctx.fill();
                 } else if (p.shape === "star") {
                     drawStar(ctx, p.x, p.y, p.size / 2);
+                } else if (p.shape === "sparkle") {
+                    drawSparkle(ctx, p.x, p.y, p.size / 2);
                 } else {
                     ctx.save();
                     ctx.translate(p.x, p.y);
-                    ctx.rotate(p.life * 10);
+                    ctx.rotate(p.life * 12);
                     ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
                     ctx.restore();
                 }
@@ -353,7 +395,6 @@ function useParticleEffect() {
             animFrameRef.current = requestAnimationFrame(animate);
         };
         animate();
-
         return () => {
             window.removeEventListener("resize", resize);
             cancelAnimationFrame(animFrameRef.current);
@@ -362,7 +403,6 @@ function useParticleEffect() {
 
     return { canvasRef, spawnParticles };
 }
-
 export default function MyPage() {
     const router = useRouter();
     const [userId, setUserId] = useState("");
@@ -486,7 +526,7 @@ export default function MyPage() {
         }, 1500);
 
         // パーティクル
-        spawnParticles(x, y, amount >= 10 ? 60 : 30);
+        spawnParticles(x, y, amount >= 100 ? 100 : amount >= 10 ? 60 : 30);
     }, [spawnParticles]);
 
     const loadPage = async () => {
