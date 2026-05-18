@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
-type RankingUser = { id: string; name: string; points: number; avatar_url?: string | null };
+type RankingUser = {
+    id: string;
+    name: string;
+    points: number;
+    avatar_url?: string | null;
+    color?: string | null;
+    subLabel?: string;
+    isTeam?: boolean;
+};
 
 function getOneWeekAgoISO(): string {
     const now = new Date();
@@ -13,13 +21,24 @@ function getOneWeekAgoISO(): string {
     return oneWeekAgo.toISOString();
 }
 
+function getYmdJST(iso: string): string {
+    const d = new Date(iso);
+    const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+    const y = jst.getUTCFullYear();
+    const m = String(jst.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(jst.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
 export default function RankingPage() {
     const router = useRouter();
     const [users, setUsers] = useState<RankingUser[]>([]);
     const [weeklyUsers, setWeeklyUsers] = useState<RankingUser[]>([]);
+    const [teamRanking, setTeamRanking] = useState<RankingUser[]>([]);
     const [myId, setMyId] = useState("");
+    const [myTeamId, setMyTeamId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<"total" | "weekly">("total");
+    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams">("total");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -28,6 +47,11 @@ export default function RankingPage() {
             if (!user) { router.push("/login"); return; }
             setMyId(user.id);
 
+            // 自分のteam_id取得
+            const { data: myProfile } = await supabase.from("profiles").select("team_id").eq("id", user.id).single();
+            setMyTeamId((myProfile as any)?.team_id || null);
+
+            // ===== 総合ランキング =====
             const { data: pointRows } = await supabase.from("user_points").select("id, total_earned").order("total_earned", { ascending: false });
             const totalRows = pointRows || [];
             const { data: profileRows } = await supabase.from("profiles").select("id, name, avatar_url").in("id", totalRows.map((r) => r.id));
@@ -38,6 +62,7 @@ export default function RankingPage() {
                 avatar_url: profileRows?.find((p) => p.id === row.id)?.avatar_url || null,
             })));
 
+            // ===== 週間ランキング =====
             const { data: weeklyData } = await supabase.from("points_history").select("user_id, change, created_at").gte("created_at", getOneWeekAgoISO());
             const weeklyTotals: Record<string, number> = {};
             (weeklyData || []).forEach((item) => { weeklyTotals[item.user_id] = (weeklyTotals[item.user_id] || 0) + item.change; });
@@ -51,12 +76,67 @@ export default function RankingPage() {
                     avatar_url: weeklyProfiles?.find((p) => p.id === id)?.avatar_url || null,
                 })).sort((a, b) => b.points - a.points));
             }
+
+            // ===== チーム別 日報提出率ランキング（今週） =====
+            // 1. teams取得
+            const { data: teamsData } = await supabase.from("teams").select("id, name, color");
+            // 2. team_idがあるプロフィール取得
+            const { data: teamMemberProfiles } = await supabase.from("profiles").select("id, team_id").not("team_id", "is", null);
+            // 3. 今週のsubmissions取得
+            const { data: subsData } = await supabase.from("submissions").select("user_id, created_at").gte("created_at", getOneWeekAgoISO());
+
+            // チームごとの集計
+            const teams = teamsData || [];
+            const members = teamMemberProfiles || [];
+            const subs = subsData || [];
+
+            const teamStats: RankingUser[] = teams.map((team: any) => {
+                // チームメンバー
+                const teamMemberIds = members.filter((m: any) => m.team_id === team.id).map((m: any) => m.id);
+                const memberCount = teamMemberIds.length;
+
+                // 想定提出数 = メンバー数 × 7日
+                const expected = memberCount * 7;
+
+                // 実際の提出: (user_id × 日付)の組み合わせをユニーク化
+                const submittedPairs = new Set<string>();
+                subs.forEach((s: any) => {
+                    if (teamMemberIds.includes(s.user_id)) {
+                        const ymd = getYmdJST(s.created_at);
+                        submittedPairs.add(`${s.user_id}_${ymd}`);
+                    }
+                });
+                const actual = submittedPairs.size;
+
+                // 提出率（メンバー0の場合は0%）
+                const rate = expected > 0 ? Math.round((actual / expected) * 100) : 0;
+
+                return {
+                    id: team.id,
+                    name: team.name,
+                    points: rate, // 提出率を points にマッピング
+                    avatar_url: null,
+                    color: team.color || "#6366f1",
+                    subLabel: `${actual}/${expected}日 (${memberCount}名)`,
+                    isTeam: true,
+                };
+            }).sort((a, b) => b.points - a.points);
+
+            setTeamRanking(teamStats);
             setLoading(false);
         };
         loadRanking();
     }, [router]);
 
     const renderAvatar = (user: RankingUser, size: number) => {
+        if (user.isTeam) {
+            // チームの場合：チームカラーの円
+            return (
+                <div style={{ width: size, height: size, borderRadius: "50%", background: user.color || "#6366f1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.5, fontWeight: 700, color: "#fff" }}>
+                    👥
+                </div>
+            );
+        }
         if (user.avatar_url) {
             return <img src={user.avatar_url} alt={user.name} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", display: "block" }} />;
         }
@@ -65,6 +145,11 @@ export default function RankingPage() {
                 {user.name.charAt(0)}
             </div>
         );
+    };
+
+    const formatPoints = (user: RankingUser): string => {
+        if (user.isTeam) return `${user.points}%`;
+        return `${user.points.toLocaleString()}pt`;
     };
 
     const renderPodium = (list: RankingUser[]) => {
@@ -80,12 +165,15 @@ export default function RankingPage() {
                     {podiumOrder.map((rank) => {
                         const user = top3[rank];
                         if (!user) return <div key={rank} style={{ width: 140 }} />;
-                        const isMe = user.id === myId;
+                        const isMe = user.isTeam ? user.id === myTeamId : user.id === myId;
                         const color = podiumColors[rank];
                         const height = podiumHeights[rank];
+                        const handleClick = () => {
+                            if (!user.isTeam) router.push(`/profile/${user.id}`);
+                        };
 
                         return (
-                            <div key={rank} onClick={() => router.push(`/profile/${user.id}`)} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140, cursor: "pointer", transition: "transform 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")} onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}>
+                            <div key={rank} onClick={handleClick} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140, cursor: user.isTeam ? "default" : "pointer", transition: "transform 0.2s" }} onMouseEnter={(e) => { if (!user.isTeam) e.currentTarget.style.transform = "translateY(-2px)"; }} onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}>
                                 <div style={{ position: "relative", marginBottom: 8 }}>
                                     <div style={{ width: rank === 0 ? 80 : 64, height: rank === 0 ? 80 : 64, borderRadius: "50%", border: `3px solid ${color}`, overflow: "hidden", boxShadow: `0 0 20px ${color}50` }}>
                                         {renderAvatar(user, rank === 0 ? 80 : 64)}
@@ -93,12 +181,15 @@ export default function RankingPage() {
                                     <div style={{ position: "absolute", bottom: -4, right: -4, fontSize: rank === 0 ? 24 : 18 }}>{medals[rank]}</div>
                                 </div>
                                 <div style={{ fontSize: 13, fontWeight: 700, color: isMe ? "#818cf8" : "#f9fafb", marginBottom: 2, textAlign: "center", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                    {user.name}{isMe && <span style={{ marginLeft: 4, fontSize: 10, color: "#6366f1" }}> YOU</span>}
+                                    {user.name}{isMe && <span style={{ marginLeft: 4, fontSize: 10, color: "#6366f1" }}> {user.isTeam ? "MY TEAM" : "YOU"}</span>}
                                 </div>
-                                <div style={{ fontSize: rank === 0 ? 16 : 13, fontWeight: 800, color, marginBottom: 8 }}>
-                                    {user.points.toLocaleString()}pt
+                                <div style={{ fontSize: rank === 0 ? 16 : 13, fontWeight: 800, color, marginBottom: 2 }}>
+                                    {formatPoints(user)}
                                 </div>
-                                <div style={{ width: "100%", height, background: `linear-gradient(180deg, ${color}30, ${color}15)`, border: `1px solid ${color}50`, borderRadius: "8px 8px 0 0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {user.subLabel && (
+                                    <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 6 }}>{user.subLabel}</div>
+                                )}
+                                <div style={{ width: "100%", height, background: `linear-gradient(180deg, ${color}30, ${color}15)`, border: `1px solid ${color}50`, borderRadius: "8px 8px 0 0", display: "flex", alignItems: "center", justifyContent: "center", marginTop: user.subLabel ? 0 : 8 }}>
                                     <div style={{ fontSize: rank === 0 ? 36 : 28, fontWeight: 900, color: `${color}60` }}>{rank + 1}</div>
                                 </div>
                             </div>
@@ -118,20 +209,28 @@ export default function RankingPage() {
                 <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>4位以下</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {rest.map((user, i) => {
-                        const isMe = user.id === myId;
+                        const isMe = user.isTeam ? user.id === myTeamId : user.id === myId;
+                        const handleClick = () => {
+                            if (!user.isTeam) router.push(`/profile/${user.id}`);
+                        };
                         return (
-                            <div key={user.id} onClick={() => router.push(`/profile/${user.id}`)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: isMe ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)", border: isMe ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(255,255,255,0.05)", cursor: "pointer", transition: "background 0.2s" }} onMouseEnter={(e) => (e.currentTarget.style.background = isMe ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.06)")} onMouseLeave={(e) => (e.currentTarget.style.background = isMe ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)")}>
+                            <div key={user.id} onClick={handleClick} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: isMe ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)", border: isMe ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(255,255,255,0.05)", cursor: user.isTeam ? "default" : "pointer", transition: "background 0.2s" }} onMouseEnter={(e) => { if (!user.isTeam) e.currentTarget.style.background = isMe ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.06)"; }} onMouseLeave={(e) => (e.currentTarget.style.background = isMe ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)")}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                     <div style={{ width: 28, textAlign: "center", fontSize: 13, color: "#6b7280", fontWeight: 700 }}>{i + 4}</div>
                                     <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
                                         {renderAvatar(user, 36)}
                                     </div>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: isMe ? "#818cf8" : "#f9fafb" }}>
-                                        {user.name}
-                                        {isMe && <span style={{ marginLeft: 8, fontSize: 10, color: "#6366f1", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(99,102,241,0.2)" }}>YOU</span>}
+                                    <div>
+                                        <div style={{ fontSize: 14, fontWeight: 600, color: isMe ? "#818cf8" : "#f9fafb" }}>
+                                            {user.name}
+                                            {isMe && <span style={{ marginLeft: 8, fontSize: 10, color: "#6366f1", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(99,102,241,0.2)" }}>{user.isTeam ? "MY TEAM" : "YOU"}</span>}
+                                        </div>
+                                        {user.subLabel && (
+                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>{user.subLabel}</div>
+                                        )}
                                     </div>
                                 </div>
-                                <div style={{ fontSize: 16, fontWeight: 800, color: isMe ? "#818cf8" : "#d1d5db" }}>{user.points.toLocaleString()}pt</div>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: isMe ? "#818cf8" : "#d1d5db" }}>{formatPoints(user)}</div>
                             </div>
                         );
                     })}
@@ -148,7 +247,7 @@ export default function RankingPage() {
         );
     }
 
-    const currentList = activeTab === "total" ? users : weeklyUsers;
+    const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : teamRanking;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -167,12 +266,21 @@ export default function RankingPage() {
                     {[
                         { key: "total", label: "🏆 総合" },
                         { key: "weekly", label: "⚡ 今週" },
+                        { key: "teams", label: "👥 チーム" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
                             {tab.label}
                         </button>
                     ))}
                 </div>
+
+                {/* チームタブの場合、説明文表示 */}
+                {activeTab === "teams" && (
+                    <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 12, padding: 16, marginBottom: 24 }}>
+                        <div style={{ fontSize: 13, color: "#a5b4fc", fontWeight: 600, marginBottom: 4 }}>📊 チーム別 日報提出率（今週）</div>
+                        <div style={{ fontSize: 11, color: "#6b7280" }}>提出率 = 提出日数 ÷ (メンバー数 × 7日)</div>
+                    </div>
+                )}
 
                 {currentList.length === 0 ? (
                     <div style={{ textAlign: "center", color: "#6b7280", fontSize: 14, padding: 40 }}>データがありません</div>
