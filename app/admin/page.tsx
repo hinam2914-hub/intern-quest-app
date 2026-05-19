@@ -1243,7 +1243,7 @@ export default function AdminPage() {
                             tabs: [
                                 { key: "kpi", label: "KPI設定" },
                                 { key: "monthly_kpi", label: "月次KPI" },
-                                { key: "kpi_dashboard", label: "📊 ダッシュボード" },
+                                { key: "kpi_dashboard", label: "📊 アナリティクス" },
                                 { key: "dept_stats", label: "部署別成績" },
                                 { key: "tests", label: "テスト結果" },
                             ],
