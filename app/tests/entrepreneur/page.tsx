@@ -95,8 +95,8 @@ export default function EntrepreneurTestPage() {
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
                 <div style={{ fontSize: 64, marginBottom: 16 }}>🚀</div>
-                <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f59e0b", margin: "0 0 12px" }}>Aランク済み</h1>
-                <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 32 }}>あなたはすでに起業適性Aランクに認定されています</p>
+                <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f59e0b", margin: "0 0 12px" }}>満点合格済み</h1>
+                <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 32 }}>あなたはすでに起業適性満点合格に認定されています</p>
                 <button onClick={() => router.push("/tests")} style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>テスト一覧へ戻る</button>
             </div>
         </main>
@@ -113,7 +113,7 @@ export default function EntrepreneurTestPage() {
                     <p style={{ fontSize: 16, color: "#d1d5db", marginBottom: 16 }}>{rankLabel}</p>
                     <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 24 }}>{result.score} / {result.total} 問正解</p>
                     {result.rank === "A" && <div style={{ padding: 16, borderRadius: 12, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#10b981", fontWeight: 700, fontSize: 16, marginBottom: 24 }}>+{REWARD_POINTS}pt 獲得！</div>}
-                    {result.rank !== "A" && <div style={{ padding: 16, borderRadius: 12, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#f59e0b", fontSize: 13, marginBottom: 24 }}>Aランクで +{REWARD_POINTS}pt / 24時間後に再挑戦</div>}
+                    {result.rank !== "A" && <div style={{ padding: 16, borderRadius: 12, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#f59e0b", fontSize: 13, marginBottom: 24 }}>満点合格で +{REWARD_POINTS}pt / 24時間後に再挑戦</div>}
                     <button onClick={() => router.push("/tests")} style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>テスト一覧へ戻る</button>
                 </div>
             </main>
@@ -136,7 +136,7 @@ export default function EntrepreneurTestPage() {
             <div style={{ maxWidth: 720, margin: "0 auto" }}>
                 <div onClick={() => router.push("/tests")} style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>← テスト一覧</div>
                 <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>🚀 起業適性テスト</h1>
-                <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 24px" }}>選択式{CHOICE_QUESTIONS.length}問 + 記述{WRITTEN_QUESTIONS.length}問 / Aランク(90%以上)で +{REWARD_POINTS}pt</p>
+                <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 24px" }}>選択式{CHOICE_QUESTIONS.length}問 + 記述{WRITTEN_QUESTIONS.length}問 / 満点(全問正解)で +{REWARD_POINTS}pt</p>
 
                 <div style={{ marginBottom: 32 }}>
                     <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>【選択式】</div>

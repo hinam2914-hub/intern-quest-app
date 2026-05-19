@@ -94,7 +94,7 @@ export default function TestPage() {
             alert("記述式問題（Q16〜Q21）も少なくとも1問は回答してください");
             return;
         }
-        if (!confirm(`提出してよろしいですか？\n\n選択式は自動採点、記述式はadminが評価します。\n80%以上正解 + admin承認で合格 (+${TEST_CONFIG.rewardPoints}pt)`)) return;
+        if (!confirm(`提出してよろしいですか？\n\n選択式は自動採点、記述式はadminが評価します。\n全問正解 + admin承認で合格 (+${TEST_CONFIG.rewardPoints}pt)`)) return;
 
         setSubmitting(true);
         const correctCount = answers.filter((a, i) => a === QUESTIONS[i].correct).length;

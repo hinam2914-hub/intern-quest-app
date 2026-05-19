@@ -105,7 +105,7 @@ export default function RetentionTestPage() {
                 <div style={{ fontSize: 64, marginBottom: 16 }}>{result.passed ? "🔥" : "😢"}</div>
                 <h1 style={{ fontSize: 32, fontWeight: 800, color: result.passed ? "#ef4444" : "#6b7280", margin: "0 0 12px" }}>{result.passed ? "残留OK" : "不合格"}</h1>
                 <p style={{ color: "#f9fafb", fontSize: 18, marginBottom: 8 }}>{result.score} / {result.total} 問正解</p>
-                <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 24 }}>合格ライン: {Math.round(PASS_THRESHOLD * 100)}%</p>
+                <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 24 }}>合格条件: 全問正解</p>
                 {result.passed && <div style={{ padding: 16, borderRadius: 12, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", fontWeight: 700, fontSize: 16, marginBottom: 24 }}>+{REWARD_POINTS}pt 獲得！優先育成対象</div>}
                 {!result.passed && <div style={{ padding: 16, borderRadius: 12, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", fontSize: 13, marginBottom: 24 }}>覚悟を見直して24時間後に再挑戦</div>}
                 <button onClick={() => router.push("/tests")} style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>テスト一覧へ戻る</button>
@@ -129,7 +129,7 @@ export default function RetentionTestPage() {
             <div style={{ maxWidth: 720, margin: "0 auto" }}>
                 <div onClick={() => router.push("/tests")} style={{ fontSize: 12, color: "#ef4444", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>← テスト一覧</div>
                 <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>🔥 Dot.A雇用テスト</h1>
-                <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 24px" }}>選択式{CHOICE_QUESTIONS.length}問 + 記述{WRITTEN_QUESTIONS.length}問 / 合格: {Math.round(PASS_THRESHOLD * 100)}%以上で +{REWARD_POINTS}pt</p>
+                <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 24px" }}>選択式{CHOICE_QUESTIONS.length}問 + 記述{WRITTEN_QUESTIONS.length}問 / 合格: 満点で +{REWARD_POINTS}pt</p>
 
                 <div style={{ marginBottom: 32 }}>
                     <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>【選択式】</div>

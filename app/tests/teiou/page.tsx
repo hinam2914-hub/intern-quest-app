@@ -94,7 +94,7 @@ export default function TestPage() {
             alert("記述式問題（Q16〜Q21）も少なくとも1問は回答してください");
             return;
         }
-        if (!confirm(`提出してよろしいですか？\n\n選択式は自動採点、記述式はadminが評価します。\n80%以上正解 + admin承認で合格 (+${TEST_CONFIG.rewardPoints}pt)`)) return;
+        if (!confirm(`提出してよろしいですか？\n\n選択式は自動採点、記述式はadminが評価します。\n全問正解 + admin承認で合格 (+${TEST_CONFIG.rewardPoints}pt)`)) return;
 
         setSubmitting(true);
         const correctCount = answers.filter((a, i) => a === QUESTIONS[i].correct).length;
@@ -113,7 +113,7 @@ export default function TestPage() {
             alert(`✅ 提出しました！\n\n選択式: ${correctCount}/15問正解\n\nadminの審査後、合格時に${TEST_CONFIG.rewardPoints}pt付与されます。`);
             await supabase.from("profiles").update({ teiou_passed: true, teiou_passed_at: new Date().toISOString() }).eq("id", userId);
         } else {
-            alert(`❌ 不合格\n\n選択式: ${correctCount}/15問正解（合格には12問以上必要）\n\n24時間後に再受験できます。`);
+            alert(`❌ 不合格\n\n選択式: ${correctCount}/15問正解（合格には全問正解必要）\n\n24時間後に再受験できます。`);
         }
         router.push("/tests");
     };
@@ -133,7 +133,7 @@ export default function TestPage() {
                 <button onClick={() => router.push("/tests")} style={{ marginBottom: 16, padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>← テスト一覧に戻る</button>
                 <div style={{ background: `linear-gradient(135deg, ${TEST_CONFIG.color}1f, ${TEST_CONFIG.color}1f)`, border: `2px solid ${TEST_CONFIG.color}66`, borderRadius: 16, padding: 24, marginBottom: 24 }}>
                     <h1 style={{ fontSize: 24, fontWeight: 800, color: TEST_CONFIG.color, margin: "0 0 8px" }}>{TEST_CONFIG.title}</h1>
-                    <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>全21問（選択式15問 + 記述式6問）<br />合格条件：選択式12問以上正解 + admin承認<br />報酬：<strong style={{ color: "#fbbf24" }}>{TEST_CONFIG.rewardPoints}pt</strong>（最高ランクテスト）</div>
+                    <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>全21問（選択式15問 + 記述式6問）<br />合格条件：選択式 全問正解(15/15) + admin承認<br />報酬：<strong style={{ color: "#fbbf24" }}>{TEST_CONFIG.rewardPoints}pt</strong>（最高ランクテスト）</div>
                 </div>
                 {QUESTIONS.map((q, i) => {
                     const showSection = q.section !== currentSection;

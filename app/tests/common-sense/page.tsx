@@ -95,13 +95,13 @@ export default function CommonSenseTest() {
             return;
         }
 
-        if (!confirm("提出してよろしいですか？\n\n選択式は自動採点、記述式はadminが評価します。\n80%以上正解 + admin承認で合格となります。")) return;
+        if (!confirm("提出してよろしいですか？\n\n選択式は自動採点、記述式はadminが評価します。\n全問正解 + admin承認で合格となります。")) return;
 
         setSubmitting(true);
 
         // 採点
         const correctCount = answers.filter((a, i) => a === QUESTIONS[i].correct).length;
-        const passedSelection = correctCount === 15; // 80% = 12問以上
+        const passedSelection = correctCount === 15; // 満点必須
 
         // 記録
         const { error } = await supabase.from("test_attempts").insert({
