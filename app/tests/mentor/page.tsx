@@ -34,7 +34,7 @@ const WRITTEN_QUESTIONS = [
 ];
 
 const PASS_THRESHOLD = 1.0; // 満点必須
-const REWARD_POINTS = 50;
+const REWARD_POINTS = 10;
 const TEST_KEY = "mentor";
 
 export default function MentorTestPage() {

@@ -36,7 +36,7 @@ const TEST_CONFIG = {
     title: "🎯 社会人基準・現実認識",
     color: "#ec4899",
     passedField: "social_standard_passed",
-    rewardPoints: 50,
+    rewardPoints: 10,
 };
 
 export default function TestPage() {

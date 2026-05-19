@@ -34,7 +34,7 @@ const WRITTEN_QUESTIONS = [
 ];
 
 const A_THRESHOLD = 1.0; // 満点必須
-const REWARD_POINTS = 50;
+const REWARD_POINTS = 10;
 const TEST_KEY = "entrepreneur";
 
 export default function EntrepreneurTestPage() {
