@@ -126,8 +126,8 @@ export default function CommonSenseTest() {
             // ポイント付与
             const { data: ptRow } = await supabase.from("user_points").select("points").eq("id", userId).maybeSingle();
             const currentPt = ptRow?.points || 0;
-            await supabase.from("user_points").upsert({ id: userId, points: currentPt + TEST_CONFIG.rewardPoints });
-            await supabase.from("points_history").insert({ user_id: userId, change: TEST_CONFIG.rewardPoints, reason: "常識・デリカシーテスト合格" });
+            await supabase.from("user_points").upsert({ id: userId, points: currentPt + 10 });
+            await supabase.from("points_history").insert({ user_id: userId, change: 10, reason: "常識・デリカシーテスト合格" });
         } else {
             alert(`❌ 不合格\n\n選択式: ${correctCount}/15問正解（合格には全問正解必要）\n\n24時間後に再受験できます。`);
         }
