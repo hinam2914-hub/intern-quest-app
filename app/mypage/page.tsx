@@ -1757,30 +1757,23 @@ export default function MyPage() {
                 {/* ===== クイックタスク（超目立つ版） ===== */}
                 <div style={{
                     marginBottom: 20,
-                    background: "linear-gradient(135deg, rgba(139,92,246,0.18), rgba(236,72,153,0.12), rgba(99,102,241,0.08))",
+                    background: "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(99,102,241,0.06))",
                     border: "2px solid rgba(139,92,246,0.4)",
                     borderRadius: 20,
                     padding: 28,
-                    boxShadow: "0 0 32px rgba(139,92,246,0.25), inset 0 0 20px rgba(236,72,153,0.05)",
-                    position: "relative",
-                    overflow: "hidden",
                 }}>
-                    {/* 装飾の光 */}
-                    <div style={{ position: "absolute", top: -40, right: -40, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(236,72,153,0.3), transparent 70%)", pointerEvents: "none" }} />
-                    <div style={{ position: "absolute", bottom: -30, left: -30, width: 100, height: 100, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.3), transparent 70%)", pointerEvents: "none" }} />
-
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, position: "relative" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <span style={{ fontSize: 28 }}>⚡</span>
                             <div>
-                                <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", lineHeight: 1.2, textShadow: "0 0 12px rgba(139,92,246,0.6)" }}>クイックタスク</div>
+                                <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>クイックタスク</div>
                                 <div style={{ fontSize: 11, color: "#c4b5fd", fontWeight: 600, marginTop: 2 }}>思いついた瞬間に書く / タップで完了</div>
                             </div>
                         </div>
                         <button onClick={() => router.push("/my-tasks")} style={{ fontSize: 11, color: "#c4b5fd", background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontWeight: 700 }}>すべて見る →</button>
                     </div>
 
-                    <div style={{ display: "flex", gap: 10, marginBottom: personalTasks.length > 0 ? 16 : 0, position: "relative" }}>
+                    <div style={{ display: "flex", gap: 10, marginBottom: personalTasks.length > 0 ? 16 : 0 }}>
                         <input
                             type="text"
                             value={newQuickTask}
@@ -1810,7 +1803,7 @@ export default function MyPage() {
                     </div>
 
                     {personalTasks.length > 0 && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                             {personalTasks.map((task) => (
                                 <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(139,92,246,0.2)" }}>
                                     <button
