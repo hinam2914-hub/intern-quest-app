@@ -114,6 +114,11 @@ export default function TestPage() {
             alert(`✅ 提出しました！\n\n選択式: ${correctCount}/15問正解\n\nadminの審査後、合格時に${TEST_CONFIG.rewardPoints}pt付与されます。
 記述評価で追加 高+30pt / 中+10pt の可能性があります。`);
             await supabase.from("profiles").update({ social_standard_passed: true, social_standard_passed_at: new Date().toISOString() }).eq("id", userId);
+            // ポイント付与
+            const { data: ptRow } = await supabase.from("user_points").select("points").eq("id", userId).maybeSingle();
+            const currentPt = ptRow?.points || 0;
+            await supabase.from("user_points").upsert({ id: userId, points: currentPt + TEST_CONFIG.rewardPoints });
+            await supabase.from("points_history").insert({ user_id: userId, change: TEST_CONFIG.rewardPoints, reason: "社会人基準テスト合格" });
         } else {
             alert(`❌ 不合格\n\n選択式: ${correctCount}/15問正解（合格には全問正解必要）\n\n24時間後に再受験できます。`);
         }
