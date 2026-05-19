@@ -152,7 +152,7 @@ const WRITTEN_QUESTIONS: Record<string, string[]> = {
     ],
 };
 
-const EVAL_POINTS = { high: 0, mid: 0, none: 0 };
+const EVAL_POINTS = { high: 30, mid: 10, none: 0 };
 
 export default function TestResultsTab() {
     const [attempts, setAttempts] = useState<Attempt[]>([]);
@@ -215,7 +215,7 @@ export default function TestResultsTab() {
         const oldPoints = attempt.written_points_awarded || 0;
         const diff = newPoints - oldPoints;
 
-        if (!confirm(`${attempt.userName}さんの記述を「${evaluation === "high" ? "高評価" : evaluation === "mid" ? "中評価" : "評価なし"}」にしますか？\n${diff > 0 ? `+${diff}pt 付与されます` : diff < 0 ? `${diff}pt 減算されます` : "ポイント変動なし"}`)) return;
+        if (!confirm(`${attempt.userName}さんの記述を「${evaluation === "high" ? "高評価+30pt" : evaluation === "mid" ? "中評価+10pt" : "評価なし"}」にしますか？\n${diff > 0 ? `+${diff}pt 付与されます` : diff < 0 ? `${diff}pt 減算されます` : "ポイント変動なし"}`)) return;
 
         setEvaluating(attempt.id);
         const nowIso = new Date().toISOString();
@@ -441,8 +441,8 @@ export default function TestResultsTab() {
                                         <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.2)" }}>
                                             <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, marginBottom: 8, letterSpacing: 1 }}>━━━ 記述評価 ━━━</div>
                                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                                <button onClick={() => handleEvaluate(a, "high")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.4)", background: a.written_evaluation === "high" ? "rgba(251,191,36,0.3)" : "rgba(251,191,36,0.1)", color: "#fbbf24", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥇 高評価</button>
-                                                <button onClick={() => handleEvaluate(a, "mid")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.4)", background: a.written_evaluation === "mid" ? "rgba(148,163,184,0.3)" : "rgba(148,163,184,0.1)", color: "#cbd5e1", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥈 中評価</button>
+                                                <button onClick={() => handleEvaluate(a, "high")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.4)", background: a.written_evaluation === "high" ? "rgba(251,191,36,0.3)" : "rgba(251,191,36,0.1)", color: "#fbbf24", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥇 高評価 +30pt</button>
+                                                <button onClick={() => handleEvaluate(a, "mid")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.4)", background: a.written_evaluation === "mid" ? "rgba(148,163,184,0.3)" : "rgba(148,163,184,0.1)", color: "#cbd5e1", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥈 中評価 +10pt</button>
                                                 <button onClick={() => handleEvaluate(a, "none")} disabled={evaluating === a.id} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(107,114,128,0.4)", background: a.written_evaluation === "none" ? "rgba(107,114,128,0.3)" : "rgba(107,114,128,0.1)", color: "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>⚪ 評価なし</button>
                                             </div>
                                             {a.evaluated_at && (

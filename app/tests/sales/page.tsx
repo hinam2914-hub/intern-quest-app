@@ -33,7 +33,7 @@ const WRITTEN_QUESTIONS = [
     "なぜ営業をやるのか",
 ];
 
-const A_THRESHOLD = 0.85;
+const A_THRESHOLD = 1.0; // 満点必須
 const REWARD_POINTS = 50;
 const TEST_KEY = "sales";
 

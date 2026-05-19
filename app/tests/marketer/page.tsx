@@ -33,7 +33,7 @@ const WRITTEN_QUESTIONS = [
     "「自分がマーケターとして不足している点」",
 ];
 
-const A_THRESHOLD = 0.90;
+const A_THRESHOLD = 1.0; // 満点必須
 const REWARD_POINTS = 50;
 const TEST_KEY = "marketer";
 

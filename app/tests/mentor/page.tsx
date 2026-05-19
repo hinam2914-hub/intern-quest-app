@@ -33,7 +33,7 @@ const WRITTEN_QUESTIONS = [
     "「信頼されるメンターとはどんな人か」を定義してください",
 ];
 
-const PASS_THRESHOLD = 0.85;
+const PASS_THRESHOLD = 1.0; // 満点必須
 const REWARD_POINTS = 50;
 const TEST_KEY = "mentor";
 

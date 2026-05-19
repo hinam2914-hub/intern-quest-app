@@ -33,7 +33,7 @@ const WRITTEN_QUESTIONS = [
     "「起業しない場合の人生」と「起業した場合の人生」を比較してください",
 ];
 
-const A_THRESHOLD = 0.90;
+const A_THRESHOLD = 1.0; // 満点必須
 const REWARD_POINTS = 50;
 const TEST_KEY = "entrepreneur";
 

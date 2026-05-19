@@ -101,7 +101,7 @@ export default function CommonSenseTest() {
 
         // 採点
         const correctCount = answers.filter((a, i) => a === QUESTIONS[i].correct).length;
-        const passedSelection = correctCount >= 12; // 80% = 12問以上
+        const passedSelection = correctCount === 15; // 80% = 12問以上
 
         // 記録
         const { error } = await supabase.from("test_attempts").insert({
@@ -124,7 +124,7 @@ export default function CommonSenseTest() {
             alert(`✅ 提出しました！\n\n選択式: ${correctCount}/15問正解\n\nadminの審査後、合格時に100pt付与されます。`);
             await supabase.from("profiles").update({ common_sense_passed: true, common_sense_passed_at: new Date().toISOString() }).eq("id", userId);
         } else {
-            alert(`❌ 不合格\n\n選択式: ${correctCount}/15問正解（合格には12問以上必要）\n\n24時間後に再受験できます。`);
+            alert(`❌ 不合格\n\n選択式: ${correctCount}/15問正解（合格には全問正解必要）\n\n24時間後に再受験できます。`);
         }
         router.push("/tests");
     };
@@ -190,7 +190,7 @@ export default function CommonSenseTest() {
                     <h1 style={{ fontSize: 24, fontWeight: 800, color: "#a78bfa", margin: "0 0 8px" }}>🧠 常識・デリカシーテスト</h1>
                     <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>
                         全21問（選択式15問 + 記述式6問）<br />
-                        合格条件：選択式12問以上正解 + admin承認<br />
+                        合格条件：選択式全問正解 + admin承認<br />
                         報酬：<strong style={{ color: "#fbbf24" }}>100pt</strong>
                     </div>
                 </div>

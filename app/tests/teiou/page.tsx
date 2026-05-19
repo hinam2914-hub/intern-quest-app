@@ -98,7 +98,7 @@ export default function TestPage() {
 
         setSubmitting(true);
         const correctCount = answers.filter((a, i) => a === QUESTIONS[i].correct).length;
-        const passedSelection = correctCount >= 12;
+        const passedSelection = correctCount === 15; // 満点必須
 
         const { error } = await supabase.from("test_attempts").insert({
             user_id: userId,

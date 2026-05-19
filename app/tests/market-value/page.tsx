@@ -8,7 +8,7 @@ const TEST_KEY = "market_value";
 const TEST_NAME = "💪 市場価値認識テスト";
 const TEST_COLOR = "#0891b2";
 const TEST_POINTS = 50;
-const PASS_THRESHOLD = 12;
+const PASS_THRESHOLD = 15; // 満点必須
 const COOLDOWN_HOURS = 24;
 
 const questions = [
