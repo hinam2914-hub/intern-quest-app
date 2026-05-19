@@ -191,7 +191,7 @@ export default function CommonSenseTest() {
                     <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>
                         全21問（選択式15問 + 記述式6問）<br />
                         合格条件：選択式全問正解 + admin承認<br />
-                        報酬：<strong style={{ color: "#fbbf24" }}>100pt</strong>
+                        報酬：<strong style={{ color: "#fbbf24" }}>10pt</strong><span style={{ color: "#9ca3af", fontSize: 12, marginLeft: 8 }}>+ 記述評価で 高+30pt / 中+10pt</span>
                     </div>
                 </div>
 

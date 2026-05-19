@@ -121,6 +121,11 @@ export default function MarketValueTest() {
 
         if (passed) {
             await supabase.from("profiles").update({ market_value_passed: true, market_value_passed_at: new Date().toISOString() }).eq("id", userId);
+            // ポイント付与
+            const { data: ptRow } = await supabase.from("user_points").select("points").eq("id", userId).maybeSingle();
+            const currentPt = ptRow?.points || 0;
+            await supabase.from("user_points").upsert({ id: userId, points: currentPt + 10 });
+            await supabase.from("points_history").insert({ user_id: userId, change: 10, reason: "市場価値認識テスト合格" });
         }
         setShowResult(true);
         setSubmitting(false);

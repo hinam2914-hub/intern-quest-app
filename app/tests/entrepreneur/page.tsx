@@ -136,7 +136,7 @@ export default function EntrepreneurTestPage() {
             <div style={{ maxWidth: 720, margin: "0 auto" }}>
                 <div onClick={() => router.push("/tests")} style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 8 }}>← テスト一覧</div>
                 <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>🚀 起業適性テスト</h1>
-                <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 24px" }}>選択式{CHOICE_QUESTIONS.length}問 + 記述{WRITTEN_QUESTIONS.length}問 / 満点(全問正解)で +{REWARD_POINTS}pt</p>
+                <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 24px" }}>選択式{CHOICE_QUESTIONS.length}問 + 記述{WRITTEN_QUESTIONS.length}問 / 満点(全問正解)で +{REWARD_POINTS}pt + 記述評価(高+30pt/中+10pt)</p>
 
                 <div style={{ marginBottom: 32 }}>
                     <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>【選択式】</div>
