@@ -1754,38 +1754,72 @@ export default function MyPage() {
                     </div>
                 )}
 
-                {/* ===== クイックタスク ===== */}
-                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>⚡ クイックタスク</div>
-                        <button onClick={() => router.push("/my-tasks")} style={{ fontSize: 11, color: "#a78bfa", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>すべて見る →</button>
+                {/* ===== クイックタスク（超目立つ版） ===== */}
+                <div style={{
+                    marginBottom: 20,
+                    background: "linear-gradient(135deg, rgba(139,92,246,0.18), rgba(236,72,153,0.12), rgba(99,102,241,0.08))",
+                    border: "2px solid rgba(139,92,246,0.4)",
+                    borderRadius: 20,
+                    padding: 28,
+                    boxShadow: "0 0 32px rgba(139,92,246,0.25), inset 0 0 20px rgba(236,72,153,0.05)",
+                    position: "relative",
+                    overflow: "hidden",
+                }}>
+                    {/* 装飾の光 */}
+                    <div style={{ position: "absolute", top: -40, right: -40, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(236,72,153,0.3), transparent 70%)", pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", bottom: -30, left: -30, width: 100, height: 100, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.3), transparent 70%)", pointerEvents: "none" }} />
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, position: "relative" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ fontSize: 28 }}>⚡</span>
+                            <div>
+                                <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", lineHeight: 1.2, textShadow: "0 0 12px rgba(139,92,246,0.6)" }}>クイックタスク</div>
+                                <div style={{ fontSize: 11, color: "#c4b5fd", fontWeight: 600, marginTop: 2 }}>思いついた瞬間に書く / タップで完了</div>
+                            </div>
+                        </div>
+                        <button onClick={() => router.push("/my-tasks")} style={{ fontSize: 11, color: "#c4b5fd", background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontWeight: 700 }}>すべて見る →</button>
                     </div>
-                    <div style={{ display: "flex", gap: 8, marginBottom: personalTasks.length > 0 ? 16 : 0 }}>
+
+                    <div style={{ display: "flex", gap: 10, marginBottom: personalTasks.length > 0 ? 16 : 0, position: "relative" }}>
                         <input
                             type="text"
                             value={newQuickTask}
                             onChange={(e) => setNewQuickTask(e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter") handleAddQuick(); }}
-                            placeholder="思いついた瞬間に書く（例: Slack削除する）"
-                            style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none" }}
+                            placeholder="例: Slack削除する、田中さんに連絡..."
+                            style={{ flex: 1, padding: "14px 18px", borderRadius: 12, border: "2px solid rgba(139,92,246,0.3)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 15, outline: "none", fontWeight: 500 }}
                         />
                         <button
                             onClick={handleAddQuick}
                             disabled={!newQuickTask.trim() || savingQuick}
-                            style={{ padding: "10px 18px", borderRadius: 10, border: "none", background: !newQuickTask.trim() ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: !newQuickTask.trim() ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+                            style={{
+                                padding: "14px 22px",
+                                borderRadius: 12,
+                                border: "none",
+                                background: !newQuickTask.trim() ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #ec4899, #8b5cf6, #6366f1)",
+                                color: "#fff",
+                                fontSize: 15,
+                                fontWeight: 900,
+                                cursor: !newQuickTask.trim() ? "not-allowed" : "pointer",
+                                whiteSpace: "nowrap",
+                                boxShadow: newQuickTask.trim() ? "0 4px 16px rgba(139,92,246,0.5)" : "none",
+                            }}
                         >
                             {savingQuick ? "..." : "+ 追加"}
                         </button>
                     </div>
+
                     {personalTasks.length > 0 && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
                             {personalTasks.map((task) => (
-                                <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(139,92,246,0.2)" }}>
                                     <button
                                         onClick={() => handleCompleteQuick(task.id)}
-                                        style={{ width: 22, height: 22, borderRadius: 6, border: "2px solid rgba(139,92,246,0.4)", background: "transparent", cursor: "pointer", flexShrink: 0 }}
+                                        style={{ width: 24, height: 24, borderRadius: 8, border: "2px solid rgba(236,72,153,0.5)", background: "transparent", cursor: "pointer", flexShrink: 0, transition: "all 0.15s" }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = "rgba(236,72,153,0.2)"}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                                     />
-                                    <span style={{ flex: 1, color: "#f9fafb", fontSize: 14 }}>{task.title}</span>
+                                    <span style={{ flex: 1, color: "#f9fafb", fontSize: 14, fontWeight: 500 }}>{task.title}</span>
                                 </div>
                             ))}
                         </div>
