@@ -156,6 +156,17 @@ export default function HistoryPage() {
                 .select("*")
                 .eq("user_id", user.id)
                 .order("created_at", { ascending: false });
+            // クイズ履歴（別テーブル）
+            const { data: quizData } = await supabase
+                .from("quiz_attempts")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false });
+            // quizをtest_attempts形式に統合（test_keyを付与）
+            const combinedTestData = [
+                ...(testData || []),
+                ...(quizData || []).map((q: any) => ({ ...q, test_key: "quiz" })),
+            ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
             // サンキュー受信
             const { data: thanksData } = await supabase
@@ -189,7 +200,7 @@ export default function HistoryPage() {
                 setPointsHistory(phData);
                 setTotalPoints(phData.reduce((sum: number, item: any) => sum + (item.change > 0 ? item.change : 0), 0));
             }
-            setTests((testData || []) as TestAttempt[]);
+            setTests(combinedTestData as TestAttempt[]);
             setThanks(thanksWithUser);
             setChallenges((chData || []) as ChallengeSubmission[]);
             setLoading(false);
