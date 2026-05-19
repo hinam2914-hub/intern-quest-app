@@ -61,6 +61,17 @@ const TESTS: TestItem[] = [
     { key: "entrepreneur", label: "起業適性テスト", desc: "今やるべきか、まだやるな", path: "/tests/entrepreneur", icon: "🚀", color: "#f59e0b", passedField: "entrepreneur_passed", rewardText: "満点合格で +10pt", table: "test_attempts" },
     { key: "manager", label: "マネージャーテスト", desc: "チームで勝つための思考", path: "/manager-test", icon: "👔", color: "#6366f1", rewardText: "合格で +10pt", table: "manual" },
     { key: "retention", label: "Dot.A 雇用テスト", desc: "雇用継続の判定テスト", path: "/tests/retention", icon: "🔥", color: "#ef4444", passedField: "retention_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "standard_raising", label: "基準上昇・人生現実テスト", desc: "親世代と同じ生活基準を理解する", path: "/tests/standard-raising", icon: "🚀", color: "#f43f5e", passedField: "standard_raising_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "management_collab", label: "マネジメント・協働価値テスト", desc: "他人と成果を作れる人になる", path: "/tests/management-collab", icon: "🤝", color: "#06b6d4", passedField: "management_collab_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "cert_market_value", label: "資格依存・市場価値現実テスト", desc: "資格より実務価値を理解する", path: "/tests/cert-market-value", icon: "💎", color: "#14b8a6", passedField: "cert_market_value_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "improvement_force", label: "改善力・逃避防止テスト", desc: "宣言だけで終わらない人になる", path: "/tests/improvement-force", icon: "🔧", color: "#f97316", passedField: "improvement_force_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "apology_escape", label: "謝罪逃避・責任転嫁防止テスト", desc: "謝って終わる人にならない", path: "/tests/apology-escape", icon: "🪞", color: "#eab308", passedField: "apology_escape_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "logical_thinking", label: "論理思考・感情逃避防止テスト", desc: "感情論で押し切らない判断力", path: "/tests/logical-thinking", icon: "🧮", color: "#6366f1", passedField: "logical_thinking_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "progress_update", label: "進捗更新・ケアレスミス改善テスト", desc: "報連相と確認力の徹底", path: "/tests/progress-update", icon: "📡", color: "#84cc16", passedField: "progress_update_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "life_improvement", label: "生活改善・時間価値テスト", desc: "堕落せず積み上げ続ける", path: "/tests/life-improvement", icon: "⏰", color: "#d946ef", passedField: "life_improvement_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "market_eval", label: "市場価値・評価認識テスト", desc: "評価は自分で決めるものではない", path: "/tests/market-eval", icon: "📊", color: "#ef4444", passedField: "market_eval_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "quick_response", label: "即レス・反応速度テスト", desc: "相手の時間を止めない意識", path: "/tests/quick-response", icon: "⚡", color: "#facc15", passedField: "quick_response_passed", rewardText: "合格で +10pt", table: "test_attempts" },
+    { key: "self_protection", label: "保身・自己防衛過剰改善テスト", desc: "自分を守るより問題と向き合う", path: "/tests/self-protection", icon: "🛡️", color: "#a855f7", passedField: "self_protection_passed", rewardText: "合格で +10pt", table: "test_attempts" },
 ];
 
 function formatDate(iso: string): string {

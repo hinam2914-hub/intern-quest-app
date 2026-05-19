@@ -48,6 +48,17 @@ const TEST_LABELS: Record<string, { label: string; color: string; icon: string }
     essence_thinking: { label: "本質思考", color: "#06b6d4", icon: "🔍" },
     standard_keeping: { label: "基準維持", color: "#f97316", icon: "⚖️" },
     market_value: { label: "市場価値認識", color: "#0891b2", icon: "💪" },
+    standard_raising: { label: "基準上昇", color: "#f43f5e", icon: "🚀" },
+    management_collab: { label: "マネジメント協働", color: "#06b6d4", icon: "🤝" },
+    cert_market_value: { label: "資格依存改善", color: "#14b8a6", icon: "💎" },
+    improvement_force: { label: "改善力", color: "#f97316", icon: "🔧" },
+    apology_escape: { label: "謝罪逃避防止", color: "#eab308", icon: "🪞" },
+    logical_thinking: { label: "論理思考", color: "#6366f1", icon: "🧮" },
+    progress_update: { label: "進捗更新", color: "#84cc16", icon: "📡" },
+    life_improvement: { label: "生活改善", color: "#d946ef", icon: "⏰" },
+    market_eval: { label: "市場価値・評価認識", color: "#ef4444", icon: "📊" },
+    quick_response: { label: "即レス", color: "#facc15", icon: "⚡" },
+    self_protection: { label: "保身防止", color: "#a855f7", icon: "🛡️" },
 };
 
 const TEST_MAX_SCORES: Record<string, number> = {
@@ -67,6 +78,17 @@ const TEST_MAX_SCORES: Record<string, number> = {
     sales: 100,
     planner: 100,
     manager: 100,
+    standard_raising: 15,
+    management_collab: 15,
+    cert_market_value: 15,
+    improvement_force: 15,
+    apology_escape: 15,
+    logical_thinking: 15,
+    progress_update: 15,
+    life_improvement: 15,
+    market_eval: 15,
+    quick_response: 15,
+    self_protection: 15,
 };
 // 各テストの記述形式に対応するノーマライズ関数（文字列配列とオブジェクト配列両対応）
 const normalizeWrittenAnswers = (raw: any): { question?: string; answer: string }[] => {
