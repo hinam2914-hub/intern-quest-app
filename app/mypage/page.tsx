@@ -492,6 +492,9 @@ export default function MyPage() {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [unreadAdvices, setUnreadAdvices] = useState<{ id: string; category: string; message: string; created_at: string }[]>([]);
     const [pendingAdminTasks, setPendingAdminTasks] = useState<{ id: string; title: string; deadline: string | null }[]>([]);
+    const [personalTasks, setPersonalTasks] = useState<{ id: string; title: string; is_done: boolean }[]>([]);
+    const [newQuickTask, setNewQuickTask] = useState("");
+    const [savingQuick, setSavingQuick] = useState(false);
     const [loginBonusReceived, setLoginBonusReceived] = useState<boolean | null>(null);
     const [gachaSpinning, setGachaSpinning] = useState(false);
     const [gachaResult, setGachaResult] = useState<number | null>(null);
@@ -803,6 +806,15 @@ export default function MyPage() {
             .gte("created_at", todayStr)
             .limit(1);
         setLoginBonusReceived((bonusHistory?.length || 0) > 0);
+        // 個人タスク（未完了）取得 - クイックタスク用
+        const { data: personalTaskData } = await supabase
+            .from("personal_tasks")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("is_done", false)
+            .order("created_at", { ascending: false })
+            .limit(3);
+        setPersonalTasks(personalTaskData || []);
         // adminタスク取得（未提出 + 差戻しのみ）
         const { data: profileForDept } = await supabase
             .from("profiles")
@@ -886,6 +898,36 @@ export default function MyPage() {
     const handleDeleteTag = async (tagId: string) => {
         await supabase.from("user_tags").delete().eq("id", tagId);
         setUserTags(prev => prev.filter(t => t.id !== tagId));
+    };
+
+    // ===== クイックタスク =====
+    const handleAddQuick = async () => {
+        if (!newQuickTask.trim() || savingQuick || !userId) return;
+        setSavingQuick(true);
+        await supabase.from("personal_tasks").insert({
+            user_id: userId,
+            title: newQuickTask.trim(),
+            requires_report: false,
+        });
+        setNewQuickTask("");
+        // 再取得
+        const { data: refresh } = await supabase
+            .from("personal_tasks")
+            .select("id, title, is_done")
+            .eq("user_id", userId)
+            .eq("is_done", false)
+            .order("created_at", { ascending: false })
+            .limit(3);
+        setPersonalTasks(refresh || []);
+        setSavingQuick(false);
+    };
+
+    const handleCompleteQuick = async (taskId: string) => {
+        await supabase
+            .from("personal_tasks")
+            .update({ is_done: true, done_at: new Date().toISOString() })
+            .eq("id", taskId);
+        setPersonalTasks(prev => prev.filter(t => t.id !== taskId));
     };
 
     if (loading) {
@@ -1712,6 +1754,43 @@ export default function MyPage() {
                     </div>
                 )}
 
+                {/* ===== クイックタスク ===== */}
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>⚡ クイックタスク</div>
+                        <button onClick={() => router.push("/my-tasks")} style={{ fontSize: 11, color: "#a78bfa", background: "transparent", border: "none", cursor: "pointer", fontWeight: 600 }}>すべて見る →</button>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginBottom: personalTasks.length > 0 ? 16 : 0 }}>
+                        <input
+                            type="text"
+                            value={newQuickTask}
+                            onChange={(e) => setNewQuickTask(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") handleAddQuick(); }}
+                            placeholder="思いついた瞬間に書く（例: Slack削除する）"
+                            style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none" }}
+                        />
+                        <button
+                            onClick={handleAddQuick}
+                            disabled={!newQuickTask.trim() || savingQuick}
+                            style={{ padding: "10px 18px", borderRadius: 10, border: "none", background: !newQuickTask.trim() ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: !newQuickTask.trim() ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+                        >
+                            {savingQuick ? "..." : "+ 追加"}
+                        </button>
+                    </div>
+                    {personalTasks.length > 0 && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            {personalTasks.map((task) => (
+                                <div key={task.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                    <button
+                                        onClick={() => handleCompleteQuick(task.id)}
+                                        style={{ width: 22, height: 22, borderRadius: 6, border: "2px solid rgba(139,92,246,0.4)", background: "transparent", cursor: "pointer", flexShrink: 0 }}
+                                    />
+                                    <span style={{ flex: 1, color: "#f9fafb", fontSize: 14 }}>{task.title}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎯 今日のミッション</div>
