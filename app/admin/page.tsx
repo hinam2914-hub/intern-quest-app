@@ -421,7 +421,7 @@ export default function AdminPage() {
     const [rejectTargetDept, setRejectTargetDept] = useState("");
     const [rejectLearningMemo, setRejectLearningMemo] = useState("");
     const [rejectRecruitingCriteriaUpdate, setRejectRecruitingCriteriaUpdate] = useState("");
-    const [adviceFilter, setAdviceFilter] = useState<"pending" | "appconst handleInviteroved" | "rejected" | "all">("pending");
+    const [adviceFilter, setAdviceFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
     const [questionSaving, setQuestionSaving] = useState(false);
     const [questionMessage, setQuestionMessage] = useState("");
     const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
