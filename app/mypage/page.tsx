@@ -542,6 +542,13 @@ export default function MyPage() {
         setGachaResult(selectedPt);
         const { data: { user: gachaUser } } = await supabase.auth.getUser();
         if (gachaUser) {
+            // user_points 更新（total_earnedはトリガーで自動）
+            const { data: ptRow } = await supabase.from("user_points").select("points").eq("id", gachaUser.id).maybeSingle();
+            const currentPt = (ptRow as any)?.points || 0;
+            await supabase.from("user_points").upsert({ 
+                id: gachaUser.id, 
+                points: currentPt + selectedPt
+            });
             await supabase.from("points_history").insert({
                 user_id: gachaUser.id,
                 change: selectedPt,
