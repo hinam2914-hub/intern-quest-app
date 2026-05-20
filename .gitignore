@@ -1,2 +1,8 @@
 node_modules
 .next
+# 環境変数（APIキー等）
+.env
+.env.local
+.env*.local
+.DS_Store
+*.bak

@@ -124,7 +124,10 @@ export default function UserDetailPage() {
     const [breakdownData, setBreakdownData] = useState<BreakdownData[]>([]);
     const [graphTab, setGraphTab] = useState<"points" | "breakdown">("points");
     const [monthlyKpiHistory, setMonthlyKpiHistory] = useState<MonthlyKpiRecord[]>([]);
-    const [activeTab, setActiveTab] = useState<"overview" | "monthly_kpi">("overview");
+    const [activeTab, setActiveTab] = useState<"overview" | "monthly_kpi" | "tests" | "challenges">("overview");
+    const [testAttempts, setTestAttempts] = useState<any[]>([]);
+    const [challenges, setChallenges] = useState<any[]>([]);
+    const [expandedTest, setExpandedTest] = useState<string | null>(null);
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
     const [userTags, setUserTags] = useState<{ id: string; tag: string }[]>([]);
@@ -219,6 +222,23 @@ export default function UserDetailPage() {
 
             const { data: subRows } = await supabase.from("submissions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
             setSubmissions((subRows || []) as Submission[]);
+            
+            // テスト履歴取得
+            const { data: testData } = await supabase.from("test_attempts").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+            const { data: quizData } = await supabase.from("quiz_attempts").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+            const combinedTests = [
+                ...(testData || []),
+                ...(quizData || []).map((q: any) => ({ ...q, test_key: "quiz" })),
+            ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setTestAttempts(combinedTests);
+            
+            // チャレンジ履歴取得
+            const { data: chData } = await supabase
+                .from("challenge_submissions")
+                .select("*, challenges(id, title, points, category, icon)")
+                .eq("user_id", userId)
+                .order("created_at", { ascending: false });
+            setChallenges(chData || []);
 
             const { data: kpiItems } = await supabase.from("kpi_items").select("id, title, unit, target_value");
             const { data: kpiRows } = await supabase.from("kpi_logs").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20);
@@ -529,6 +549,106 @@ export default function UserDetailPage() {
                     </div>
                 )}
             </div>
+                {/* テスト履歴タブ */}
+                {activeTab === "tests" && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📝 テスト履歴 ({testAttempts.length}件)</div>
+                        {testAttempts.length === 0 ? (
+                            <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>まだテスト履歴はありません</div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {testAttempts.map((t: any) => {
+                                    const isExpanded = expandedTest === t.id;
+                                    const hasWritten = t.written_answers && (Array.isArray(t.written_answers) ? t.written_answers.length > 0 : Object.keys(t.written_answers).length > 0);
+                                    return (
+                                        <div key={t.id} style={{ background: t.passed ? "rgba(16,185,129,0.05)" : "rgba(245,158,11,0.05)", border: t.passed ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(245,158,11,0.2)", borderRadius: 8, padding: 12 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                                <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb", flex: 1, minWidth: 0 }}>📝 {t.test_key}</div>
+                                                <span style={{ padding: "2px 8px", background: t.passed ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)", border: t.passed ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(245,158,11,0.3)", borderRadius: 4, fontSize: 11, color: t.passed ? "#6ee7b7" : "#fcd34d", fontWeight: 600 }}>
+                                                    {t.passed ? "✅ 合格" : "❌ 不合格"} {t.score !== null && `${t.score}点`}
+                                                </span>
+                                                {t.written_evaluation === "high" && (<span style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700 }}>🥇高 +{t.written_points_awarded}pt</span>)}
+                                                {t.written_evaluation === "mid" && (<span style={{ fontSize: 11, color: "#cbd5e1", fontWeight: 700 }}>🥈中 +{t.written_points_awarded}pt</span>)}
+                                                {t.written_evaluation === "none" && (<span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700 }}>⚪評価なし</span>)}
+                                            </div>
+                                            <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{new Date(t.created_at).toLocaleString("ja-JP")}</div>
+                                            {hasWritten && (
+                                                <button onClick={() => setExpandedTest(isExpanded ? null : t.id)} style={{ marginTop: 8, padding: "4px 10px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 4, color: "#818cf8", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>📖 記述回答を見る {isExpanded ? "▲" : "▼"}</button>
+                                            )}
+                                            {isExpanded && hasWritten && (
+                                                <div style={{ marginTop: 12, padding: 12, background: "rgba(0,0,0,0.3)", borderRadius: 6 }}>
+                                                    {Array.isArray(t.written_answers) ? (
+                                                        t.written_answers.map((ans: any, j: number) => {
+                                                            const isObj = typeof ans === "object" && ans !== null;
+                                                            const answerText = isObj ? (ans.answer || "") : (ans || "");
+                                                            const questionText = isObj ? ans.question : null;
+                                                            return (
+                                                                <div key={j} style={{ marginBottom: 12 }}>
+                                                                    <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 4 }}>{questionText || `Q${j + 1}`}</div>
+                                                                    <div style={{ fontSize: 12, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.5, paddingLeft: 8, borderLeft: "2px solid #6366f1" }}>{answerText || "(未記入)"}</div>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        Object.entries(t.written_answers).map(([k, v]: [string, any], j: number) => (
+                                                            <div key={k} style={{ marginBottom: 12 }}>
+                                                                <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginBottom: 4 }}>{k}</div>
+                                                                <div style={{ fontSize: 12, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.5, paddingLeft: 8, borderLeft: "2px solid #6366f1" }}>{String(v) || "(未記入)"}</div>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* チャレンジ履歴タブ */}
+                {activeTab === "challenges" && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>🎆 ライフチャレンジ履歴 ({challenges.length}件)</div>
+                        {challenges.length === 0 ? (
+                            <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>まだチャレンジ履歴はありません</div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {challenges.map((ch: any) => {
+                                    const challengeInfo = ch.challenges;
+                                    const statusColor = ch.status === "approved" ? "#10b981" : ch.status === "rejected" ? "#ef4444" : "#fbbf24";
+                                    const statusLabel = ch.status === "approved" ? "✅ 承認" : ch.status === "rejected" ? "❌ 却下" : "⏳ 審査中";
+                                    return (
+                                        <div key={ch.id} style={{ background: `${statusColor}10`, border: `1px solid ${statusColor}30`, borderRadius: 8, padding: 12 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                                                <div style={{ fontSize: 20 }}>{challengeInfo?.icon || "🎆"}</div>
+                                                <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb", flex: 1, minWidth: 0 }}>{challengeInfo?.title || "（不明）"}</div>
+                                                <span style={{ padding: "2px 8px", background: `${statusColor}20`, border: `1px solid ${statusColor}40`, borderRadius: 4, fontSize: 11, color: statusColor, fontWeight: 600 }}>{statusLabel}</span>
+                                                {challengeInfo?.points && (<span style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700 }}>+{challengeInfo.points}pt</span>)}
+                                            </div>
+                                            {challengeInfo?.category && (<div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 6 }}>📂 {challengeInfo.category}</div>)}
+                                            {ch.comment && (
+                                                <div style={{ marginTop: 8, padding: 10, background: "rgba(0,0,0,0.3)", borderRadius: 6, fontSize: 12, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>💬 {ch.comment}</div>
+                                            )}
+                                            {ch.image_url && (
+                                                <a href={ch.image_url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 8, fontSize: 11, color: "#818cf8", textDecoration: "underline" }}>📷 提出画像を見る</a>
+                                            )}
+                                            {ch.admin_comment && (
+                                                <div style={{ marginTop: 8, padding: 10, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 6 }}>
+                                                    <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 600, marginBottom: 4 }}>💬 adminコメント</div>
+                                                    <div style={{ fontSize: 12, color: "#fef3c7", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{ch.admin_comment}</div>
+                                                </div>
+                                            )}
+                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 8 }}>{new Date(ch.created_at).toLocaleString("ja-JP")}</div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* アドバイス送信モーダル */}
                 {showAdviceModal && (
                     <div onClick={() => !adviceSending && setShowAdviceModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
@@ -590,6 +710,8 @@ export default function UserDetailPage() {
                     {[
                         { key: "overview", label: "📊 概要" },
                         { key: "monthly_kpi", label: "📈 月次KPI履歴" },
+                        { key: "tests", label: "📝 テスト" },
+                        { key: "challenges", label: "🎆 チャレンジ" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : "#9ca3af" }}>
                             {tab.label}
