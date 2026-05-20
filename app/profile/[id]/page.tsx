@@ -67,6 +67,17 @@ const TEST_LIST = [
     { key: "sales_passed", label: "営業デビュー", icon: "💼", color: "#8b5cf6" },
     { key: "planner_passed", label: "企画", icon: "💡", color: "#ec4899" },
     { key: "manager_certified", label: "マネージャー", icon: "👔", color: "#fbbf24" },
+    { key: "standard_raising_passed", label: "基準上昇", icon: "🚀", color: "#f43f5e" },
+    { key: "management_collab_passed", label: "マネジメント協働", icon: "🤝", color: "#06b6d4" },
+    { key: "cert_market_value_passed", label: "資格依存改善", icon: "��", color: "#14b8a6" },
+    { key: "improvement_force_passed", label: "改善力", icon: "🔧", color: "#f97316" },
+    { key: "apology_escape_passed", label: "謝罪逃避防止", icon: "🪞", color: "#eab308" },
+    { key: "logical_thinking_passed", label: "論理思考", icon: "🧮", color: "#6366f1" },
+    { key: "progress_update_passed", label: "進捗更新", icon: "📡", color: "#84cc16" },
+    { key: "life_improvement_passed", label: "生活改善", icon: "⏰", color: "#d946ef" },
+    { key: "market_eval_passed", label: "市場価値・評価認識", icon: "📊", color: "#ef4444" },
+    { key: "quick_response_passed", label: "即レス", icon: "⚡", color: "#facc15" },
+    { key: "self_protection_passed", label: "保身防止", icon: "🛡️", color: "#a855f7" },
 ];
 
 // 就活市場ランク計算

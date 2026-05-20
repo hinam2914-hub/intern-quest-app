@@ -22,6 +22,17 @@ const TEST_LIST = [
     { key: "standard_keeping", label: "基準維持", icon: "⚖️", color: "#f97316" },
     { key: "market_value", label: "市場価値認識", icon: "📈", color: "#0891b2" },
     { key: "teiou", label: "Dot.A帝王学", icon: "👑", color: "#fbbf24" },
+    { key: "standard_raising", label: "基準上昇", icon: "🚀", color: "#f43f5e" },
+    { key: "management_collab", label: "マネジメント協働", icon: "🤝", color: "#06b6d4" },
+    { key: "cert_market_value", label: "資格依存改善", icon: "💎", color: "#14b8a6" },
+    { key: "improvement_force", label: "改善力", icon: "🔧", color: "#f97316" },
+    { key: "apology_escape", label: "謝罪逃避防止", icon: "🪞", color: "#eab308" },
+    { key: "logical_thinking", label: "論理思考", icon: "🧮", color: "#6366f1" },
+    { key: "progress_update", label: "進捗更新", icon: "📡", color: "#84cc16" },
+    { key: "life_improvement", label: "生活改善", icon: "⏰", color: "#d946ef" },
+    { key: "market_eval", label: "市場価値・評価認識", icon: "📊", color: "#ef4444" },
+    { key: "quick_response", label: "即レス", icon: "⚡", color: "#facc15" },
+    { key: "self_protection", label: "保身防止", icon: "🛡️", color: "#a855f7" },
 ];
 // テスト記述のノーマライズ（両形式対応）
 const normalizeWrittenAnswers = (raw: any): { question?: string; answer: string }[] => {
