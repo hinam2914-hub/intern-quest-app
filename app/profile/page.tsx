@@ -62,6 +62,7 @@ export default function ProfileUploadPage() {
     const [dragging, setDragging] = useState(false);
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
+    const [grade, setGrade] = useState("");
     const [savingProfile, setSavingProfile] = useState(false);
     const [profileMessage, setProfileMessage] = useState("");
     const [themeColor, setThemeColor] = useState("#6366f1");
@@ -80,12 +81,13 @@ export default function ProfileUploadPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-            const { data: profile } = await supabase.from("profiles").select("name, avatar_url, mbti, club, theme_color, bg_color, font_family, department_id, position").eq("id", user.id).single();
+            const { data: profile } = await supabase.from("profiles").select("name, avatar_url, mbti, club, theme_color, bg_color, font_family, department_id, position, grade").eq("id", user.id).single();
             if (profile) {
                 setName(profile.name || "");
                 setAvatarUrl(profile.avatar_url || null);
                 setMbti(profile.mbti || "");
                 setClub(profile.club || "");
+                setGrade((profile as any)?.grade || "");
                 setThemeColor((profile as any)?.theme_color || "#6366f1");
                 setBgColor((profile as any)?.bg_color || "#0a0a0f");
                 setFontFamily((profile as any)?.font_family || "'Inter', sans-serif");
@@ -140,7 +142,7 @@ export default function ProfileUploadPage() {
         if (!userId) return;
         setSavingProfile(true);
         setProfileMessage("");
-        await supabase.from("profiles").update({ mbti: mbti || null, club: club.trim() || null }).eq("id", userId);
+        await supabase.from("profiles").update({ mbti: mbti || null, club: club.trim() || null, grade: grade || null }).eq("id", userId);
         setProfileMessage("✅ 保存しました！");
         setSavingProfile(false);
     };
@@ -296,6 +298,14 @@ export default function ProfileUploadPage() {
                         {mbti && <div style={{ marginTop: 10, padding: "8px 14px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 13, color: "#818cf8", fontWeight: 600 }}>選択中: {mbti}</div>}
                     </div>
                     <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#d1d5db", marginBottom: 8 }}>🎓 学年</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 20 }}>
+                            {["大学1年", "大学2年", "大学3年", "大学4年", "社会人", "その他"].map(g => (
+                                <button key={g} type="button" onClick={() => setGrade(grade === g ? "" : g)} style={{ padding: "10px 4px", borderRadius: 8, border: `1px solid ${grade === g ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"}`, background: grade === g ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.02)", color: grade === g ? "#fff" : "#9ca3af", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+                                    {g}
+                                </button>
+                            ))}
+                        </div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#d1d5db", marginBottom: 8 }}>高校の部活</div>
                         <input type="text" value={club} onChange={(e) => setClub(e.target.value)} placeholder="例：野球部・吹奏楽部・帰宅部など" style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
                     </div>

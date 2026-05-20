@@ -13,7 +13,7 @@ const STEPS = [
         items: [
             { icon: "📸", label: "プロフィール写真を設定する", path: "/profile" },
             { icon: "✏️", label: "名前・学歴・事業部を入力する", path: "/mypage" },
-            { icon: "🧠", label: "MBTIと部活を設定する", path: "/profile" },
+            { icon: "🎓", label: "学年・MBTI・部活を設定する", path: "/profile" },
             { icon: "🎨", label: "テーマカラーをカスタマイズする", path: "/profile" },
         ],
     },
