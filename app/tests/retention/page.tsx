@@ -80,6 +80,18 @@ export default function RetentionTestPage() {
             const currentPt = ptRow?.points || 0;
             await supabase.from("user_points").upsert({ id: userId, points: currentPt + REWARD_POINTS });
             await supabase.from("points_history").insert({ user_id: userId, change: REWARD_POINTS, reason: "Dot.A雇用テスト合格" });
+        } else {
+            // 不合格時: 24時間後に再挑戦通知を予約
+            const remindAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            await supabase.from("notifications").insert({
+                user_id: userId,
+                type: "test_cooldown",
+                title: `⚠️ Dot.A雇用テストに再挑戦できます`,
+                message: "24時間のクールダウンが明けました。再挑戦してみましょう！",
+                link: window.location.pathname,
+                icon: "⚠️",
+                created_at: remindAt.toISOString(),
+            });
         }
 
         setResult({ passed, score: correctCount, total: CHOICE_QUESTIONS.length });

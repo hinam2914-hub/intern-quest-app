@@ -266,6 +266,18 @@ export default function TestResultsTab() {
             }
         }
 
+        // 「評価なし」の場合は再提出通知を作成
+        if (evaluation === "none") {
+            const testLabel = TEST_LABELS[attempt.test_key]?.label || attempt.test_key;
+            await supabase.from("notifications").insert({
+                user_id: attempt.user_id,
+                type: "test_rewrite",
+                title: `📝 ${testLabel}テストの記述を見直してください`,
+                message: "admin評価が「評価なし」でした。記述内容を見直して再受験してみてください。",
+                link: "/tests",
+                icon: "📝",
+            });
+        }
         // 状態更新
         setAttempts(prev => prev.map(a => a.id === attempt.id ? { ...a, written_evaluation: evaluation, written_points_awarded: newPoints, evaluated_at: nowIso } : a));
         setEvaluating(null);

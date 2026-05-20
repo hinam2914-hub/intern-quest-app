@@ -451,6 +451,7 @@ export default function MyPage() {
     const [rank, setRank] = useState<number | null>(null);
     const [streak, setStreak] = useState(0);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [unreadNotifCount, setUnreadNotifCount] = useState(0);
     const [history, setHistory] = useState<PointHistory[]>([]);
     const [graphData, setGraphData] = useState<GraphData[]>([]);
     const [kpiDepts, setKpiDepts] = useState<{ id: string; name: string; main_metric: string; unit: string }[]>([]);
@@ -815,7 +816,16 @@ export default function MyPage() {
             .order("created_at", { ascending: false })
             .limit(3);
         setPersonalTasks(personalTaskData || []);
-        // adminタスク取得（未提出 + 差戻しのみ）
+        // 通知件数取得
+                const nowIso = new Date().toISOString();
+                const { count: notifCount } = await supabase
+                    .from("notifications")
+                    .select("*", { count: "exact", head: true })
+                    .eq("user_id", user.id)
+                    .eq("is_read", false)
+                    .lte("created_at", nowIso);
+                setUnreadNotifCount(notifCount || 0);
+                // adminタスク取得（未提出 + 差戻しのみ）
         const { data: profileForDept } = await supabase
             .from("profiles")
             .select("department_id")
@@ -1226,6 +1236,41 @@ export default function MyPage() {
                     <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 16px", padding: "12px 20px", borderRadius: 12, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", textAlign: "center" }}>
                         <div style={{ fontSize: 12, color: "#22c55e", fontWeight: 700 }}>
                             ✅ 今日のログインボーナスは受け取り済み！明日また挑戦できます
+                        </div>
+                    </div>
+                )}
+                {/* ===== 🔔 通知バナー ===== */}
+                {unreadNotifCount > 0 && (
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
+                        <div onClick={() => router.push("/notifications")} style={{
+                            padding: "16px 20px",
+                            background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.10))",
+                            border: "2px solid rgba(99,102,241,0.4)",
+                            borderRadius: 16,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            transition: "all 0.2s ease",
+                        }}
+                            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                <div style={{ fontSize: 28 }}>🔔</div>
+                                <div>
+                                    <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb", marginBottom: 2 }}>
+                                        新しい通知が {unreadNotifCount} 件あります
+                                    </div>
+                                    <div style={{ fontSize: 12, color: "#a5b4fc" }}>
+                                        タップして確認 →
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ background: "#ef4444", color: "#fff", padding: "4px 12px", borderRadius: 999, fontSize: 13, fontWeight: 800 }}>
+                                {unreadNotifCount}
+                            </div>
                         </div>
                     </div>
                 )}

@@ -71,6 +71,17 @@ export default function TestPage() {
             await supabase.from("user_points").upsert({ id: userId, points: currentPt + TEST_CONFIG.rewardPoints });
             await supabase.from("points_history").insert({ user_id: userId, change: TEST_CONFIG.rewardPoints, reason: "改善力テスト合格" });
             alert(`✅ 提出しました！\n\n選択式: ${correctCount}/${QUESTIONS.length}問正解\n\nadminの審査後、合格時に${TEST_CONFIG.rewardPoints}pt付与されます。\n記述評価で追加 高+30pt / 中+10pt の可能性があります。`);
+            // 24時間後に再挑戦できる通知をスケジュール（クールダウン明けに表示）
+            const remindAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            await supabase.from("notifications").insert({
+                user_id: userId,
+                type: "test_cooldown",
+                title: `⚠️ ${TEST_CONFIG.title}に再挑戦できます`,
+                message: "24時間のクールダウンが明けました。再挑戦してみましょう！",
+                link: window.location.pathname,
+                icon: "⚠️",
+                created_at: remindAt.toISOString(),
+            });
         } else {
             alert(`❌ 不合格\n\n選択式: ${correctCount}/${QUESTIONS.length}問正解（合格には全問正解必要）\n\n24時間後に再受験できます。`);
         }

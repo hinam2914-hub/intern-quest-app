@@ -119,6 +119,17 @@ export default function TestPage() {
             const currentPt = ptRow?.points || 0;
             await supabase.from("user_points").upsert({ id: userId, points: currentPt + TEST_CONFIG.rewardPoints });
             await supabase.from("points_history").insert({ user_id: userId, change: TEST_CONFIG.rewardPoints, reason: "長期思考テスト合格" });
+            // 24時間後に再挑戦できる通知をスケジュール（クールダウン明けに表示）
+            const remindAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            await supabase.from("notifications").insert({
+                user_id: userId,
+                type: "test_cooldown",
+                title: `⚠️ ${TEST_CONFIG.title}に再挑戦できます`,
+                message: "24時間のクールダウンが明けました。再挑戦してみましょう！",
+                link: window.location.pathname,
+                icon: "⚠️",
+                created_at: remindAt.toISOString(),
+            });
         } else {
             alert(`❌ 不合格\n\n選択式: ${correctCount}/15問正解（合格には全問正解必要）\n\n24時間後に再受験できます。`);
         }
