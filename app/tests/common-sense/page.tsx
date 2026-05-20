@@ -133,7 +133,7 @@ export default function CommonSenseTest() {
             await supabase.from("notifications").insert({
                 user_id: userId,
                 type: "test_cooldown",
-                title: `⚠️ ${TEST_CONFIG.title}に再挑戦できます`,
+                title: `⚠️ 常識・デリカシーテストに再挑戦できます`,
                 message: "24時間のクールダウンが明けました。再挑戦してみましょう！",
                 link: window.location.pathname,
                 icon: "⚠️",
