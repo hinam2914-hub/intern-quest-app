@@ -274,12 +274,17 @@ export default function TestsPage() {
                                                         )}
                                                         <div style={{ marginTop: 8, padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                                             {Array.isArray(a.written_answers) ? (
-                                                                a.written_answers.map((ans: string, j: number) => (
+                                                                a.written_answers.map((ans: any, j: number) => {
+                                                                    const isObj = typeof ans === "object" && ans !== null;
+                                                                    const answerText = isObj ? (ans.answer || "") : (ans || "");
+                                                                    const questionText = isObj ? ans.question : null;
+                                                                    return (
                                                                     <div key={j} style={{ marginBottom: j < a.written_answers.length - 1 ? 12 : 0 }}>
-                                                                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>Q{j + 1}</div>
-                                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{ans || "(未記入)"}</div>
+                                                                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>{questionText || `Q${j + 1}`}</div>
+                                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{answerText || "(未記入)"}</div>
                                                                     </div>
-                                                                ))
+                                                                    );
+                                                                })
                                                             ) : typeof a.written_answers === "object" ? (
                                                                 Object.entries(a.written_answers).map(([key, val], j) => (
                                                                     <div key={key} style={{ marginBottom: j < Object.keys(a.written_answers).length - 1 ? 12 : 0 }}>
