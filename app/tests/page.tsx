@@ -21,6 +21,17 @@ const TEST_MAX_SCORES: Record<string, number> = {
     sales: 100,
     planner: 100,
     manager: 100,
+    standard_raising: 15,
+    management_collab: 15,
+    cert_market_value: 15,
+    improvement_force: 15,
+    apology_escape: 15,
+    logical_thinking: 15,
+    progress_update: 15,
+    life_improvement: 15,
+    market_eval: 15,
+    quick_response: 15,
+    self_protection: 15,
 };
 type TestItem = {
     key: string;
@@ -149,7 +160,7 @@ export default function TestsPage() {
                 <div style={{ marginBottom: 32 }}>
                     <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📝 テスト一覧</h1>
-                    <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>あなたの価値観・適性・覚悟を測る8種類のテスト</p>
+                    <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>あなたの価値観・適性・覚悟を測るテスト</p>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

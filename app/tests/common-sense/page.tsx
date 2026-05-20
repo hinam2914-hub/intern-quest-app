@@ -61,7 +61,7 @@ export default function CommonSenseTest() {
             // クールダウンチェック
             const { data: lastAttempt } = await supabase
                 .from("test_attempts")
-                .select("created_at, status")
+                .select("created_at, passed")
                 .eq("user_id", user.id)
                 .eq("test_key", "common_sense")
                 .order("created_at", { ascending: false })
@@ -69,9 +69,7 @@ export default function CommonSenseTest() {
 
             if (lastAttempt && lastAttempt.length > 0) {
                 const last = lastAttempt[0] as any;
-                if (last.status === "pending") {
-                    setPendingReview(true);
-                } else if (last.status === "rejected") {
+                if (!last.passed) {
                     const cooldownEnd = new Date(new Date(last.created_at).getTime() + 24 * 60 * 60 * 1000);
                     if (cooldownEnd > new Date()) {
                         setCooldownUntil(cooldownEnd);
