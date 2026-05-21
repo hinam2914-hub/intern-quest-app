@@ -4,18 +4,19 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
-// ガチャ景品テーブル（期待値約7.5pt）
+// ガチャ景品テーブル（消費50pt・期待値約23.5pt = 回すほど損する健全設計）
 const PRIZES = [
-    { reward: 1000, weight: 0.1, rarity: "LEGEND", emoji: "🌈", color: "#f43f5e", label: "大当たり！" },
-    { reward: 100, weight: 2, rarity: "EPIC", emoji: "🟡", color: "#fbbf24", label: "EPIC!" },
-    { reward: 50, weight: 8, rarity: "RARE", emoji: "🟣", color: "#a855f7", label: "RARE!" },
-    { reward: 20, weight: 15, rarity: "UNCOMMON", emoji: "🔵", color: "#06b6d4", label: "UNCOMMON" },
-    { reward: 10, weight: 25, rarity: "COMMON", emoji: "⚪", color: "#10b981", label: "チャラ！" },
-    { reward: 5, weight: 30, rarity: "COMMON", emoji: "⚪", color: "#9ca3af", label: "COMMON" },
-    { reward: 1, weight: 19.9, rarity: "MISS", emoji: "⚫", color: "#6b7280", label: "ざんねん..." },
+    { reward: 1000, weight: 0.05, rarity: "LEGEND", emoji: "🌈", color: "#f43f5e", label: "大当たり！" },
+    { reward: 300, weight: 1, rarity: "EPIC", emoji: "🟡", color: "#fbbf24", label: "EPIC!" },
+    { reward: 100, weight: 4, rarity: "RARE", emoji: "🟣", color: "#a855f7", label: "RARE!" },
+    { reward: 50, weight: 10, rarity: "UNCOMMON", emoji: "🔵", color: "#06b6d4", label: "チャラ！" },
+    { reward: 30, weight: 20, rarity: "COMMON", emoji: "⚪", color: "#10b981", label: "COMMON" },
+    { reward: 10, weight: 35, rarity: "COMMON", emoji: "⚪", color: "#9ca3af", label: "COMMON" },
+    { reward: 5, weight: 29.95, rarity: "MISS", emoji: "⚫", color: "#6b7280", label: "ざんねん..." },
 ];
 
-const GACHA_COST = 10;
+const GACHA_COST = 50;
+const DAILY_LIMIT = 10;
 
 interface GachaHistory {
     id: string;
@@ -33,6 +34,7 @@ export default function GachaPage() {
     const [spinning, setSpinning] = useState(false);
     const [result, setResult] = useState<typeof PRIZES[0] | null>(null);
     const [history, setHistory] = useState<GachaHistory[]>([]);
+    const [todayCount, setTodayCount] = useState(0);
 
     const loadData = useCallback(async (uid: string) => {
         const { data: ptRow } = await supabase.from("user_points").select("points").eq("id", uid).maybeSingle();
@@ -44,6 +46,18 @@ export default function GachaPage() {
             .order("created_at", { ascending: false })
             .limit(10);
         setHistory((hist || []) as GachaHistory[]);
+
+        // 今日の回数カウント（JST 0時基準）
+        const now = new Date();
+        const jstOffset = 9 * 60 * 60 * 1000;
+        const jstNow = new Date(now.getTime() + jstOffset);
+        const jstMidnight = new Date(Date.UTC(jstNow.getUTCFullYear(), jstNow.getUTCMonth(), jstNow.getUTCDate()) - jstOffset);
+        const { count } = await supabase
+            .from("gacha_history")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .gte("created_at", jstMidnight.toISOString());
+        setTodayCount(count || 0);
     }, []);
 
     useEffect(() => {
@@ -57,7 +71,7 @@ export default function GachaPage() {
     }, [router, loadData]);
 
     const handleSpin = async () => {
-        if (spinning || points < GACHA_COST) return;
+        if (spinning || points < GACHA_COST || todayCount >= DAILY_LIMIT) return;
         setSpinning(true);
         setResult(null);
 
@@ -73,18 +87,13 @@ export default function GachaPage() {
         // 演出待ち（2秒）
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // ポイント更新: -10（消費） +reward（当選）
+        // ポイント更新: user_points.points を直接増減（total_earnedには影響させない）
         const netChange = selected.reward - GACHA_COST;
         const newPoints = points + netChange;
         await supabase.from("user_points").upsert({ id: userId, points: newPoints });
 
-        // points_history に記録（消費と獲得を別レコードで）
-        await supabase.from("points_history").insert([
-            { user_id: userId, change: -GACHA_COST, reason: "gacha_spend" },
-            { user_id: userId, change: selected.reward, reason: "gacha_reward" },
-        ]);
-
-        // gacha_history に記録
+        // ⚠️ points_history には記録しない（gacha_rewardがtotal_earnedに加算されるのを防ぐ）
+        // ガチャの履歴は gacha_history テーブルにのみ記録する
         await supabase.from("gacha_history").insert({
             user_id: userId,
             cost: GACHA_COST,
@@ -102,7 +111,8 @@ export default function GachaPage() {
         <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>Loading...</main>
     );
 
-    const canSpin = points >= GACHA_COST && !spinning;
+    const limitReached = todayCount >= DAILY_LIMIT;
+    const canSpin = points >= GACHA_COST && !spinning && !limitReached;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", color: "#f9fafb", fontFamily: "'Inter', sans-serif" }}>
@@ -111,9 +121,15 @@ export default function GachaPage() {
                 <h1 style={{ fontSize: 28, fontWeight: 900, margin: "4px 0 24px" }}>🎰 ポイントガチャ</h1>
 
                 {/* ポイント残高 */}
-                <div style={{ padding: "16px 20px", borderRadius: 14, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ padding: "16px 20px", borderRadius: 14, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 13, color: "#a5b4fc", fontWeight: 700 }}>所持ポイント</span>
                     <span style={{ fontSize: 24, fontWeight: 900, color: "#f9fafb" }}>{points.toLocaleString()} pt</span>
+                </div>
+
+                {/* 本日の回数 */}
+                <div style={{ padding: "10px 20px", borderRadius: 12, background: limitReached ? "rgba(248,113,113,0.1)" : "rgba(255,255,255,0.03)", border: `1px solid ${limitReached ? "rgba(248,113,113,0.3)" : "rgba(255,255,255,0.08)"}`, marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: limitReached ? "#f87171" : "#9ca3af", fontWeight: 700 }}>本日のガチャ回数</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: limitReached ? "#f87171" : "#d1d5db" }}>{todayCount} / {DAILY_LIMIT} 回</span>
                 </div>
 
                 {/* ガチャ筐体 */}
@@ -157,7 +173,7 @@ export default function GachaPage() {
                             cursor: canSpin ? "pointer" : "not-allowed",
                         }}
                     >
-                        {spinning ? "抽選中..." : points < GACHA_COST ? "ポイント不足" : `🎰 ${GACHA_COST}pt で回す`}
+                        {spinning ? "抽選中..." : limitReached ? "本日の上限に達しました" : points < GACHA_COST ? "ポイント不足" : `🎰 ${GACHA_COST}pt で回す`}
                     </button>
                 </div>
 
@@ -171,6 +187,9 @@ export default function GachaPage() {
                                 <span style={{ color: "#9ca3af" }}>{p.weight}%</span>
                             </div>
                         ))}
+                        <div style={{ fontSize: 11, color: "#6b7280", marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                            ※ 1回 {GACHA_COST}pt 消費・1日{DAILY_LIMIT}回まで。ガチャの増減はランキング(累計ポイント)には影響しません。
+                        </div>
                     </div>
                 </details>
 
