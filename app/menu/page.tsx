@@ -63,6 +63,7 @@ export default function MenuPage() {
                 { icon: "📊", label: "自分の実績", desc: "累計データ・ランク・順位を確認", path: "/stats", color: "#06b6d4" },
                 { icon: "📜", label: "履歴", desc: "ポイント・テスト・サンキュー・チャレンジ", path: "/history", color: "#6b7280" },
                 { icon: "🛍️", label: "ポイントショップ", desc: "ポイントでアイテムと交換", path: "/shop", color: "#10b981" },
+                { icon: "🎰", label: "ポイントガチャ", desc: "10ptで挑戦！最大1000pt", path: "/gacha", color: "#f43f5e" },
             ],
         },
         {

@@ -29,6 +29,8 @@ function formatReason(reason?: string | null): string {
     if (reason === "content_complete") return "学習完了";
     if (reason === "thanks_received") return "サンキュー受領";
     if (reason === "shop_purchase") return "ショップ購入";
+    if (reason === "gacha_spend") return "🎰 ガチャ消費";
+    if (reason === "gacha_reward") return "🎰 ガチャ獲得";
     if (reason === "admin_edit") return "管理者編集";
     if (reason === "kpi_achievement") return "KPI達成";
     return reason;

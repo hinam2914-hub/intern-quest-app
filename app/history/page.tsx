@@ -110,6 +110,8 @@ function getReasonLabel(reason: string): string {
         case "content_complete": return "学習完了";
         case "thanks_received": return "サンキュー受領";
         case "shop_purchase": return "ショップ購入";
+        case "gacha_spend": return "🎰 ガチャ消費";
+        case "gacha_reward": return "🎰 ガチャ獲得";
         case "admin_edit": return "管理者編集";
         case "challenge_complete": return "🎯 チャレンジ完了";
         case "restore_after_reset": return "🔄 リセット復元";
@@ -127,6 +129,8 @@ function getReasonIcon(reason: string): string {
         case "content_complete": return "📚";
         case "thanks_received": return "🎉";
         case "shop_purchase": return "🛍️";
+        case "gacha_spend": return "🎰";
+        case "gacha_reward": return "🎰";
         case "admin_edit": return "⚙️";
         case "challenge_complete": return "🎯";
         case "restore_after_reset": return "🔄";
