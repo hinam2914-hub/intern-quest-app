@@ -103,7 +103,14 @@ const normalizeWrittenAnswers = (raw: any): { question?: string; answer: string 
         });
     }
     if (typeof raw === "object") {
-        return Object.entries(raw).map(([k, v]) => ({ question: k, answer: String(v || "") }));
+        // idキー(q16,q17...)を数値順にソート。キー名は質問文ではないのでquestionには入れない
+        return Object.entries(raw)
+            .sort(([a], [b]) => {
+                const na = parseInt(String(a).replace(/[^0-9]/g, "")) || 0;
+                const nb = parseInt(String(b).replace(/[^0-9]/g, "")) || 0;
+                return na - nb;
+            })
+            .map(([, v]) => ({ answer: String(v || "") }));
     }
     return [];
 };
