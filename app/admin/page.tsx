@@ -15,7 +15,7 @@ type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
 type UserDetail = {
-    id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; education: string; mbti?: string; club_category?: string; hobby_category?: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; deptCode?: string; position?: string; growthStatus?: string; growthRank?: string;
+    id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; lastActiveAt?: string; education: string; mbti?: string; club_category?: string; hobby_category?: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; deptCode?: string; position?: string; growthStatus?: string; growthRank?: string;
     growthGrade?: string; onboardingDone?: boolean; createdAt?: string; approvedKpiCount?: number; kkcApprovedCount?: number; esUpdateCount?: number;
 };
 type GraphData = { date: string; points: number };
@@ -457,6 +457,13 @@ export default function AdminPage() {
             const { data: thanksSentRows } = await supabase.from("thanks").select("to_user_id");
             const { data: kpiLogRows } = await supabase.from("kpi_logs").select("user_id");
             const { data: subCountRows } = await supabase.from("submissions").select("user_id");
+            // アクティブ判定用：7日以内のポイント履歴（user_idごとの最終活動日）
+            const sevenDaysAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            const { data: recentActivityRows } = await supabase.from("points_history").select("user_id, created_at").gte("created_at", sevenDaysAgoISO).order("created_at", { ascending: false });
+            const lastActiveMap: Record<string, string> = {};
+            (recentActivityRows || []).forEach((r: any) => {
+                if (r.user_id && !lastActiveMap[r.user_id]) lastActiveMap[r.user_id] = r.created_at;
+            });
 
             const { data: deptRows } = await supabase.from("departments").select("*");
             setDepartments((deptRows || []) as Department[]);
@@ -488,6 +495,7 @@ export default function AdminPage() {
                     growthGrade: p.growth_grade || "",
                     onboardingDone: p.onboarding_done || false,
                     createdAt: p.created_at || "",
+                    lastActiveAt: lastActiveMap[p.id] || undefined,
                     approvedKpiCount: 0,
                     kkcApprovedCount: 0,
                     esUpdateCount: 0,
@@ -1073,13 +1081,14 @@ export default function AdminPage() {
         threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
         // アクティブ：7日以内に何かしらアクションあり
-        const activeUserCount = userDetails.filter(u => u.submissionCount > 0).length;
+        const activeUserCount = userDetails.filter(u => !!u.lastActiveAt).length;
 
         // 3日以上未提出 = 直近3日に提出がない人（簡易判定: submissionCount=0）
         const inactive3Days = userDetails.filter(u => {
             if (!u.createdAt) return false;
             const accountAge = Date.now() - new Date(u.createdAt).getTime();
-            return accountAge > 3 * 24 * 60 * 60 * 1000 && u.submissionCount === 0;
+            // 登録から3日以上経過 かつ 7日以内に活動なし
+            return accountAge > 3 * 24 * 60 * 60 * 1000 && !u.lastActiveAt;
         }).length;
 
         // 未承認の申請

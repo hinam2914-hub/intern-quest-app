@@ -56,7 +56,10 @@ export default function KpiDashboardTab() {
             const { data: history } = await supabase
                 .from("points_history")
                 .select("user_id, created_at")
-                .gte("created_at", past30Date.toISOString());
+                .gte("created_at", past30Date.toISOString())
+                .not("reason", "in", "(gacha_spend,gacha_reward)")
+                .order("created_at", { ascending: false })
+                .limit(5000);
 
             if (history) {
                 // DAU (今日)
