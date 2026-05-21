@@ -124,12 +124,13 @@ function calculateSibyl(params: { mbti: string; education: string; club: string;
 }
 
 function calculateDepartmentMatch(s: { cog: number; grit: number; social: number; drive: number; create: number }): { dept: string; score: number }[] {
+    // 各職種「その職種らしい軸」を主軸×2・準軸×2・補助×1（係数合計5で統一）
     const results = [
-        { dept: "IP", score: s.grit * 2 + s.drive * 2 + s.social * 1 },
+        { dept: "IP", score: s.drive * 2 + s.grit * 2 + s.social * 1 },
         { dept: "クローザー", score: s.social * 2 + s.drive * 2 + s.grit * 1 },
         { dept: "マネージャー", score: s.social * 2 + s.grit * 2 + s.cog * 1 },
         { dept: "コンサル", score: s.cog * 2 + s.create * 2 + s.social * 1 },
-        { dept: "テレアポ", score: s.social * 2 + s.cog * 2 + s.create * 1 + s.grit * 1 },
+        { dept: "テレアポ", score: s.social * 2 + s.drive * 2 + s.grit * 1 },
         { dept: "人事", score: s.social * 2 + s.cog * 2 + s.create * 1 },
     ];
     results.sort((a, b) => b.score - a.score);
