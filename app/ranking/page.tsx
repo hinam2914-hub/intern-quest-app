@@ -54,8 +54,9 @@ export default function RankingPage() {
             // ===== 総合ランキング =====
             const { data: pointRows } = await supabase.from("user_points").select("id, total_earned").order("total_earned", { ascending: false });
             const totalRows = pointRows || [];
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, avatar_url").in("id", totalRows.map((r) => r.id));
-            setUsers(totalRows.map((row) => ({
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, avatar_url, is_active").in("id", totalRows.map((r) => r.id));
+            const activeIds = new Set((profileRows || []).filter((p: any) => p.is_active).map((p: any) => p.id));
+            setUsers(totalRows.filter((row) => activeIds.has(row.id)).map((row) => ({
                 id: row.id,
                 name: profileRows?.find((p) => p.id === row.id)?.name || "名前未設定",
                 points: (row as any).total_earned || 0,
@@ -68,8 +69,9 @@ export default function RankingPage() {
             (weeklyData || []).forEach((item) => { weeklyTotals[item.user_id] = (weeklyTotals[item.user_id] || 0) + item.change; });
             const weeklyIds = Object.keys(weeklyTotals);
             if (weeklyIds.length > 0) {
-                const { data: weeklyProfiles } = await supabase.from("profiles").select("id, name, avatar_url").in("id", weeklyIds);
-                setWeeklyUsers(weeklyIds.map((id) => ({
+                const { data: weeklyProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").in("id", weeklyIds);
+                const weeklyActiveIds = new Set((weeklyProfiles || []).filter((p: any) => p.is_active).map((p: any) => p.id));
+                setWeeklyUsers(weeklyIds.filter((id) => weeklyActiveIds.has(id)).map((id) => ({
                     id,
                     name: weeklyProfiles?.find((p) => p.id === id)?.name || "名前未設定",
                     points: weeklyTotals[id] || 0,
@@ -81,7 +83,7 @@ export default function RankingPage() {
             // 1. teams取得
             const { data: teamsData } = await supabase.from("teams").select("id, name, color");
             // 2. team_idがあるプロフィール取得
-            const { data: teamMemberProfiles } = await supabase.from("profiles").select("id, team_id").not("team_id", "is", null);
+            const { data: teamMemberProfiles } = await supabase.from("profiles").select("id, team_id").eq("is_active", true).not("team_id", "is", null);
             // 3. 今週のsubmissions取得
             const { data: subsData } = await supabase.from("submissions").select("user_id, created_at").gte("created_at", getOneWeekAgoISO());
 

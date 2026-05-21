@@ -127,6 +127,7 @@ export default function UserDetailPage() {
     const [graphTab, setGraphTab] = useState<"points" | "breakdown">("points");
     const [monthlyKpiHistory, setMonthlyKpiHistory] = useState<MonthlyKpiRecord[]>([]);
     const [activeTab, setActiveTab] = useState<"overview" | "monthly_kpi" | "tests" | "challenges">("overview");
+    const [resigning, setResigning] = useState(false);
     const [testAttempts, setTestAttempts] = useState<any[]>([]);
     const [challenges, setChallenges] = useState<any[]>([]);
     const [expandedTest, setExpandedTest] = useState<string | null>(null);
@@ -337,6 +338,31 @@ export default function UserDetailPage() {
     }
 
     const level = getLevel(points);
+    const handleResign = async () => {
+        if (resigning) return;
+        if (!confirm(`${name} さんを離職処理しますか？\n\n・メンバー一覧/ランキングから非表示になります\n・データは保持されます（人材アーカイブに記録）\n・ログイン停止は別途Supabase管理画面で行ってください`)) return;
+        setResigning(true);
+        try {
+            // 1. profiles を非アクティブに
+            await supabase.from("profiles").update({ is_active: false }).eq("id", userId);
+            // 2. 人材アーカイブに記録
+            const { data: { user } } = await supabase.auth.getUser();
+            await supabase.from("resignations").insert({
+                user_id: userId,
+                name: name || "名前未設定",
+                resigned_at: new Date().toISOString().slice(0, 10),
+                department_code: departmentName || null,
+                started_at: startedAt ? startedAt.slice(0, 10) : null,
+                total_points: points || null,
+                created_by: user?.id || null,
+            });
+            alert(`✅ ${name} さんを離職処理しました。\n\n※ログイン停止はSupabase管理画面の Authentication で対象ユーザーを Ban してください。`);
+            router.push("/admin");
+        } catch (e) {
+            alert("離職処理に失敗しました: " + (e as Error).message);
+        }
+        setResigning(false);
+    };
     const activeDays = startedAt ? Math.floor((Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
     const approvedKpiCount = monthlyKpis.filter((k: any) => k.approved).length;
     const kkcApprovedCount = kkcSolutions.filter((s: any) => s.status === "approved").length;
@@ -390,6 +416,9 @@ export default function UserDetailPage() {
                             <div style={{ fontSize: 12, color: "#9ca3af" }}>スコア {rankScore}/100</div>
                             <button onClick={() => setShowAdviceModal(true)} style={{ marginTop: 12, padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 12px rgba(245,158,11,0.3)" }}>
                                 💌 アドバイス送信
+                            </button>
+                            <button onClick={handleResign} disabled={resigning} style={{ marginTop: 8, padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(107,114,128,0.4)", background: "rgba(107,114,128,0.15)", color: "#9ca3af", fontSize: 12, fontWeight: 700, cursor: resigning ? "not-allowed" : "pointer", display: "block", width: "100%" }}>
+                                {resigning ? "処理中..." : "🚪 離職処理"}
                             </button>
                         </div>
                     </div>

@@ -82,6 +82,7 @@ export default function MembersPage() {
             const { data: profileData } = await supabase
                 .from("profiles")
                 .select("*")
+                .eq("is_active", true)
                 .order("name");
 
             // ポイント一覧
