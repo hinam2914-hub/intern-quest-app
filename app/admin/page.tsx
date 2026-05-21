@@ -102,7 +102,7 @@ function getEducationSibyl(education: string): { cog: number; grit: number } {
     const e = education;
     if (/東京大学|^東大|京都大学|^京大|大阪大学|^阪大|名古屋大学|^名大|東北大学|九州大学|^九大|北海道大学|^北大/.test(e)) return { cog: 10, grit: 6 };
     if (/早稲田|慶應|慶応|上智/.test(e)) return { cog: 9, grit: 5 };
-    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政/.test(e)) return { cog: 7, grit: 5 };
+    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政|東京理科大学|理科大/.test(e)) return { cog: 7, grit: 5 };
     if (/成城|成蹊|明治学院|獨協|國學院|国学院|武蔵大学|武蔵大/.test(e)) return { cog: 6, grit: 4 };
     if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修/.test(e)) return { cog: 5, grit: 4 };
     return { cog: 3, grit: 3 };
@@ -146,7 +146,7 @@ function getEducationScore(education: string): number {
     const e = education;
     if (/東京大学|^東大|京都大学|^京大|大阪大学|^阪大|名古屋大学|^名大|東北大学|九州大学|^九大|北海道大学|^北大/.test(e)) return 10;
     if (/早稲田|慶應|慶応|上智/.test(e)) return 8;
-    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政/.test(e)) return 6;
+    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政|東京理科大学|理科大/.test(e)) return 6;
     if (/成城|成蹊|明治学院|獨協|國學院|国学院|武蔵大学|武蔵大/.test(e)) return 5;
     if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修/.test(e)) return 4;
     return 2;
