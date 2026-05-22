@@ -15,7 +15,7 @@ type TopUser = { name: string; points: number };
 type TopSubmitter = { name: string; count: number };
 type ReportRow = { id: string; user_id: string; content: string; created_at: string; userName?: string };
 type UserDetail = {
-    id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; lastActiveAt?: string; education: string; mbti?: string; club_category?: string; hobby_category?: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; deptCode?: string; position?: string; growthStatus?: string; growthRank?: string;
+    id: string; name: string; points: number; streak: number; role: string; editingName?: string; submissionCount: number; thanksCount: number; kpiCount: number; activeDays: number; lastActiveAt?: string; education: string; mbti?: string; club_category?: string; hobby_category?: string; team_id?: string; avatar_url?: string; department_id?: string; deptName?: string; deptCode?: string; position?: string; grade?: string; growthStatus?: string; growthRank?: string;
     growthGrade?: string; onboardingDone?: boolean; createdAt?: string; approvedKpiCount?: number; kkcApprovedCount?: number; esUpdateCount?: number;
 };
 type GraphData = { date: string; points: number };
@@ -200,6 +200,7 @@ export default function AdminPage() {
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
+    const [selectedGrade, setSelectedGrade] = useState<string>("all");
     const [editingPoints, setEditingPoints] = useState<number>(0);
     const [savingUser, setSavingUser] = useState<string | null>(null);
     const [announceTitle, setAnnounceTitle] = useState("");
@@ -449,7 +450,7 @@ export default function AdminPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category, onboarding_done, created_at, position");
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, grade, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category, onboarding_done, created_at, position");
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
@@ -490,6 +491,7 @@ export default function AdminPage() {
                     deptName: deptRows?.find((d: any) => d.id === p.department_id)?.name || "",
                     deptCode: deptRows?.find((d: any) => d.id === p.department_id)?.code || "",
                     position: p.position || "",
+                    grade: p.grade || "",
                     growthStatus: p.growth_status || "Onboarding",
                     growthRank: p.growth_rank || "",
                     growthGrade: p.growth_grade || "",
@@ -1184,8 +1186,11 @@ export default function AdminPage() {
                 return (registeredLongAgo && noReports) || onboardingIncomplete;
             });
         }
+        if (selectedGrade !== "all") {
+            result = result.filter(u => (u.grade || "未設定") === selectedGrade);
+        }
         return result;
-    }, [userDetails, selectedDept, showInactiveOnly]);
+    }, [userDetails, selectedDept, showInactiveOnly, selectedGrade]);
 
     const deptStats = useMemo(() => {
         const deptIds = [...new Set(allMonthlyKpis.map(k => k.department_id))];
@@ -1333,6 +1338,18 @@ export default function AdminPage() {
                                     {departments.map(dept => (
                                         <button key={dept.id} onClick={() => setSelectedDept(dept.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: selectedDept === dept.id ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: selectedDept === dept.id ? "#fff" : "#9ca3af" }}>{dept.name}</button>
                                     ))}
+                                    <select
+                                        value={selectedGrade}
+                                        onChange={(e) => setSelectedGrade(e.target.value)}
+                                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: selectedGrade === "all" ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: selectedGrade === "all" ? "#9ca3af" : "#fff", outline: "none" }}
+                                    >
+                                        <option value="all">学年: 全員</option>
+                                        <option value="大学2年">大学2年</option>
+                                        <option value="大学3年">大学3年</option>
+                                        <option value="社会人">社会人</option>
+                                        <option value="その他">その他</option>
+                                        <option value="未設定">未設定</option>
+                                    </select>
                                 </div>
                             </div>
 
