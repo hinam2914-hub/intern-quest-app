@@ -1199,55 +1199,6 @@ export default function MyPage() {
                         </div>
                     </div>
                 )}
-                {/* ===== ログインボーナスガチャ ===== */}
-                {loginBonusReceived === false && (
-                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
-                        <div style={{
-                            padding: "32px 24px",
-                            borderRadius: 20,
-                            background: "linear-gradient(135deg, #fbbf24 0%, #ec4899 50%, #8b5cf6 100%)",
-                            boxShadow: "0 8px 32px rgba(236,72,153,0.3)",
-                            textAlign: "center",
-                            position: "relative",
-                            overflow: "hidden",
-                        }}>
-                            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", fontWeight: 700, letterSpacing: 3, marginBottom: 8 }}>
-                                ✨ TODAY'S LOGIN BONUS ✨
-                            </div>
-                            <div style={{ fontSize: 20, color: "#fff", fontWeight: 800, marginBottom: 16 }}>
-                                🎰 今日の運試し！
-                            </div>
-                            <button
-                                onClick={handleGachaSpin}
-                                disabled={gachaSpinning}
-                                style={{
-                                    padding: "20px 60px",
-                                    borderRadius: 100,
-                                    border: "4px solid #fff",
-                                    background: "linear-gradient(135deg, #fff, #fef3c7)",
-                                    color: "#ec4899",
-                                    fontSize: 24,
-                                    fontWeight: 900,
-                                    cursor: gachaSpinning ? "wait" : "pointer",
-                                    boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-                                    animation: gachaSpinning ? "none" : "gachaPulse 2s infinite",
-                                }}
-                            >
-                                {gachaSpinning ? "🎲 ぐるぐる..." : "🎁 ガチャを引く！"}
-                            </button>
-                            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 12, fontWeight: 600 }}>
-                                ランダムで 1〜10pt 獲得！毎日1回挑戦できます
-                            </div>
-                        </div>
-                    </div>
-                )}
-                {loginBonusReceived === true && (
-                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 16px", padding: "12px 20px", borderRadius: 12, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", textAlign: "center" }}>
-                        <div style={{ fontSize: 12, color: "#22c55e", fontWeight: 700 }}>
-                            ✅ 今日のログインボーナスは受け取り済み！明日また挑戦できます
-                        </div>
-                    </div>
-                )}
                 {/* ===== 🔔 通知バナー ===== */}
                 {unreadNotifCount > 0 && (
                     <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
