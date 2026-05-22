@@ -1438,6 +1438,21 @@ export default function AdminPage() {
                                                             <div style={{ padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)", color: "#6b7280", fontSize: 11, fontWeight: 600 }}>─</div>
                                                         )}
                                                         <select
+                                                            value={u.grade || ""}
+                                                            onChange={async (e) => {
+                                                                const val = e.target.value;
+                                                                await supabase.from("profiles").update({ grade: val || null }).eq("id", u.id);
+                                                                setUserDetails(prev => prev.map(u2 => u2.id === u.id ? { ...u2, grade: val } : u2));
+                                                            }}
+                                                            style={{ padding: "6px 8px", borderRadius: 8, border: `1px solid ${u.grade ? "rgba(99,102,241,0.5)" : "rgba(251,191,36,0.4)"}`, background: u.grade ? "rgba(99,102,241,0.1)" : "rgba(251,191,36,0.08)", color: u.grade ? "#f9fafb" : "#fbbf24", fontSize: 12, outline: "none", cursor: "pointer", fontWeight: 700 }}
+                                                        >
+                                                            <option value="">⚠️ 学年未設定</option>
+                                                            <option value="大学2年">大学2年</option>
+                                                            <option value="大学3年">大学3年</option>
+                                                            <option value="社会人">社会人</option>
+                                                            <option value="その他">その他</option>
+                                                        </select>
+                                                        <select
                                                             value={u.growthRank || ""}
                                                             onChange={async (e) => {
                                                                 const val = e.target.value;
