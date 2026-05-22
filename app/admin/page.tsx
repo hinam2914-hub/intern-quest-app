@@ -198,7 +198,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
     const [editingPoints, setEditingPoints] = useState<number>(0);
@@ -343,6 +343,8 @@ export default function AdminPage() {
     const [managerTestFilter, setManagerTestFilter] = useState<"pending" | "all">("pending");
     const [esList, setEsList] = useState<any[]>([]);
     const [selectedEsUserId, setSelectedEsUserId] = useState<string | null>(null);
+    const [roadmapList, setRoadmapList] = useState<any[]>([]);
+    const [selectedRoadmapUserId, setSelectedRoadmapUserId] = useState<string | null>(null);
     // ===== アンケート機能 =====
     const [surveys, setSurveys] = useState<Survey[]>([]);
     const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestion[]>([]);
@@ -733,6 +735,15 @@ export default function AdminPage() {
                     return { ...e, userName: (prof as any)?.name || "名前未設定" };
                 }));
                 setEsList(esWithUsers);
+            }
+            // ロードマップ一覧
+            const { data: roadmapRows } = await supabase.from("roadmaps").select("*").order("updated_at", { ascending: false });
+            if (roadmapRows && roadmapRows.length > 0) {
+                const roadmapWithUsers = await Promise.all((roadmapRows as any[]).map(async (r: any) => {
+                    const { data: prof } = await supabase.from("profiles").select("name").eq("id", r.user_id).single();
+                    return { ...r, userName: (prof as any)?.name || "名前未設定" };
+                }));
+                setRoadmapList(roadmapWithUsers);
             }
             setLoading(false);
         };
@@ -1289,6 +1300,7 @@ export default function AdminPage() {
                                 { key: "mtg", label: "MTG管理" },
                                 { key: "career", label: "就活ボックス" },
                                 { key: "es", label: "総合ES" },
+                                { key: "roadmap", label: "🗺️ ロードマップ" },
                                 { key: "companies", label: "企業管理" },
                             ],
                         },
@@ -3909,6 +3921,123 @@ export default function AdminPage() {
                     </div>
                 )}
                 {/* ✅ Fix 4: challenges タブを独立した条件分岐として正しい位置に配置 */}
+                {activeTab === "roadmap" && (
+                    <div>
+                        <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>🗺️ ロードマップ 一覧</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.7 }}>各ユーザーのロードマップを確認できます。クリックで詳細を閲覧できます。</div>
+                        </div>
+
+                        {selectedRoadmapUserId ? (
+                            <div>
+                                <button onClick={() => setSelectedRoadmapUserId(null)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600, marginBottom: 16 }}>← 一覧に戻る</button>
+                                {(() => {
+                                    const rm = roadmapList.find((r: any) => r.user_id === selectedRoadmapUserId);
+                                    if (!rm) return <div style={{ color: "#6b7280", fontSize: 13 }}>データが見つかりません</div>;
+
+                                    const sections = [
+                                        {
+                                            title: "🧭 現在地", fields: [
+                                                { label: "今の自分", value: rm.current_self },
+                                                { label: "人生のテーマ", value: rm.life_theme },
+                                                { label: "ロールモデル", value: rm.role_model },
+                                                { label: "避けたい未来", value: rm.shadow_future },
+                                                { label: "今週のアクション", value: rm.this_week_action },
+                                            ]
+                                        },
+                                        {
+                                            title: "① 3ヶ月後", fields: [
+                                                { label: "目標", value: rm.month3 },
+                                                { label: "なぜ", value: rm.month3_why },
+                                                { label: "どうやって", value: rm.month3_how },
+                                            ]
+                                        },
+                                        {
+                                            title: "② 6ヶ月後", fields: [
+                                                { label: "目標", value: rm.month6 },
+                                                { label: "なぜ", value: rm.month6_why },
+                                                { label: "どうやって", value: rm.month6_how },
+                                            ]
+                                        },
+                                        {
+                                            title: "③ 1年後", fields: [
+                                                { label: "目標", value: rm.year1 },
+                                                { label: "なぜ", value: rm.year1_why },
+                                                { label: "どうやって", value: rm.year1_how },
+                                            ]
+                                        },
+                                        {
+                                            title: "④ 3年後", fields: [
+                                                { label: "目標", value: rm.year3 },
+                                                { label: "なぜ", value: rm.year3_why },
+                                                { label: "どうやって", value: rm.year3_how },
+                                            ]
+                                        },
+                                        {
+                                            title: "⑤ 最終ゴール", fields: [
+                                                { label: "目標", value: rm.goal },
+                                                { label: "なぜ", value: rm.goal_why },
+                                                { label: "どうやって", value: rm.goal_how },
+                                            ]
+                                        },
+                                    ];
+
+                                    return (
+                                        <div>
+                                            <div style={{ padding: "20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 16 }}>
+                                                <div style={{ color: "#f9fafb", fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{rm.userName}</div>
+                                                <div style={{ color: "#6b7280", fontSize: 12 }}>
+                                                    {rm.updated_at && <span>最終更新: {new Date(rm.updated_at).toLocaleString("ja-JP")}</span>}
+                                                </div>
+                                            </div>
+                                            {sections.map((sec, si) => (
+                                                <div key={si} style={{ padding: "20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 12 }}>
+                                                    <div style={{ color: "#818cf8", fontSize: 14, fontWeight: 800, marginBottom: 12 }}>{sec.title}</div>
+                                                    {sec.fields.map((f, fi) => (
+                                                        <div key={fi} style={{ marginBottom: 12 }}>
+                                                            <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 700, marginBottom: 4 }}>{f.label}</div>
+                                                            <div style={{ color: f.value ? "#d1d5db" : "#4b5563", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", padding: "10px 12px", background: "rgba(0,0,0,0.2)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.04)" }}>{f.value || "（未記入）"}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {roadmapList.length === 0 ? (
+                                    <div style={{ textAlign: "center", color: "#6b7280", fontSize: 13, padding: 32 }}>まだ誰もロードマップを作成していません</div>
+                                ) : (
+                                    roadmapList.map((rm: any) => {
+                                        const fields = ["current_self", "life_theme", "role_model", "shadow_future", "this_week_action", "month3", "month3_why", "month3_how", "month6", "month6_why", "month6_how", "year1", "year1_why", "year1_how", "year3", "year3_why", "year3_how", "goal", "goal_why", "goal_how"];
+                                        const filled = fields.filter(f => (rm[f] || "").trim().length > 0).length;
+                                        const progress = Math.round((filled / fields.length) * 100);
+                                        const isComplete = filled === fields.length;
+                                        return (
+                                            <div key={rm.user_id} onClick={() => setSelectedRoadmapUserId(rm.user_id)} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                                    <div>
+                                                        <div style={{ color: "#f9fafb", fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{rm.userName}</div>
+                                                        <div style={{ color: "#6b7280", fontSize: 11 }}>最終更新: {rm.updated_at ? new Date(rm.updated_at).toLocaleString("ja-JP") : "未更新"}</div>
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                        {isComplete && <span style={{ padding: "4px 10px", borderRadius: 6, background: "rgba(52,211,153,0.15)", color: "#34d399", fontSize: 11, fontWeight: 700 }}>✅ 完成</span>}
+                                                        <div style={{ color: isComplete ? "#34d399" : "#818cf8", fontSize: 18, fontWeight: 800 }}>{progress}%</div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.05)", overflow: "hidden" }}>
+                                                    <div style={{ width: `${progress}%`, height: "100%", background: isComplete ? "#34d399" : "linear-gradient(90deg, #6366f1, #8b5cf6)" }} />
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
                 {activeTab === "career" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
