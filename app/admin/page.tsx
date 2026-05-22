@@ -1344,8 +1344,10 @@ export default function AdminPage() {
                                         style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: selectedGrade === "all" ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: selectedGrade === "all" ? "#9ca3af" : "#fff", outline: "none" }}
                                     >
                                         <option value="all">学年: 全員</option>
+                                       <option value="大学1年">大学1年</option>
                                         <option value="大学2年">大学2年</option>
                                         <option value="大学3年">大学3年</option>
+                                        <option value="大学4年">大学4年</option>
                                         <option value="社会人">社会人</option>
                                         <option value="その他">その他</option>
                                         <option value="未設定">未設定</option>
@@ -1447,8 +1449,10 @@ export default function AdminPage() {
                                                             style={{ padding: "6px 8px", borderRadius: 8, border: `1px solid ${u.grade ? "rgba(99,102,241,0.5)" : "rgba(251,191,36,0.4)"}`, background: u.grade ? "rgba(99,102,241,0.1)" : "rgba(251,191,36,0.08)", color: u.grade ? "#f9fafb" : "#fbbf24", fontSize: 12, outline: "none", cursor: "pointer", fontWeight: 700 }}
                                                         >
                                                             <option value="">⚠️ 学年未設定</option>
+                                                            <option value="大学1年">大学1年</option>
                                                             <option value="大学2年">大学2年</option>
                                                             <option value="大学3年">大学3年</option>
+                                                            <option value="大学4年">大学4年</option>
                                                             <option value="社会人">社会人</option>
                                                             <option value="その他">その他</option>
                                                         </select>
