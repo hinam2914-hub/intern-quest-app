@@ -1300,7 +1300,7 @@ export default function AdminPage() {
                                 { key: "mtg", label: "MTG管理" },
                                 { key: "career", label: "就活ボックス" },
                                 { key: "es", label: "総合ES" },
-                                { key: "roadmap", label: "🗺️ ロードマップ" },
+                                { key: "roadmap", label: "ロードマップ" },
                                 { key: "companies", label: "企業管理" },
                             ],
                         },
