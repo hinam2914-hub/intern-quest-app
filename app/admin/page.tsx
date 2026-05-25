@@ -351,6 +351,7 @@ export default function AdminPage() {
     const [allThanks, setAllThanks] = useState<any[]>([]);
     const [thanksViewMode, setThanksViewMode] = useState<"timeline" | "byuser">("timeline");
     const [selectedThanksUserId, setSelectedThanksUserId] = useState<string | null>(null);
+    const [sibylDept, setSibylDept] = useState<string>("all");
     // ===== アンケート機能 =====
     const [surveys, setSurveys] = useState<Survey[]>([]);
     const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestion[]>([]);
@@ -4994,7 +4995,13 @@ export default function AdminPage() {
                             <div style={{ fontSize: 12, color: "#9ca3af" }}>学歴・MBTI・部活・趣味をもとに5軸評価（地頭・胆力・対人・瞬発・創造）を算出し、事業部適性を診断します。</div>
                         </div>
 
-                        {userDetails.map((u: any) => {
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button onClick={() => setSibylDept("all")} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: sibylDept === "all" ? "linear-gradient(135deg, #8b5cf6, #6366f1)" : "rgba(255,255,255,0.05)", color: sibylDept === "all" ? "#fff" : "#9ca3af" }}>全員</button>
+                            {departments.map(dept => (
+                                <button key={dept.id} onClick={() => setSibylDept(dept.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: sibylDept === dept.id ? "linear-gradient(135deg, #8b5cf6, #6366f1)" : "rgba(255,255,255,0.05)", color: sibylDept === dept.id ? "#fff" : "#9ca3af" }}>{dept.name}</button>
+                            ))}
+                        </div>
+                        {userDetails.filter((u: any) => sibylDept === "all" || u.department_id === sibylDept).map((u: any) => {
                             const sibyl = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
                             const matches = calculateDepartmentMatch(sibyl);
                             const hasData = u.mbti || u.education || u.club_category || u.hobby_category;
