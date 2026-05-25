@@ -25,17 +25,49 @@ function toJSTDateOnly(value: string): string {
 }
 
 const TEMPLATES = [
-    { label: "📋 基本", content: `【今日やったこと】\n・\n\n【学んだこと・気づき】\n・\n\n【明日やること】\n・` },
-    { label: "📞 CB", content: `【架電・商談】\n・架電数：\n・アポ獲得：\n・商談数：\n\n【成果・気づき】\n・\n\n【明日の目標】\n・` },
-    { label: "🚪 IP", content: `【ピンポン活動】\n・ピンポン数：\n・獲得数：\n・解除数：\n\n【成果・気づき】\n・\n\n【明日の目標】\n・` },
-    { label: "🤝 SP", content: `【活動報告】\n・ピンポン数：\n・アポ数：\n\n【成果・気づき】\n・\n\n【明日の目標】\n・` },
-    { label: "📣 MK", content: `【マーケティング活動】\n・DM送信数：\n・返信数：\n・日調数：\n・面談数：\n\n【成果・気づき】\n・\n\n【明日の目標】\n・` },
-    { label: "💡 振り返り", content: `【KPT振り返り】\nKeep（続けること）：\n・\n\nProblem（課題）：\n・\n\nTry（試すこと）：\n・` },
+    {
+        label: "基本",
+        fact: "例）顧客リストの整理を3時間おこない、新規50件分を追加した。",
+        interp: "例）整理に想定の倍の時間がかかった。先に分類ルールを決めずに着手したことが原因だと考えている。",
+        action: "例）作業前に分類ルールを5分で決めてから着手する。",
+    },
+    {
+        label: "CB",
+        fact: "例）架電を30件おこない、アポを2件、商談を1件獲得した。午後はトークの入り方を変えて架電した。",
+        interp: "例）午前はアポ0件、午後に2件取れた。最初の一言を変えた午後の方が会話が続いたためだと考えている。",
+        action: "例）午前から午後と同じトークに統一する。明日はアポ3件を目標にする。",
+    },
+    {
+        label: "IP",
+        fact: "例）ピンポンを50件おこない、獲得3件、解除1件だった。エリアAを重点的に回った。",
+        interp: "例）エリアAは反応が薄かった。訪問した時間が早く、不在が多かったことが原因だと考えている。",
+        action: "例）明日はエリアBに変更し、訪問は午後以降に寄せる。",
+    },
+    {
+        label: "SP",
+        fact: "例）ピンポンを40件おこない、アポを2件獲得した。新しい切り出し方を試した。",
+        interp: "例）新しい切り出し方にしてから会話が続く率が上がった。アポ前の信頼づくりが効いたと考えている。",
+        action: "例）切り出し方を固定し、明日は件数を増やしてピンポン50件を目指す。",
+    },
+    {
+        label: "MK",
+        fact: "例）DMを30件送信し、返信5件、日程調整2件、面談1件だった。文面Aで送信した。",
+        interp: "例）返信率が低かった。文面が長く、最後まで読まれていない可能性があると考えている。",
+        action: "例）文面を3行に短縮した版Bで送り、返信率を比較する。",
+    },
+    {
+        label: "振り返り",
+        fact: "例）この2週間で架電を継続し、アポを合計15件獲得した。",
+        interp: "例）アポ数は安定したが商談化が弱かった。アポの質より量を優先していたことが原因だと考えている。",
+        action: "例）次の期間はアポ獲得時に相手の課題を1つ聞き、質を意識する。",
+    },
 ];
 
 export default function ReportPage() {
     const router = useRouter();
-    const [text, setText] = useState("");
+    const [factText, setFactText] = useState("");
+    const [interpText, setInterpText] = useState("");
+    const [actionText, setActionText] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [success, setSuccess] = useState(false);
@@ -56,14 +88,14 @@ export default function ReportPage() {
     }, []);
 
     const handleApplyTemplate = (index: number) => {
-        if (selectedTemplate === index) { setText(""); setSelectedTemplate(null); }
-        else { setText(TEMPLATES[index].content); setSelectedTemplate(index); }
+        setSelectedTemplate(selectedTemplate === index ? null : index);
     };
 
     const handleSubmit = async () => {
-        if (!text.trim()) { setMessage("日報を書いてください"); return; }
-        if (text.trim().length < 100) { setMessage(`❌ 日報は100文字以上で書いてください（現在${text.trim().length}文字）`); return; }
-        setLoading(true);
+        const combinedText = `【事実】今日やったこと・数字\n${factText.trim()}\n\n【解釈】なぜその結果になったか／そこから何が言えるか\n${interpText.trim()}\n\n【次の行動】明日、何をどう変えるか\n${actionText.trim()}`;
+        const totalLength = factText.trim().length + interpText.trim().length + actionText.trim().length;
+        if (totalLength === 0) { setMessage("日報を書いてください"); return; }
+        if (totalLength < 100) { setMessage(`❌ 日報は合計100文字以上で書いてください（現在${totalLength}文字）`); return; }
         setMessage("");
 
         const { data: { user } } = await supabase.auth.getUser();
@@ -83,7 +115,7 @@ export default function ReportPage() {
         // ✅ created_at を省略 → DBのデフォルトUTC時刻で保存 → 表示時にJST変換で正しく表示
         const { error: submissionError } = await supabase.from("submissions").insert({
             user_id: user.id,
-            content: text.trim(),
+            content: combinedText,
         });
         if (submissionError) { setMessage("日報の保存に失敗しました"); setLoading(false); return; }
 
@@ -122,7 +154,7 @@ export default function ReportPage() {
 
         setSuccess(true);
         setMessage(bonus > 0 ? `+${addPoints}pt 獲得！連続提出ボーナス +${bonus}pt も獲得しました 🎉` : `+${addPoints}pt 獲得しました！`);
-        setText(""); setSelectedTemplate(null); setLoading(false);
+        setFactText(""); setInterpText(""); setActionText(""); setSelectedTemplate(null); setLoading(false);
         setReportDone(true);
     };
     // 日報提出後のガチャ
@@ -218,13 +250,34 @@ export default function ReportPage() {
                             ))}
                         </div>
                     </div>
-                    <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="今日やったこと、学んだこと、気づきを書いてください..." style={{ width: "100%", height: 280, padding: 16, borderRadius: 12, border: `1px solid ${text.trim().length >= 100 ? "rgba(52,211,153,0.4)" : "rgba(255,255,255,0.1)"}`, background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, lineHeight: 1.8, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                    {(() => {
+                        const tmpl = selectedTemplate !== null ? TEMPLATES[selectedTemplate] : TEMPLATES[0];
+                        const totalLen = factText.trim().length + interpText.trim().length + actionText.trim().length;
+                        const fieldStyle = {
+                            width: "100%", minHeight: 90, padding: 14, borderRadius: 10,
+                            background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15,
+                            lineHeight: 1.8, outline: "none", resize: "vertical" as const,
+                            boxSizing: "border-box" as const, fontFamily: "inherit",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                        };
+                        const labelStyle = { fontSize: 13, fontWeight: 700, color: "#a5b4fc", marginBottom: 6, marginTop: 16 };
+                        return (
+                            <div>
+                                <div style={labelStyle}>【事実】今日やったこと・数字</div>
+                                <textarea value={factText} onChange={(e) => setFactText(e.target.value)} placeholder={tmpl.fact} style={fieldStyle} />
+                                <div style={labelStyle}>【解釈】なぜその結果になったか／そこから何が言えるか</div>
+                                <textarea value={interpText} onChange={(e) => setInterpText(e.target.value)} placeholder={tmpl.interp} style={fieldStyle} />
+                                <div style={labelStyle}>【次の行動】明日、何をどう変えるか</div>
+                                <textarea value={actionText} onChange={(e) => setActionText(e.target.value)} placeholder={tmpl.action} style={fieldStyle} />
+                            </div>
+                        );
+                    })()}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                        <div style={{ fontSize: 12, color: text.trim().length >= 100 ? "#34d399" : text.trim().length >= 50 ? "#f59e0b" : "#6b7280" }}>
-                            {text.trim().length >= 100 ? "✅ OK!" : `あと${100 - text.trim().length}文字`}
+                        <div style={{ fontSize: 12, color: (factText.trim().length + interpText.trim().length + actionText.trim().length) >= 100 ? "#34d399" : (factText.trim().length + interpText.trim().length + actionText.trim().length) >= 50 ? "#f59e0b" : "#6b7280" }}>
+                            {(factText.trim().length + interpText.trim().length + actionText.trim().length) >= 100 ? "✅ OK!" : `あと${100 - (factText.trim().length + interpText.trim().length + actionText.trim().length)}文字`}
                         </div>
-                        <div style={{ fontSize: 12, color: text.trim().length >= 100 ? "#34d399" : "#6b7280", fontWeight: 700 }}>
-                            {text.trim().length} / 100文字
+                        <div style={{ fontSize: 12, color: (factText.trim().length + interpText.trim().length + actionText.trim().length) >= 100 ? "#34d399" : "#6b7280", fontWeight: 700 }}>
+                            {factText.trim().length + interpText.trim().length + actionText.trim().length} / 100文字
                         </div>
                     </div>
                     <div style={{ marginTop: 20 }}>
