@@ -1219,6 +1219,12 @@ export default function MyPage() {
                             <div>
                                 <div style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>📋 今日の日報を書いてガチャを回そう！</div>
                                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 4, fontWeight: 600 }}>日報を提出するとガチャが1回引けます</div>
+                                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
+                                    <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 12, fontWeight: 800 }}>🎁 +2pt 獲得</span>
+                                    {streak > 0 && (
+                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 12, fontWeight: 800 }}>🔥 連続{streak}日記録更新中</span>
+                                    )}
+                                </div>
                             </div>
                             <span style={{ fontSize: 14, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>日報を書く →</span>
                         </div>
