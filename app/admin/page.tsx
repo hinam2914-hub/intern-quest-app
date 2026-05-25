@@ -1271,7 +1271,6 @@ export default function AdminPage() {
                                 { key: "monthly_kpi", label: "月次KPI" },
                                 { key: "kpi_dashboard", label: "アナリティクス" },
                                 { key: "dept_stats", label: "部署別成績" },
-                                { key: "tests", label: "テスト結果" },
                             ],
                         },
                         {
@@ -1284,23 +1283,24 @@ export default function AdminPage() {
                             ],
                         },
                         {
-                            category: "📚 コンテンツ管理",
-                            tabs: [
-                                { key: "contents", label: "コンテンツ" },
-                                { key: "challenges", label: "チャレンジ" },
-                                { key: "resources", label: "資料管理" },
-                                { key: "wiki", label: "用語集" },
-                                { key: "shop", label: "ショップ" },
-                            ],
-                        },
-                        {
                             category: "🎯 業務管理",
                             tabs: [
                                 { key: "task_management", label: "タスク管理" },
-                                { key: "mtg", label: "MTG管理" },
-                                { key: "career", label: "就活ボックス" },
                                 { key: "es", label: "総合ES" },
                                 { key: "roadmap", label: "ロードマップ" },
+                                { key: "tests", label: "テスト結果" },
+                                { key: "challenges", label: "チャレンジ" },
+                                { key: "mtg", label: "MTG管理" },
+                            ],
+                        },
+                        {
+                            category: "📚 コンテンツ管理",
+                            tabs: [
+                                { key: "contents", label: "コンテンツ" },
+                                { key: "resources", label: "資料管理" },
+                                { key: "wiki", label: "用語集" },
+                                { key: "shop", label: "ショップ" },
+                                { key: "career", label: "就活ボックス" },
                                 { key: "companies", label: "企業管理" },
                             ],
                         },
