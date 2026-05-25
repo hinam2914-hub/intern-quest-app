@@ -198,7 +198,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
     const [editingPoints, setEditingPoints] = useState<number>(0);
@@ -348,6 +348,9 @@ export default function AdminPage() {
     const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
     const [reportViewMode, setReportViewMode] = useState<"timeline" | "byuser">("timeline");
     const [selectedReportUserId, setSelectedReportUserId] = useState<string | null>(null);
+    const [allThanks, setAllThanks] = useState<any[]>([]);
+    const [thanksViewMode, setThanksViewMode] = useState<"timeline" | "byuser">("timeline");
+    const [selectedThanksUserId, setSelectedThanksUserId] = useState<string | null>(null);
     // ===== アンケート機能 =====
     const [surveys, setSurveys] = useState<Survey[]>([]);
     const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestion[]>([]);
@@ -757,6 +760,18 @@ export default function AdminPage() {
                 setAllSubmissions(allSubRows.map((row: any) => ({
                     ...row,
                     userName: users.find((u) => u.id === row.user_id)?.name || "名前未設定",
+                })));
+            }
+            // サンキュー履歴（全期間）
+            const { data: allThanksRows } = await supabase
+                .from("thanks")
+                .select("*")
+                .order("created_at", { ascending: false });
+            if (allThanksRows) {
+                setAllThanks(allThanksRows.map((row: any) => ({
+                    ...row,
+                    fromName: users.find((u) => u.id === row.from_user_id)?.name || "名前未設定",
+                    toName: users.find((u) => u.id === row.to_user_id)?.name || "名前未設定",
                 })));
             }
             setLoading(false);
@@ -1303,6 +1318,7 @@ export default function AdminPage() {
                                 { key: "es", label: "総合ES" },
                                 { key: "roadmap", label: "ロードマップ" },
                                 { key: "reports", label: "日報履歴" },
+                                { key: "thanks_history", label: "サンキュー履歴" },
                                 { key: "tests", label: "テスト結果" },
                                 { key: "challenges", label: "チャレンジ" },
                                 { key: "mtg", label: "MTG管理" },
@@ -4000,6 +4016,87 @@ export default function AdminPage() {
                                                 <div style={{ color: "#818cf8", fontSize: 14, fontWeight: 800 }}>{info.count} 件</div>
                                                 <div style={{ color: "#6b7280", fontSize: 11 }}>最新 {new Date(info.latest).toLocaleDateString("ja-JP")}</div>
                                             </div>
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        )}
+                    </div>
+                )}
+                {activeTab === "thanks_history" && (
+                    <div>
+                        <div style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#f9a8d4", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>🙏 サンキュー履歴</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.7 }}>全メンバーのサンキューを確認できます。</div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                            <button onClick={() => { setThanksViewMode("timeline"); setSelectedThanksUserId(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: thanksViewMode === "timeline" ? "linear-gradient(135deg, #ec4899, #8b5cf6)" : "rgba(255,255,255,0.05)", color: thanksViewMode === "timeline" ? "#fff" : "#9ca3af" }}>全員のサンキュー（新しい順）</button>
+                            <button onClick={() => { setThanksViewMode("byuser"); setSelectedThanksUserId(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: thanksViewMode === "byuser" ? "linear-gradient(135deg, #ec4899, #8b5cf6)" : "rgba(255,255,255,0.05)", color: thanksViewMode === "byuser" ? "#fff" : "#9ca3af" }}>ユーザーごと</button>
+                        </div>
+
+                        {allThanks.length === 0 ? (
+                            <div style={{ textAlign: "center", color: "#6b7280", fontSize: 13, padding: 32 }}>まだサンキューがありません</div>
+                        ) : thanksViewMode === "timeline" ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {allThanks.map((t: any) => (
+                                    <div key={t.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                            <div style={{ color: "#f9fafb", fontSize: 13, fontWeight: 700 }}>{t.fromName} <span style={{ color: "#6b7280" }}>→</span> {t.toName}</div>
+                                            <div style={{ color: "#6b7280", fontSize: 11 }}>{new Date(t.created_at).toLocaleDateString("ja-JP")}</div>
+                                        </div>
+                                        {t.message && <div style={{ color: "#d1d5db", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", padding: "10px 12px", background: "rgba(0,0,0,0.2)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.04)" }}>{t.message}</div>}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : selectedThanksUserId ? (
+                            <div>
+                                <button onClick={() => setSelectedThanksUserId(null)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600, marginBottom: 16 }}>← 一覧に戻る</button>
+                                {(() => {
+                                    const sent = allThanks.filter((t: any) => t.from_user_id === selectedThanksUserId);
+                                    const received = allThanks.filter((t: any) => t.to_user_id === selectedThanksUserId);
+                                    const userName = sent[0]?.fromName || received[0]?.toName || "名前未設定";
+                                    const renderItem = (t: any, dir: string) => (
+                                        <div key={t.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                                <div style={{ color: "#f9fafb", fontSize: 13, fontWeight: 700 }}>{dir}</div>
+                                                <div style={{ color: "#6b7280", fontSize: 11 }}>{new Date(t.created_at).toLocaleDateString("ja-JP")}</div>
+                                            </div>
+                                            {t.message && <div style={{ color: "#d1d5db", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", padding: "10px 12px", background: "rgba(0,0,0,0.2)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.04)" }}>{t.message}</div>}
+                                        </div>
+                                    );
+                                    return (
+                                        <div>
+                                            <div style={{ padding: "20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 16 }}>
+                                                <div style={{ color: "#f9fafb", fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{userName}</div>
+                                                <div style={{ color: "#6b7280", fontSize: 12 }}>送った {sent.length} 件 / 受け取った {received.length} 件</div>
+                                            </div>
+                                            <div style={{ color: "#f9a8d4", fontSize: 13, fontWeight: 800, marginBottom: 8 }}>送ったサンキュー</div>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+                                                {sent.length === 0 ? <div style={{ color: "#6b7280", fontSize: 12 }}>なし</div> : sent.map((t: any) => renderItem(t, `→ ${t.toName}`))}
+                                            </div>
+                                            <div style={{ color: "#f9a8d4", fontSize: 13, fontWeight: 800, marginBottom: 8 }}>受け取ったサンキュー</div>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                {received.length === 0 ? <div style={{ color: "#6b7280", fontSize: 12 }}>なし</div> : received.map((t: any) => renderItem(t, `${t.fromName} →`))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {(() => {
+                                    const userMap: Record<string, { userName: string; sent: number; received: number }> = {};
+                                    allThanks.forEach((t: any) => {
+                                        if (!userMap[t.from_user_id]) userMap[t.from_user_id] = { userName: t.fromName, sent: 0, received: 0 };
+                                        userMap[t.from_user_id].sent += 1;
+                                        if (!userMap[t.to_user_id]) userMap[t.to_user_id] = { userName: t.toName, sent: 0, received: 0 };
+                                        userMap[t.to_user_id].received += 1;
+                                    });
+                                    return Object.entries(userMap).map(([uid, info]) => (
+                                        <div key={uid} onClick={() => setSelectedThanksUserId(uid)} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <div style={{ color: "#f9fafb", fontSize: 15, fontWeight: 700 }}>{info.userName}</div>
+                                            <div style={{ color: "#6b7280", fontSize: 12 }}>送 {info.sent} / 受 {info.received}</div>
                                         </div>
                                     ));
                                 })()}
