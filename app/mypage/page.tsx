@@ -1199,6 +1199,31 @@ export default function MyPage() {
                         </div>
                     </div>
                 )}
+                {/* ===== 日報ガチャ誘導バナー ===== */}
+                {!isSubmitted && (
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
+                        <div
+                            onClick={() => router.push("/report")}
+                            style={{
+                                padding: "20px 24px",
+                                background: "linear-gradient(135deg, #fbbf24 0%, #ec4899 50%, #8b5cf6 100%)",
+                                borderRadius: 16,
+                                cursor: "pointer",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: 12,
+                                boxShadow: "0 8px 24px rgba(236,72,153,0.25)",
+                            }}
+                        >
+                            <div>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>📋 今日の日報を書いてガチャを回そう！</div>
+                                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 4, fontWeight: 600 }}>日報を提出するとガチャが1回引けます</div>
+                            </div>
+                            <span style={{ fontSize: 14, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>日報を書く →</span>
+                        </div>
+                    </div>
+                )}
                 {/* ===== 🔔 通知バナー ===== */}
                 {unreadNotifCount > 0 && (
                     <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
