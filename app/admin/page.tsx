@@ -198,7 +198,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
     const [editingPoints, setEditingPoints] = useState<number>(0);
@@ -345,6 +345,9 @@ export default function AdminPage() {
     const [selectedEsUserId, setSelectedEsUserId] = useState<string | null>(null);
     const [roadmapList, setRoadmapList] = useState<any[]>([]);
     const [selectedRoadmapUserId, setSelectedRoadmapUserId] = useState<string | null>(null);
+    const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
+    const [reportViewMode, setReportViewMode] = useState<"timeline" | "byuser">("timeline");
+    const [selectedReportUserId, setSelectedReportUserId] = useState<string | null>(null);
     // ===== アンケート機能 =====
     const [surveys, setSurveys] = useState<Survey[]>([]);
     const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestion[]>([]);
@@ -744,6 +747,17 @@ export default function AdminPage() {
                     return { ...r, userName: (prof as any)?.name || "名前未設定" };
                 }));
                 setRoadmapList(roadmapWithUsers);
+            }
+            // 日報履歴（全期間）
+            const { data: allSubRows } = await supabase
+                .from("submissions")
+                .select("id, user_id, content, created_at")
+                .order("created_at", { ascending: false });
+            if (allSubRows) {
+                setAllSubmissions(allSubRows.map((row: any) => ({
+                    ...row,
+                    userName: users.find((u) => u.id === row.user_id)?.name || "名前未設定",
+                })));
             }
             setLoading(false);
         };
@@ -1288,6 +1302,7 @@ export default function AdminPage() {
                                 { key: "task_management", label: "タスク管理" },
                                 { key: "es", label: "総合ES" },
                                 { key: "roadmap", label: "ロードマップ" },
+                                { key: "reports", label: "日報履歴" },
                                 { key: "tests", label: "テスト結果" },
                                 { key: "challenges", label: "チャレンジ" },
                                 { key: "mtg", label: "MTG管理" },
@@ -3916,6 +3931,78 @@ export default function AdminPage() {
                                         );
                                     })
                                 )}
+                            </div>
+                        )}
+                    </div>
+                )}
+                {activeTab === "reports" && (
+                    <div>
+                        <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
+                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>📋 日報履歴</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.7 }}>全メンバーの日報を確認できます。</div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                            <button onClick={() => { setReportViewMode("timeline"); setSelectedReportUserId(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: reportViewMode === "timeline" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: reportViewMode === "timeline" ? "#fff" : "#9ca3af" }}>全員の日報（新しい順）</button>
+                            <button onClick={() => { setReportViewMode("byuser"); setSelectedReportUserId(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: reportViewMode === "byuser" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: reportViewMode === "byuser" ? "#fff" : "#9ca3af" }}>ユーザーごと</button>
+                        </div>
+
+                        {allSubmissions.length === 0 ? (
+                            <div style={{ textAlign: "center", color: "#6b7280", fontSize: 13, padding: 32 }}>まだ日報がありません</div>
+                        ) : reportViewMode === "timeline" ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {allSubmissions.map((s: any) => (
+                                    <div key={s.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                            <div style={{ color: "#f9fafb", fontSize: 14, fontWeight: 700 }}>{s.userName}</div>
+                                            <div style={{ color: "#6b7280", fontSize: 11 }}>{new Date(s.created_at).toLocaleDateString("ja-JP")}</div>
+                                        </div>
+                                        <div style={{ color: "#d1d5db", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", padding: "10px 12px", background: "rgba(0,0,0,0.2)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.04)" }}>{s.content}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : selectedReportUserId ? (
+                            <div>
+                                <button onClick={() => setSelectedReportUserId(null)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600, marginBottom: 16 }}>← 一覧に戻る</button>
+                                {(() => {
+                                    const userReports = allSubmissions.filter((s: any) => s.user_id === selectedReportUserId);
+                                    const userName = userReports[0]?.userName || "名前未設定";
+                                    return (
+                                        <div>
+                                            <div style={{ padding: "20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 16 }}>
+                                                <div style={{ color: "#f9fafb", fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{userName}</div>
+                                                <div style={{ color: "#6b7280", fontSize: 12 }}>日報 {userReports.length} 件</div>
+                                            </div>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                {userReports.map((s: any) => (
+                                                    <div key={s.id} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                                        <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 8 }}>{new Date(s.created_at).toLocaleDateString("ja-JP")}</div>
+                                                        <div style={{ color: "#d1d5db", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", padding: "10px 12px", background: "rgba(0,0,0,0.2)", borderRadius: 6, border: "1px solid rgba(255,255,255,0.04)" }}>{s.content}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {(() => {
+                                    const userMap: Record<string, { userName: string; count: number; latest: string }> = {};
+                                    allSubmissions.forEach((s: any) => {
+                                        if (!userMap[s.user_id]) userMap[s.user_id] = { userName: s.userName, count: 0, latest: s.created_at };
+                                        userMap[s.user_id].count += 1;
+                                    });
+                                    return Object.entries(userMap).map(([uid, info]) => (
+                                        <div key={uid} onClick={() => setSelectedReportUserId(uid)} style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <div style={{ color: "#f9fafb", fontSize: 15, fontWeight: 700 }}>{info.userName}</div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                <div style={{ color: "#818cf8", fontSize: 14, fontWeight: 800 }}>{info.count} 件</div>
+                                                <div style={{ color: "#6b7280", fontSize: 11 }}>最新 {new Date(info.latest).toLocaleDateString("ja-JP")}</div>
+                                            </div>
+                                        </div>
+                                    ));
+                                })()}
                             </div>
                         )}
                     </div>
