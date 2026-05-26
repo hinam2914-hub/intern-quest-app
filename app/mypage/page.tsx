@@ -483,6 +483,7 @@ export default function MyPage() {
     const [todayLearnDone, setTodayLearnDone] = useState(false);
     const [routines, setRoutines] = useState<{ id: string; title: string }[]>([]);
     const [routineCheckedIds, setRoutineCheckedIds] = useState<string[]>([]);
+    const [routineStreak, setRoutineStreak] = useState(0);
     const [openRoutineId, setOpenRoutineId] = useState<string | null>(null);
     const [routineNote, setRoutineNote] = useState("");
     const [routineSaving, setRoutineSaving] = useState(false);
@@ -755,6 +756,7 @@ export default function MyPage() {
         setRoutines((routineRows || []) as { id: string; title: string }[]);
         const { data: routineCheckRows } = await supabase.from("routine_checks").select("routine_id").eq("user_id", user.id).eq("check_date", todayYmd);
         setRoutineCheckedIds((routineCheckRows || []).map((r: any) => r.routine_id));
+        await calcRoutineStreak(user.id, (routineRows || []) as { id: string }[]);
 
         const { data: deptRows } = await supabase.from("departments").select("id, name, code").order("created_at");
         setDepartments((deptRows || []) as { id: string; name: string; code: string }[]);
@@ -971,6 +973,7 @@ const handleRoutineCheck = async (routineId: string) => {
         setRoutineCheckedIds(prev => [...prev, routineId]);
         setOpenRoutineId(null);
         setRoutineNote("");
+        await calcRoutineStreak(userId, routines);
         setRoutineSaving(false);
     };
     const handleRoutineUncheck = async (routineId: string) => {
@@ -983,6 +986,57 @@ const handleRoutineCheck = async (routineId: string) => {
         if (error) { alert("解除に失敗しました: " + error.message); setRoutineSaving(false); return; }
         setRoutineCheckedIds(prev => prev.filter(id => id !== routineId));
         setRoutineSaving(false);
+    };
+    // ルーティンのストリーク（全項目達成が何日連続か）を計算し、節目報酬を付与
+    const calcRoutineStreak = async (uid: string, routineItems: { id: string }[]) => {
+        const itemCount = routineItems.length;
+        if (itemCount === 0) { setRoutineStreak(0); return; }
+        const { data: allChecks } = await supabase
+            .from("routine_checks")
+            .select("check_date, routine_id")
+            .eq("user_id", uid);
+        if (!allChecks) { setRoutineStreak(0); return; }
+        // 日付ごとのチェック数を集計
+        const countByDate: Record<string, number> = {};
+        allChecks.forEach((c: any) => {
+            countByDate[c.check_date] = (countByDate[c.check_date] || 0) + 1;
+        });
+        // その日が「全項目達成」か（今の項目数基準・割り切り設計）
+        const isFullDay = (ymd: string) => (countByDate[ymd] || 0) >= itemCount;
+        // 今日から過去にさかのぼって連続日数を数える
+        // 今日が未達成でも、昨日までの連続は生かす
+        let streak = 0;
+        const cursor = new Date();
+        const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        if (!isFullDay(fmt(cursor))) {
+            cursor.setDate(cursor.getDate() - 1); // 今日未達成なら昨日から数え始める
+        }
+        while (isFullDay(fmt(cursor))) {
+            streak++;
+            cursor.setDate(cursor.getDate() - 1);
+        }
+        setRoutineStreak(streak);
+        // 節目報酬（3/7/30）。まだ受け取っていないものだけ付与
+        const REWARDS: Record<number, number> = { 3: 5, 7: 15, 30: 50 };
+        const { data: gotRewards } = await supabase
+            .from("routine_rewards")
+            .select("milestone")
+            .eq("user_id", uid);
+        const gotSet = new Set((gotRewards || []).map((r: any) => r.milestone));
+        for (const ms of [3, 7, 30]) {
+            if (streak >= ms && !gotSet.has(ms)) {
+                const { error: rwErr } = await supabase
+                    .from("routine_rewards")
+                    .insert({ user_id: uid, milestone: ms });
+                if (rwErr) continue; // ユニーク制約で弾かれた＝既に付与済み。スキップ
+                const pt = REWARDS[ms];
+                const { data: up } = await supabase.from("user_points").select("points").eq("id", uid).single();
+                const current = (up as any)?.points || 0;
+                await supabase.from("user_points").update({ points: current + pt }).eq("id", uid);
+                await supabase.from("points_history").insert({ user_id: uid, points: pt, reason: "routine_streak" });
+                alert(`🔥 ルーティン${ms}日連続達成！ +${pt}ptを獲得しました`);
+            }
+        }
     };
     if (loading) {
         return (
@@ -1846,6 +1900,24 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                         <div style={{ fontSize: 11, color: textSecondary, textAlign: "right", lineHeight: 1.4, maxWidth: 200 }}>{actionMessage}</div>
                     </div>
+                    {/* ルーティンのストリーク表示 */}
+                    {routines.length > 0 && (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 12, background: routineStreak > 0 ? "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.10))" : isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${routineStreak > 0 ? "rgba(99,102,241,0.3)" : cardBorder}`, marginBottom: 12 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                <span style={{ fontSize: 24 }}>🔁</span>
+                                <div>
+                                    <div style={{ fontSize: 11, color: textMuted, fontWeight: 600, letterSpacing: 1 }}>ルーティン連続達成</div>
+                                    <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                                        <span style={{ fontSize: 24, fontWeight: 800, color: routineStreak > 0 ? "#818cf8" : textMuted, lineHeight: 1 }}>{routineStreak}</span>
+                                        <span style={{ fontSize: 12, color: routineStreak > 0 ? "#818cf8" : textMuted, fontWeight: 600 }}>日</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ fontSize: 11, color: textSecondary, textAlign: "right", lineHeight: 1.4, maxWidth: 200 }}>
+                                {routineStreak >= 30 ? "30日達成！素晴らしい習慣です" : routineStreak >= 7 ? `あと${30 - routineStreak}日で30日達成` : routineStreak >= 3 ? `あと${7 - routineStreak}日で7日達成` : `あと${3 - routineStreak}日で最初の報酬`}
+                            </div>
+                        </div>
+                    )}
 {(() => { return null; })()}
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
