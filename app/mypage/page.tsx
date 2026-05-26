@@ -961,6 +961,7 @@ export default function MyPage() {
         setPersonalTasks(prev => prev.filter(t => t.id !== taskId));
     };
 const handleRoutineCheck = async (routineId: string) => {
+    if (!userId) { return; }
         if (!routineNote.trim()) { alert("一言コメントを入力してください"); return; }
         setRoutineSaving(true);
         const { error } = await supabase.from("routine_checks").insert({
@@ -977,6 +978,7 @@ const handleRoutineCheck = async (routineId: string) => {
         setRoutineSaving(false);
     };
     const handleRoutineUncheck = async (routineId: string) => {
+        if (!userId || !todayYmd) { return; }
         setRoutineSaving(true);
         const { error } = await supabase.from("routine_checks")
             .delete()
