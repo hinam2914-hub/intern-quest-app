@@ -1977,6 +1977,15 @@ const handleRoutineCheck = async (routineId: string) => {
                                 </div>
                             );
                         })}
+                        {/* マイルーティン設定への入口 */}
+                        <div
+                            onClick={() => router.push("/routine")}
+                            style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, padding: "11px 16px", borderRadius: 12, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)", border: `1px dashed ${cardBorder}`, cursor: "pointer", marginTop: 2 }}
+                        >
+                            <span style={{ fontSize: 14 }}>⚙️</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: textMuted }}>マイルーティンを追加・編集する</span>
+                            <span style={{ fontSize: 12, color: themeColor, fontWeight: 700 }}>→</span>
+                        </div>
                     </div>
                 </div>
 
