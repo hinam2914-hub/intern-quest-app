@@ -8,6 +8,7 @@ import { supabase } from "../lib/supabase";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import CompanyManagementTab from "./CompanyManagementTab";
 import TaskManagementTab from "./TaskManagementTab";
+import RoutineTab from "./RoutineTab";
 import KpiDashboardTab from "./components/KpiDashboardTab";
 
 type UserRow = { id: string; name: string | null };
@@ -198,7 +199,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
     const [editingPoints, setEditingPoints] = useState<number>(0);
@@ -1329,6 +1330,7 @@ export default function AdminPage() {
                                 { key: "roadmap", label: "ロードマップ" },
                                 { key: "reports", label: "日報履歴" },
                                 { key: "thanks_history", label: "サンキュー履歴" },
+                                { key: "routine_check", label: "ルーティン" },
                                 { key: "tests", label: "テスト結果" },
                                 { key: "challenges", label: "チャレンジ" },
                                 { key: "mtg", label: "MTG管理" },
@@ -3845,6 +3847,9 @@ export default function AdminPage() {
                 )}
                 {activeTab === "task_management" && (
                     <TaskManagementTab />
+                )}
+                {activeTab === "routine_check" && (
+                    <RoutineTab />
                 )}
                 {activeTab === "es" && (
                     <div>
