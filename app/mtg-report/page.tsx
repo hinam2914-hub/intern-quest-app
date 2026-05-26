@@ -169,7 +169,7 @@ export default function MtgReportPage() {
                 <input type="date" value={mtgDate} onChange={(e) => setMtgDate(e.target.value)} style={inputStyle} />
 
                 <label style={labelStyle}>参加者</label>
-                <input value={participants} onChange={(e) => setParticipants(e.target.value)} placeholder="例：中島、柴崎、Koki" style={inputStyle} />
+                <input value={participants} onChange={(e) => setParticipants(e.target.value)} placeholder="例：田中、佐藤、鈴木" style={inputStyle} />
 
                 <div style={{ display: "flex", gap: 12 }}>
                     <div style={{ flex: 1 }}>
