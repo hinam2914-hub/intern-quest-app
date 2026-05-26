@@ -481,6 +481,11 @@ export default function MyPage() {
     const [todayKpiDone, setTodayKpiDone] = useState(false);
     const [todayThanksDone, setTodayThanksDone] = useState(false);
     const [todayLearnDone, setTodayLearnDone] = useState(false);
+    const [routines, setRoutines] = useState<{ id: string; title: string }[]>([]);
+    const [routineCheckedIds, setRoutineCheckedIds] = useState<string[]>([]);
+    const [openRoutineId, setOpenRoutineId] = useState<string | null>(null);
+    const [routineNote, setRoutineNote] = useState("");
+    const [routineSaving, setRoutineSaving] = useState(false);
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
     const [growthRank, setGrowthRank] = useState("");
@@ -745,6 +750,11 @@ export default function MyPage() {
 
         const { data: todayLearnRows } = await supabase.from("content_completions").select("created_at").eq("user_id", user.id);
         setTodayLearnDone(todayLearnRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
+        // 自作ルーティン項目と、今日のチェック状況を取得
+        const { data: routineRows } = await supabase.from("routines").select("id, title").eq("user_id", user.id).eq("is_active", true).order("sort_order", { ascending: true });
+        setRoutines((routineRows || []) as { id: string; title: string }[]);
+        const { data: routineCheckRows } = await supabase.from("routine_checks").select("routine_id").eq("user_id", user.id).eq("check_date", todayYmd);
+        setRoutineCheckedIds((routineCheckRows || []).map((r: any) => r.routine_id));
 
         const { data: deptRows } = await supabase.from("departments").select("id, name, code").order("created_at");
         setDepartments((deptRows || []) as { id: string; name: string; code: string }[]);
@@ -948,7 +958,32 @@ export default function MyPage() {
             .eq("id", taskId);
         setPersonalTasks(prev => prev.filter(t => t.id !== taskId));
     };
-
+const handleRoutineCheck = async (routineId: string) => {
+        if (!routineNote.trim()) { alert("一言コメントを入力してください"); return; }
+        setRoutineSaving(true);
+        const { error } = await supabase.from("routine_checks").insert({
+            user_id: userId,
+            routine_id: routineId,
+            check_date: todayYmd,
+            note: routineNote.trim(),
+        });
+        if (error) { alert("チェックに失敗しました: " + error.message); setRoutineSaving(false); return; }
+        setRoutineCheckedIds(prev => [...prev, routineId]);
+        setOpenRoutineId(null);
+        setRoutineNote("");
+        setRoutineSaving(false);
+    };
+    const handleRoutineUncheck = async (routineId: string) => {
+        setRoutineSaving(true);
+        const { error } = await supabase.from("routine_checks")
+            .delete()
+            .eq("user_id", userId)
+            .eq("routine_id", routineId)
+            .eq("check_date", todayYmd);
+        if (error) { alert("解除に失敗しました: " + error.message); setRoutineSaving(false); return; }
+        setRoutineCheckedIds(prev => prev.filter(id => id !== routineId));
+        setRoutineSaving(false);
+    };
     if (loading) {
         return (
             <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1794,7 +1829,7 @@ export default function MyPage() {
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎯 今日のミッション</div>
-                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{[true, isSubmitted, todayThanksDone, todayLearnDone].filter(Boolean).length} / 4 完了</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{[true, isSubmitted, todayThanksDone, todayLearnDone].filter(Boolean).length + routineCheckedIds.length} / {4 + routines.length} 完了</div>
                     </div>
 
                     {/* STREAK表示 */}
@@ -1811,7 +1846,7 @@ export default function MyPage() {
                         </div>
                         <div style={{ fontSize: 11, color: textSecondary, textAlign: "right", lineHeight: 1.4, maxWidth: 200 }}>{actionMessage}</div>
                     </div>
-
+{(() => { return null; })()}
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {[
                             { icon: "🔐", label: "ログインする", done: true, pt: "+1pt", path: null },
@@ -1830,6 +1865,46 @@ export default function MyPage() {
                                 </div>
                             </div>
                         ))}
+                        {/* 自作ルーティン：タップでメモ入力→チェック */}
+                        {routines.map((r) => {
+                            const checked = routineCheckedIds.includes(r.id);
+                            const isOpen = openRoutineId === r.id;
+                            return (
+                                <div key={r.id} style={{ borderRadius: 12, background: checked ? "rgba(52,211,153,0.08)" : isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${checked ? "rgba(52,211,153,0.3)" : cardBorder}` }}>
+                                    <div
+                                        onClick={() => {
+                                            if (checked) { handleRoutineUncheck(r.id); return; }
+                                            setOpenRoutineId(isOpen ? null : r.id);
+                                            setRoutineNote("");
+                                        }}
+                                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", cursor: "pointer" }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                            <span style={{ fontSize: 20 }}>{checked ? "✅" : "🔁"}</span>
+                                            <span style={{ fontSize: 14, fontWeight: 600, color: checked ? "#34d399" : textPrimary, textDecoration: checked ? "line-through" : "none" }}>{r.title}</span>
+                                        </div>
+                                        <span style={{ fontSize: 11, color: textMuted, fontWeight: 600 }}>{checked ? "タップで解除" : "マイルーティン"}</span>
+                                    </div>
+                                    {isOpen && !checked && (
+                                        <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                                            <input
+                                                value={routineNote}
+                                                onChange={(e) => setRoutineNote(e.target.value)}
+                                                placeholder="今日どうだった？一言で（例：架電32件できた）"
+                                                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: textPrimary, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                                            />
+                                            <button
+                                                onClick={() => handleRoutineCheck(r.id)}
+                                                disabled={routineSaving}
+                                                style={{ padding: "10px", borderRadius: 8, border: "none", background: routineSaving ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: routineSaving ? "not-allowed" : "pointer" }}
+                                            >
+                                                完了にする
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
