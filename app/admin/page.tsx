@@ -541,7 +541,16 @@ export default function AdminPage() {
             const submittedIds = [...new Set(submissions.map((row) => row.user_id))];
             setReportCount(submittedIds.length);
             setSubmitRate(users.length === 0 ? 0 : Math.round((submittedIds.length / users.length) * 100));
-            setNotSubmittedUsers(users.filter((u) => !submittedIds.includes(u.id)));
+            // 直近3日（今日・昨日・一昨日）に1回も提出がない人を未提出者とする
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
+            threeDaysAgo.setHours(0, 0, 0, 0);
+            const { data: recent3Rows } = await supabase
+                .from("submissions")
+                .select("user_id, created_at")
+                .gte("created_at", threeDaysAgo.toISOString());
+            const submitted3DayIds = [...new Set((recent3Rows || []).map((row: any) => row.user_id))];
+            setNotSubmittedUsers(users.filter((u) => !submitted3DayIds.includes(u.id)));
             setReports(submissions.map((row) => ({ ...row, userName: users.find((u) => u.id === row.user_id)?.name || "名前未設定" })));
 
             const submitDayMap: Record<string, number> = {};
@@ -1111,7 +1120,7 @@ export default function AdminPage() {
 
     const periodLabel = period === "today" ? "今日" : period === "week" ? "今週" : "今月";
     const copyText = useMemo(() => notSubmittedUsers.map((u) => u.name || "名前未設定").join("\n"), [notSubmittedUsers]);
-    const reminderText = useMemo(() => `${periodLabel}の日報が未提出の方へ\n\n${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}\n\n確認のうえ、ご対応をお願いいたします。`, [notSubmittedUsers, periodLabel]);
+    const reminderText = useMemo(() => `日報が3日以上未提出の方へ\n\n${notSubmittedUsers.map((u) => `・${u.name || "名前未設定"}`).join("\n")}\n\n確認のうえ、ご対応をお願いいたします。`, [notSubmittedUsers]);
     const rankMedals = ["🥇", "🥈", "🥉"];
     const pendingCount = requestsList.filter(r => r.status === "pending").length;
     // ===== ハイブリッドダッシュボード用の集計 =====
