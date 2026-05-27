@@ -188,11 +188,13 @@ export default function KpiPage() {
                         onChange={(e) => setSelectedMonth(e.target.value)}
                         style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "#1a1a2e", color: "#f9fafb", fontSize: 13, outline: "none", flexShrink: 0 }}
                     >
-                        {Array.from({ length: 6 }, (_, i) => {
+                        {Array.from({ length: 7 }, (_, idx) => {
+                            const i = idx - 1;
                             const d = new Date();
                             d.setMonth(d.getMonth() - i);
                             const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-                            return <option key={ym} value={ym}>{ym}</option>;
+                            const isNext = i === -1;
+                            return <option key={ym} value={ym}>{ym}{isNext ? "（翌月）" : ""}</option>;
                         })}
                     </select>
                 </div>
