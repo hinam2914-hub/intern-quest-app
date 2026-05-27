@@ -71,6 +71,7 @@ export default function MyTasksPage() {
     const [newDailyTitle, setNewDailyTitle] = useState("");
     const [newPersonalTitle, setNewPersonalTitle] = useState("");
     const [newPersonalRequiresReport, setNewPersonalRequiresReport] = useState(false);
+    const [newPersonalDeadline, setNewPersonalDeadline] = useState("");
 
     // 報告書モーダル
     const [activeReportTask, setActiveReportTask] = useState<{ type: "admin" | "personal"; task: AdminTask | PersonalTask } | null>(null);
@@ -188,9 +189,11 @@ export default function MyTasksPage() {
             user_id: userId,
             title: newPersonalTitle.trim(),
             requires_report: newPersonalRequiresReport,
+            deadline: newPersonalDeadline || null,
         });
         setNewPersonalTitle("");
         setNewPersonalRequiresReport(false);
+        setNewPersonalDeadline("");
         await loadAll();
     };
 
@@ -325,7 +328,6 @@ export default function MyTasksPage() {
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "32px 24px 64px", color: "#f9fafb" }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-                <button onClick={() => router.push("/mypage")} style={{ marginBottom: 20, padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>🏠 ホームに戻る</button>
 
                 <div style={{ marginBottom: 32 }}>
                     <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 4, cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
@@ -368,6 +370,17 @@ export default function MyTasksPage() {
                         {personalTasks.length === 0 ? (
                             <div style={{ padding: 20, textAlign: "center", color: "#6b7280", fontSize: 13 }}>タスクがありません。下から追加できます</div>
                         ) : personalTasks.map(t => {
+                            const deadlineInfo = (() => {
+                                if (!t.deadline) return null;
+                                const today = new Date(); today.setHours(0, 0, 0, 0);
+                                const due = new Date(t.deadline); due.setHours(0, 0, 0, 0);
+                                const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000);
+                                const label = `⏰ 締切: ${due.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })}`;
+                                if (diffDays < 0) return { label: label + "（期限切れ）", color: "#f87171" };
+                                if (diffDays === 0) return { label: label + "（今日）", color: "#fbbf24" };
+                                if (diffDays === 1) return { label: label + "（明日）", color: "#fbbf24" };
+                                return { label, color: "#9ca3af" };
+                            })();
                             if (t.requires_report) {
                                 const status = getPersonalReportStatus(t);
                                 const s = statusColors[status];
@@ -378,6 +391,7 @@ export default function MyTasksPage() {
                                                 <span style={{ padding: "2px 8px", borderRadius: 4, background: s.bg, color: s.color, fontSize: 10, fontWeight: 800 }}>{status}</span>
                                                 <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 10, fontWeight: 700 }}>報告書型</span>
                                                 <span style={{ fontSize: 14, color: "#f9fafb", fontWeight: 600 }}>{t.title}</span>
+                                                {deadlineInfo && <span style={{ fontSize: 11, color: deadlineInfo.color, fontWeight: 700 }}>{deadlineInfo.label}</span>}
                                             </div>
                                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                 <span style={{ fontSize: 12, color: "#6366f1", fontWeight: 700 }}>{status === "未提出" ? "提出する →" : "詳細 →"}</span>
@@ -392,7 +406,7 @@ export default function MyTasksPage() {
                                     <div style={{ width: 22, height: 22, borderRadius: "50%", background: t.is_done ? "linear-gradient(135deg, #34d399, #10b981)" : "transparent", border: `2px solid ${t.is_done ? "transparent" : "rgba(255,255,255,0.3)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
                                         {t.is_done && <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>}
                                     </div>
-                                    <span style={{ flex: 1, fontSize: 14, color: t.is_done ? "#34d399" : "#f9fafb", textDecoration: t.is_done ? "line-through" : "none", fontWeight: t.is_done ? 500 : 600 }}>{t.title}</span>
+                                    <span style={{ flex: 1, fontSize: 14, color: t.is_done ? "#34d399" : "#f9fafb", textDecoration: t.is_done ? "line-through" : "none", fontWeight: t.is_done ? 500 : 600 }}>{t.title}{deadlineInfo && <span style={{ fontSize: 11, color: t.is_done ? "#6b7280" : deadlineInfo.color, fontWeight: 700, marginLeft: 8 }}>{deadlineInfo.label}</span>}</span>
                                     <button onClick={(e) => { e.stopPropagation(); handleDeletePersonal(t.id); }} style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 14, padding: 4 }} title="削除">🗑️</button>
                                 </div>
                             );
@@ -401,6 +415,10 @@ export default function MyTasksPage() {
 
                     <div style={{ padding: 12, borderRadius: 10, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.15)" }}>
                         <input value={newPersonalTitle} onChange={(e) => setNewPersonalTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddPersonal()} placeholder="例: 来週のMTG準備" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#f9fafb", fontSize: 13, boxSizing: "border-box", marginBottom: 8 }} />
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                            <span style={{ fontSize: 12, color: "#9ca3af" }}>⏰ 期日（任意）</span>
+                            <input type="date" value={newPersonalDeadline} onChange={(e) => setNewPersonalDeadline(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#f9fafb", fontSize: 13 }} />
+                        </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#9ca3af", cursor: "pointer" }}>
                                 <input type="checkbox" checked={newPersonalRequiresReport} onChange={(e) => setNewPersonalRequiresReport(e.target.checked)} />
