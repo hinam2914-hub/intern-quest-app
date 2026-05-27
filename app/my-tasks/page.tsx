@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import ScheduleTab from "./ScheduleTab";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
@@ -25,15 +26,6 @@ type PersonalTask = {
     done_at: string | null;
     created_at: string;
     deadline: string | null;
-};
-
-type DailyTask = {
-    id: string;
-    user_id: string;
-    title: string;
-    is_done: boolean;
-    last_done_date: string | null;
-    sort_order: number;
 };
 
 type TaskReport = {
@@ -65,11 +57,9 @@ export default function MyTasksPage() {
     // データ
     const [adminTasks, setAdminTasks] = useState<AdminTask[]>([]);
     const [personalTasks, setPersonalTasks] = useState<PersonalTask[]>([]);
-    const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
     const [reports, setReports] = useState<TaskReport[]>([]);
 
     // 追加フォーム
-    const [newDailyTitle, setNewDailyTitle] = useState("");
     const [newPersonalTitle, setNewPersonalTitle] = useState("");
     const [newPersonalRequiresReport, setNewPersonalRequiresReport] = useState(false);
     const [newPersonalDeadline, setNewPersonalDeadline] = useState("");
@@ -116,33 +106,6 @@ export default function MyTasksPage() {
             .eq("user_id", user.id)
             .order("created_at", { ascending: false });
         setPersonalTasks((personalRows || []) as PersonalTask[]);
-
-        // デイリータスク（リセット処理込み）
-        const { data: dailyRows } = await supabase
-            .from("daily_tasks")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("sort_order", { ascending: true });
-
-        const today = getTodayJST();
-        const needsReset = (dailyRows || []).filter((t: DailyTask) => t.is_done && t.last_done_date !== today);
-        if (needsReset.length > 0) {
-            // 今日チェックされてないものはリセット
-            await supabase
-                .from("daily_tasks")
-                .update({ is_done: false })
-                .in("id", needsReset.map(t => t.id));
-            // リフレッシュ
-            const { data: refreshed } = await supabase
-                .from("daily_tasks")
-                .select("*")
-                .eq("user_id", user.id)
-                .order("sort_order", { ascending: true });
-            setDailyTasks((refreshed || []) as DailyTask[]);
-        } else {
-            setDailyTasks((dailyRows || []) as DailyTask[]);
-        }
-
         // 報告書
         const { data: reportRows } = await supabase
             .from("task_reports")
@@ -154,35 +117,6 @@ export default function MyTasksPage() {
     }, [router]);
 
     useEffect(() => { loadAll(); }, [loadAll]);
-
-    // === デイリータスク操作 ===
-    const handleAddDaily = async () => {
-        if (!userId || !newDailyTitle.trim()) return;
-        const maxOrder = dailyTasks.reduce((m, t) => Math.max(m, t.sort_order), 0);
-        await supabase.from("daily_tasks").insert({
-            user_id: userId,
-            title: newDailyTitle.trim(),
-            sort_order: maxOrder + 1,
-        });
-        setNewDailyTitle("");
-        await loadAll();
-    };
-
-    const handleToggleDaily = async (task: DailyTask) => {
-        const today = getTodayJST();
-        const newDone = !task.is_done;
-        await supabase
-            .from("daily_tasks")
-            .update({ is_done: newDone, last_done_date: newDone ? today : null })
-            .eq("id", task.id);
-        setDailyTasks(prev => prev.map(t => t.id === task.id ? { ...t, is_done: newDone, last_done_date: newDone ? today : null } : t));
-    };
-
-    const handleDeleteDaily = async (id: string) => {
-        if (!confirm("このデイリータスクを削除しますか？")) return;
-        await supabase.from("daily_tasks").delete().eq("id", id);
-        await loadAll();
-    };
 
     // === 個人タスク操作 ===
     const handleAddPersonal = async () => {
@@ -325,8 +259,6 @@ export default function MyTasksPage() {
         return <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: 40, color: "#f9fafb", textAlign: "center" }}>読み込み中...</main>;
     }
 
-    const dailyDoneCount = dailyTasks.filter(t => t.is_done).length;
-
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "32px 24px 64px", color: "#f9fafb" }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -341,35 +273,7 @@ export default function MyTasksPage() {
                         <button key={key} onClick={() => setActiveTab(key)} style={{ padding: "10px 20px", borderRadius: 10, border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer", background: activeTab === key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === key ? "#fff" : "#9ca3af" }}>{label}</button>
                     ))}
                 </div>
-
-                {/* ===== デイリータスク ===== */}
-                {activeTab === "daily" && (
-                <section style={{ marginBottom: 32, padding: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-                        <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, letterSpacing: 2 }}>☀️ DAILY TASKS（0時JSTでリセット）</div>
-                        <div style={{ fontSize: 12, color: "#34d399", fontWeight: 700 }}>{dailyDoneCount} / {dailyTasks.length} 完了</div>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-                        {dailyTasks.length === 0 ? (
-                            <div style={{ padding: 20, textAlign: "center", color: "#6b7280", fontSize: 13 }}>デイリータスクがありません。下の入力欄から追加できます</div>
-                        ) : dailyTasks.map(t => (
-                            <div key={t.id} onClick={() => handleToggleDaily(t)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, background: t.is_done ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${t.is_done ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.08)"}`, cursor: "pointer", transition: "all 0.2s" }}>
-                                <div style={{ width: 22, height: 22, borderRadius: "50%", background: t.is_done ? "linear-gradient(135deg, #34d399, #10b981)" : "transparent", border: `2px solid ${t.is_done ? "transparent" : "rgba(255,255,255,0.3)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
-                                    {t.is_done && <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>}
-                                </div>
-                                <span style={{ flex: 1, fontSize: 14, color: t.is_done ? "#34d399" : "#f9fafb", textDecoration: t.is_done ? "line-through" : "none", fontWeight: t.is_done ? 500 : 600 }}>{t.title}</span>
-                                <button onClick={(e) => { e.stopPropagation(); handleDeleteDaily(t.id); }} style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", fontSize: 14, padding: 4 }} title="削除">🗑️</button>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div style={{ display: "flex", gap: 8 }}>
-                        <input value={newDailyTitle} onChange={(e) => setNewDailyTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddDaily()} placeholder="例: 朝のメール確認" style={{ flex: 1, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#f9fafb", fontSize: 13 }} />
-                        <button onClick={handleAddDaily} disabled={!newDailyTitle.trim()} style={{ padding: "10px 16px", borderRadius: 8, background: newDailyTitle.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", border: "none", color: "#fff", fontWeight: 700, cursor: newDailyTitle.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>+ 追加</button>
-                    </div>
-                </section>)}
-
+                {activeTab === "daily" && <ScheduleTab />}
                 {/* ===== 個人タスク ===== */}
                 {activeTab === "personal" && (
                 <section style={{ marginBottom: 32, padding: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16 }}>
