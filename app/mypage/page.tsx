@@ -501,6 +501,7 @@ export default function MyPage() {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [unreadAdvices, setUnreadAdvices] = useState<{ id: string; category: string; message: string; created_at: string }[]>([]);
     const [pendingAdminTasks, setPendingAdminTasks] = useState<{ id: string; title: string; deadline: string | null }[]>([]);
+    const [deadlineAlertCount, setDeadlineAlertCount] = useState(0);
     const [personalTasks, setPersonalTasks] = useState<{ id: string; title: string; is_done: boolean }[]>([]);
     const [newQuickTask, setNewQuickTask] = useState("");
     const [savingQuick, setSavingQuick] = useState(false);
