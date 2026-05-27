@@ -53,6 +53,7 @@ export default function MtgReportPage() {
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
     const [reports, setReports] = useState<Report[]>([]);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     const [editingId, setEditingId] = useState<string | null>(null);
     const [mtgDate, setMtgDate] = useState(getTodayJST());
@@ -85,14 +86,12 @@ export default function MtgReportPage() {
         setMessage("");
     };
 
-    // 差し戻された報告書を編集フォームに読み込む
     const loadIntoForm = (r: Report) => {
         setEditingId(r.id);
         setMtgDate(r.mtg_date);
         setParticipants(r.participants || "");
         setStartTime(r.start_time);
         setEndTime(r.end_time);
-        // content から4項目を分解（保存時の【見出し】区切りを利用）
         const parts = r.content.split(/【[^】]+】\n/).map((s) => s.trim()).filter((_, i) => i > 0);
         setPurpose(parts[0]?.replace(/\n\n$/, "") || "");
         setDiscussion(parts[1]?.replace(/\n\n$/, "") || "");
@@ -107,7 +106,7 @@ export default function MtgReportPage() {
 
     const validate = (forDraft: boolean): string | null => {
         if (!mtgDate) return "MTG実施日を入力してください";
-        if (forDraft) return null; // 下書きは未入力でも保存OK
+        if (forDraft) return null;
         if (!participants.trim()) return "参加者を入力してください";
         if (!startTime.trim() || !endTime.trim()) return "開始時刻と終了時刻を入力してください";
         const len = purpose.trim().length + discussion.trim().length + decision.trim().length + nextAction.trim().length;
@@ -215,13 +214,27 @@ export default function MtgReportPage() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {reports.map((r) => {
                             const st = STATUS_LABEL[r.status] || STATUS_LABEL.pending;
+                            const isOpen = expandedId === r.id;
                             return (
                                 <div key={r.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                        <span style={{ fontSize: 14, fontWeight: 700 }}>{r.mtg_date} のMTG</span>
-                                        <span style={{ fontSize: 11, fontWeight: 700, color: st.color, background: st.bg, padding: "3px 10px", borderRadius: 6 }}>{st.text}</span>
+                                    <div onClick={() => setExpandedId(isOpen ? null : r.id)} style={{ cursor: "pointer" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                            <span style={{ fontSize: 14, fontWeight: 700 }}>{isOpen ? "▼" : "▶"} {r.mtg_date} のMTG</span>
+                                            <span style={{ fontSize: 11, fontWeight: 700, color: st.color, background: st.bg, padding: "3px 10px", borderRadius: 6 }}>{st.text}</span>
+                                        </div>
+                                        <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{r.start_time}〜{r.end_time} ／ 提出: {fmtDateTime(r.created_at)}{r.points_awarded > 0 && ` ／ +${r.points_awarded}pt`}</div>
                                     </div>
-                                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{r.start_time}〜{r.end_time} ／ 提出: {fmtDateTime(r.created_at)}{r.points_awarded > 0 && ` ／ +${r.points_awarded}pt`}</div>
+
+                                    {isOpen && (
+                                        <div style={{ marginTop: 10 }}>
+                                            {isLateNight(r.end_time) && (
+                                                <div style={{ marginBottom: 8, fontSize: 12, color: "#f87171", fontWeight: 700 }}>⚠️ 終了が24時超え（深夜の長時間MTG）</div>
+                                            )}
+                                            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>参加者: {r.participants || "未記入"}</div>
+                                            <div style={{ padding: "12px 14px", borderRadius: 8, background: "rgba(0,0,0,0.25)", fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{r.content}</div>
+                                        </div>
+                                    )}
+
                                     {r.status === "rejected" && r.admin_feedback && (
                                         <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.3)" }}>
                                             <div style={{ fontSize: 11, color: "#f87171", fontWeight: 700, marginBottom: 4 }}>管理者からのフィードバック</div>
