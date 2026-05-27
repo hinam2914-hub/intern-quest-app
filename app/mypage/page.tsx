@@ -837,6 +837,28 @@ export default function MyPage() {
             .order("created_at", { ascending: false })
             .limit(3);
         setPersonalTasks(personalTaskData || []);
+        // 期日アラート用：期日付き・未完了タスクを取得して「期限切れ・今日・明日」を数える
+        {
+            const { data: dueP } = await supabase
+                .from("personal_tasks")
+                .select("deadline")
+                .eq("user_id", user.id)
+                .eq("is_done", false)
+                .not("deadline", "is", null);
+            const { data: dueA } = await supabase
+                .from("admin_tasks")
+                .select("deadline")
+                .not("deadline", "is", null);
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today.getTime() + 86400000);
+            const isNear = (dl: string) => {
+                const due = new Date(dl); due.setHours(0, 0, 0, 0);
+                return due.getTime() <= tomorrow.getTime();
+            };
+            const cnt = [...(dueP || []), ...(dueA || [])]
+                .filter((t: any) => t.deadline && isNear(t.deadline)).length;
+            setDeadlineAlertCount(cnt);
+        }
         // 通知件数取得
                 const nowIso = new Date().toISOString();
                 const { count: notifCount } = await supabase
@@ -1217,6 +1239,25 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                 )}
                 {/* ===== 未回答アンケートバナー ===== */}
+                {/* ===== 期日アラートバナー ===== */}
+                {deadlineAlertCount > 0 && (
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
+                        <div onClick={() => router.push("/my-tasks")} style={{
+                            padding: "16px 24px",
+                            background: "linear-gradient(135deg, rgba(245,158,11,0.15), rgba(248,113,113,0.10))",
+                            border: "2px solid rgba(245,158,11,0.4)",
+                            borderRadius: 16,
+                            cursor: "pointer",
+                            display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+                        }}>
+                            <span style={{ fontSize: 28 }}>⏰</span>
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb" }}>期日が近いタスクが{deadlineAlertCount}件あります</div>
+                                <div style={{ fontSize: 13, color: "#fbbf24", marginTop: 2 }}>期限切れ・今日・明日が締切のタスクがあります。タップして確認 →</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* ===== adminタスク通知バナー ===== */}
                 {pendingAdminTasks.length > 0 && (
                     <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
