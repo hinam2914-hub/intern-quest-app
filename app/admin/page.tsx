@@ -462,7 +462,7 @@ export default function AdminPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, grade, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category, onboarding_done, created_at, position");
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, grade, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category, onboarding_done, created_at, position").eq("is_active", true);
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
