@@ -1258,6 +1258,25 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     </div>
                 )}
+                {/* ===== 期日アラートバナー ===== */}
+                {deadlineAlertCount > 0 && (
+                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
+                        <div onClick={() => router.push("/my-tasks")} style={{
+                            padding: "16px 24px",
+                            background: "linear-gradient(135deg, rgba(245,158,11,0.15), rgba(248,113,113,0.10))",
+                            border: "2px solid rgba(245,158,11,0.4)",
+                            borderRadius: 16,
+                            cursor: "pointer",
+                            display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+                        }}>
+                            <span style={{ fontSize: 28 }}>⏰</span>
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb" }}>期日が近いタスクが{deadlineAlertCount}件あります</div>
+                                <div style={{ fontSize: 13, color: "#fbbf24", marginTop: 2 }}>期限切れ・今日・明日が締切のタスクがあります。タップして確認 →</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* ===== adminタスク通知バナー ===== */}
                 {pendingAdminTasks.length > 0 && (
                     <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
