@@ -24,6 +24,7 @@ type PersonalTask = {
     is_done: boolean;
     done_at: string | null;
     created_at: string;
+    deadline: string | null;
 };
 
 type DailyTask = {
