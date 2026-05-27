@@ -153,7 +153,7 @@ export default function MtgReportPage() {
     return (
         <div style={{ minHeight: "100vh", background: "#0f0f1a", padding: "32px 20px", color: "#f9fafb" }}>
             <div style={{ maxWidth: 600, margin: "0 auto" }}>
-                <button onClick={() => router.push("/mypage")} style={{ background: "none", border: "none", color: "#818cf8", cursor: "pointer", fontSize: 14, marginBottom: 20 }}>← マイページに戻る</button>
+                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 20 }}>INTERN QUEST</div>
 
                 <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>📋 MTG報告書（議事録）</h1>
                 <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 8 }}>{editingId ? "差し戻された報告書を修正しています。" : "MTGの議事録をまとめて提出します。着地していない場合はFB付きで差し戻されます。"}</p>
@@ -249,6 +249,10 @@ export default function MtgReportPage() {
                         })}
                     </div>
                 )}
+
+                <div style={{ marginTop: 40, textAlign: "center" }}>
+                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>☰ メニューに戻る</button>
+                </div>
             </div>
         </div>
     );
