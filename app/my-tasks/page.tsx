@@ -439,6 +439,7 @@ export default function MyTasksPage() {
                 </section>  )}
 
                 {/* ===== adminタスク ===== */}
+                {activeTab === "admin" && (
                 <section style={{ marginBottom: 32, padding: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16 }}>
                     <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>🔵 adminから（報告書必要）</div>
 
