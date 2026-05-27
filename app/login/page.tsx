@@ -45,9 +45,15 @@ export default function LoginPage() {
 
         const { data: profile } = await supabase
             .from("profiles")
-            .select("name")
+            .select("name, onboarding_done, is_active")
             .eq("id", user.id)
             .single();
+        if (profile && (profile as any).is_active === false) {
+            await supabase.auth.signOut();
+            setMessage("このアカウントは現在ご利用いただけません。運営にお問い合わせください。");
+            setLoading(false);
+            return;
+        }
 
         const destination = (!profile?.name || profile.name.trim() === "") ? "/register" : ((profile as any)?.onboarding_done ? "/mypage" : "/onboarding");
 
