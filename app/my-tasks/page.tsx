@@ -80,6 +80,7 @@ export default function MyTasksPage() {
     const [reportFile, setReportFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
+    const [activeTab, setActiveTab] = useState<"daily" | "personal" | "admin">("daily");
 
     const loadAll = useCallback(async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -335,8 +336,14 @@ export default function MyTasksPage() {
                     <h1 style={{ fontSize: 32, fontWeight: 900, margin: "0 0 8px" }}>📋 タスク管理</h1>
                     <p style={{ color: "#9ca3af", fontSize: 14 }}>デイリー / 自分のタスク / adminからのタスクを管理</p>
                 </div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+                    {([["daily", "☀️ デイリー"], ["personal", "📝 自分のタスク"], ["admin", "🔵 adminから"]] as const).map(([key, label]) => (
+                        <button key={key} onClick={() => setActiveTab(key)} style={{ padding: "10px 20px", borderRadius: 10, border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer", background: activeTab === key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === key ? "#fff" : "#9ca3af" }}>{label}</button>
+                    ))}
+                </div>
 
                 {/* ===== デイリータスク ===== */}
+                {activeTab === "daily" && (
                 <section style={{ marginBottom: 32, padding: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
                         <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, letterSpacing: 2 }}>☀️ DAILY TASKS（0時JSTでリセット）</div>
@@ -361,9 +368,10 @@ export default function MyTasksPage() {
                         <input value={newDailyTitle} onChange={(e) => setNewDailyTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddDaily()} placeholder="例: 朝のメール確認" style={{ flex: 1, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#f9fafb", fontSize: 13 }} />
                         <button onClick={handleAddDaily} disabled={!newDailyTitle.trim()} style={{ padding: "10px 16px", borderRadius: 8, background: newDailyTitle.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", border: "none", color: "#fff", fontWeight: 700, cursor: newDailyTitle.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>+ 追加</button>
                     </div>
-                </section>
+                </section>)}
 
                 {/* ===== 個人タスク ===== */}
+                {activeTab === "personal" && (
                 <section style={{ marginBottom: 32, padding: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16 }}>
                     <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📝 自分のタスク</div>
 
@@ -428,7 +436,7 @@ export default function MyTasksPage() {
                             <button onClick={handleAddPersonal} disabled={!newPersonalTitle.trim()} style={{ padding: "8px 16px", borderRadius: 8, background: newPersonalTitle.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", border: "none", color: "#fff", fontWeight: 700, cursor: newPersonalTitle.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>+ タスク追加</button>
                         </div>
                     </div>
-                </section>
+                </section>  )}
 
                 {/* ===== adminタスク ===== */}
                 <section style={{ marginBottom: 32, padding: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16 }}>
@@ -460,7 +468,7 @@ export default function MyTasksPage() {
                             );
                         })}
                     </div>
-                </section>
+                </section> )}
             </div>
 
             {/* ===== 報告書モーダル ===== */}
