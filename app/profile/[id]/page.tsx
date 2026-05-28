@@ -120,6 +120,7 @@ export default function ProfilePage() {
     const [expandedChallenge, setExpandedChallenge] = useState<string | null>(null);
     const [reports, setReports] = useState<{ id: string; content: string; created_at: string }[]>([]);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
+    const [reportPeriod, setReportPeriod] = useState("今週");
 
     useEffect(() => {
         const load = async () => {
@@ -400,13 +401,19 @@ export default function ProfilePage() {
                     <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#d1d5db" }}>
                         📝 日報 ({reports.length})
                     </div>
+                    {reports.length > 0 && (
+                        <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                            {["今週", "先週", "今月", "先月", "それ以前"].map(p => (
+                                <button key={p} onClick={() => setReportPeriod(p)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", background: reportPeriod === p ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: reportPeriod === p ? "#fff" : "#9ca3af" }}>{p}</button>
+                            ))}
+                        </div>
+                    )}
                     {reports.length > 0 ? (
-                        ["今週", "先週", "今月", "先月", "それ以前"].map(period => {
+                       [reportPeriod].map(period => {
                             const group = reports.filter(r => getReportPeriod(r.created_at) === period);
-                            if (group.length === 0) return null;
+                            if (group.length === 0) return <div key={period} style={{ fontSize: 13, color: "#6b7280", textAlign: "center", padding: "16px 0" }}>この期間の日報はありません</div>;
                             return (
                                 <div key={period} style={{ marginBottom: 16 }}>
-                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{period}</div>
                                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                                         {group.map(r => {
                                             const isExpanded = expandedReport === r.id;
