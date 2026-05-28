@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
@@ -290,6 +291,36 @@ export default function HistoryPage() {
                         </div>
 
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            {(() => {
+                                const sorted = [...pointsHistory].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                                let earned = 0;
+                                let balance = 0;
+                                const data = sorted.map((item) => {
+                                    if (item.change > 0) earned += item.change;
+                                    balance += item.change;
+                                    const d = new Date(item.created_at);
+                                    return { date: `${d.getMonth() + 1}/${d.getDate()}`, 累計獲得: earned, 残高: balance };
+                                });
+                                if (data.length === 0) return null;
+                                return (
+                                    <div style={{ marginBottom: 24 }}>
+                                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>収支グラフ</div>
+                                        <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "16px 8px 8px 0" }}>
+                                            <ResponsiveContainer width="100%" height={240}>
+                                                <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                                                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#6b7280" }} stroke="rgba(255,255,255,0.1)" />
+                                                    <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} stroke="rgba(255,255,255,0.1)" />
+                                                    <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 12 }} />
+                                                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                                                    <Line type="monotone" dataKey="累計獲得" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                                                    <Line type="monotone" dataKey="残高" stroke="#34d399" strokeWidth={2} dot={false} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                )
+                            })()}
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>ACTIVITY LOG</div>
                             {pointsHistory.length === 0 ? (
                                 <div style={{ color: "#6b7280", fontSize: 14, padding: 16 }}>履歴がありません</div>
