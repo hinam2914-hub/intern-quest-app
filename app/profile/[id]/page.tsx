@@ -89,6 +89,22 @@ const calcRank = (total: number) => {
     return { label: "E", color: "#6b7280", icon: "" };
 };
 
+function getReportPeriod(dateStr: string): string {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayOfWeek = (now.getDay() + 6) % 7; // 月曜=0
+    const startOfWeek = new Date(startOfToday); startOfWeek.setDate(startOfToday.getDate() - dayOfWeek);
+    const startOfLastWeek = new Date(startOfWeek); startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    if (d >= startOfWeek) return "今週";
+    if (d >= startOfLastWeek) return "先週";
+    if (d >= startOfMonth) return "今月";
+    if (d >= startOfLastMonth) return "先月";
+    return "それ以前";
+}
+
 export default function ProfilePage() {
     const params = useParams();
     const router = useRouter();
@@ -102,6 +118,8 @@ export default function ProfilePage() {
     const [isMyself, setIsMyself] = useState(false);
     const [loading, setLoading] = useState(true);
     const [expandedChallenge, setExpandedChallenge] = useState<string | null>(null);
+    const [reports, setReports] = useState<{ id: string; content: string; created_at: string }[]>([]);
+    const [expandedReport, setExpandedReport] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -159,7 +177,14 @@ export default function ProfilePage() {
                 .select("*", { count: "exact", head: true })
                 .eq("to_user_id", userId);
             setThanksCount(count || 0);
-
+            // 日報取得（直近50件）
+            const { data: reportsData } = await supabase
+                .from("submissions")
+                .select("id, content, created_at")
+                .eq("user_id", userId)
+                .order("created_at", { ascending: false })
+                .limit(50);
+            setReports((reportsData as { id: string; content: string; created_at: string }[]) || []);
             setLoading(false);
         };
         load();
@@ -367,6 +392,45 @@ export default function ProfilePage() {
                         </div>
                     ) : (
                         <div style={{ fontSize: 13, color: "#6b7280", textAlign: "center", padding: "16px 0" }}>まだ達成したチャレンジはありません</div>
+                    )}
+                </div>
+
+                {/* 📝 日報 */}
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#d1d5db" }}>
+                        📝 日報 ({reports.length})
+                    </div>
+                    {reports.length > 0 ? (
+                        ["今週", "先週", "今月", "先月", "それ以前"].map(period => {
+                            const group = reports.filter(r => getReportPeriod(r.created_at) === period);
+                            if (group.length === 0) return null;
+                            return (
+                                <div key={period} style={{ marginBottom: 16 }}>
+                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{period}</div>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                        {group.map(r => {
+                                            const isExpanded = expandedReport === r.id;
+                                            const isLong = r.content.length > 100;
+                                            return (
+                                                <div
+                                                    key={r.id}
+                                                    onClick={() => isLong && setExpandedReport(isExpanded ? null : r.id)}
+                                                    style={{ padding: 12, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 8, cursor: isLong ? "pointer" : "default" }}
+                                                >
+                                                    <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 6 }}>{new Date(r.created_at).toLocaleDateString("ja-JP")}</div>
+                                                    <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: isExpanded ? "none" : 60, overflow: "hidden" }}>{r.content}</div>
+                                                    {isLong && (
+                                                        <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>{isExpanded ? "▲ 閉じる" : "▼ 続きを読む"}</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div style={{ fontSize: 13, color: "#6b7280", textAlign: "center", padding: "16px 0" }}>まだ日報がありません</div>
                     )}
                 </div>
 
