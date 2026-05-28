@@ -35,10 +35,11 @@ export default function RankingPage() {
     const [users, setUsers] = useState<RankingUser[]>([]);
     const [weeklyUsers, setWeeklyUsers] = useState<RankingUser[]>([]);
     const [teamRanking, setTeamRanking] = useState<RankingUser[]>([]);
+    const [streakUsers, setStreakUsers] = useState<RankingUser[]>([]);
     const [myId, setMyId] = useState("");
     const [myTeamId, setMyTeamId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams">("total");
+    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak">("total");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -79,6 +80,15 @@ export default function RankingPage() {
                 })).sort((a, b) => b.points - a.points));
             }
 
+            // ===== 連続提出日数ランキング =====
+            const { data: streakRows } = await supabase.from("profiles").select("id, name, avatar_url, is_active, streak").eq("is_active", true).gt("streak", 0).order("streak", { ascending: false });
+            setStreakUsers((streakRows || []).map((row: any) => ({
+                id: row.id,
+                name: row.name,
+                avatar_url: row.avatar_url,
+                is_active: row.is_active,
+                points: row.streak || 0,
+            })));
             // ===== チーム別 日報提出率ランキング（今週） =====
             // 1. teams取得
             const { data: teamsData } = await supabase.from("teams").select("id, name, color");
@@ -151,6 +161,7 @@ export default function RankingPage() {
 
     const formatPoints = (user: RankingUser): string => {
         if (user.isTeam) return `${user.points}%`;
+        if (activeTab === "streak") return `${user.points}日`;
         return `${user.points.toLocaleString()}pt`;
     };
 
@@ -249,7 +260,7 @@ export default function RankingPage() {
         );
     }
 
-    const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : teamRanking;
+    const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : teamRanking;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -268,7 +279,8 @@ export default function RankingPage() {
                     {[
                         { key: "total", label: "🏆 総合" },
                         { key: "weekly", label: "⚡ 今週" },
-                        { key: "teams", label: "👥 チーム" },
+                       { key: "teams", label: "👥 チーム" },
+                        { key: "streak", label: "🔥 連続" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
                             {tab.label}
