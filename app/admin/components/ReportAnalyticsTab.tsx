@@ -39,7 +39,7 @@ export default function ReportAnalyticsTab() {
 
     useEffect(() => {
         const load = async () => {
-            const { count: totalCount } = await supabase.from("profiles").select("*", { count: "exact", head: true });
+            const { count: totalCount } = await supabase.from("profiles").select("*", { count: "exact", head: true }).eq("is_active", true);
             const total = totalCount || 0;
             setTotalUsers(total);
 
@@ -116,7 +116,7 @@ export default function ReportAnalyticsTab() {
             // 提出ランキングTOP10
             const ranked = Array.from(userDays.entries()).map(([uid, days]) => ({ uid, days: days.size })).sort((a, b) => b.days - a.days).slice(0, 10);
             // 3日以上未提出の人
-            const { data: allProfiles } = await supabase.from("profiles").select("id, name");
+            const { data: allProfiles } = await supabase.from("profiles").select("id, name").eq("is_active", true);
             const lastSubMap = new Map<string, string>();
             submissions.forEach((s: any) => {
                 const ex = lastSubMap.get(s.user_id);
