@@ -44,6 +44,7 @@ export default function RankingPage() {
     const [workUsers, setWorkUsers] = useState<RankingUser[]>([]);
     const [kpiUsers, setKpiUsers] = useState<RankingUser[]>([]);
     const [loading, setLoading] = useState(true);
+    const [myTeamId, setMyTeamId] = useState<string | null>(null);
     const [myId, setMyId] = useState("");
     const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "challenge" | "test" | "advice" | "learn" | "work" | "kpi">("total");
 
