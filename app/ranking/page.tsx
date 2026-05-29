@@ -41,10 +41,9 @@ export default function RankingPage() {
     const [testUsers, setTestUsers] = useState<RankingUser[]>([]);
     const [adviceUsers, setAdviceUsers] = useState<RankingUser[]>([]);
     const [learnUsers, setLearnUsers] = useState<RankingUser[]>([]);
+    const [workUsers, setWorkUsers] = useState<RankingUser[]>([]);
     const [myId, setMyId] = useState("");
-    const [myTeamId, setMyTeamId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "challenge" | "test" | "advice" | "learn">("total");
+    const [myTeamId, setMyTeamId] = useState<string | null>(null);const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "challenge" | "test" | "advice" | "learn" | "work">("total");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -167,6 +166,54 @@ export default function RankingPage() {
                     points: learnCounts[row.id] || 0,
                 })).sort((a, b) => b.points - a.points));
             }
+            // ===== 仕事完遂量ランキング（KKC + MTG + タスク + ルーティン連続） =====
+            const workCounts: { [id: string]: number } = {};
+            // 1. KKC（承認済み）
+            const { data: kkcRows } = await supabase.from("problem_solutions").select("user_id").eq("status", "approved");
+            (kkcRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
+            // 2. MTG報告書（承認済み）
+            const { data: mtgRows } = await supabase.from("mtg_reports").select("user_id").eq("status", "approved");
+            (mtgRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
+            // 3. 個人タスク（完了）
+            const { data: personalTaskRows } = await supabase.from("personal_tasks").select("user_id").eq("is_done", true);
+            (personalTaskRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
+            // 4. adminタスク報告書（承認済み）
+            const { data: taskReportRows } = await supabase.from("task_reports").select("user_id").eq("status", "approved");
+            (taskReportRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
+            // 5. ルーティン連続日数（全ユーザー分計算）
+            const { data: allRoutines } = await supabase.from("routines").select("user_id, id").eq("is_active", true);
+            const { data: allRoutineChecks } = await supabase.from("routine_checks").select("user_id, check_date, routine_id");
+            const routinesByUser: { [uid: string]: number } = {};
+            (allRoutines || []).forEach((r: { user_id: string; id: string }) => { routinesByUser[r.user_id] = (routinesByUser[r.user_id] || 0) + 1; });
+            const checksByUserDate: { [uid: string]: { [date: string]: number } } = {};
+            (allRoutineChecks || []).forEach((c: { user_id: string; check_date: string }) => {
+                if (!checksByUserDate[c.user_id]) checksByUserDate[c.user_id] = {};
+                checksByUserDate[c.user_id][c.check_date] = (checksByUserDate[c.user_id][c.check_date] || 0) + 1;
+            });
+            const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            Object.keys(routinesByUser).forEach((uid) => {
+                const itemCount = routinesByUser[uid];
+                if (itemCount === 0) return;
+                const dates = checksByUserDate[uid] || {};
+                const isFullDay = (ymd: string) => (dates[ymd] || 0) >= itemCount;
+                let streak = 0;
+                const cursor = new Date();
+                if (!isFullDay(fmt(cursor))) cursor.setDate(cursor.getDate() - 1);
+                while (isFullDay(fmt(cursor))) { streak++; cursor.setDate(cursor.getDate() - 1); }
+                if (streak > 0) workCounts[uid] = (workCounts[uid] || 0) + streak;
+            });
+            // プロフィール取得して並べる
+            const workIds = Object.keys(workCounts);
+            if (workIds.length > 0) {
+                const { data: workProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true).in("id", workIds);
+                setWorkUsers((workProfiles || []).map((row: { id: string; name: string; avatar_url: string; is_active: boolean }) => ({
+                    id: row.id,
+                    name: row.name,
+                    avatar_url: row.avatar_url,
+                    is_active: row.is_active,
+                    points: workCounts[row.id] || 0,
+                })).sort((a, b) => b.points - a.points));
+            }
             // ===== チーム別 日報提出率ランキング（今週） =====
             // 1. teams取得
             const { data: teamsData } = await supabase.from("teams").select("id, name, color");
@@ -245,6 +292,7 @@ export default function RankingPage() {
         if (activeTab === "test") return `${user.points}個`;
         if (activeTab === "advice") return `${user.points}件`;
         if (activeTab === "learn") return `${user.points}個`;
+        if (activeTab === "work") return `${user.points}個`;
         return `${user.points.toLocaleString()}pt`;
     };
 
@@ -343,7 +391,7 @@ export default function RankingPage() {
         );
     }
 
-   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : teamRanking;
+   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : teamRanking;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -369,6 +417,7 @@ export default function RankingPage() {
                         { key: "test", label: "📚 テスト" },
                         { key: "advice", label: "💡 アドバイス送信" },
                         { key: "learn", label: "📚 学習" },
+                        { key: "work", label: "💼 仕事完遂" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flexShrink: 0, padding: "10px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, whiteSpace: "nowrap", background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
                             {tab.label}
