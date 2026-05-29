@@ -183,29 +183,11 @@ export default function RankingPage() {
             // 4. adminタスク報告書（承認済み）
             const { data: taskReportRows } = await supabase.from("task_reports").select("user_id").eq("status", "approved");
             (taskReportRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
-            // 5. ルーティン連続日数（全ユーザー分計算）
-            const { data: allRoutines } = await supabase.from("routines").select("user_id, id").eq("is_active", true);
-            const { data: allRoutineChecks } = await supabase.from("routine_checks").select("user_id, check_date, routine_id");
-            const routinesByUser: { [uid: string]: number } = {};
-            (allRoutines || []).forEach((r: { user_id: string; id: string }) => { routinesByUser[r.user_id] = (routinesByUser[r.user_id] || 0) + 1; });
-            const checksByUserDate: { [uid: string]: { [date: string]: number } } = {};
-            (allRoutineChecks || []).forEach((c: { user_id: string; check_date: string }) => {
-                if (!checksByUserDate[c.user_id]) checksByUserDate[c.user_id] = {};
-                checksByUserDate[c.user_id][c.check_date] = (checksByUserDate[c.user_id][c.check_date] || 0) + 1;
+           // 5. ルーティン完遂個数（routine_checksのチェック数を合算）
+            const { data: allRoutineChecksCount } = await supabase.from("routine_checks").select("user_id");
+            (allRoutineChecksCount || []).forEach((row: { user_id: string }) => {
+                if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1;
             });
-            const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-            Object.keys(routinesByUser).forEach((uid) => {
-                const itemCount = routinesByUser[uid];
-                if (itemCount === 0) return;
-                const dates = checksByUserDate[uid] || {};
-                const isFullDay = (ymd: string) => (dates[ymd] || 0) >= itemCount;
-                let streak = 0;
-                const cursor = new Date();
-                if (!isFullDay(fmt(cursor))) cursor.setDate(cursor.getDate() - 1);
-                while (isFullDay(fmt(cursor))) { streak++; cursor.setDate(cursor.getDate() - 1); }
-                if (streak > 0) workCounts[uid] = (workCounts[uid] || 0) + streak;
-            });
-            // プロフィール取得して並べる
             const workIds = Object.keys(workCounts);
             if (workIds.length > 0) {
                 const { data: workProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true).in("id", workIds);
