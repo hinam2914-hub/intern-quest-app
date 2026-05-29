@@ -358,7 +358,7 @@ export default function RankingPage() {
                 </div>
 
                 {/* タブ */}
-                <div style={{ display: "flex", gap: 4, marginBottom: 32, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 4 }}>
+                <div style={{ display: "flex", gap: 4, marginBottom: 32, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 4, overflowX: "auto", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }} className="hide-scrollbar">
                     {[
                         { key: "total", label: "🏆 総合" },
                         { key: "weekly", label: "⚡ 今週" },
@@ -370,7 +370,7 @@ export default function RankingPage() {
                         { key: "advice", label: "💡 アドバイス送信" },
                         { key: "learn", label: "📚 学習" },
                     ].map((tab) => (
-                        <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
+                        <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flexShrink: 0, padding: "10px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, whiteSpace: "nowrap", background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
                             {tab.label}
                         </button>
                     ))}
