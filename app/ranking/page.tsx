@@ -38,12 +38,13 @@ export default function RankingPage() {
     const [streakUsers, setStreakUsers] = useState<RankingUser[]>([]);
     const [sankyuUsers, setSankyuUsers] = useState<RankingUser[]>([]);
     const [challengeUsers, setChallengeUsers] = useState<RankingUser[]>([]);
-   const [testUsers, setTestUsers] = useState<RankingUser[]>([]);
+    const [testUsers, setTestUsers] = useState<RankingUser[]>([]);
     const [adviceUsers, setAdviceUsers] = useState<RankingUser[]>([]);
+    const [learnUsers, setLearnUsers] = useState<RankingUser[]>([]);
     const [myId, setMyId] = useState("");
     const [myTeamId, setMyTeamId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "challenge" | "test" | "advice">("total");
+    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "challenge" | "test" | "advice" | "learn">("total");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -151,6 +152,21 @@ export default function RankingPage() {
                     points: adviceCounts[row.id] || 0,
                 })).sort((a, b) => b.points - a.points));
             }
+            // ===== 学習コンテンツ完了数ランキング（承認済みのみ） =====
+            const { data: learnAllRows } = await supabase.from("content_completions").select("user_id").eq("status", "approved");
+            const learnCounts: { [id: string]: number } = {};
+            (learnAllRows || []).forEach((row: { user_id: string }) => { if (row.user_id) learnCounts[row.user_id] = (learnCounts[row.user_id] || 0) + 1; });
+            const learnIds = Object.keys(learnCounts);
+            if (learnIds.length > 0) {
+                const { data: learnProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true).in("id", learnIds);
+                setLearnUsers((learnProfiles || []).map((row: { id: string; name: string; avatar_url: string; is_active: boolean }) => ({
+                    id: row.id,
+                    name: row.name,
+                    avatar_url: row.avatar_url,
+                    is_active: row.is_active,
+                    points: learnCounts[row.id] || 0,
+                })).sort((a, b) => b.points - a.points));
+            }
             // ===== チーム別 日報提出率ランキング（今週） =====
             // 1. teams取得
             const { data: teamsData } = await supabase.from("teams").select("id, name, color");
@@ -228,6 +244,7 @@ export default function RankingPage() {
         if (activeTab === "challenge") return `${user.points}個`;
         if (activeTab === "test") return `${user.points}個`;
         if (activeTab === "advice") return `${user.points}件`;
+        if (activeTab === "learn") return `${user.points}個`;
         return `${user.points.toLocaleString()}pt`;
     };
 
@@ -326,7 +343,7 @@ export default function RankingPage() {
         );
     }
 
-   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : teamRanking;
+   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : teamRanking;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -351,6 +368,7 @@ export default function RankingPage() {
                         { key: "challenge", label: "🎯 チャレンジ" },
                         { key: "test", label: "📚 テスト" },
                         { key: "advice", label: "💡 アドバイス送信" },
+                        { key: "learn", label: "📚 学習" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
                             {tab.label}
