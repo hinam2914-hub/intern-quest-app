@@ -42,6 +42,7 @@ export default function RankingPage() {
     const [adviceUsers, setAdviceUsers] = useState<RankingUser[]>([]);
     const [learnUsers, setLearnUsers] = useState<RankingUser[]>([]);
     const [workUsers, setWorkUsers] = useState<RankingUser[]>([]);
+    const [loading, setLoading] = useState(true);
     const [myId, setMyId] = useState("");
     const [myTeamId, setMyTeamId] = useState<string | null>(null);const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "challenge" | "test" | "advice" | "learn" | "work">("total");
 
