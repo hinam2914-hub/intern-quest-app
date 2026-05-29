@@ -13,6 +13,7 @@ import MtgReportTab from "./MtgReportTab";
 import KpiDashboardTab from "./components/KpiDashboardTab";
 import ReportAnalyticsTab from "./components/ReportAnalyticsTab";
 import DailyReportEvalTab from "./DailyReportEvalTab";
+import SalesManagementTab from "./SalesManagementTab";
 
 type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
@@ -202,7 +203,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
     const [editingPoints, setEditingPoints] = useState<number>(0);
@@ -1314,6 +1315,7 @@ export default function AdminPage() {
                                 { key: "monthly_kpi", label: "月次KPI" },
                                 { key: "kpi_dashboard", label: "アナリティクス" },
                                 { key: "dept_stats", label: "部署別成績" },
+                                { key: "sales", label: "販売額管理" },
                             ],
                         },
                         {
@@ -3865,6 +3867,9 @@ export default function AdminPage() {
                 )}
                 {activeTab === "report_eval" && (
                     <DailyReportEvalTab />
+                )}
+                {activeTab === "sales" && (
+                    <SalesManagementTab />
                 )}
                 {activeTab === "es" && (
                     <div>
