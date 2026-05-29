@@ -107,7 +107,7 @@ export default function ReportAnalyticsTab() {
             // 7日連続提出者数
             let streak7 = 0;
             const last7days: string[] = [];
-            for (let i = 0; i < 7; i++) last7days.push(toJSTDate(new Date(today.getTime() - i * 24 * 60 * 60 * 1000).toISOString()));
+            for (let i = 1; i <= 7; i++) last7days.push(toJSTDate(new Date(today.getTime() - i * 24 * 60 * 60 * 1000).toISOString()));
             userDays.forEach((days) => {
                 if (last7days.every((d) => days.has(d))) streak7++;
             });
