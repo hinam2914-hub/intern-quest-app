@@ -1,8 +1,8 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import TodayScheduleReview, { TodayScheduleReviewHandle } from "../components/TodayScheduleReview";
 
 type KpiItem = { id: string; title: string; unit: string; target_value: number };
 
@@ -65,6 +65,7 @@ const TEMPLATES = [
 
 export default function ReportPage() {
     const router = useRouter();
+    const reviewRef = useRef<TodayScheduleReviewHandle>(null);
     const [factText, setFactText] = useState("");
     const [interpText, setInterpText] = useState("");
     const [actionText, setActionText] = useState("");
@@ -152,6 +153,9 @@ export default function ReportPage() {
         await supabase.from("points_history").insert(historyInserts);
         await supabase.from("profiles").update({ streak: newStreak, last_report_date: nowIso }).eq("id", user.id);
 
+        // 今日のスケジュール振り返り（⭕️×）を保存
+        await reviewRef.current?.saveReview(user.id);
+
         setSuccess(true);
         setMessage(bonus > 0 ? `+${addPoints}pt 獲得！連続提出ボーナス +${bonus}pt も獲得しました 🎉` : `+${addPoints}pt 獲得しました！`);
         setFactText(""); setInterpText(""); setActionText(""); setSelectedTemplate(null); setLoading(false);
@@ -217,6 +221,8 @@ export default function ReportPage() {
                         </div>
                     ))}
                 </div>
+
+                <TodayScheduleReview ref={reviewRef} />
 
                 {kpiItems.length > 0 && (
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 24, marginBottom: 16 }}>
