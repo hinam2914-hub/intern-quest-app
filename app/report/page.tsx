@@ -222,8 +222,6 @@ export default function ReportPage() {
                     ))}
                 </div>
 
-                <TodayScheduleReview ref={reviewRef} />
-
                 {kpiItems.length > 0 && (
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 24, marginBottom: 16 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📊 KPI入力</div>
@@ -285,6 +283,9 @@ export default function ReportPage() {
                         <div style={{ fontSize: 12, color: (factText.trim().length + interpText.trim().length + actionText.trim().length) >= 100 ? "#34d399" : "#6b7280", fontWeight: 700 }}>
                             {factText.trim().length + interpText.trim().length + actionText.trim().length} / 100文字
                         </div>
+                    </div>
+                    <div style={{ marginTop: 24 }}>
+                        <TodayScheduleReview ref={reviewRef} />
                     </div>
                     <div style={{ marginTop: 20 }}>
                         <button onClick={handleSubmit} disabled={loading} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: loading ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontSize: 15 }}>
