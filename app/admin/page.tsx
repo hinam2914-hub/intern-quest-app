@@ -14,6 +14,7 @@ import KpiDashboardTab from "./components/KpiDashboardTab";
 import ReportAnalyticsTab from "./components/ReportAnalyticsTab";
 import DailyReportEvalTab from "./DailyReportEvalTab";
 import SalesManagementTab from "./SalesManagementTab";
+import ScheduleManagementTab from "./ScheduleManagementTab";
 
 type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
@@ -203,7 +204,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule">("dashboard");
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
     const [editingPoints, setEditingPoints] = useState<number>(0);
@@ -1336,6 +1337,7 @@ export default function AdminPage() {
                                 { key: "reports", label: "日報履歴" },
                                 { key: "report_analytics", label: "日報分析" },
                                 { key: "report_eval", label: "日報評価" },
+                                { key: "schedule", label: "スケジュール" },
                                 { key: "thanks_history", label: "サンキュー履歴" },
                                 { key: "routine_check", label: "ルーティン" },
                                 { key: "mtg_report", label: "MTG報告書" },
@@ -3870,6 +3872,9 @@ export default function AdminPage() {
                 )}
                 {activeTab === "sales" && (
                     <SalesManagementTab />
+                )}
+                {activeTab === "schedule" && (
+                    <ScheduleManagementTab />
                 )}
                 {activeTab === "es" && (
                     <div>
