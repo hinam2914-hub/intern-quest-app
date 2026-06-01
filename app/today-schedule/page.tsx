@@ -46,7 +46,6 @@ export default function TodaySchedulePage() {
       }
       setUserId(user.id);
 
-      // 今日の分が既にあれば読み込む
       const { data } = await supabase
         .from("daily_schedules")
         .select("slots")
@@ -103,118 +102,173 @@ export default function TodaySchedulePage() {
     router.push("/mypage");
   };
 
+  // ===== テーマ（マイページに合わせたダーク） =====
+  const bg = "#0a0a0f";
+  const cardBg = "#15151f";
+  const cardBorder = "#2a2a3a";
+  const inputBg = "#1e1e2b";
+  const inputBorder = "#33334a";
+  const textPrimary = "#f5f5f7";
+  const textMuted = "#8a8aa0";
+  const accent = "#7c3aed";
+
   if (loading) {
     return (
-      <div style={{ padding: "40px", textAlign: "center" }}>読み込み中...</div>
+      <main
+        style={{
+          minHeight: "100vh",
+          background: bg,
+          color: textMuted,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        読み込み中...
+      </main>
     );
   }
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 16px" }}>
-      <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 4 }}>
-        ☀️ 今日のスケジュール
-      </h1>
-      <p style={{ color: "#888", marginBottom: 20, fontSize: 14 }}>
-        {today} ／ 今日の予定を時間ごとに書き出しましょう
-      </p>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: bg,
+        padding: "40px 24px 64px",
+        color: textPrimary,
+      }}
+    >
+      <div style={{ maxWidth: 700, margin: "0 auto" }}>
+        <h1 style={{ fontSize: 26, fontWeight: "bold", marginBottom: 4 }}>
+          ☀️ 今日のスケジュール
+        </h1>
+        <p style={{ color: textMuted, marginBottom: 24, fontSize: 14 }}>
+          {today} ／ 今日の予定を時間ごとに書き出しましょう
+        </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {slots.map((slot, i) => (
-          <div
-            key={i}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              background: "#fff",
-              border: "1px solid #eee",
-              borderRadius: 10,
-              padding: "8px 10px",
-            }}
-          >
-            <input
-              type="time"
-              value={slot.start}
-              onChange={(e) => updateSlot(i, "start", e.target.value)}
-              style={{ width: 90, padding: 6, borderRadius: 6, border: "1px solid #ddd" }}
-            />
-            <span style={{ color: "#aaa" }}>〜</span>
-            <input
-              type="time"
-              value={slot.end}
-              onChange={(e) => updateSlot(i, "end", e.target.value)}
-              style={{ width: 90, padding: 6, borderRadius: 6, border: "1px solid #ddd" }}
-            />
-            <input
-              type="text"
-              placeholder="予定を入力"
-              value={slot.content}
-              onChange={(e) => updateSlot(i, "content", e.target.value)}
-              style={{ flex: 1, padding: 6, borderRadius: 6, border: "1px solid #ddd" }}
-            />
-            <button
-              onClick={() => removeSlot(i)}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {slots.map((slot, i) => (
+            <div
+              key={i}
               style={{
-                border: "none",
-                background: "transparent",
-                color: "#c00",
-                cursor: "pointer",
-                fontSize: 18,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: cardBg,
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 12,
+                padding: "10px 12px",
               }}
-              title="この行を削除"
             >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
+              <input
+                type="time"
+                value={slot.start}
+                onChange={(e) => updateSlot(i, "start", e.target.value)}
+                style={{
+                  width: 110,
+                  padding: 8,
+                  borderRadius: 8,
+                  border: `1px solid ${inputBorder}`,
+                  background: inputBg,
+                  color: textPrimary,
+                  colorScheme: "dark",
+                }}
+              />
+              <span style={{ color: textMuted }}>〜</span>
+              <input
+                type="time"
+                value={slot.end}
+                onChange={(e) => updateSlot(i, "end", e.target.value)}
+                style={{
+                  width: 110,
+                  padding: 8,
+                  borderRadius: 8,
+                  border: `1px solid ${inputBorder}`,
+                  background: inputBg,
+                  color: textPrimary,
+                  colorScheme: "dark",
+                }}
+              />
+              <input
+                type="text"
+                placeholder="予定を入力"
+                value={slot.content}
+                onChange={(e) => updateSlot(i, "content", e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: 8,
+                  borderRadius: 8,
+                  border: `1px solid ${inputBorder}`,
+                  background: inputBg,
+                  color: textPrimary,
+                }}
+              />
+              <button
+                onClick={() => removeSlot(i)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "#ef4444",
+                  cursor: "pointer",
+                  fontSize: 18,
+                }}
+                title="この行を削除"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
 
-      <button
-        onClick={addSlot}
-        style={{
-          marginTop: 12,
-          padding: "8px 16px",
-          borderRadius: 8,
-          border: "1px dashed #aaa",
-          background: "#fafafa",
-          cursor: "pointer",
-        }}
-      >
-        ＋ 行を追加
-      </button>
-
-      <div style={{ marginTop: 24, display: "flex", gap: 12 }}>
         <button
-          onClick={handleSave}
-          disabled={saving}
+          onClick={addSlot}
           style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: 10,
-            border: "none",
-            background: "#7c3aed",
-            color: "#fff",
-            fontWeight: "bold",
-            cursor: saving ? "default" : "pointer",
-            opacity: saving ? 0.6 : 1,
-          }}
-        >
-          {saving ? "保存中..." : "保存してマイページへ"}
-        </button>
-        <button
-          onClick={() => router.push("/mypage")}
-          style={{
-            padding: "12px 16px",
-            borderRadius: 10,
-            border: "1px solid #ddd",
-            background: "#fff",
-            color: "#666",
+            marginTop: 14,
+            padding: "8px 16px",
+            borderRadius: 8,
+            border: `1px dashed ${inputBorder}`,
+            background: "transparent",
+            color: textMuted,
             cursor: "pointer",
           }}
         >
-          あとで
+          ＋ 行を追加
         </button>
+
+        <div style={{ marginTop: 28, display: "flex", gap: 12 }}>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              flex: 1,
+              padding: "14px",
+              borderRadius: 12,
+              border: "none",
+              background: accent,
+              color: "#fff",
+              fontWeight: "bold",
+              fontSize: 15,
+              cursor: saving ? "default" : "pointer",
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            {saving ? "保存中..." : "保存してマイページへ"}
+          </button>
+          <button
+            onClick={() => router.push("/mypage")}
+            style={{
+              padding: "14px 18px",
+              borderRadius: 12,
+              border: `1px solid ${inputBorder}`,
+              background: "transparent",
+              color: textMuted,
+              cursor: "pointer",
+            }}
+          >
+            あとで
+          </button>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
