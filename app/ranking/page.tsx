@@ -45,10 +45,11 @@ export default function RankingPage() {
     const [kpiUsers, setKpiUsers] = useState<RankingUser[]>([]);
     const [salesMonthUsers, setSalesMonthUsers] = useState<RankingUser[]>([]);
     const [salesTotalUsers, setSalesTotalUsers] = useState<RankingUser[]>([]);
+    const [maruTotalUsers, setMaruTotalUsers] = useState<RankingUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [myTeamId, setMyTeamId] = useState<string | null>(null);
     const [myId, setMyId] = useState("");
-    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total">("total");
+    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total">("total");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -253,6 +254,20 @@ export default function RankingPage() {
                     points: Math.round((salesTotalByUser[row.id] || 0) / 10000),
                 })).filter(u => u.points > 0).sort((a, b) => b.points - a.points));
             }
+            // ===== 全丸(累計)ランキング =====
+            const { data: maruRows } = await supabase
+                .from("profiles")
+                .select("id, name, avatar_url, is_active, total_maru_days")
+                .eq("is_active", true)
+                .gt("total_maru_days", 0)
+                .order("total_maru_days", { ascending: false });
+            setMaruTotalUsers((maruRows || []).map((row: any) => ({
+                id: row.id,
+                name: row.name,
+                avatar_url: row.avatar_url,
+                is_active: row.is_active,
+                points: row.total_maru_days || 0,
+            })));
             // ===== チーム別 日報提出率ランキング（今週） =====
             // 1. teams取得
             const { data: teamsData } = await supabase.from("teams").select("id, name, color");
@@ -335,6 +350,7 @@ export default function RankingPage() {
         if (activeTab === "kpi") return `${user.points}%`;
         if (activeTab === "sales_month") return `${user.points.toLocaleString()}万円`;
         if (activeTab === "sales_total") return `${user.points.toLocaleString()}万円`;
+        if (activeTab === "maru_total") return `${user.points}日`;
         return `${user.points.toLocaleString()}pt`;
     };
 
@@ -433,7 +449,7 @@ export default function RankingPage() {
         );
     }
 
-   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : teamRanking;
+   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : activeTab === "maru_total" ? maruTotalUsers : teamRanking;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -463,6 +479,7 @@ export default function RankingPage() {
                         { key: "kpi", label: "📊 KPI" },
                         { key: "sales_month", label: "💰 販売(今月)" },
                         { key: "sales_total", label: "💰 販売(累計)" },
+                        { key: "maru_total", label: "☀️スケジュール" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flexShrink: 0, padding: "10px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, whiteSpace: "nowrap", background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
                             {tab.label}
