@@ -18,7 +18,7 @@ function getTodayJST(): string {
 
 export type TodayScheduleReviewHandle = {
   // 日報提出成功後に呼ぶ：当日の daily_schedules を更新
-  saveReview: (userId: string) => Promise<void>;
+  saveReview: (userId: string) => Promise<{ isAllMaru: boolean; hasSchedule: boolean }>;
 };
 
 const TodayScheduleReview = forwardRef<TodayScheduleReviewHandle>((_props, ref) => {
@@ -61,7 +61,7 @@ const TodayScheduleReview = forwardRef<TodayScheduleReviewHandle>((_props, ref) 
   // 親（日報ページ）から提出成功時に呼ばれる
   useImperativeHandle(ref, () => ({
     saveReview: async (userId: string) => {
-      if (!hasSchedule) return;
+      if (!hasSchedule) return { isAllMaru: false, hasSchedule: false };
       await supabase
         .from("daily_schedules")
         .update({
@@ -71,6 +71,11 @@ const TodayScheduleReview = forwardRef<TodayScheduleReviewHandle>((_props, ref) 
         })
         .eq("user_id", userId)
         .eq("date", today);
+
+      // 内容ありコマが全て ok なら全丸
+      const filled = slots.filter((s) => s.content && s.content.trim() !== "");
+      const isAllMaru = filled.length > 0 && filled.every((s) => s.result === "ok");
+      return { isAllMaru, hasSchedule: true };
     },
   }));
 

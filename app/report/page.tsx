@@ -154,7 +154,62 @@ export default function ReportPage() {
         await supabase.from("profiles").update({ streak: newStreak, last_report_date: nowIso }).eq("id", user.id);
 
         // 今日のスケジュール振り返り（⭕️×）を保存
-        await reviewRef.current?.saveReview(user.id);
+        const reviewResult = await reviewRef.current?.saveReview(user.id);
+
+        // 全丸だった場合：累計カウント＆連続ボーナス
+        if (reviewResult?.isAllMaru) {
+            // 今日の行がまだ報酬未計算なら処理
+            const { data: schedRow } = await supabase
+                .from("daily_schedules")
+                .select("streak_rewarded")
+                .eq("user_id", user.id)
+                .eq("date", todayYmd)
+                .maybeSingle();
+
+            if (schedRow && !(schedRow as any).streak_rewarded) {
+                // 累計全丸日数 +1
+                const { data: profMaru } = await supabase
+                    .from("profiles")
+                    .select("total_maru_days")
+                    .eq("id", user.id)
+                    .single();
+                const newTotal = ((profMaru as any)?.total_maru_days || 0) + 1;
+                await supabase.from("profiles").update({ total_maru_days: newTotal }).eq("id", user.id);
+
+                // 今日を含めた全丸連続日数を数える（過去30日）
+                let maruStreak = 1; // 今日
+                for (let i = 1; i <= 30; i++) {
+                    const past = new Date(`${todayYmd}T00:00:00+09:00`);
+                    past.setDate(past.getDate() - i);
+                    const pastYmd = past.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+                    const { data: pastRow } = await supabase
+                        .from("daily_schedules")
+                        .select("slots")
+                        .eq("user_id", user.id)
+                        .eq("date", pastYmd)
+                        .maybeSingle();
+                    const pastSlots = (pastRow as any)?.slots;
+                    const filled = Array.isArray(pastSlots) ? pastSlots.filter((s: any) => s.content && s.content.trim() !== "") : [];
+                    const pastAllMaru = filled.length > 0 && filled.every((s: any) => s.result === "ok");
+                    if (pastAllMaru) maruStreak++;
+                    else break;
+                }
+
+                // 3日/7日ちょうどでボーナス
+                let maruBonus = 0;
+                if (maruStreak === 3) maruBonus = 5;
+                else if (maruStreak === 7) maruBonus = 10;
+
+                if (maruBonus > 0) {
+                    const { data: ptNow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
+                    await supabase.from("user_points").update({ points: ((ptNow as any)?.points || 0) + maruBonus }).eq("id", user.id);
+                    await supabase.from("points_history").insert([{ user_id: user.id, change: maruBonus, reason: "maru_streak_bonus" }]);
+                }
+
+                // 報酬計算済みフラグ
+                await supabase.from("daily_schedules").update({ streak_rewarded: true }).eq("user_id", user.id).eq("date", todayYmd);
+            }
+        }
 
         setSuccess(true);
         setMessage(bonus > 0 ? `+${addPoints}pt 獲得！連続提出ボーナス +${bonus}pt も獲得しました 🎉` : `+${addPoints}pt 獲得しました！`);
