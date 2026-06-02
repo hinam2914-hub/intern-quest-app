@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
+import { createNotification } from "../lib/createNotification";
 
 interface Report {
     id: string; user_id: string; mtg_date: string; participants: string | null;
@@ -58,10 +59,17 @@ export default function MtgReportTab() {
         const current = (up as any)?.points || 0;
         await supabase.from("user_points").update({ points: current + points }).eq("id", r.user_id);
         await supabase.from("points_history").insert({ user_id: r.user_id, points, reason: "mtg_report" });
+        await createNotification({
+            userId: r.user_id,
+            type: "mtg_report_approved",
+            title: "✅ MTG報告書が承認されました",
+            message: `${r.mtg_date}のMTG報告書が承認されました（+${points}pt）`,
+            link: "/mtg-report",
+            icon: "📝",
+        });
         await load();
         setBusyId(null);
     };
-
     // FB付き差し戻し
     const reject = async (r: Report) => {
         const fb = (feedbackText[r.id] || "").trim();
@@ -71,6 +79,14 @@ export default function MtgReportTab() {
             .update({ status: "rejected", admin_feedback: fb, updated_at: new Date().toISOString() })
             .eq("id", r.id);
         if (error) { alert("差し戻しに失敗しました: " + error.message); setBusyId(null); return; }
+        await createNotification({
+            userId: r.user_id,
+            type: "mtg_report_rejected",
+            title: "🔄 MTG報告書が差し戻されました",
+            message: fb,
+            link: "/mtg-report",
+            icon: "📝",
+        });
         await load();
         setBusyId(null);
     };
