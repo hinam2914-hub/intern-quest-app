@@ -205,6 +205,7 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule">("dashboard");
+    const [scheduleTargetUser, setScheduleTargetUser] = useState<string | null>(null);
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
     const [editingPoints, setEditingPoints] = useState<number>(0);
@@ -1487,6 +1488,13 @@ export default function AdminPage() {
                                                         </div>
                                                     </div>
                                                     <div style={{ display: "flex", gap: 4 }}>
+                                                        <button
+                                                            onClick={() => { setScheduleTargetUser(u.id); setActiveTab("schedule"); }}
+                                                            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#a5b4fc", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                                                            title="この人のスケジュールを見る"
+                                                        >
+                                                            ☀️
+                                                        </button>
                                                         {(u.deptCode === "CB" || u.deptCode === "SP") ? (
                                                             <select
                                                                 value={u.position || ""}
@@ -3874,7 +3882,7 @@ export default function AdminPage() {
                     <SalesManagementTab />
                 )}
                 {activeTab === "schedule" && (
-                    <ScheduleManagementTab />
+                    <ScheduleManagementTab initialUserId={scheduleTargetUser} />
                 )}
                 {activeTab === "es" && (
                     <div>

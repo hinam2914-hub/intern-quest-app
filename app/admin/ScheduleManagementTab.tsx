@@ -18,7 +18,7 @@ function getTodayJST(): string {
   return jst.toISOString().slice(0, 10);
 }
 
-export default function ScheduleManagementTab() {
+export default function ScheduleManagementTab({ initialUserId }: { initialUserId?: string | null }) {
   const [date, setDate] = useState<string>(getTodayJST());
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,10 +61,17 @@ export default function ScheduleManagementTab() {
       // 入力済みを上に
       merged.sort((a, b) => Number(b.hasSchedule) - Number(a.hasSchedule));
       setRows(merged);
+
+      // ユーザー一覧から特定ユーザーを指定して開かれた場合、その人を自動選択
+      if (initialUserId) {
+        const target = merged.find((r) => r.user_id === initialUserId);
+        if (target) setSelected(target);
+      }
+
       setLoading(false);
     };
     load();
-  }, [date]);
+  }, [date, initialUserId]);
 
   const inputCount = rows.filter((r) => r.hasSchedule).length;
 
