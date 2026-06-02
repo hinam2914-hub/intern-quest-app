@@ -37,6 +37,7 @@ export default function RankingPage() {
     const [teamRanking, setTeamRanking] = useState<RankingUser[]>([]);
     const [streakUsers, setStreakUsers] = useState<RankingUser[]>([]);
     const [sankyuUsers, setSankyuUsers] = useState<RankingUser[]>([]);
+    const [sankyuSentUsers, setSankyuSentUsers] = useState<RankingUser[]>([]);
     const [challengeUsers, setChallengeUsers] = useState<RankingUser[]>([]);
     const [testUsers, setTestUsers] = useState<RankingUser[]>([]);
     const [adviceUsers, setAdviceUsers] = useState<RankingUser[]>([]);
@@ -49,7 +50,7 @@ export default function RankingPage() {
     const [loading, setLoading] = useState(true);
     const [myTeamId, setMyTeamId] = useState<string | null>(null);
     const [myId, setMyId] = useState("");
-    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total">("total");
+    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "sankyu_sent" |"challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total">("total");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -112,6 +113,21 @@ export default function RankingPage() {
                     avatar_url: row.avatar_url,
                     is_active: row.is_active,
                     points: thanksCounts[row.id] || 0,
+                })).sort((a, b) => b.points - a.points));
+            }
+            // ===== サンキュー送信数ランキング =====
+            const { data: thanksSentRows } = await supabase.from("thanks").select("from_user_id");
+            const thanksSentCounts: { [id: string]: number } = {};
+            (thanksSentRows || []).forEach((row: any) => { if (row.from_user_id) thanksSentCounts[row.from_user_id] = (thanksSentCounts[row.from_user_id] || 0) + 1; });
+            const sankyuSentIds = Object.keys(thanksSentCounts);
+            if (sankyuSentIds.length > 0) {
+                const { data: sankyuSentProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true).in("id", sankyuSentIds);
+                setSankyuSentUsers((sankyuSentProfiles || []).map((row: any) => ({
+                    id: row.id,
+                    name: row.name,
+                    avatar_url: row.avatar_url,
+                    is_active: row.is_active,
+                    points: thanksSentCounts[row.id] || 0,
                 })).sort((a, b) => b.points - a.points));
             }
             // ===== ライフチャレンジ数ランキング =====
@@ -342,6 +358,7 @@ export default function RankingPage() {
         if (user.isTeam) return `${user.points}%`;
         if (activeTab === "streak") return `${user.points}日`;
         if (activeTab === "sankyu") return `${user.points}個`;
+        if (activeTab === "sankyu_sent") return `${user.points}個`;
         if (activeTab === "challenge") return `${user.points}個`;
         if (activeTab === "test") return `${user.points}個`;
         if (activeTab === "advice") return `${user.points}件`;
@@ -449,7 +466,7 @@ export default function RankingPage() {
         );
     }
 
-   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : activeTab === "maru_total" ? maruTotalUsers : teamRanking;
+   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "sankyu_sent" ? sankyuSentUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : activeTab === "maru_total" ? maruTotalUsers : teamRanking;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -470,7 +487,8 @@ export default function RankingPage() {
                         { key: "weekly", label: "⚡ 今週" },
                        { key: "teams", label: "👥 チーム" },
                         { key: "streak", label: "🔥 連続" },
-                       { key: "sankyu", label: "💌 サンキュー" },
+                       { key: "sankyu", label: "💌 サンキュー受信" },
+                       { key: "sankyu_sent", label: "🎉 サンキュー送信" },
                         { key: "challenge", label: "🎯 チャレンジ" },
                         { key: "test", label: "📚 テスト" },
                         { key: "advice", label: "💡 アドバイス送信" },
