@@ -1057,10 +1057,17 @@ export default function AdminPage() {
             });
         }
 
+        await createNotification({
+            userId: advice.sender_id,
+            type: "advice_approved",
+            title: "✅ アドバイスが承認されました",
+            message: pointsToAward > 0 ? `${advice.receiverName}さんへのアドバイスが承認されました（+${pointsToAward}pt）` : `${advice.receiverName}さんへのアドバイスが承認されました`,
+            link: "/advice",
+            icon: "💡",
+        });
         alert("✅ 承認しました");
         location.reload();
     };
-
     const handleRejectAdvice = async (advice: any) => {
         const reason = prompt("却下理由を入力してください（送信者に通知されます）", "");
         if (reason === null) return;
@@ -1076,6 +1083,14 @@ export default function AdminPage() {
         }).eq("id", advice.id);
 
         if (error) { alert("却下失敗: " + error.message); return; }
+        await createNotification({
+            userId: advice.sender_id,
+            type: "advice_rejected",
+            title: "🔄 アドバイスが承認されませんでした",
+            message: reason || "理由未記入",
+            link: "/advice",
+            icon: "💡",
+        });
         alert("❌ 却下しました");
         location.reload();
     };
