@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { getAllMaruStreaks } from "../lib/scheduleStreak";
 
 type Slot = { start: string; end: string; content: string; result: "ok" | "ng" | null };
 type Row = {
@@ -23,7 +24,7 @@ export default function ScheduleManagementTab({ initialUserId }: { initialUserId
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Row | null>(null);
-
+  const [streaks, setStreaks] = useState<Map<string, number>>(new Map());
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -61,6 +62,10 @@ export default function ScheduleManagementTab({ initialUserId }: { initialUserId
       // 入力済みを上に
       merged.sort((a, b) => Number(b.hasSchedule) - Number(a.hasSchedule));
       setRows(merged);
+
+      // 全丸連続日数をまとめて取得
+      const streakMap = await getAllMaruStreaks(merged.map((r) => r.user_id));
+      setStreaks(streakMap);
 
       // ユーザー一覧から特定ユーザーを指定して開かれた場合、その人を自動選択
       if (initialUserId) {
@@ -107,6 +112,11 @@ export default function ScheduleManagementTab({ initialUserId }: { initialUserId
           <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 16 }}>
             {date} ／ 達成 {selected.slots.filter((s) => s.result === "ok").length}/{selected.slots.length}
             {selected.reviewed ? "（振り返り済み）" : "（振り返り未）"}
+            {(streaks.get(selected.user_id) || 0) > 0 && (
+              <span style={{ color: "#fbbf24", fontWeight: 700, marginLeft: 8 }}>
+                🔥{streaks.get(selected.user_id)}日全丸連続
+              </span>
+            )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {selected.slots.map((slot, i) => (
@@ -143,6 +153,11 @@ export default function ScheduleManagementTab({ initialUserId }: { initialUserId
                       <span style={{ fontSize: 12, color: r.reviewed ? "#34d399" : "#6b7280" }}>
                         {r.reviewed ? "振り返り済" : "未振り返り"}
                       </span>
+                      {(streaks.get(r.user_id) || 0) > 0 && (
+                        <span style={{ fontSize: 12, color: "#fbbf24", fontWeight: 700 }}>
+                          🔥{streaks.get(r.user_id)}日全丸
+                        </span>
+                      )}
                       <span style={{ fontSize: 13, color: "#a5b4fc", fontWeight: 700 }}>
                         {ok}/{r.slots.length}（{rate}%）
                       </span>
