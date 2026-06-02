@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
+import { createNotification } from "../lib/createNotification";
 
 type AdminTask = {
     id: string;
@@ -212,6 +213,14 @@ export default function TaskManagementTab() {
                 reason: "タスク報告書承認",
             });
 
+            await createNotification({
+                userId: activeReport.user_id,
+                type: "task_approved",
+                title: "✅ タスク報告書が承認されました",
+                message: feedback.trim() || "報告書が承認されました（+1pt）",
+                link: "/my-tasks",
+                icon: "📋",
+            });
             setMessage("✅ 承認しました（+1pt 付与）");
             await loadAll();
             setActiveReport(null);
@@ -246,6 +255,14 @@ export default function TaskManagementTab() {
                 })
                 .eq("id", activeReport.id);
 
+            await createNotification({
+                userId: activeReport.user_id,
+                type: "task_rejected",
+                title: "🔄 タスク報告書が差し戻されました",
+                message: feedback.trim(),
+                link: "/my-tasks",
+                icon: "📋",
+            });
             setMessage("🔄 差戻しました");
             await loadAll();
             setActiveReport(null);
