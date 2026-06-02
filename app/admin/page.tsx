@@ -14,6 +14,7 @@ import KpiDashboardTab from "./components/KpiDashboardTab";
 import ReportAnalyticsTab from "./components/ReportAnalyticsTab";
 import DailyReportEvalTab from "./DailyReportEvalTab";
 import SalesManagementTab from "./SalesManagementTab";
+import { createNotification } from "../lib/createNotification";
 import ScheduleManagementTab from "./ScheduleManagementTab";
 
 type UserRow = { id: string; name: string | null };
@@ -4849,6 +4850,14 @@ export default function AdminPage() {
                                                             await supabase.from("points_history").insert({ user_id: sub.user_id, change: challenge.points, reason: "challenge_complete", created_at: nowIso });
                                                         }
                                                         setChallengeSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, status: "approved" } : s));
+                                                        await createNotification({
+                                                            userId: sub.user_id,
+                                                            type: "challenge_approved",
+                                                            title: "✅ チャレンジが承認されました",
+                                                            message: `「${sub.challengeTitle || "チャレンジ"}」が承認されました`,
+                                                            link: "/challenge",
+                                                            icon: "🎯",
+                                                        });
                                                     }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #10b981, #34d399)", color: "#0a0a0f", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ 承認</button>
                                                     <button onClick={async () => {
                                                         const feedback = prompt("差戻し理由を記入してください（ユーザーに表示されます）");
@@ -4859,6 +4868,14 @@ export default function AdminPage() {
                                                         }
                                                         await supabase.from("challenge_submissions").update({ status: "rejected", feedback: feedback.trim() }).eq("id", sub.id);
                                                         setChallengeSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, status: "rejected", feedback: feedback.trim() } : s));
+                                                        await createNotification({
+                                                            userId: sub.user_id,
+                                                            type: "challenge_rejected",
+                                                            title: "🔄 チャレンジが差し戻されました",
+                                                            message: feedback.trim(),
+                                                            link: "/challenge",
+                                                            icon: "🎯",
+                                                        });
                                                     }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ 却下</button>
                                                 </div>
                                             </div>
