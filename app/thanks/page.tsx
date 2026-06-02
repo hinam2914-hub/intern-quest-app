@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { formatJSTShort } from "../lib/date";
+import { createNotification } from "../lib/createNotification";
 
 type UserOption = { id: string; name: string; avatar_url?: string | null };
 type ThanksRow = {
@@ -126,6 +127,17 @@ export default function ThanksPage() {
         const current = pointRow?.points || 0;
         await supabase.from("user_points").update({ points: current + 1 }).eq("id", toUserId);
         await supabase.from("points_history").insert({ user_id: toUserId, change: 1, reason: "thanks_received", created_at: nowIso });
+
+        // 受け取った人へ通知
+        const fromName = users.find(u => u.id === myId)?.name || "メンバー";
+        await createNotification({
+            userId: toUserId,
+            type: "thanks",
+            title: `🎉 ${fromName}さんからサンキューが届きました`,
+            message: finalMessage,
+            link: "/thanks",
+            icon: "🎉",
+        });
 
         setSuccess(true);
         const toName = users.find(u => u.id === toUserId)?.name || "相手";
