@@ -30,7 +30,7 @@ export async function getAllMaruStreaks(
   // 対象期間の全スケジュールを一括取得
   const { data } = await supabase
     .from("daily_schedules")
-    .select("user_id, date, slots")
+    .select("user_id, date, slots, schedule_status")
     .gte("date", since)
     .in("user_id", userIds);
 
@@ -38,7 +38,7 @@ export async function getAllMaruStreaks(
   const byUser = new Map<string, Map<string, boolean>>();
   (data || []).forEach((row: any) => {
     if (!byUser.has(row.user_id)) byUser.set(row.user_id, new Map());
-    byUser.get(row.user_id)!.set(row.date, isAllMaru(row.slots));
+    byUser.get(row.user_id)!.set(row.date, row.schedule_status === "rejected" ? false : isAllMaru(row.slots));
   });
 
   // 各ユーザーごとに今日から遡って連続をカウント

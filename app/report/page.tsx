@@ -161,12 +161,12 @@ export default function ReportPage() {
             // 今日の行がまだ報酬未計算なら処理
             const { data: schedRow } = await supabase
                 .from("daily_schedules")
-                .select("streak_rewarded")
+               .select("streak_rewarded, schedule_status")
                 .eq("user_id", user.id)
                 .eq("date", todayYmd)
                 .maybeSingle();
 
-            if (schedRow && !(schedRow as any).streak_rewarded) {
+            if (schedRow && !(schedRow as any).streak_rewarded && (schedRow as any).schedule_status !== "rejected") {
                 // 累計全丸日数 +1
                 const { data: profMaru } = await supabase
                     .from("profiles")

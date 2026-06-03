@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { getAllMaruStreaks } from "../lib/scheduleStreak";
+import { createNotification } from "../lib/createNotification";
 
 type Slot = { start: string; end: string; content: string; result: "ok" | "ng" | null };
 type Row = {
@@ -11,6 +12,7 @@ type Row = {
   slots: Slot[];
   reviewed: boolean;
   hasSchedule: boolean;
+  rejected: boolean;
 };
 
 function getTodayJST(): string {
@@ -39,12 +41,12 @@ export default function ScheduleManagementTab({ initialUserId }: { initialUserId
       // 指定日のスケジュール
       const { data: scheds } = await supabase
         .from("daily_schedules")
-        .select("user_id, slots, reviewed")
+        .select("user_id, slots, reviewed, schedule_status")
         .eq("date", date);
 
-      const schedMap = new Map<string, { slots: Slot[]; reviewed: boolean }>();
+      const schedMap = new Map<string, { slots: Slot[]; reviewed: boolean; rejected: boolean }>();
       (scheds || []).forEach((s: any) => {
-        schedMap.set(s.user_id, { slots: Array.isArray(s.slots) ? s.slots : [], reviewed: !!s.reviewed });
+        schedMap.set(s.user_id, { slots: Array.isArray(s.slots) ? s.slots : [], reviewed: !!s.reviewed, rejected: s.schedule_status === "rejected" });
       });
 
       const merged: Row[] = (profs || []).map((p: any) => {
@@ -55,6 +57,7 @@ export default function ScheduleManagementTab({ initialUserId }: { initialUserId
           name: p.name || "（名前未設定）",
           slots: filled,
           reviewed: sched?.reviewed || false,
+          rejected: sched?.rejected || false,
           hasSchedule: filled.length > 0,
         };
       });
@@ -127,6 +130,39 @@ export default function ScheduleManagementTab({ initialUserId }: { initialUserId
               </div>
             ))}
           </div>
+          {selected.rejected ? (
+            <div style={{ marginTop: 16, padding: "10px 14px", borderRadius: 8, background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.3)", color: "#f87171", fontSize: 13, fontWeight: 700 }}>
+              🔄 このスケジュールは差し戻し済みです（全丸対象外）
+            </div>
+          ) : (
+            <button
+              onClick={async () => {
+                const reason = prompt("差し戻し理由を記入してください（本人に通知されます）", "スケジュールの内容が不十分です。より具体的に作成してください。");
+                if (reason === null) return;
+                if (!reason.trim()) { alert("差し戻し理由を記入してください"); return; }
+                const { error } = await supabase
+                  .from("daily_schedules")
+                  .update({ schedule_status: "rejected", schedule_reject_reason: reason.trim() })
+                  .eq("user_id", selected.user_id)
+                  .eq("date", date);
+                if (error) { alert("差し戻しに失敗しました: " + error.message); return; }
+                await createNotification({
+                  userId: selected.user_id,
+                  type: "schedule_rejected",
+                  title: "🔄 スケジュールが差し戻されました",
+                  message: reason.trim(),
+                  link: "/today-schedule",
+                  icon: "📅",
+                });
+                alert("🔄 差し戻しました");
+                setSelected({ ...selected, rejected: true });
+                setRows((prev) => prev.map((r) => r.user_id === selected.user_id ? { ...r, rejected: true } : r));
+              }}
+              style={{ marginTop: 16, padding: "10px 20px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.2)", color: "#f87171", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+            >
+              🔄 スケジュールを差し戻す
+            </button>
+          )}
         </div>
       ) : (
         // ===== 一覧 =====
