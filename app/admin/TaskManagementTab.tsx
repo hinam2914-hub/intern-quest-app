@@ -297,6 +297,42 @@ export default function TaskManagementTab() {
         return "(不明)";
     };
 
+    const applyPenalty = async (userId: string, taskId: string, taskTitle: string) => {
+        if (!confirm(`このメンバーにタスク期限超過ペナルティ（-10pt）を科しますか？\n\nタスク: ${taskTitle}`)) return;
+        // ペナルティ記録（二重防止：unique制約があるので重複時はエラー）
+        const { error: penErr } = await supabase.from("task_penalties").insert({
+            user_id: userId,
+            task_id: taskId,
+            points: -10,
+        });
+        if (penErr) { alert("ペナルティ記録に失敗しました（既に適用済みの可能性）: " + penErr.message); return; }
+        // 持ちポイントから -10
+        const { data: cur } = await supabase
+            .from("user_points")
+            .select("points")
+            .eq("user_id", userId)
+            .single();
+        const newPoints = ((cur as any)?.points || 0) - 10;
+        await supabase.from("user_points").upsert({ user_id: userId, points: newPoints });
+        // 履歴
+        await supabase.from("points_history").insert({
+            user_id: userId,
+            change: -10,
+            reason: "タスク期限超過",
+        });
+        // 通知
+        await createNotification({
+            userId: userId,
+            type: "task_penalty",
+            title: "⚠️ タスクの期限超過で -10pt",
+            message: `「${taskTitle}」が締切までに提出されませんでした`,
+            link: "/my-tasks",
+            icon: "⏰",
+        });
+        setMessage("⏰ ペナルティを科しました（-10pt）");
+        await loadAll();
+        setTimeout(() => setMessage(""), 3000);
+    };
     const pendingReports = reports.filter(r => r.status === "pending");
     // 期限切れ放置（締切超過 & 報告書未提出 & ペナルティ未適用）の算出
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -456,7 +492,7 @@ export default function TaskManagementTab() {
                                         {offenders.map(p => (
                                             <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
                                                 <span style={{ fontSize: 13, color: "#e5e7eb" }}>{p.name}</span>
-                                                <span style={{ fontSize: 12, color: "#9ca3af" }}>未提出</span>
+                                                <button onClick={() => applyPenalty(p.id, task.id, task.title)} style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.2)", color: "#f87171", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>-10pt 科す</button>
                                             </div>
                                         ))}
                                     </div>
