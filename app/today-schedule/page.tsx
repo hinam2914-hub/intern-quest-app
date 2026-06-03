@@ -35,6 +35,7 @@ export default function TodaySchedulePage() {
   const [slots, setSlots] = useState<Slot[]>(defaultSlots());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [rejectReason, setRejectReason] = useState<string | null>(null);
   const today = getTodayJST();
 
   useEffect(() => {
@@ -48,13 +49,16 @@ export default function TodaySchedulePage() {
 
       const { data } = await supabase
         .from("daily_schedules")
-        .select("slots")
+        .select("slots, schedule_status, schedule_reject_reason")
         .eq("user_id", user.id)
         .eq("date", today)
         .maybeSingle();
 
       if (data && Array.isArray((data as any).slots) && (data as any).slots.length > 0) {
         setSlots((data as any).slots as Slot[]);
+      }
+      if (data && (data as any).schedule_status === "rejected") {
+        setRejectReason((data as any).schedule_reject_reason || "スケジュールの内容を見直してください");
       }
       setLoading(false);
     };
@@ -88,6 +92,8 @@ export default function TodaySchedulePage() {
           user_id: userId,
           date: today,
           slots: slots,
+          schedule_status: null,
+          schedule_reject_reason: null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id,date" }
@@ -142,9 +148,16 @@ export default function TodaySchedulePage() {
         <h1 style={{ fontSize: 26, fontWeight: "bold", marginBottom: 4 }}>
           ☀️ 今日のスケジュール
         </h1>
-        <p style={{ color: textMuted, marginBottom: 24, fontSize: 14 }}>
+       <p style={{ color: textMuted, marginBottom: 24, fontSize: 14 }}>
           {today} ／ 今日の予定を時間ごとに書き出しましょう
         </p>
+        {rejectReason && (
+          <div style={{ marginBottom: 24, padding: "14px 16px", borderRadius: 10, background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.35)" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#f87171", marginBottom: 4 }}>🔄 スケジュールが差し戻されました</div>
+            <div style={{ fontSize: 13, color: "#fca5a5" }}>{rejectReason}</div>
+            <div style={{ fontSize: 12, color: textMuted, marginTop: 6 }}>内容を見直して、保存し直してください。</div>
+          </div>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {slots.map((slot, i) => (
