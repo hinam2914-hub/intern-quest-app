@@ -30,12 +30,12 @@ type TaskReport = {
     reviewed_at: string | null;
 };
 
-type Profile = { id: string; name: string; department_id: string | null };
+type Profile = { id: string; name: string; department_id: string | null; is_active?: boolean };
 type Department = { id: string; name: string; code: string };
 type PersonalTask = { id: string; user_id: string; title: string; description: string | null; requires_report: boolean };
 
 export default function TaskManagementTab() {
-    const [subTab, setSubTab] = useState<"create" | "review">("create");
+    const [subTab, setSubTab] = useState<"create" | "review" | "overdue">("create");
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
 
@@ -45,6 +45,7 @@ export default function TaskManagementTab() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [personalTasks, setPersonalTasks] = useState<PersonalTask[]>([]);
+    const [penalties, setPenalties] = useState<{ user_id: string; task_id: string }[]>([]);
 
     // タスク作成フォーム
     const [newTitle, setNewTitle] = useState("");
@@ -78,7 +79,7 @@ export default function TaskManagementTab() {
         // ユーザー一覧
         const { data: profileRows } = await supabase
             .from("profiles")
-            .select("id, name, department_id")
+            .select("id, name, department_id, is_active")
             .order("name");
         setProfiles((profileRows || []) as Profile[]);
 
@@ -88,6 +89,11 @@ export default function TaskManagementTab() {
             .select("id, name, code")
             .order("code");
         setDepartments((deptRows || []) as Department[]);
+        // タスクペナルティ記録（二重防止用）
+        const { data: penaltyRows } = await supabase
+            .from("task_penalties")
+            .select("user_id, task_id");
+        setPenalties((penaltyRows || []) as { user_id: string; task_id: string }[]);
 
         // 個人タスク（報告書型）
         const { data: pTaskRows } = await supabase
@@ -292,6 +298,29 @@ export default function TaskManagementTab() {
     };
 
     const pendingReports = reports.filter(r => r.status === "pending");
+    // 期限切れ放置（締切超過 & 報告書未提出 & ペナルティ未適用）の算出
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const overdueList = tasks
+        .filter(t => t.deadline && t.deadline < todayStr)
+        .map(t => {
+            // 対象者を展開
+            let targets: Profile[] = [];
+            if (t.assignee_type === "user" && t.assignee_user_id) {
+                const p = profiles.find(p => p.id === t.assignee_user_id);
+                if (p) targets = [p];
+            } else if (t.assignee_type === "department" && t.assignee_department_id) {
+                targets = profiles.filter(p => p.department_id === t.assignee_department_id);
+            }
+            // アクティブのみ
+            targets = targets.filter(p => p.is_active !== false);
+            // 報告書未提出 & ペナルティ未適用の人だけ残す
+            const offenders = targets.filter(p =>
+                !reports.some(r => r.task_id === t.id && r.user_id === p.id) &&
+                !penalties.some(pen => pen.task_id === t.id && pen.user_id === p.id)
+            );
+            return { task: t, offenders };
+        })
+        .filter(x => x.offenders.length > 0);
 
     if (loading) {
         return <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>読み込み中...</div>;
@@ -306,6 +335,9 @@ export default function TaskManagementTab() {
                 </button>
                 <button onClick={() => setSubTab("review")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: subTab === "review" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: subTab === "review" ? "#fff" : "#9ca3af", fontWeight: 700, cursor: "pointer" }}>
                     📥 報告書の承認 {pendingReports.length > 0 && <span style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 4, background: "#f59e0b", color: "#fff", fontSize: 11 }}>{pendingReports.length}</span>}
+                </button>
+                <button onClick={() => setSubTab("overdue")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: subTab === "overdue" ? "linear-gradient(135deg, #ef4444, #f87171)" : "transparent", color: subTab === "overdue" ? "#fff" : "#9ca3af", fontWeight: 700, cursor: "pointer" }}>
+                    ⏰ 期限切れ {overdueList.length > 0 && <span style={{ marginLeft: 4, padding: "1px 6px", borderRadius: 4, background: "#ef4444", color: "#fff", fontSize: 11 }}>{overdueList.reduce((s, x) => s + x.offenders.length, 0)}</span>}
                 </button>
             </div>
 
@@ -407,6 +439,33 @@ export default function TaskManagementTab() {
                 </div>
             )}
 
+           {/* 期限切れ一覧 */}
+            {subTab === "overdue" && (
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                    <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 800, color: "#f87171" }}>⏰ 期限切れ放置タスク</h3>
+                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 16 }}>締切を過ぎても報告書が未提出のメンバーです。確認のうえペナルティ（-10pt）を科せます。</div>
+                    {overdueList.length === 0 ? (
+                        <div style={{ color: "#6b7280", fontSize: 14, padding: 12 }}>期限切れ放置のタスクはありません 🎉</div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                            {overdueList.map(({ task, offenders }) => (
+                                <div key={task.id} style={{ padding: 16, borderRadius: 12, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                                    <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>{task.title}</div>
+                                    <div style={{ fontSize: 11, color: "#fbbf24", marginBottom: 10 }}>⏰ 締切: {task.deadline ? new Date(task.deadline).toLocaleDateString("ja-JP") : "—"}</div>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                        {offenders.map(p => (
+                                            <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+                                                <span style={{ fontSize: 13, color: "#e5e7eb" }}>{p.name}</span>
+                                                <span style={{ fontSize: 12, color: "#9ca3af" }}>未提出</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
             {/* 報告書の承認 */}
             {subTab === "review" && (
                 <div>
