@@ -3883,9 +3883,6 @@ export default function AdminPage() {
                 {activeTab === "report_analytics" && (
                     <ReportAnalyticsTab />
                 )}
-                {activeTab === "reports" && reportSubTab === "eval" && (
-                    <DailyReportEvalTab />
-                )}
                 {activeTab === "sales" && (
                     <SalesManagementTab />
                 )}
@@ -4084,6 +4081,9 @@ export default function AdminPage() {
                             </div>
                         )}
                         </div>
+                        )}
+                        {reportSubTab === "eval" && (
+                            <DailyReportEvalTab />
                         )}
                     </div>
                 )}
