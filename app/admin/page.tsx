@@ -198,6 +198,7 @@ export default function AdminPage() {
     const [topSubmitters, setTopSubmitters] = useState<TopSubmitter[]>([]);
     const [notSubmittedUsers, setNotSubmittedUsers] = useState<UserRow[]>([]);
     const [reports, setReports] = useState<ReportRow[]>([]);
+    const [reportSubTab, setReportSubTab] = useState<"history" | "eval">("history");
     const [userDetails, setUserDetails] = useState<UserDetail[]>([]);
     const [pointGraphData, setPointGraphData] = useState<GraphData[]>([]);
     const [submitGraphData, setSubmitGraphData] = useState<SubmitGraphData[]>([]);
@@ -1083,14 +1084,6 @@ export default function AdminPage() {
         }).eq("id", advice.id);
 
         if (error) { alert("却下失敗: " + error.message); return; }
-        await createNotification({
-            userId: advice.sender_id,
-            type: "advice_rejected",
-            title: "🔄 アドバイスが承認されませんでした",
-            message: reason || "理由未記入",
-            link: "/advice",
-            icon: "💡",
-        });
         alert("❌ 却下しました");
         location.reload();
     };
@@ -1351,9 +1344,8 @@ export default function AdminPage() {
                                 { key: "task_management", label: "タスク管理" },
                                 { key: "es", label: "総合ES" },
                                 { key: "roadmap", label: "ロードマップ" },
-                                { key: "reports", label: "日報履歴" },
+                                { key: "reports", label: "日報" },
                                 { key: "report_analytics", label: "日報分析" },
-                                { key: "report_eval", label: "日報評価" },
                                 { key: "schedule", label: "スケジュール" },
                                 { key: "thanks_history", label: "サンキュー履歴" },
                                 { key: "routine_check", label: "ルーティン" },
@@ -3891,7 +3883,7 @@ export default function AdminPage() {
                 {activeTab === "report_analytics" && (
                     <ReportAnalyticsTab />
                 )}
-                {activeTab === "report_eval" && (
+                {activeTab === "reports" && reportSubTab === "eval" && (
                     <DailyReportEvalTab />
                 )}
                 {activeTab === "sales" && (
@@ -4015,8 +4007,14 @@ export default function AdminPage() {
                         )}
                     </div>
                 )}
-                {activeTab === "reports" && (
+               {activeTab === "reports" && (
                     <div>
+                        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                            <button onClick={() => setReportSubTab("history")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, background: reportSubTab === "history" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: reportSubTab === "history" ? "#fff" : "#9ca3af" }}>📋 日報履歴</button>
+                            <button onClick={() => setReportSubTab("eval")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, background: reportSubTab === "eval" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: reportSubTab === "eval" ? "#fff" : "#9ca3af" }}>⭐ 日報評価</button>
+                        </div>
+                        {reportSubTab === "history" && (
+                        <div>
                         <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, padding: 24, marginBottom: 16 }}>
                             <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>📋 日報履歴</div>
                             <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.7 }}>全メンバーの日報を確認できます。</div>
@@ -4084,6 +4082,8 @@ export default function AdminPage() {
                                     ));
                                 })()}
                             </div>
+                        )}
+                        </div>
                         )}
                     </div>
                 )}
