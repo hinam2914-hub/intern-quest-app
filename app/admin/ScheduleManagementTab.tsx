@@ -140,9 +140,25 @@ export default function ScheduleManagementTab({ initialUserId }: { initialUserId
                 const reason = prompt("差し戻し理由を記入してください（本人に通知されます）", "スケジュールの内容が不十分です。より具体的に作成してください。");
                 if (reason === null) return;
                 if (!reason.trim()) { alert("差し戻し理由を記入してください"); return; }
+                // この日が全丸として加算済みなら、累計を-1して加算フラグを戻す
+                const { data: schedRow } = await supabase
+                  .from("daily_schedules")
+                  .select("streak_rewarded")
+                  .eq("user_id", selected.user_id)
+                  .eq("date", date)
+                  .maybeSingle();
+                if (schedRow && (schedRow as any).streak_rewarded) {
+                  const { data: prof } = await supabase
+                    .from("profiles")
+                    .select("total_maru_days")
+                    .eq("id", selected.user_id)
+                    .single();
+                  const newTotal = Math.max(0, ((prof as any)?.total_maru_days || 0) - 1);
+                  await supabase.from("profiles").update({ total_maru_days: newTotal }).eq("id", selected.user_id);
+                }
                 const { error } = await supabase
                   .from("daily_schedules")
-                  .update({ schedule_status: "rejected", schedule_reject_reason: reason.trim() })
+                  .update({ schedule_status: "rejected", schedule_reject_reason: reason.trim(), streak_rewarded: false })
                   .eq("user_id", selected.user_id)
                   .eq("date", date);
                 if (error) { alert("差し戻しに失敗しました: " + error.message); return; }
