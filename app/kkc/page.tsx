@@ -86,7 +86,7 @@ export default function KkcPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
                     <div>
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>💡 KKC 課題解決案box</h1>
-                        <p style={{ color: "#9ca3af", fontSize: 14, margin: 0 }}>業務で見つけた課題・実施した解決案・結果を共有しよう</p>
+                        <p style={{ color: "#9ca3af", fontSize: 14, margin: 0 }}>課題・実施した解決策・実際に出た結果をセットで共有しよう</p>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                         <div style={{ padding: "8px 16px", borderRadius: 10, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)" }}>
