@@ -80,10 +80,24 @@ export default function ReportPage() {
     const [showGachaModal, setShowGachaModal] = useState(false);
     const [reportDone, setReportDone] = useState(false);
 
-    useEffect(() => {
+   useEffect(() => {
         const load = async () => {
             const { data } = await supabase.from("kpi_items").select("*").eq("is_active", true).order("created_at");
             setKpiItems((data || []) as KpiItem[]);
+            // 今日すでに日報を提出済みで、かつ今日まだ日報ガチャを引いていないなら、ガチャボタンを復活させる
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const todayYmd = getTodayJST();
+                const { data: subs } = await supabase
+                    .from("submissions").select("created_at").eq("user_id", user.id);
+                const submittedToday = (subs || []).some((row: any) => toJSTDateOnly(row.created_at) === todayYmd);
+                const { data: gachas } = await supabase
+                    .from("gacha_history").select("created_at").eq("user_id", user.id).eq("cost", 0);
+                const gachaToday = (gachas || []).some((row: any) => toJSTDateOnly(row.created_at) === todayYmd);
+                if (submittedToday && !gachaToday) {
+                    setReportDone(true);
+                }
+            }
         };
         load();
     }, []);
