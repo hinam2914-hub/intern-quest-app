@@ -109,7 +109,7 @@ export default function DailyReportEvalTab() {
                                 <div style={{ fontSize: 12, color: "#34d399", fontWeight: 700 }}>✓ +{sub.eval_points}pt 評価済み</div>
                             ) : (
                                 <button onClick={() => giveBonus(sub)} disabled={saving === sub.id} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #f59e0b, #f97316)", color: "#fff", fontWeight: 700, cursor: saving === sub.id ? "not-allowed" : "pointer", fontSize: 13 }}>
-                                    {saving === sub.id ? "付与中..." : "�� +10pt 評価する"}
+                                    {saving === sub.id ? "付与中..." : "⭐ +10pt 評価する"}
                                 </button>
                             )}
                         </div>
