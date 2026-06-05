@@ -33,6 +33,10 @@ export default function MedakaPage() {
     const [title, setTitle] = useState("");
     const [body, setBody] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [comments, setComments] = useState<Record<string, { id: string; body: string; created_at: string }[]>>({});
+    const [openCommentPostId, setOpenCommentPostId] = useState<string | null>(null);
+    const [commentText, setCommentText] = useState("");
+    const [commentSubmitting, setCommentSubmitting] = useState(false);
 
     const loadData = useCallback(async (uid: string) => {
         const { data: postData } = await supabase
@@ -46,6 +50,16 @@ export default function MedakaPage() {
             .select("post_id")
             .eq("user_id", uid);
         setLikedIds(new Set((likeData || []).map((l: any) => l.post_id)));
+        const { data: commentData } = await supabase
+            .from("medaka_comments")
+            .select("id, post_id, body, created_at")
+            .order("created_at", { ascending: true });
+        const byPost: Record<string, { id: string; body: string; created_at: string }[]> = {};
+        (commentData || []).forEach((c: any) => {
+            if (!byPost[c.post_id]) byPost[c.post_id] = [];
+            byPost[c.post_id].push({ id: c.id, body: c.body, created_at: c.created_at });
+        });
+        setComments(byPost);
     }, []);
 
     useEffect(() => {
@@ -77,6 +91,24 @@ export default function MedakaPage() {
         await loadData(userId);
     };
 
+    const handleCommentSubmit = async (postId: string) => {
+        if (!commentText.trim() || commentSubmitting) return;
+        setCommentSubmitting(true);
+        const { data, error } = await supabase
+            .from("medaka_comments")
+            .insert({ post_id: postId, user_id: userId, body: commentText.trim() })
+            .select("id, post_id, body, created_at")
+            .single();
+        setCommentSubmitting(false);
+        if (error) { alert("投稿に失敗しました: " + error.message); return; }
+        if (data) {
+            setComments((prev) => ({
+                ...prev,
+                [postId]: [...(prev[postId] || []), { id: (data as any).id, body: (data as any).body, created_at: (data as any).created_at }],
+            }));
+            setCommentText("");
+        }
+    };
     const handleLike = async (post: Post) => {
         const alreadyLiked = likedIds.has(post.id);
         if (alreadyLiked) {
@@ -197,11 +229,42 @@ export default function MedakaPage() {
                                             {liked ? "❤️" : "🤍"} {post.like_count}
                                         </button>
                                         {isIssue && (
+                                            <button onClick={() => setOpenCommentPostId(openCommentPostId === post.id ? null : post.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#a5b4fc", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                                                💡 解決案を考える {(comments[post.id]?.length || 0) > 0 ? `(${comments[post.id].length})` : ""} {openCommentPostId === post.id ? "▲" : "▼"}
+                                            </button>
+                                        )}
+                                        {isIssue && (
                                             <button onClick={() => router.push("/kkc")} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(249,115,22,0.4)", background: "rgba(249,115,22,0.1)", color: "#fb923c", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                                                💡 解決案を考える →
+                                                ✅ 解決したらKKCへ →
                                             </button>
                                         )}
                                     </div>
+                                    {isIssue && openCommentPostId === post.id && (
+                                        <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, marginBottom: 8 }}>💡 解決案・アイデア</div>
+                                            {(comments[post.id] || []).length === 0 ? (
+                                                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10 }}>まだ解決案がありません。最初のアイデアを出してみましょう。</div>
+                                            ) : (
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+                                                    {(comments[post.id] || []).map((c) => (
+                                                        <div key={c.id} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+                                                            <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 2 }}>💡 匿名のメダカさん ・ {new Date(c.created_at).toLocaleDateString("ja-JP", { month: "short", day: "numeric" })}</div>
+                                                            <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.body}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <div style={{ display: "flex", gap: 8 }}>
+                                                <input
+                                                    value={openCommentPostId === post.id ? commentText : ""}
+                                                    onChange={(e) => setCommentText(e.target.value)}
+                                                    placeholder="解決案・アイデアを書く（匿名）"
+                                                    style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none" }}
+                                                />
+                                                <button onClick={() => handleCommentSubmit(post.id)} disabled={commentSubmitting || !commentText.trim()} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: commentSubmitting || !commentText.trim() ? "#374151" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: commentSubmitting || !commentText.trim() ? "not-allowed" : "pointer" }}>投稿</button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
