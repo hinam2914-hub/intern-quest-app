@@ -37,6 +37,7 @@ export default function MedakaPage() {
     const [openCommentPostId, setOpenCommentPostId] = useState<string | null>(null);
     const [commentText, setCommentText] = useState("");
     const [commentSubmitting, setCommentSubmitting] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     const loadData = useCallback(async (uid: string) => {
         const { data: postData } = await supabase
@@ -67,6 +68,8 @@ export default function MedakaPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
+            const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map((e) => e.trim());
+            setIsAdmin(!!user.email && adminEmails.includes(user.email));
             await loadData(user.id);
             setLoading(false);
         })();
@@ -91,6 +94,11 @@ export default function MedakaPage() {
         await loadData(userId);
     };
 
+    const handleStatusChange = async (postId: string, newStatus: string) => {
+        const { error } = await supabase.from("medaka_box").update({ status: newStatus }).eq("id", postId);
+        if (error) { alert("ステータス変更に失敗しました: " + error.message); return; }
+        setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, status: newStatus } : p));
+    };
     const handleCommentSubmit = async (postId: string) => {
         if (!commentText.trim() || commentSubmitting) return;
         setCommentSubmitting(true);
@@ -239,6 +247,20 @@ export default function MedakaPage() {
                                             </button>
                                         )}
                                     </div>
+                                    {isAdmin && (
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+                                            <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700 }}>運営：ステータス変更</span>
+                                            {[
+                                                { key: "open", label: "🔵 受付中" },
+                                                { key: "acknowledged", label: "🟡 確認済み" },
+                                                { key: "resolved", label: "🟢 解決済み" },
+                                            ].map((s) => (
+                                                <button key={s.key} onClick={() => handleStatusChange(post.id, s.key)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${post.status === s.key ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.1)"}`, background: post.status === s.key ? "rgba(99,102,241,0.2)" : "transparent", color: post.status === s.key ? "#fff" : "#9ca3af", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                                                    {s.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                     {isIssue && openCommentPostId === post.id && (
                                         <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
                                             <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, marginBottom: 8 }}>💡 解決案・アイデア</div>
