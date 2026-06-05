@@ -1356,7 +1356,6 @@ export default function AdminPage() {
                                 { key: "mtg_report", label: "MTG報告書" },
                                 { key: "tests", label: "テスト結果" },
                                 { key: "challenges", label: "チャレンジ" },
-                                { key: "mtg", label: "MTG管理" },
                             ],
                         },
                         {
