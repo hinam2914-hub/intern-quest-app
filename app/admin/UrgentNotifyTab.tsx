@@ -46,6 +46,14 @@ export default function UrgentNotifyTab() {
       return targetDays.every((d) => !days.has(d));
     });
     setOffenders(result as Profile[]);
+    // 今日すでに緊急通知を送った人を「送信済み」にする（ページ更新後も保持）
+    const todayYmd = ymdJST(0);
+    const { data: notifs } = await supabase
+      .from("notifications").select("user_id, created_at, type").eq("type", "urgent").gte("created_at", sinceISO);
+    const alreadySent = (notifs || [])
+      .filter((n: any) => toJSTDateOnly(n.created_at) === todayYmd)
+      .map((n: any) => n.user_id);
+    setSentIds(Array.from(new Set(alreadySent)));
     setLoading(false);
   }, []);
 
