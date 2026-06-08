@@ -56,7 +56,7 @@ export default function MentorReportPage() {
         imageUrl = publicUrl;
       }
     }
-    await supabase.from("mentor_reports").insert({
+    const { error: insertError } = await supabase.from("mentor_reports").insert({
       user_id: userId,
       target_user_id: targetId,
       category,
@@ -64,6 +64,11 @@ export default function MentorReportPage() {
       image_url: imageUrl,
       status: "pending",
     });
+    if (insertError) {
+      setMessage("❌ 送信に失敗しました: " + insertError.message);
+      setSending(false);
+      return;
+    }
     const { data: reportRows } = await supabase.from("mentor_reports").select("*").eq("user_id", userId).order("created_at", { ascending: false });
     setReports((reportRows || []) as Report[]);
     setTargetId(""); setComment(""); setImage(null);
