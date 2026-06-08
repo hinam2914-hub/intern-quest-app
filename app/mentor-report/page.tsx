@@ -11,6 +11,7 @@ const CATEGORIES = [
   { key: "sales", label: "🤝 営業同行" },
   { key: "meeting", label: "💬 面談・1on1" },
   { key: "study", label: "📚 勉強会・研修" },
+  { key: "play", label: "🎮 遊び" },
 ];
 
 export default function MentorReportPage() {

@@ -19,6 +19,7 @@ const CAT_LABEL: Record<string, string> = {
   sales: "🤝 営業同行",
   meeting: "💬 面談・1on1",
   study: "📚 勉強会・研修",
+  play: "🎮 遊び",
 };
 
 export default function MentorReportTab() {
