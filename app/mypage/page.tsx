@@ -473,6 +473,7 @@ export default function MyPage() {
     const [kpiCount, setKpiCount] = useState(0);
     const [approvedKpiCount, setApprovedKpiCount] = useState(0);
     const [kkcApprovedCount, setKkcApprovedCount] = useState(0);
+    const [mentorCount, setMentorCount] = useState(0);
     const [esUpdateCount, setEsUpdateCount] = useState(0);
     const [activeDays, setActiveDays] = useState(0);
     const [profileFlags, setProfileFlags] = useState<ProfileFlags>({});
@@ -738,6 +739,8 @@ export default function MyPage() {
         const { count: chalCnt } = await supabase.from("challenge_submissions").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved");
         setChallengeCount(chalCnt || 0);
         setKkcApprovedCount(kkcCnt || 0);
+        const { count: mentorCnt } = await supabase.from("mentor_reports").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved");
+        setMentorCount(mentorCnt || 0);
         const { count: esCnt } = await supabase.from("user_es_history").select("*", { count: "exact", head: true }).eq("user_id", user.id);
         setEsUpdateCount(esCnt || 0);
 
