@@ -152,14 +152,14 @@ function getEducationScore(education: string): number {
 }
 function getRankScore(params: {
     level: number; thanksCount: number; activeDays: number; education: string;
-    approvedKpiCount: number; kkcApprovedCount: number; esUpdateCount: number;
+    approvedKpiCount: number; kkcApprovedCount: number; esUpdateCount: number; mentorCount: number;
 }): number {
-    const { level, thanksCount, activeDays, education, approvedKpiCount, kkcApprovedCount, esUpdateCount } = params;
+    const { level, thanksCount, activeDays, education, approvedKpiCount, kkcApprovedCount, esUpdateCount, mentorCount } = params;
     const eduScore = getEducationScore(education);
     const activityScore = Math.min(activeDays * (15 / 730), 15);
     const kpiScore = Math.min(approvedKpiCount * 0.75, 15);
     const thinkingScore = Math.min(kkcApprovedCount, 20);
-    const leaderScore = Math.min(Math.floor(thanksCount / 20), 10);
+    const leaderScore = Math.min(Math.floor((thanksCount + mentorCount) / 20), 10);
     const outputScore = Math.min(Math.floor(esUpdateCount / 10), 20);
     const metaScore = Math.min(level * (4 / 15), 10);
     return Math.min(Math.round(eduScore + activityScore + kpiScore + thinkingScore + leaderScore + outputScore + metaScore), 100);
@@ -600,7 +600,7 @@ export default function MyPage() {
     const badgeLabel = getBadgeLabel(level);
     const badgeColor = getBadgeColor(level);
     const actionMessage = getActionMessage(isSubmitted, streak);
-    const rankScore = getRankScore({ level, thanksCount, activeDays, education, approvedKpiCount, kkcApprovedCount, esUpdateCount });
+    const rankScore = getRankScore({ level, thanksCount, activeDays, education, approvedKpiCount, kkcApprovedCount, esUpdateCount, mentorCount });
     const rank2 = getRank(rankScore);
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
@@ -1702,7 +1702,7 @@ const handleRoutineCheck = async (routineId: string) => {
                                                     { axis: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), fullMark: 20 },
                                                     { axis: "メタ認知", value: Math.min(level * (4 / 15), 10), fullMark: 20 },
                                                     { axis: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), fullMark: 20 },
-                                                    { axis: "リーダー", value: Math.min(Math.floor(thanksCount / 20), 10), fullMark: 20 },
+                                                    { axis: "リーダー", value: Math.min(Math.floor((thanksCount + mentorCount) / 20), 10), fullMark: 20 },
                                                     { axis: "思考力", value: Math.min(kkcApprovedCount, 20), fullMark: 20 },
                                                 ]}>
                                                     <PolarGrid stroke={barBg} />
@@ -1716,7 +1716,7 @@ const handleRoutineCheck = async (routineId: string) => {
                                                     { label: "活動期間", value: Math.min(activeDays * (15 / 730), 15), max: 15, color: "#8b5cf6" },
                                                     { label: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), max: 15, color: "#06b6d4" },
                                                     { label: "思考力", value: Math.min(kkcApprovedCount, 20), max: 20, color: "#f59e0b" },
-                                                    { label: "リーダー", value: Math.min(Math.floor(thanksCount / 20), 10), max: 10, color: "#ec4899" },
+                                                    { label: "リーダー", value: Math.min(Math.floor((thanksCount + mentorCount) / 20), 10), max: 10, color: "#ec4899" },
                                                     { label: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), max: 20, color: "#10b981" },
                                                     { label: "メタ認知", value: Math.min(level * (4 / 15), 10), max: 10, color: "#f97316" },
                                                 ].map((axis) => (
