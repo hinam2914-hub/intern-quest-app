@@ -45,7 +45,7 @@ export default function MenuPage() {
                 { icon: "📊", label: "月次KPI", desc: "月次実績を入力してポイント獲得", path: "/kpi", color: "#06b6d4" },
                 { icon: "🎉", label: "サンキュー", desc: "感謝を伝えてポイントをプレゼント", path: "/thanks", color: "#f59e0b" },
                 { icon: "💌", label: "アドバイス", desc: "改善のための気づきを匿名で送る", path: "/advice", color: "#f97316" },
-                { icon: "🤝", label: "後輩サポート報告", desc: "後輩を連れて行った・面倒を見た報告でリーダー度UP", path: "/mentor-report", color: "#ec4899" },
+                { icon: "🤝", label: "ペイフォワード報告", desc: "後輩を連れて行った・面倒を見た報告でリーダー度UP", path: "/mentor-report", color: "#ec4899" },
             ],
         },
         {

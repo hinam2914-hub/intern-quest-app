@@ -81,7 +81,7 @@ export default function MentorReportPage() {
     <div style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 20px" }}>
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
         <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 16 }}>INTERN QUEST</div>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>🤝 後輩サポート報告</h1>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>🤝 ペイフォワード報告</h1>
         <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 24px" }}>後輩を連れて行った・面倒を見たことを報告しよう。承認されるとリーダースコアが上がります。</p>
 
         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24, marginBottom: 24 }}>
@@ -124,6 +124,9 @@ export default function MentorReportPage() {
             ))}
           </div>
         )}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 40 }}>
+          <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}>メニューへ戻る</button>
+        </div>
       </div>
     </div>
   );

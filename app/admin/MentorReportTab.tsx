@@ -48,7 +48,7 @@ export default function MentorReportTab() {
     await createNotification({
       userId: report.user_id,
       type: "mentor_report",
-      title: approve ? "🤝 後輩サポート報告が承認されました" : "🔄 後輩サポート報告が差し戻されました",
+      title: approve ? "🤝 ペイフォワード報告が承認されました" : "🔄 ペイフォワード報告が差し戻されました",
       message: approve ? "リーダースコアに反映されました。後輩の面倒を見てくれてありがとう！" : "内容を確認のうえ、再度報告してください。",
       link: "/mentor-report",
       icon: "🤝",
@@ -64,7 +64,7 @@ export default function MentorReportTab() {
 
   return (
     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-      <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800, color: "#a5b4fc" }}>🤝 後輩サポート報告 承認</h3>
+      <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800, color: "#a5b4fc" }}>🤝 ペイフォワード報告 承認</h3>
       <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 16 }}>承認すると、報告した人のリーダースコアに反映されます。</div>
       {message && <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(52,211,153,0.1)", color: "#34d399", fontSize: 13, fontWeight: 700 }}>{message}</div>}
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>

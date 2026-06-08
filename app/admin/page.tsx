@@ -1340,7 +1340,7 @@ export default function AdminPage() {
                                 { key: "kkc", label: "KKC" },
                                { key: "advice", label: `アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
                                 { key: "medaka_manage", label: "🐟 メダカBOX" },
-                                { key: "mentor_report", label: "🤝 後輩サポート" },
+                                { key: "mentor_report", label: "🤝 ペイフォワード" },
                             ],
                         },
                         {
