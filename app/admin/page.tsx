@@ -16,6 +16,7 @@ import DailyReportEvalTab from "./DailyReportEvalTab";
 import SalesManagementTab from "./SalesManagementTab";
 import UrgentNotifyTab from "./UrgentNotifyTab";
 import MedakaManageTab from "./MedakaManageTab";
+import MentorReportTab from "./MentorReportTab";
 import { createNotification } from "../lib/createNotification";
 import ScheduleManagementTab from "./ScheduleManagementTab";
 
@@ -208,7 +209,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report">("dashboard");
     const [scheduleTargetUser, setScheduleTargetUser] = useState<string | null>(null);
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -1339,6 +1340,7 @@ export default function AdminPage() {
                                 { key: "kkc", label: "KKC" },
                                { key: "advice", label: `アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
                                 { key: "medaka_manage", label: "🐟 メダカBOX" },
+                                { key: "mentor_report", label: "🤝 後輩サポート" },
                             ],
                         },
                         {
@@ -3894,6 +3896,9 @@ export default function AdminPage() {
                 )}
                 {activeTab === "medaka_manage" && (
                     <MedakaManageTab />
+                )}
+                {activeTab === "mentor_report" && (
+                    <MentorReportTab />
                 )}
                 {activeTab === "schedule" && (
                     <ScheduleManagementTab initialUserId={scheduleTargetUser} />
