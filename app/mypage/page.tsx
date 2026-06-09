@@ -1715,7 +1715,15 @@ const handleRoutineCheck = async (routineId: string) => {
                         ))}
                     </div>
 
-                   {GOSHUGI_MILESTONES.filter((m) => activeDays >= m.days && !anniversaryClaimed.includes(m.days)).map((m) => (
+                   {GOSHUGI_MILESTONES.filter((m) => {
+                        if (activeDays < m.days) return false; // まだ到達していない
+                        if (anniversaryClaimed.includes(m.days)) return false; // 取得済み
+                        // 機能導入日（2026-06-09）以降に到達した節目だけ祝う
+                        if (!startedAt) return false;
+                        const reachMs = new Date(startedAt).getTime() + m.days * 24 * 60 * 60 * 1000;
+                        const launchMs = new Date("2026-06-09").getTime();
+                        return reachMs >= launchMs;
+                    }).map((m) => (
                         <div key={m.days} style={{ background: "linear-gradient(135deg, #f43f5e, #ec4899)", borderRadius: 16, padding: 20, marginBottom: 16, textAlign: "center" }}>
                             <div style={{ fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 4 }}>🎉 入社{m.days}日おめでとう！</div>
                             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginBottom: 12 }}>節目を記念して、ご祝儀ガチャを引けます</div>
