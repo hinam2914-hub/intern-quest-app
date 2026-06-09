@@ -190,6 +190,18 @@ function generateAIComment(params: { name: string; level: number; rank2: string;
     return `${name}さん、着実に成長しています。日報の継続とKPI達成を意識することで、さらに上のランクが見えてきます。`;
 }
 
+function getDotKunSuggestion(p: { isSubmitted: boolean; thanksCount: number; mentorCount: number; kkcApprovedCount: number; esUpdateCount: number; approvedKpiCount: number; challengeCount: number; contentCompletionCount: number; points: number }): string {
+    if (!p.isSubmitted) return "📋 まずは今日の日報を出してみよう。すべてはここから！";
+    if (p.thanksCount < 3) return "💖 仲間にサンキューを送ってみよう。感謝は巡って自分に返ってくるよ。";
+    if (p.esUpdateCount < 3) return "✍️ ESを書いてみよう。言葉にすると自分の強みが見えてくるよ。";
+    if (p.challengeCount < 3) return "🎯 ライフチャレンジに挑戦してみよう。小さな達成が自信になるよ。";
+    if (p.contentCompletionCount < 3) return "📚 学習コンテンツを進めてみよう。知識は一生の武器になるよ。";
+    if (p.kkcApprovedCount < 1) return "💡 メダカBOXに気づきや課題を投稿してみよう。声が組織を動かすよ。";
+    if (p.mentorCount < 1) return "🤝 後輩を連れて行ったら、ペイフォワード報告をしてみよう。";
+    if (p.approvedKpiCount < 3) return "📊 今月のKPIを意識して動いてみよう。成果は数字で見えると面白いよ。";
+    if (p.points >= 300) return "🎁 ポイントが貯まってきたね。ショップで使ってみるのもおすすめ！";
+    return "🔥 いろんな機能を使いこなしてるね。この調子でトップを目指そう！";
+}
 function buildGraphData(history: PointHistory[]): GraphData[] {
     const dayMap: Record<string, number> = {};
     [...history].reverse().forEach((item) => {
@@ -641,6 +653,7 @@ export default function MyPage() {
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
+    const dotKunSuggestion = getDotKunSuggestion({ isSubmitted, thanksCount, mentorCount, kkcApprovedCount, esUpdateCount, approvedKpiCount, challengeCount, contentCompletionCount, points });
     const badges = getBadges(totalEarned, streak, esCompleted, profileFlags, contentCompletionCount);
     const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount, approvedKpiCount, kkcApprovedCount, esUpdateCount });
     const unlockedTrophies = trophies.filter(t => t.unlocked);
@@ -1634,7 +1647,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                     <p style={{ margin: "0 0 16px", fontSize: 15, color: isLightBg ? "#4b5563" : "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
                     <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", fontSize: 13, color: "#818cf8", fontWeight: 600 }}>
-                        💡 {["小さな積み重ねが大きな差を生む。今日も一歩前へ。", "成長は毎日の習慣から生まれる。継続こそ最強のスキル。", "今日の努力は必ず明日の自分に返ってくる。", "トップ営業マンも最初は初心者だった。諦めずに続けよう。", "失敗は成功のデータ。今日も全力でぶつかろう。", "1日1%の成長で1年後には37倍になる。今日も成長しよう。", "行動した人だけが結果を手にできる。まず動こう。"][new Date().getDay()]}
+                        {dotKunSuggestion}
                     </div>
                 </div>
                 
