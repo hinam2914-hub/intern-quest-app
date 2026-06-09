@@ -1,6 +1,6 @@
 export default function DotKun({ size = 40 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 680 460" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={size} viewBox="165 120 350 270" xmlns="http://www.w3.org/2000/svg">
       <circle cx="248" cy="150" r="13" fill="#a5b4fc" />
       <circle cx="432" cy="150" r="13" fill="#a5b4fc" />
       <circle cx="340" cy="230" r="135" fill="#6366f1" />
