@@ -191,7 +191,6 @@ function generateAIComment(params: { name: string; level: number; rank2: string;
 }
 
 function getDotKunSuggestion(p: { isSubmitted: boolean; thanksCount: number; mentorCount: number; kkcApprovedCount: number; esUpdateCount: number; approvedKpiCount: number; challengeCount: number; contentCompletionCount: number; points: number }): string {
-    if (!p.isSubmitted) return "📋 まずは今日の日報を出してみよう。すべてはここから！";
     if (p.thanksCount < 3) return "💖 仲間にサンキューを送ってみよう。感謝は巡って自分に返ってくるよ。";
     if (p.esUpdateCount < 3) return "✍️ ESを書いてみよう。言葉にすると自分の強みが見えてくるよ。";
     if (p.challengeCount < 3) return "🎯 ライフチャレンジに挑戦してみよう。小さな達成が自信になるよ。";
