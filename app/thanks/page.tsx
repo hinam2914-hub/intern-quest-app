@@ -75,7 +75,7 @@ export default function ThanksPage() {
             setMyName(allUsers.find(u => u.id === user.id)?.name || "");
             setUsers(allUsers.filter(u => u.id !== user.id));
 
-            const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(50);
+            const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(2000);
             // 全件カウント取得（表示用）
             const { count: sentCnt } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("from_user_id", user.id);
             const { count: receivedCnt } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("to_user_id", user.id);
@@ -145,7 +145,7 @@ export default function ThanksPage() {
         setMessage("");
         setToUserId("");
 
-        const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(50);
+        const { data: thanksRows } = await supabase.from("thanks").select("*").order("created_at", { ascending: false }).limit(2000);
         const allUsers = [...users, { id: myId, name: myName }];
         if (thanksRows) {
             setThanksList(thanksRows.map((row: any) => ({
