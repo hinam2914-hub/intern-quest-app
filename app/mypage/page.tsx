@@ -1623,8 +1623,21 @@ const handleRoutineCheck = async (routineId: string) => {
 
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(ellipse at 20% 50%, ${themeColor}08 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, ${themeColor}05 0%, transparent 60%)`, pointerEvents: "none", zIndex: 0 }} />
 
-            <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
-
+           <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
+                <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div style={{ width: 64, height: 64, borderRadius: 16, background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}><DotKun size={58} /></div>
+                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>ドットくんより</div>
+                        </div>
+                        <div style={{ fontSize: 12, color: textMuted }}>{new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}</div>
+                    </div>
+                    <p style={{ margin: "0 0 16px", fontSize: 15, color: isLightBg ? "#4b5563" : "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
+                    <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", fontSize: 13, color: "#818cf8", fontWeight: 600 }}>
+                        💡 {["小さな積み重ねが大きな差を生む。今日も一歩前へ。", "成長は毎日の習慣から生まれる。継続こそ最強のスキル。", "今日の努力は必ず明日の自分に返ってくる。", "トップ営業マンも最初は初心者だった。諦めずに続けよう。", "失敗は成功のデータ。今日も全力でぶつかろう。", "1日1%の成長で1年後には37倍になる。今日も成長しよう。", "行動した人だけが結果を手にできる。まず動こう。"][new Date().getDay()]}
+                    </div>
+                </div>
+                
                 <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 16 : 0, marginBottom: 20 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                         {avatarUrl ? (
@@ -2096,21 +2109,6 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     </div>
                 </div>
-
-                <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div style={{ width: 64, height: 64, borderRadius: 16, background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}><DotKun size={58} /></div>
-                            <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>ドットくんより</div>
-                        </div>
-                        <div style={{ fontSize: 12, color: textMuted }}>{new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}</div>
-                    </div>
-                    <p style={{ margin: "0 0 16px", fontSize: 15, color: isLightBg ? "#4b5563" : "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
-                    <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", fontSize: 13, color: "#818cf8", fontWeight: 600 }}>
-                        💡 {["小さな積み重ねが大きな差を生む。今日も一歩前へ。", "成長は毎日の習慣から生まれる。継続こそ最強のスキル。", "今日の努力は必ず明日の自分に返ってくる。", "トップ営業マンも最初は初心者だった。諦めずに続けよう。", "失敗は成功のデータ。今日も全力でぶつかろう。", "1日1%の成長で1年後には37倍になる。今日も成長しよう。", "行動した人だけが結果を手にできる。まず動こう。"][new Date().getDay()]}
-                    </div>
-                </div>
-
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
                     {graphData.length > 0 ? (
