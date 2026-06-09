@@ -509,6 +509,9 @@ export default function MyPage() {
     const [loginBonusReceived, setLoginBonusReceived] = useState<boolean | null>(null);
     const [gachaSpinning, setGachaSpinning] = useState(false);
     const [gachaResult, setGachaResult] = useState<number | null>(null);
+    const [anniversaryClaimed, setAnniversaryClaimed] = useState<number[]>([]);
+    const [goshugiResult, setGoshugiResult] = useState<{ milestone: number; reward: number } | null>(null);
+    const [goshugiSpinning, setGoshugiSpinning] = useState(false);
     const [showGachaModal, setShowGachaModal] = useState(false);
     const [showTrophies, setShowTrophies] = useState(false);
     const [showBadges, setShowBadges] = useState(false);
@@ -522,6 +525,38 @@ export default function MyPage() {
     const floatingIdRef = useRef(0);
     const pointsCardRef = useRef<HTMLDivElement>(null);
     const { canvasRef, spawnParticles, flashOpacity, overlayOpacity } = useParticleEffect();
+    const GOSHUGI_MILESTONES = [
+        { days: 30, min: 10, max: 20 },
+        { days: 100, min: 20, max: 40 },
+        { days: 180, min: 30, max: 60 },
+        { days: 365, min: 50, max: 100 },
+        { days: 730, min: 100, max: 200 },
+        { days: 1095, min: 200, max: 300 },
+    ];
+    const handleGoshugiGacha = async (milestone: number) => {
+        if (goshugiSpinning) return;
+        const ms = GOSHUGI_MILESTONES.find((m) => m.days === milestone);
+        if (!ms) return;
+        setGoshugiSpinning(true);
+        const reward = Math.floor(Math.random() * (ms.max - ms.min + 1)) + ms.min;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        const { data: { user: gUser } } = await supabase.auth.getUser();
+        if (gUser) {
+            const { error: insErr } = await supabase.from("anniversary_gacha").insert({
+                user_id: gUser.id, milestone, reward,
+            });
+            if (insErr) { setGoshugiSpinning(false); alert("すでに受け取り済みか、エラーが発生しました"); return; }
+            const { data: ptRow } = await supabase.from("user_points").select("points").eq("id", gUser.id).maybeSingle();
+            const currentPt = (ptRow as any)?.points || 0;
+            await supabase.from("user_points").upsert({ id: gUser.id, points: currentPt + reward });
+            await supabase.from("points_history").insert({
+                user_id: gUser.id, change: reward, reason: "anniversary_gacha", created_at: new Date().toISOString(),
+            });
+            setAnniversaryClaimed((prev) => [...prev, milestone]);
+            setGoshugiResult({ milestone, reward });
+        }
+        setGoshugiSpinning(false);
+    };
     const handleGachaSpin = async () => {
         if (gachaSpinning || loginBonusReceived) return;
         setGachaSpinning(true);
@@ -671,6 +706,8 @@ export default function MyPage() {
                 setActiveDays(days);
                 setStartedAt(profile.started_at.slice(0, 10));
             }
+            const { data: annivRows } = await supabase.from("anniversary_gacha").select("milestone").eq("user_id", user.id);
+            setAnniversaryClaimed((annivRows || []).map((r: any) => r.milestone));
         }
 
         const { data: pointRow } = await supabase.from("user_points").select("points, total_earned").eq("id", user.id).single();
@@ -1678,6 +1715,25 @@ const handleRoutineCheck = async (routineId: string) => {
                         ))}
                     </div>
 
+                   {GOSHUGI_MILESTONES.filter((m) => activeDays >= m.days && !anniversaryClaimed.includes(m.days)).map((m) => (
+                        <div key={m.days} style={{ background: "linear-gradient(135deg, #f43f5e, #ec4899)", borderRadius: 16, padding: 20, marginBottom: 16, textAlign: "center" }}>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 4 }}>🎉 入社{m.days}日おめでとう！</div>
+                            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginBottom: 12 }}>節目を記念して、ご祝儀ガチャを引けます</div>
+                            <button onClick={() => handleGoshugiGacha(m.days)} disabled={goshugiSpinning} style={{ padding: "12px 32px", borderRadius: 100, border: "3px solid #fff", background: "#fff", color: "#e11d48", fontSize: 16, fontWeight: 900, cursor: goshugiSpinning ? "wait" : "pointer" }}>
+                                {goshugiSpinning ? "🧧 ..." : "🧧 ご祝儀ガチャを引く"}
+                            </button>
+                        </div>
+                    ))}
+                    {goshugiResult && (
+                        <div onClick={() => setGoshugiResult(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, cursor: "pointer" }}>
+                            <div style={{ background: "linear-gradient(135deg, #1f1f2e, #2a1f3d)", padding: 48, borderRadius: 24, textAlign: "center", border: "2px solid #f43f5e", maxWidth: 360 }}>
+                                <div style={{ fontSize: 48, marginBottom: 8 }}>🧧</div>
+                                <div style={{ fontSize: 16, color: "#fff", fontWeight: 800, marginBottom: 4 }}>入社{goshugiResult.milestone}日 ご祝儀</div>
+                                <div style={{ fontSize: 56, fontWeight: 900, color: "#fb7185", marginBottom: 8 }}>+{goshugiResult.reward}<span style={{ fontSize: 24 }}>pt</span></div>
+                                <div style={{ fontSize: 12, color: "#9ca3af" }}>タップして閉じる</div>
+                            </div>
+                        </div>
+                    )}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
                         {[
                             {
