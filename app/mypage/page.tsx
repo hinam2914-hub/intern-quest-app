@@ -190,16 +190,19 @@ function generateAIComment(params: { name: string; level: number; rank2: string;
     return `${name}さん、着実に成長しています。日報の継続とKPI達成を意識することで、さらに上のランクが見えてきます。`;
 }
 
-function getDotKunSuggestion(p: { isSubmitted: boolean; thanksCount: number; mentorCount: number; kkcApprovedCount: number; esUpdateCount: number; approvedKpiCount: number; challengeCount: number; contentCompletionCount: number; points: number }): string {
-    if (p.thanksCount < 3) return "💖 仲間にサンキューを送ってみよう。感謝は巡って自分に返ってくるよ。";
-    if (p.esUpdateCount < 3) return "✍️ ESを書いてみよう。言葉にすると自分の強みが見えてくるよ。";
-    if (p.challengeCount < 3) return "🎯 ライフチャレンジに挑戦してみよう。小さな達成が自信になるよ。";
-    if (p.contentCompletionCount < 3) return "📚 学習コンテンツを進めてみよう。知識は一生の武器になるよ。";
-    if (p.kkcApprovedCount < 1) return "💡 メダカBOXに気づきや課題を投稿してみよう。声が組織を動かすよ。";
-    if (p.mentorCount < 1) return "🤝 後輩を連れて行ったら、ペイフォワード報告をしてみよう。";
-    if (p.approvedKpiCount < 3) return "📊 今月のKPIを意識して動いてみよう。成果は数字で見えると面白いよ。";
-    if (p.points >= 300) return "🎁 ポイントが貯まってきたね。ショップで使ってみるのもおすすめ！";
-    return "🔥 いろんな機能を使いこなしてるね。この調子でトップを目指そう！";
+function getDotKunSuggestion(p: { thanksCount: number; mentorCount: number; kkcApprovedCount: number; esUpdateCount: number; approvedKpiCount: number; challengeCount: number; contentCompletionCount: number; points: number }): string {
+    const stats = [
+        { count: p.thanksCount, msg: `💖 サンキューを${p.thanksCount}回も送ってるね。周りを大切にできる人だ。` },
+        { count: p.esUpdateCount, msg: `✍️ ESを${p.esUpdateCount}回も更新してる。自己分析の努力家だね。` },
+        { count: p.challengeCount, msg: `🎯 ライフチャレンジを${p.challengeCount}個も達成。挑戦する姿勢が素敵だ。` },
+        { count: p.contentCompletionCount, msg: `📚 学習コンテンツを${p.contentCompletionCount}本完了。学び続ける力がすごい。` },
+        { count: p.kkcApprovedCount, msg: `💡 メダカBOXで${p.kkcApprovedCount}件も貢献。組織を良くする視点を持ってるね。` },
+        { count: p.mentorCount, msg: `🤝 ペイフォワードを${p.mentorCount}回。後輩思いの先輩だ。` },
+        { count: p.approvedKpiCount, msg: `📊 KPIを${p.approvedKpiCount}回も達成。成果で示せる人だ。` },
+    ];
+    const top = stats.filter((s) => s.count > 0).sort((a, b) => b.count - a.count)[0];
+    if (top) return top.msg;
+    return "🌱 これから色々な活動に挑戦していこう。ドットくんが応援してるよ！";
 }
 function buildGraphData(history: PointHistory[]): GraphData[] {
     const dayMap: Record<string, number> = {};
@@ -652,7 +655,7 @@ export default function MyPage() {
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
-    const dotKunSuggestion = getDotKunSuggestion({ isSubmitted, thanksCount, mentorCount, kkcApprovedCount, esUpdateCount, approvedKpiCount, challengeCount, contentCompletionCount, points });
+    const dotKunSuggestion = getDotKunSuggestion({ thanksCount, mentorCount, kkcApprovedCount, esUpdateCount, approvedKpiCount, challengeCount, contentCompletionCount, points });
     const badges = getBadges(totalEarned, streak, esCompleted, profileFlags, contentCompletionCount);
     const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount, approvedKpiCount, kkcApprovedCount, esUpdateCount });
     const unlockedTrophies = trophies.filter(t => t.unlocked);
