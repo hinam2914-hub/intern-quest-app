@@ -181,6 +181,21 @@ function getActionMessage(isSubmitted: boolean, streak: number): string {
 }
 function generateAIComment(params: { name: string; level: number; rank2: string; rankScore: number; streak: number; isSubmitted: boolean; points: number }): string {
     const { name, level, rank2, streak, isSubmitted, points } = params;
+    const hour = new Date().getHours();
+    // 朝（〜10時）：1日のスタートを応援
+    if (hour < 10) {
+        if (isSubmitted) return `${name}さん、おはよう！今日も朝から動けてるの、すごいことだよ。今日のスケジュールを立てて、いい1日にしよう。`;
+        return `${name}さん、おはよう！今日のスケジュールを立てるところから始めよう。何をやるか決めると、1日がぐっと動きやすくなるよ。`;
+    }
+    // 夜（18時〜）：振り返りと日報へ誘導
+    if (hour >= 18) {
+        if (!isSubmitted) return `${name}さん、今日もお疲れさま。今日のスケジュールを振り返って、日報を書こう。1日の終わりに記録を残すと、明日の自分がラクになるよ。`;
+        return `${name}さん、今日もしっかりやりきったね、えらい！日報も提出済み。ゆっくり休んでね。`;
+    }
+    // 日中：軽く励ます（未提出でもまだ催促しすぎない）
+    if (hour >= 10 && hour < 18 && !isSubmitted && streak >= 3) {
+        return `${name}さん、${streak}日連続提出中だね。今日も夜には振り返りと日報、忘れずに。その調子！`;
+    }
     if (!isSubmitted && streak <= 1) return `${name}さん、今日はまだ日報が未提出です。小さな一歩でも記録することで成長が加速します。今すぐ提出しましょう！`;
     if (streak >= 7) return `${name}さん、${streak}日連続提出は本物の習慣力の証です。この継続力こそが市場価値を高める最大の武器。ランク${rank2}はあなたの実力を正しく示しています。`;
     if (streak >= 3) return `${name}さん、${streak}日連続で素晴らしい！継続は最強のスキルです。このペースを維持すればランクアップも近いです。`;
