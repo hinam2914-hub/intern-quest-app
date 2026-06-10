@@ -683,7 +683,7 @@ export default function MyPage() {
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points, hasScheduleToday });
     const dotKunSuggestion = getDotKunSuggestion({ thanksCount, mentorCount, kkcApprovedCount, esUpdateCount, approvedKpiCount, challengeCount, contentCompletionCount, points });
-    const dailyMission = getDailyMission({ hour: new Date().getHours(), hasScheduleToday, isSubmitted, todayThanksDone, todayLearnDone });
+    const dailyMission = getDailyMission({ hour: new Date().getHours(), hasScheduleToday, isSubmitted, todayThanksDone, todayLearnDone, todayKpiDone, challengeCount, mentorCount, kkcApprovedCount });
     const badges = getBadges(totalEarned, streak, esCompleted, profileFlags, contentCompletionCount);
     const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount, approvedKpiCount, kkcApprovedCount, esUpdateCount });
     const unlockedTrophies = trophies.filter(t => t.unlocked);
