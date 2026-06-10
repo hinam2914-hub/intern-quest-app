@@ -219,6 +219,13 @@ function getDotKunSuggestion(p: { thanksCount: number; mentorCount: number; kkcA
     if (top) return top.msg;
     return "🌱 これから色々な活動に挑戦していこう。ドットくんが応援してるよ！";
 }
+function getDailyMission(p: { hour: number; hasScheduleToday: boolean; isSubmitted: boolean; todayThanksDone: boolean; todayLearnDone: boolean }): string {
+    if (p.hour < 12 && !p.hasScheduleToday) return "まずは今日のスケジュールを立てよう。何をやるか決めると一日が動きやすくなるよ。";
+    if (!p.isSubmitted) return "今日を振り返って日報を書こう。一日の終わりに記録を残すと、明日がラクになるよ。";
+    if (!p.todayThanksDone) return "誰かにサンキューを送ってみよう。感謝を伝えると、自分もちょっと嬉しくなるよ。";
+    if (!p.todayLearnDone) return "学習コンテンツを1つ進めよう。今日の小さな一歩が未来の武器になるよ。";
+    return "今日のミッションは全部クリア！本当によくがんばったね。ゆっくり休んでね。";
+}
 function buildGraphData(history: PointHistory[]): GraphData[] {
     const dayMap: Record<string, number> = {};
     [...history].reverse().forEach((item) => {
@@ -672,6 +679,7 @@ export default function MyPage() {
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points, hasScheduleToday });
     const dotKunSuggestion = getDotKunSuggestion({ thanksCount, mentorCount, kkcApprovedCount, esUpdateCount, approvedKpiCount, challengeCount, contentCompletionCount, points });
+    const dailyMission = getDailyMission({ hour: new Date().getHours(), hasScheduleToday, isSubmitted, todayThanksDone, todayLearnDone });
     const badges = getBadges(totalEarned, streak, esCompleted, profileFlags, contentCompletionCount);
     const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount, approvedKpiCount, kkcApprovedCount, esUpdateCount });
     const unlockedTrophies = trophies.filter(t => t.unlocked);
@@ -1673,6 +1681,10 @@ const handleRoutineCheck = async (routineId: string) => {
                     <p style={{ margin: "0 0 16px", fontSize: 15, color: isLightBg ? "#4b5563" : "#c7d2fe", lineHeight: 1.8, fontWeight: 500 }}>{aiComment}</p>
                     <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", fontSize: 13, color: "#818cf8", fontWeight: 600 }}>
                         {dotKunSuggestion}
+                    </div>
+                    <div style={{ marginTop: 10, padding: "12px 16px", borderRadius: 10, background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.25)" }}>
+                        <div style={{ fontSize: 11, color: "#f43f5e", fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>🎯 まずはこれをやってみよう</div>
+                        <div style={{ fontSize: 14, color: isLightBg ? "#4b5563" : "#fda4af", fontWeight: 600, lineHeight: 1.6 }}>{dailyMission}</div>
                     </div>
                 </div>
                 
