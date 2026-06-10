@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import TodayScheduleReview, { TodayScheduleReviewHandle } from "../components/TodayScheduleReview";
+import DotKun from "../components/DotKun";
 
 type KpiItem = { id: string; title: string; unit: string; target_value: number };
 
@@ -336,11 +337,15 @@ export default function ReportPage() {
                         const labelStyle = { fontSize: 13, fontWeight: 700, color: "#a5b4fc", marginBottom: 6, marginTop: 16 };
                         return (
                             <div>
-                                <div style={labelStyle}>【事実】今日やったこと・数字</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 14, padding: 14, marginBottom: 18 }}>
+                                    <div style={{ width: 48, height: 48, borderRadius: 12, background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><DotKun size={42} /></div>
+                                    <div style={{ fontSize: 13, color: "#818cf8", fontWeight: 600, lineHeight: 1.6 }}>今日もおつかれさま！下の3つの質問に答えるだけでOKだよ。例文を参考にしてね。</div>
+                                </div>
+                                <div style={labelStyle}>① 今日は何をした？（件数・時間も書けるとカンペキ！）</div>
                                 <textarea value={factText} onChange={(e) => setFactText(e.target.value)} placeholder={tmpl.fact} style={fieldStyle} />
-                                <div style={labelStyle}>【解釈】なぜその結果になったか／そこから何が言えるか</div>
+                                <div style={labelStyle}>② それはなぜそうなったと思う？気づいたことは？</div>
                                 <textarea value={interpText} onChange={(e) => setInterpText(e.target.value)} placeholder={tmpl.interp} style={fieldStyle} />
-                                <div style={labelStyle}>【次の行動】明日、何をどう変えるか</div>
+                                <div style={labelStyle}>③ じゃあ明日は何を変えてみる？</div>
                                 <textarea value={actionText} onChange={(e) => setActionText(e.target.value)} placeholder={tmpl.action} style={fieldStyle} />
                             </div>
                         );
