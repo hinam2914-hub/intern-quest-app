@@ -3,6 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import DotKun from "../components/DotKun";
+const SCHEDULE_CATEGORIES = [
+  "📞 テレアポ", "🚪 ピンポン", "🤝 商談・面談", "👥 商談同行", "📝 資料作成",
+  "💬 MTG・1on1", "📚 勉強会・研修", "🎓 授業・学校", "✍️ 課題・勉強",
+  "📖 読書・インプット", "💪 自己投資", "🍚 食事", "🚗 移動", "😴 睡眠・仮眠",
+  "🛁 休憩・リラックス", "🧹 家事・身支度", "🎮 趣味・遊び",
+];
+const OTHER_OPTION = "✏️ その他（自由入力）";
 
 type Slot = {
   start: string;
@@ -202,20 +210,42 @@ export default function TodaySchedulePage() {
                   colorScheme: "dark",
                 }}
               />
-              <input
-                type="text"
-                placeholder="予定を入力"
-                value={slot.content}
-                onChange={(e) => updateSlot(i, "content", e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: 8,
-                  borderRadius: 8,
-                  border: `1px solid ${inputBorder}`,
-                  background: inputBg,
-                  color: textPrimary,
-                }}
-              />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                <select
+                  value={SCHEDULE_CATEGORIES.includes(slot.content) ? slot.content : (slot.content ? OTHER_OPTION : "")}
+                  onChange={(e) => updateSlot(i, "content", e.target.value === OTHER_OPTION ? " " : e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: 8,
+                    borderRadius: 8,
+                    border: `1px solid ${inputBorder}`,
+                    background: inputBg,
+                    color: textPrimary,
+                  }}
+                >
+                  <option value="">予定を選ぶ</option>
+                  {SCHEDULE_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value={OTHER_OPTION}>{OTHER_OPTION}</option>
+                </select>
+                {slot.content !== "" && !SCHEDULE_CATEGORIES.includes(slot.content) && (
+                  <input
+                    type="text"
+                    placeholder="自由に入力してね"
+                    value={slot.content.trim()}
+                    onChange={(e) => updateSlot(i, "content", e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: 8,
+                      borderRadius: 8,
+                      border: `1px solid ${inputBorder}`,
+                      background: inputBg,
+                      color: textPrimary,
+                    }}
+                  />
+                )}
+              </div>
               <button
                 onClick={() => removeSlot(i)}
                 style={{
