@@ -179,13 +179,13 @@ function getActionMessage(isSubmitted: boolean, streak: number): string {
     if (streak >= 3) return "⚡ 継続できています。次は上位を狙いましょう";
     return "📚 学習コンテンツを進めましょう";
 }
-function generateAIComment(params: { name: string; level: number; rank2: string; rankScore: number; streak: number; isSubmitted: boolean; points: number }): string {
-    const { name, level, rank2, streak, isSubmitted, points } = params;
+function generateAIComment(params: { name: string; level: number; rank2: string; rankScore: number; streak: number; isSubmitted: boolean; points: number; hasScheduleToday: boolean }): string {
+    const { name, level, rank2, streak, isSubmitted, points, hasScheduleToday } = params;
     const hour = new Date().getHours();
-    // 朝（〜10時）：1日のスタートを応援
+    // 朝（〜10時）：スケジュール設計へ誘導
     if (hour < 10) {
-        if (isSubmitted) return `${name}さん、おはよう！今日も朝から動けてるの、すごいことだよ。今日のスケジュールを立てて、いい1日にしよう。`;
-        return `${name}さん、おはよう！今日のスケジュールを立てるところから始めよう。何をやるか決めると、1日がぐっと動きやすくなるよ。`;
+        if (!hasScheduleToday) return `${name}さん、おはよう！まずは今日のスケジュールを立てよう。何をやるか決めると、1日がぐっと動きやすくなるよ。`;
+        return `${name}さん、おはよう！もう今日のスケジュールを立てたんだね、えらい！あとはひとつずつ進めていこう。`;
     }
     // 夜（18時〜）：振り返りと日報へ誘導
     if (hour >= 18) {
@@ -483,6 +483,7 @@ export default function MyPage() {
     const [rank, setRank] = useState<number | null>(null);
     const [streak, setStreak] = useState(0);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [hasScheduleToday, setHasScheduleToday] = useState(false);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
     const [history, setHistory] = useState<PointHistory[]>([]);
     const [graphData, setGraphData] = useState<GraphData[]>([]);
@@ -669,7 +670,7 @@ export default function MyPage() {
     const rank2 = getRank(rankScore);
     const rankColor = getRankColor(rank2);
     const nextRankInfo = getNextRankInfo(rank2);
-    const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points });
+    const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points, hasScheduleToday });
     const dotKunSuggestion = getDotKunSuggestion({ thanksCount, mentorCount, kkcApprovedCount, esUpdateCount, approvedKpiCount, challengeCount, contentCompletionCount, points });
     const badges = getBadges(totalEarned, streak, esCompleted, profileFlags, contentCompletionCount);
     const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount, approvedKpiCount, kkcApprovedCount, esUpdateCount });
@@ -823,6 +824,13 @@ export default function MyPage() {
 
         const { data: todayLearnRows } = await supabase.from("content_completions").select("created_at").eq("user_id", user.id);
         setTodayLearnDone(todayLearnRows?.some(r => isSameJSTDay(r.created_at, todayYmd)) || false);
+        const { data: schedToday } = await supabase
+            .from("daily_schedules")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("date", todayYmd)
+            .maybeSingle();
+        setHasScheduleToday(!!schedToday);
         // 自作ルーティン項目と、今日のチェック状況を取得
         const { data: routineRows } = await supabase.from("routines").select("id, title").eq("user_id", user.id).eq("is_active", true).order("sort_order", { ascending: true });
         setRoutines((routineRows || []) as { id: string; title: string }[]);
