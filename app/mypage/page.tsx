@@ -219,11 +219,15 @@ function getDotKunSuggestion(p: { thanksCount: number; mentorCount: number; kkcA
     if (top) return top.msg;
     return "🌱 これから色々な活動に挑戦していこう。ドットくんが応援してるよ！";
 }
-function getDailyMission(p: { hour: number; hasScheduleToday: boolean; isSubmitted: boolean; todayThanksDone: boolean; todayLearnDone: boolean }): string {
+function getDailyMission(p: { hour: number; hasScheduleToday: boolean; isSubmitted: boolean; todayThanksDone: boolean; todayLearnDone: boolean; todayKpiDone: boolean; challengeCount: number; mentorCount: number; kkcApprovedCount: number }): string {
     if (p.hour < 12 && !p.hasScheduleToday) return "まずは今日のスケジュールを立てよう。何をやるか決めると一日が動きやすくなるよ。";
     if (!p.isSubmitted) return "今日を振り返って日報を書こう。一日の終わりに記録を残すと、明日がラクになるよ。";
     if (!p.todayThanksDone) return "誰かにサンキューを送ってみよう。感謝を伝えると、自分もちょっと嬉しくなるよ。";
     if (!p.todayLearnDone) return "学習コンテンツを1つ進めよう。今日の小さな一歩が未来の武器になるよ。";
+    if (!p.todayKpiDone) return "今日の数字（KPI）を記録しよう。成果は数で見えると面白くなるよ。";
+    if (p.challengeCount < 1) return "ライフチャレンジに挑戦してみよう。小さな目標を立てると毎日が変わるよ。";
+    if (p.kkcApprovedCount < 1) return "メダカBOXに気づきや課題を投稿してみよう。きみの声が組織を動かすよ。";
+    if (p.mentorCount < 1) return "後輩を連れて行ったら、ペイフォワード報告をしてみよう。誰かを助けると自分も伸びるよ。";
     return "今日のミッションは全部クリア！本当によくがんばったね。ゆっくり休んでね。";
 }
 function buildGraphData(history: PointHistory[]): GraphData[] {
