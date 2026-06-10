@@ -156,9 +156,13 @@ export default function TodaySchedulePage() {
         <h1 style={{ fontSize: 26, fontWeight: "bold", marginBottom: 4 }}>
           ☀️ 今日のスケジュール
         </h1>
-       <p style={{ color: textMuted, marginBottom: 24, fontSize: 14 }}>
+      <p style={{ color: textMuted, marginBottom: 24, fontSize: 14 }}>
           {today} ／ 今日の予定を時間ごとに書き出しましょう
         </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 16, marginBottom: 24 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 14, background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><DotKun size={50} /></div>
+          <div style={{ fontSize: 14, color: "#818cf8", fontWeight: 600, lineHeight: 1.6 }}>今日の予定を立てよう！何をやるか決めると、1日がぐっと動きやすくなるよ。迷ったらメニューから選んでね。</div>
+        </div>
         {rejectReason && (
           <div style={{ marginBottom: 24, padding: "14px 16px", borderRadius: 10, background: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.35)" }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#f87171", marginBottom: 4 }}>🔄 スケジュールが差し戻されました</div>
