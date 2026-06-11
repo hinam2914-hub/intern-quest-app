@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import DotKun from "../components/DotKun";
+import BackToMenuButton from "../components/BackToMenuButton";
 const SCHEDULE_CATEGORIES = [
   "📞 テレアポ", "🚪 ピンポン", "🤝 商談・面談", "👥 商談同行", "📝 資料作成",
   "💬 MTG・1on1", "📚 勉強会・研修", "🎓 授業・学校", "✍️ 課題・勉強",
@@ -153,6 +154,7 @@ export default function TodaySchedulePage() {
       }}
     >
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
+        <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8, cursor: "pointer", display: "inline-block" }}>← INTERN QUEST</div>
         <h1 style={{ fontSize: 26, fontWeight: "bold", marginBottom: 4 }}>
           ☀️ 今日のスケジュール
         </h1>
@@ -315,6 +317,7 @@ export default function TodaySchedulePage() {
             あとで
           </button>
         </div>
+        <BackToMenuButton />
       </div>
     </main>
   );
