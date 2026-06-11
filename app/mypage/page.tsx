@@ -506,7 +506,7 @@ export default function MyPage() {
     const [loading, setLoading] = useState(true);
     useEffect(() => {
         const hour = new Date().getHours();
-        if (hour >= 0 && !isSubmitted && !loading) setShowSadModal(true);
+        if (hour >= 18 && !isSubmitted && !loading) setShowSadModal(true);
     }, [isSubmitted, loading]);
     const [message, setMessage] = useState("");
     const [showNameModal, setShowNameModal] = useState(false);
