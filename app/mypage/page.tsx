@@ -494,6 +494,7 @@ export default function MyPage() {
     const [rank, setRank] = useState<number | null>(null);
     const [streak, setStreak] = useState(0);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [showSadModal, setShowSadModal] = useState(false);
     const [hasScheduleToday, setHasScheduleToday] = useState(false);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
     const [history, setHistory] = useState<PointHistory[]>([]);
@@ -502,6 +503,10 @@ export default function MyPage() {
     const [monthlyKpis, setMonthlyKpis] = useState<{ department_id: string; year_month: string; result: number }[]>([]);
     const [selectedDeptId, setSelectedDeptId] = useState<string>("");
     const [loading, setLoading] = useState(true);
+    useEffect(() => {
+        const hour = new Date().getHours();
+        if (hour >= 18 && !isSubmitted && !loading) setShowSadModal(true);
+    }, [isSubmitted, loading]);
     const [message, setMessage] = useState("");
     const [showNameModal, setShowNameModal] = useState(false);
     const [announcements, setAnnouncements] = useState<{ id: string; title: string; content: string }[]>([]);
@@ -1170,6 +1175,17 @@ const handleRoutineCheck = async (routineId: string) => {
                 }}
             />
            {/* 🎰 ガチャ結果モーダル */}
+            {showSadModal && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20 }}>
+                    <div style={{ background: "#fff", borderRadius: 24, padding: "32px 28px", maxWidth: 360, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+                        <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><DotKun size={140} mood="sad" /></div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: "#1f2937", marginBottom: 8 }}>今日まだ日報を書いてないよ…</div>
+                        <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 24, lineHeight: 1.7 }}>1日の終わりに振り返ると、明日の自分がラクになるよ。ドットくんと一緒に書こう？</div>
+                        <button onClick={() => router.push("/report")} style={{ width: "100%", padding: 14, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", marginBottom: 10 }}>✏️ 日報を書く</button>
+                        <button onClick={() => setShowSadModal(false)} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: "transparent", color: "#9ca3af", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>あとで</button>
+                    </div>
+                </div>
+            )}
             {showGachaModal && (
                 <div
                     onClick={() => !gachaSpinning && setShowGachaModal(false)}
