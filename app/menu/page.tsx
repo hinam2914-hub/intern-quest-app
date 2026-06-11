@@ -39,6 +39,7 @@ export default function MenuPage() {
             items: [
                 { icon: "🏠", label: "マイページ", desc: "ホーム・ステータス確認", path: "/mypage", color: "#6366f1" },
                 { icon: "📋", label: "タスク管理", desc: "デイリー・個人タスク・admin指示", path: "/my-tasks", color: "#a78bfa" },
+                { icon: "☀️", label: "今日のスケジュール", desc: "今日の予定を立てて1日を設計する", path: "/today-schedule", color: "#f59e0b" },
                 { icon: "📋", label: "日報提出", desc: "今日の活動を記録してポイント獲得", path: "/report", color: "#8b5cf6" },
                 { icon: "🔁", label: "マイルーティン", desc: "デイリールーティンを設定・管理", path: "/routine", color: "#6366f1" },
                 { icon: "📝", label: "MTG報告書", desc: "MTGの議事録を提出・申請する", path: "/mtg-report", color: "#0ea5e9" },
