@@ -495,6 +495,7 @@ export default function MyPage() {
     const [streak, setStreak] = useState(0);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showSadModal, setShowSadModal] = useState(false);
+    const [anniversaryYears, setAnniversaryYears] = useState(0);
     const [hasScheduleToday, setHasScheduleToday] = useState(false);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
     const [history, setHistory] = useState<PointHistory[]>([]);
@@ -505,7 +506,7 @@ export default function MyPage() {
     const [loading, setLoading] = useState(true);
     useEffect(() => {
         const hour = new Date().getHours();
-        if (hour >= 18 && !isSubmitted && !loading) setShowSadModal(true);
+        if (hour >= 0 && !isSubmitted && !loading) setShowSadModal(true);
     }, [isSubmitted, loading]);
     const [message, setMessage] = useState("");
     const [showNameModal, setShowNameModal] = useState(false);
@@ -572,6 +573,17 @@ export default function MyPage() {
     const floatingIdRef = useRef(0);
     const pointsCardRef = useRef<HTMLDivElement>(null);
     const { canvasRef, spawnParticles, flashOpacity, overlayOpacity } = useParticleEffect();
+    useEffect(() => {
+        if (!startedAt || loading) return;
+        const start = new Date(startedAt);
+        const now = new Date();
+        const isAnniv = start.getMonth() === now.getMonth() && start.getDate() === now.getDate();
+        const years = now.getFullYear() - start.getFullYear();
+        if (isAnniv && years >= 1) {
+            setAnniversaryYears(years);
+            setTimeout(() => spawnParticles(window.innerWidth / 2, window.innerHeight / 3, 120), 600);
+        }
+    }, [startedAt, loading, spawnParticles]);
     const GOSHUGI_MILESTONES = [
         { days: 30, min: 10, max: 20 },
         { days: 100, min: 20, max: 40 },
@@ -1175,6 +1187,17 @@ const handleRoutineCheck = async (routineId: string) => {
                 }}
             />
            {/* 🎰 ガチャ結果モーダル */}
+            {anniversaryYears > 0 && (
+                <div onClick={() => setAnniversaryYears(0)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20, cursor: "pointer" }}>
+                    <div style={{ background: "linear-gradient(135deg, #fff7ed, #ffedd5)", borderRadius: 24, padding: "36px 28px", maxWidth: 360, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+                        <div style={{ fontSize: 52, marginBottom: 8 }}>🎉</div>
+                        <div style={{ fontSize: 22, fontWeight: 900, color: "#ea580c", marginBottom: 6 }}>入社{anniversaryYears}周年おめでとう！</div>
+                        <div style={{ fontSize: 14, color: "#9a3412", marginBottom: 20, lineHeight: 1.7 }}>{anniversaryYears}年間、本当におつかれさま。これからもドットくんが応援してるよ！</div>
+                        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}><DotKun size={90} mood="cheer" /></div>
+                        <div style={{ fontSize: 12, color: "#c2410c" }}>タップして閉じる</div>
+                    </div>
+                </div>
+            )}
             {showSadModal && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20 }}>
                     <div style={{ background: "#fff", borderRadius: 24, padding: "32px 28px", maxWidth: 360, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
