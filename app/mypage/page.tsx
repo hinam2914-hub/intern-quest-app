@@ -22,6 +22,7 @@ type ProfileRow = {
     last_report_date?: string | null;
     education?: string | null;
     started_at?: string | null;
+    birthday?: string | null;
 };
 
 type GraphData = { date: string; points: number };
@@ -496,6 +497,7 @@ export default function MyPage() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showSadModal, setShowSadModal] = useState(false);
     const [anniversaryYears, setAnniversaryYears] = useState(0);
+    const [showBirthday, setShowBirthday] = useState(false);
     const [hasScheduleToday, setHasScheduleToday] = useState(false);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
     const [history, setHistory] = useState<PointHistory[]>([]);
@@ -527,6 +529,7 @@ export default function MyPage() {
     const [profileFlags, setProfileFlags] = useState<ProfileFlags>({});
     const [challengeCount, setChallengeCount] = useState(0);
     const [startedAt, setStartedAt] = useState("");
+    const [birthday, setBirthday] = useState("");
     const [todayKpiDone, setTodayKpiDone] = useState(false);
     const [todayThanksDone, setTodayThanksDone] = useState(false);
     const [todayLearnDone, setTodayLearnDone] = useState(false);
@@ -584,6 +587,15 @@ export default function MyPage() {
             setTimeout(() => spawnParticles(window.innerWidth / 2, window.innerHeight / 3, 120), 600);
         }
     }, [startedAt, loading, spawnParticles]);
+    useEffect(() => {
+        if (!birthday || loading) return;
+        const b = new Date(birthday);
+        const now = new Date();
+        if (b.getMonth() === now.getMonth() && b.getDate() === now.getDate()) {
+            setShowBirthday(true);
+            setTimeout(() => spawnParticles(window.innerWidth / 2, window.innerHeight / 3, 120), 600);
+        }
+    }, [birthday, loading, spawnParticles]);
     const GOSHUGI_MILESTONES = [
         { days: 30, min: 10, max: 20 },
         { days: 100, min: 20, max: 40 },
@@ -766,6 +778,9 @@ export default function MyPage() {
                 const days = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
                 setActiveDays(days);
                 setStartedAt(profile.started_at.slice(0, 10));
+            }
+            if (profile.birthday) {
+                setBirthday(profile.birthday.slice(0, 10));
             }
             const { data: annivRows } = await supabase.from("anniversary_gacha").select("milestone").eq("user_id", user.id);
             setAnniversaryClaimed((annivRows || []).map((r: any) => r.milestone));
@@ -1031,6 +1046,7 @@ export default function MyPage() {
             education: education.trim(),
             department_id: departmentId || null,
             started_at: startedAt || null,
+            birthday: birthday || null,
         }).eq("id", userId);
         // activeDaysを再計算
         if (startedAt) {
@@ -1187,6 +1203,17 @@ const handleRoutineCheck = async (routineId: string) => {
                 }}
             />
            {/* 🎰 ガチャ結果モーダル */}
+            {showBirthday && (
+                <div onClick={() => setShowBirthday(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20, cursor: "pointer" }}>
+                    <div style={{ background: "linear-gradient(135deg, #fdf2f8, #fce7f3)", borderRadius: 24, padding: "36px 28px", maxWidth: 360, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+                        <div style={{ fontSize: 52, marginBottom: 8 }}>🎂</div>
+                        <div style={{ fontSize: 22, fontWeight: 900, color: "#db2777", marginBottom: 6 }}>お誕生日おめでとう！</div>
+                        <div style={{ fontSize: 14, color: "#9d174d", marginBottom: 20, lineHeight: 1.7 }}>素敵な1年になりますように。今日はあなたの特別な日だね！</div>
+                        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}><DotKun size={90} mood="cheer" /></div>
+                        <div style={{ fontSize: 12, color: "#be185d" }}>タップして閉じる</div>
+                    </div>
+                </div>
+            )}
             {anniversaryYears > 0 && (
                 <div onClick={() => setAnniversaryYears(0)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20, cursor: "pointer" }}>
                     <div style={{ background: "linear-gradient(135deg, #fff7ed, #ffedd5)", borderRadius: 24, padding: "36px 28px", maxWidth: 360, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
@@ -2273,6 +2300,10 @@ const handleRoutineCheck = async (routineId: string) => {
                             <div style={{ marginBottom: 8 }}>
                                 <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>📅 入社日</div>
                                 <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
+                            </div>
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>🎂 誕生日（任意・お祝いに使われるよ）</div>
+                                <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
                             </div>
                             <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }}>
                                 <option value="">事業部を選択</option>
