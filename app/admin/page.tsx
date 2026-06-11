@@ -14,6 +14,7 @@ import KpiDashboardTab from "./components/KpiDashboardTab";
 import ReportAnalyticsTab from "./components/ReportAnalyticsTab";
 import DailyReportEvalTab from "./DailyReportEvalTab";
 import SalesManagementTab from "./SalesManagementTab";
+import BadgeManagementTab from "./BadgeManagementTab";
 import UrgentNotifyTab from "./UrgentNotifyTab";
 import MedakaManageTab from "./MedakaManageTab";
 import MentorReportTab from "./MentorReportTab";
@@ -209,7 +210,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge">("dashboard");
     const [scheduleTargetUser, setScheduleTargetUser] = useState<string | null>(null);
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -1341,6 +1342,7 @@ export default function AdminPage() {
                                { key: "advice", label: `アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
                                 { key: "medaka_manage", label: "🐟 メダカBOX" },
                                 { key: "mentor_report", label: "🤝 ペイフォワード" },
+                                { key: "badge", label: "🏅 バッジ" },
                             ],
                         },
                         {
@@ -3899,6 +3901,9 @@ export default function AdminPage() {
                 )}
                 {activeTab === "mentor_report" && (
                     <MentorReportTab />
+                )}
+                {activeTab === "badge" && (
+                    <BadgeManagementTab />
                 )}
                 {activeTab === "schedule" && (
                     <ScheduleManagementTab initialUserId={scheduleTargetUser} />
