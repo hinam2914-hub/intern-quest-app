@@ -89,8 +89,8 @@ export default function GachaPage() {
 
         // ポイント更新: user_points.points を直接増減（total_earnedには影響させない）
         const netChange = selected.reward - GACHA_COST;
-        const newPoints = points + netChange;
-        await supabase.from("user_points").upsert({ id: userId, points: newPoints });
+        // user_points.points をDB側で増分更新（古い値の上書き事故を防ぐ）
+        await supabase.rpc("increment_user_points", { uid: userId, delta: netChange });
 
         // ⚠️ points_history には記録しない（gacha_rewardがtotal_earnedに加算されるのを防ぐ）
         // ガチャの履歴は gacha_history テーブルにのみ記録する
@@ -101,7 +101,6 @@ export default function GachaPage() {
             rarity: selected.rarity,
         });
 
-        setPoints(newPoints);
         setResult(selected);
         setSpinning(false);
         await loadData(userId);
