@@ -64,6 +64,7 @@ export default function MenuPage() {
             title: "🏆 実績・ご褒美",
             items: [
                 { icon: "🏆", label: "ランキング", desc: "全員のポイントランキングを確認", path: "/ranking", color: "#ef4444" },
+                { icon: "📖", label: "バッジ図鑑", desc: "全員のバッジとレア度を見る", path: "/badges", color: "#a855f7" },
                 { icon: "👥", label: "メンバー一覧", desc: "事業部別のメンバーを見る", path: "/members", color: "#a855f7" },
                 { icon: "📊", label: "自分の実績", desc: "累計データ・ランク・順位を確認", path: "/stats", color: "#06b6d4" },
                 { icon: "📜", label: "履歴", desc: "ポイント・テスト・サンキュー・チャレンジ", path: "/history", color: "#6b7280" },

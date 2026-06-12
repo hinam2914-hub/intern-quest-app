@@ -2037,6 +2037,8 @@ const handleRoutineCheck = async (routineId: string) => {
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🏅 実績バッジ {showAchieve ? "▲" : "▼"}</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{myBadgeIds.length} / {achieveBadges.length} 獲得</div>
                     </div>
+                    {showAchieve && <div onClick={() => router.push("/badges")} style={{ fontSize: 12, color: "#818cf8", fontWeight: 600, cursor: "pointer", marginBottom: 12 }}>📖 みんなのバッジ図鑑を見る →</div>}
+                    {showAchieve && <div onClick={() => router.push("/badges")} style={{ fontSize: 12, color: "#818cf8", fontWeight: 600, cursor: "pointer", marginBottom: 12 }}>📖 みんなのバッジ図鑑を見る →</div>}
                     {showAchieve && achieveBadges.length === 0 && <div style={{ fontSize: 12, color: textMuted }}>まだバッジがありません</div>}
                     {showAchieve && [...new Set(achieveBadges.map(b => b.category))].map(cat => (
                         <div key={cat} style={{ marginBottom: 16 }}>
