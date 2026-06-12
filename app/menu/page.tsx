@@ -43,6 +43,7 @@ export default function MenuPage() {
                 { icon: "📋", label: "日報提出", desc: "今日の活動を記録してポイント獲得", path: "/report", color: "#8b5cf6" },
                 { icon: "🔁", label: "マイルーティン", desc: "デイリールーティンを設定・管理", path: "/routine", color: "#6366f1" },
                 { icon: "📝", label: "MTG報告書", desc: "MTGの議事録を提出・申請する", path: "/mtg-report", color: "#0ea5e9" },
+                { icon: "📋", label: "議事録BOX", desc: "みんなのMTG議事録を見る", path: "/mtg-box", color: "#0ea5e9" },
                 { icon: "📊", label: "月次KPI", desc: "月次実績を入力してポイント獲得", path: "/kpi", color: "#06b6d4" },
                 { icon: "🎉", label: "サンキュー", desc: "感謝を伝えてポイントをプレゼント", path: "/thanks", color: "#f59e0b" },
                 { icon: "💌", label: "アドバイス", desc: "改善のための気づきを匿名で送る", path: "/advice", color: "#f97316" },
