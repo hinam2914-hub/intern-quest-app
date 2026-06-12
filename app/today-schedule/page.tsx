@@ -179,7 +179,8 @@ export default function TodaySchedulePage() {
               key={i}
               style={{
                 display: "flex",
-                alignItems: "center",
+                flexDirection: "column",
+                alignItems: "stretch",
                 gap: 8,
                 background: cardBg,
                 border: `1px solid ${cardBorder}`,
@@ -187,6 +188,7 @@ export default function TodaySchedulePage() {
                 padding: "10px 12px",
               }}
             >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input
                 type="time"
                 value={slot.start}
@@ -216,7 +218,13 @@ export default function TodaySchedulePage() {
                   colorScheme: "dark",
                 }}
               />
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                <button
+                  onClick={() => removeSlot(i)}
+                  style={{ border: "none", background: "transparent", color: "#ef4444", cursor: "pointer", fontSize: 18, marginLeft: "auto" }}
+                  title="この行を削除"
+                >×</button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <select
                   value={SCHEDULE_CATEGORIES.includes(slot.content) ? slot.content : (slot.content ? OTHER_OPTION : "")}
                   onChange={(e) => updateSlot(i, "content", e.target.value === OTHER_OPTION ? " " : e.target.value)}
@@ -252,19 +260,7 @@ export default function TodaySchedulePage() {
                   />
                 )}
               </div>
-              <button
-                onClick={() => removeSlot(i)}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  color: "#ef4444",
-                  cursor: "pointer",
-                  fontSize: 18,
-                }}
-                title="この行を削除"
-              >
-                ×
-              </button>
+
             </div>
           ))}
         </div>
