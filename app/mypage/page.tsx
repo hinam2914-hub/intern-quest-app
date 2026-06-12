@@ -208,7 +208,7 @@ function generateAIComment(params: { name: string; level: number; rank2: string;
 
 function getDotKunSuggestion(p: { thanksCount: number; mentorCount: number; kkcApprovedCount: number; esUpdateCount: number; approvedKpiCount: number; challengeCount: number; contentCompletionCount: number; points: number }): string {
     const stats = [
-        { count: p.thanksCount, msg: `💖 サンキューを${p.thanksCount}回も送ってるね。周りを大切にできる人だ。` },
+        { count: p.thanksCount, msg: `💖 サンキューを${p.thanksCount}回も受け取ってるね。周りから感謝される人だ。` },
         { count: p.esUpdateCount, msg: `✍️ ESを${p.esUpdateCount}回も更新してる。自己分析の努力家だね。` },
         { count: p.challengeCount, msg: `🎯 ライフチャレンジを${p.challengeCount}個も達成。挑戦する姿勢が素敵だ。` },
         { count: p.contentCompletionCount, msg: `📚 学習コンテンツを${p.contentCompletionCount}本完了。学び続ける力がすごい。` },
