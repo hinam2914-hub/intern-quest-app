@@ -566,6 +566,9 @@ export default function MyPage() {
     const [showGachaModal, setShowGachaModal] = useState(false);
     const [showTrophies, setShowTrophies] = useState(false);
     const [showBadges, setShowBadges] = useState(false);
+    const [achieveBadges, setAchieveBadges] = useState<{ id: string; name: string; icon: string | null; description: string | null; category: string | null }[]>([]);
+    const [myBadgeIds, setMyBadgeIds] = useState<string[]>([]);
+    const [showAchieve, setShowAchieve] = useState(true);
     const [newTag, setNewTag] = useState("");
     const [tagSaving, setTagSaving] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
@@ -786,6 +789,10 @@ export default function MyPage() {
             setAnniversaryClaimed((annivRows || []).map((r: any) => r.milestone));
         }
 
+        const { data: badgeDefs } = await supabase.from("badges").select("id, name, icon, description, category").order("category").order("sort_order");
+        setAchieveBadges((badgeDefs || []) as any);
+        const { data: myBadges } = await supabase.from("user_badges").select("badge_id").eq("user_id", user.id);
+        setMyBadgeIds((myBadges || []).map((r: any) => r.badge_id));
         const { data: pointRow } = await supabase.from("user_points").select("points, total_earned").eq("id", user.id).single();
         const newPoints = pointRow?.points || 0;
         const newTotalEarned = (pointRow as any)?.total_earned || newPoints;
@@ -2023,6 +2030,30 @@ const handleRoutineCheck = async (routineId: string) => {
                             </div>
                         ))}
                     </div>}
+                </div>
+                {/* ===== 実績バッジ ===== */}
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div onClick={() => setShowAchieve(!showAchieve)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showAchieve ? 16 : 0, cursor: "pointer", userSelect: "none" }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🏅 実績バッジ {showAchieve ? "▲" : "▼"}</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{myBadgeIds.length} / {achieveBadges.length} 獲得</div>
+                    </div>
+                    {showAchieve && achieveBadges.length === 0 && <div style={{ fontSize: 12, color: textMuted }}>まだバッジがありません</div>}
+                    {showAchieve && [...new Set(achieveBadges.map(b => b.category))].map(cat => (
+                        <div key={cat} style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, marginBottom: 8 }}>{cat}</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
+                                {achieveBadges.filter(b => b.category === cat).map(b => {
+                                    const owned = myBadgeIds.includes(b.id);
+                                    return (
+                                        <div key={b.id} style={{ padding: "12px 6px", borderRadius: 12, textAlign: "center", background: owned ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.02)", border: `1px solid ${owned ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.06)"}`, opacity: owned ? 1 : 0.45 }}>
+                                            <div style={{ fontSize: 28, filter: owned ? "none" : "grayscale(1) brightness(0.6)" }}>{b.icon || "\ud83c\udfc5"}</div>
+                                            <div style={{ fontSize: 11, fontWeight: 700, color: owned ? textPrimary : textMuted, marginTop: 4 }}>{b.name}</div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </div>
                 {myKpis.length > 0 && (
                     <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
