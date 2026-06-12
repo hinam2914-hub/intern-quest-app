@@ -24,7 +24,7 @@ function fmtDateTime(iso: string): string {
 }
 
 interface Report {
-    id: string; mtg_date: string; title: string | null; participants: string | null;
+    id: string; mtg_date: string; title: string | null; category: string | null; participants: string | null;
     start_time: string; end_time: string; content: string;
     status: string; admin_feedback: string | null; points_awarded: number;
     created_at: string; updated_at: string;
@@ -36,6 +36,7 @@ const fieldStyle = {
     color: "#f9fafb", fontSize: 14, lineHeight: 1.8, outline: "none",
     resize: "vertical" as const, boxSizing: "border-box" as const, fontFamily: "inherit", minHeight: 80,
 };
+const MTG_CATEGORIES = ["IP", "CB", "SP", "HR", "MK", "全社・経営", "その他"];
 const inputStyle = { ...fieldStyle, minHeight: 0, padding: "10px 12px" };
 const labelStyle = { fontSize: 13, fontWeight: 700, color: "#a5b4fc", display: "block" as const, marginBottom: 6, marginTop: 16 };
 
@@ -58,6 +59,7 @@ export default function MtgReportPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [mtgDate, setMtgDate] = useState(getTodayJST());
     const [title, setTitle] = useState("");
+    const [category, setCategory] = useState("");
     const [participants, setParticipants] = useState("");
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
@@ -82,7 +84,7 @@ export default function MtgReportPage() {
     }, [router, loadReports]);
 
     const resetForm = () => {
-        setEditingId(null); setMtgDate(getTodayJST()); setTitle(""); setParticipants("");
+        setEditingId(null); setMtgDate(getTodayJST()); setTitle(""); setCategory(""); setParticipants("");
         setStartTime(""); setEndTime(""); setPurpose(""); setDiscussion(""); setDecision(""); setNextAction("");
         setMessage("");
     };
@@ -91,6 +93,7 @@ export default function MtgReportPage() {
         setEditingId(r.id);
         setMtgDate(r.mtg_date);
         setTitle(r.title || "");
+        setCategory(r.category || "");
         setParticipants(r.participants || "");
         setStartTime(r.start_time);
         setEndTime(r.end_time);
@@ -126,7 +129,7 @@ export default function MtgReportPage() {
         setSubmitting(true);
         setMessage("");
         const payload = {
-            user_id: userId, mtg_date: mtgDate, title: title.trim() || null, participants: participants.trim(),
+            user_id: userId, mtg_date: mtgDate, title: title.trim() || null, category: category || null, participants: participants.trim(),
             start_time: startTime.trim(), end_time: endTime.trim(),
             content: buildContent(), status, admin_feedback: null,
             updated_at: new Date().toISOString(),
@@ -168,6 +171,11 @@ export default function MtgReportPage() {
 
                 <label style={labelStyle}>タイトル</label>
                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="例：採用戦略MTG" style={inputStyle} />
+                <label style={labelStyle}>カテゴリ</label>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle}>
+                    <option value="">選択してください</option>
+                    {MTG_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
                 <label style={labelStyle}>MTG実施日</label>
                 <input type="date" value={mtgDate} onChange={(e) => setMtgDate(e.target.value)} style={inputStyle} />
 
