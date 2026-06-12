@@ -13,6 +13,7 @@ export default function BadgesPage() {
     const [badges, setBadges] = useState<Badge[]>([]);
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
+    const [catOrder, setCatOrder] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [openId, setOpenId] = useState<string | null>(null);
 
@@ -23,6 +24,8 @@ export default function BadgesPage() {
         setProfiles((p || []) as Profile[]);
         const { data: ub } = await supabase.from("user_badges").select("user_id, badge_id");
         setUserBadges((ub || []) as UserBadge[]);
+        const { data: cat } = await supabase.from("badge_categories").select("name").order("sort_order");
+        setCatOrder((cat || []).map((r: any) => r.name));
         setLoading(false);
     }, []);
 
@@ -47,7 +50,7 @@ export default function BadgesPage() {
         <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>Loading...</main>
     );
 
-    const categories = [...new Set(badges.map((b) => b.category))];
+    const categories = catOrder.filter((cat) => badges.some((b) => b.category === cat));
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", color: "#f9fafb", fontFamily: "'Inter', sans-serif" }}>

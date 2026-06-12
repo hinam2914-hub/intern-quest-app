@@ -568,6 +568,7 @@ export default function MyPage() {
     const [showBadges, setShowBadges] = useState(false);
     const [achieveBadges, setAchieveBadges] = useState<{ id: string; name: string; icon: string | null; description: string | null; category: string | null }[]>([]);
     const [myBadgeIds, setMyBadgeIds] = useState<string[]>([]);
+    const [badgeCatOrder, setBadgeCatOrder] = useState<string[]>([]);
     const [showAchieve, setShowAchieve] = useState(false);
     const [newTag, setNewTag] = useState("");
     const [tagSaving, setTagSaving] = useState(false);
@@ -793,6 +794,8 @@ export default function MyPage() {
         setAchieveBadges((badgeDefs || []) as any);
         const { data: myBadges } = await supabase.from("user_badges").select("badge_id").eq("user_id", user.id);
         setMyBadgeIds((myBadges || []).map((r: any) => r.badge_id));
+        const { data: catRows } = await supabase.from("badge_categories").select("name").order("sort_order");
+        setBadgeCatOrder((catRows || []).map((r: any) => r.name));
         const { data: pointRow } = await supabase.from("user_points").select("points, total_earned").eq("id", user.id).single();
         const newPoints = pointRow?.points || 0;
         const newTotalEarned = (pointRow as any)?.total_earned || newPoints;
@@ -2038,7 +2041,7 @@ const handleRoutineCheck = async (routineId: string) => {
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{myBadgeIds.length} / {achieveBadges.length} 獲得</div>
                     </div>
                     {showAchieve && achieveBadges.length === 0 && <div style={{ fontSize: 12, color: textMuted }}>まだバッジがありません</div>}
-                    {showAchieve && [...new Set(achieveBadges.map(b => b.category))].map(cat => (
+                    {showAchieve && badgeCatOrder.filter(cat => achieveBadges.some(b => b.category === cat)).map(cat => (
                         <div key={cat} style={{ marginBottom: 16 }}>
                             <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, marginBottom: 8 }}>{cat}</div>
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
