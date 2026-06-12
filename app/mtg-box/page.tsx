@@ -11,11 +11,17 @@ export default function MtgBoxPage() {
     const [reports, setReports] = useState<Report[]>([]);
     const [names, setNames] = useState<{ [id: string]: string }>({});
     const [loading, setLoading] = useState(true);
+    const [allowed, setAllowed] = useState(false);
     const [openId, setOpenId] = useState<string | null>(null);
     const [filter, setFilter] = useState("all");
     const MTG_CATEGORIES = ["IP", "CB", "SP", "HR", "MK", "全社・経営", "その他"];
 
     const load = useCallback(async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
+        const { data: me } = await supabase.from("profiles").select("grade").eq("id", user.id).single();
+        if (!me || me.grade !== "社会人") { setAllowed(false); setLoading(false); return; }
+        setAllowed(true);
         const { data: r } = await supabase.from("mtg_reports").select("*").eq("status", "approved").order("mtg_date", { ascending: false });
         const reps = (r || []) as Report[];
         setReports(reps);
@@ -30,6 +36,15 @@ export default function MtgBoxPage() {
 
     if (loading) return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>Loading...</main>
+    );
+
+    if (!allowed) return (
+        <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#9ca3af", gap: 16, padding: 24, textAlign: "center" }}>
+            <div style={{ fontSize: 40 }}>🔒</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>このページはマネージャー・オーナー専用です</div>
+            <div style={{ fontSize: 13 }}>議事録BOXの閲覧権限がありません。</div>
+            <div onClick={() => router.push("/menu")} style={{ marginTop: 8, padding: "10px 24px", borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#9ca3af", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>☰ メニューに戻る</div>
+        </main>
     );
 
     return (

@@ -10,19 +10,21 @@ export default function MenuPage() {
     const [points, setPoints] = useState(0);
     const [isAdmin, setIsAdmin] = useState(false);
     const [userRole, setUserRole] = useState("");
+    const [grade, setGrade] = useState("");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const load = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
-            const { data: profile } = await supabase.from("profiles").select("name, role").eq("id", user.id).single();
+            const { data: profile } = await supabase.from("profiles").select("name, role, grade").eq("id", user.id).single();
             const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
             setName(profile?.name || "");
             setPoints(pointRow?.points || 0);
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             setIsAdmin(!!user.email && adminEmails.includes(user.email));
             setUserRole((profile as any)?.role || "");
+            setGrade((profile as any)?.grade || "");
             setLoading(false); setLoading(false);
         };
         load();
@@ -131,7 +133,7 @@ export default function MenuPage() {
                             {section.title}
                         </div>
                         <div className="menu-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                            {section.items.map((item) => (
+                            {section.items.filter((item) => item.path !== "/mtg-box" || grade === "社会人").map((item) => (
                                 <button
                                     key={item.path}
                                     onClick={() => router.push(item.path)}
