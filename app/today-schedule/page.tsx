@@ -239,7 +239,7 @@ export default function TodaySchedulePage() {
                   <input
                     type="text"
                     placeholder="自由に入力してね"
-                    value={slot.content.trim()}
+                    value={slot.content}
                     onChange={(e) => updateSlot(i, "content", e.target.value)}
                     style={{
                       width: "100%",
