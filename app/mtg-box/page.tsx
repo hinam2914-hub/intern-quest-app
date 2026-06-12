@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import BackToMenuButton from "../components/BackToMenuButton";
 
-type Report = { id: string; user_id: string; mtg_date: string; start_time: string | null; end_time: string | null; content: string; participants: string | null; created_at: string };
+type Report = { id: string; user_id: string; mtg_date: string; title: string | null; start_time: string | null; end_time: string | null; content: string; participants: string | null; created_at: string };
 
 export default function MtgBoxPage() {
     const router = useRouter();
@@ -46,9 +46,9 @@ export default function MtgBoxPage() {
                             <div key={r.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "14px 18px", cursor: "pointer" }} onClick={() => setOpenId(isOpen ? null : r.id)}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: 14, color: "#f9fafb", fontWeight: 700 }}>{r.mtg_date} のMTG</div>
+                                        <div style={{ fontSize: 14, color: "#f9fafb", fontWeight: 700 }}>{r.title || `${r.mtg_date} のMTG`}</div>
                                         <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
-                                            提出: {names[r.user_id] || "不明"}
+                                            {r.mtg_date} ・ 提出: {names[r.user_id] || "不明"}
                                             {r.start_time ? ` ・ ${r.start_time}${r.end_time ? "〜" + r.end_time : ""}` : ""}
                                             {r.participants ? ` ・ 参加: ${r.participants}` : ""}
                                         </div>

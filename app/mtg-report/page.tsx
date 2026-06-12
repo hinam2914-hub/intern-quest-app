@@ -24,7 +24,7 @@ function fmtDateTime(iso: string): string {
 }
 
 interface Report {
-    id: string; mtg_date: string; participants: string | null;
+    id: string; mtg_date: string; title: string | null; participants: string | null;
     start_time: string; end_time: string; content: string;
     status: string; admin_feedback: string | null; points_awarded: number;
     created_at: string; updated_at: string;
@@ -57,6 +57,7 @@ export default function MtgReportPage() {
 
     const [editingId, setEditingId] = useState<string | null>(null);
     const [mtgDate, setMtgDate] = useState(getTodayJST());
+    const [title, setTitle] = useState("");
     const [participants, setParticipants] = useState("");
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
@@ -81,7 +82,7 @@ export default function MtgReportPage() {
     }, [router, loadReports]);
 
     const resetForm = () => {
-        setEditingId(null); setMtgDate(getTodayJST()); setParticipants("");
+        setEditingId(null); setMtgDate(getTodayJST()); setTitle(""); setParticipants("");
         setStartTime(""); setEndTime(""); setPurpose(""); setDiscussion(""); setDecision(""); setNextAction("");
         setMessage("");
     };
@@ -89,6 +90,7 @@ export default function MtgReportPage() {
     const loadIntoForm = (r: Report) => {
         setEditingId(r.id);
         setMtgDate(r.mtg_date);
+        setTitle(r.title || "");
         setParticipants(r.participants || "");
         setStartTime(r.start_time);
         setEndTime(r.end_time);
@@ -124,7 +126,7 @@ export default function MtgReportPage() {
         setSubmitting(true);
         setMessage("");
         const payload = {
-            user_id: userId, mtg_date: mtgDate, participants: participants.trim(),
+            user_id: userId, mtg_date: mtgDate, title: title.trim() || null, participants: participants.trim(),
             start_time: startTime.trim(), end_time: endTime.trim(),
             content: buildContent(), status, admin_feedback: null,
             updated_at: new Date().toISOString(),
@@ -164,6 +166,8 @@ export default function MtgReportPage() {
                     </div>
                 )}
 
+                <label style={labelStyle}>タイトル</label>
+                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="例：採用戦略MTG" style={inputStyle} />
                 <label style={labelStyle}>MTG実施日</label>
                 <input type="date" value={mtgDate} onChange={(e) => setMtgDate(e.target.value)} style={inputStyle} />
 
