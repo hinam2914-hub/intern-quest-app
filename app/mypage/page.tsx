@@ -568,7 +568,7 @@ export default function MyPage() {
     const [showBadges, setShowBadges] = useState(false);
     const [achieveBadges, setAchieveBadges] = useState<{ id: string; name: string; icon: string | null; description: string | null; category: string | null }[]>([]);
     const [myBadgeIds, setMyBadgeIds] = useState<string[]>([]);
-    const [showAchieve, setShowAchieve] = useState(true);
+    const [showAchieve, setShowAchieve] = useState(false);
     const [newTag, setNewTag] = useState("");
     const [tagSaving, setTagSaving] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
