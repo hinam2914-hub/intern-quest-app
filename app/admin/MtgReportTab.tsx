@@ -6,7 +6,7 @@ import { createNotification } from "../lib/createNotification";
 interface Report {
     id: string; user_id: string; mtg_date: string; participants: string | null;
     start_time: string; end_time: string; content: string;
-    status: string; admin_feedback: string | null; points_awarded: number;
+    status: string; admin_feedback: string | null; points_awarded: number; hidden: boolean | null;
     created_at: string; updated_at: string;
 }
 interface UserRow { id: string; name: string | null; }
@@ -93,6 +93,12 @@ export default function MtgReportTab() {
 
     if (loading) return <div style={{ color: "#9ca3af", fontSize: 14, padding: 20 }}>読み込み中...</div>;
 
+    const toggleHidden = async (r: Report) => {
+        setBusyId(r.id);
+        await supabase.from("mtg_reports").update({ hidden: !r.hidden, updated_at: new Date().toISOString() }).eq("id", r.id);
+        setBusyId(null);
+        load();
+    };
     const shown = filter === "all" ? reports.filter((r) => r.status !== "draft") : reports.filter((r) => r.status === filter);
     const pendingCount = reports.filter((r) => r.status === "pending").length;
 
@@ -143,6 +149,12 @@ export default function MtgReportTab() {
                                             style={{ width: "100%", minHeight: 60, padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }}
                                         />
                                         <button disabled={busyId === r.id} onClick={() => reject(r)} style={{ marginTop: 6, padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(248,113,113,0.4)", background: "rgba(248,113,113,0.1)", color: "#f87171", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>FB付きで差し戻す</button>
+                                    </div>
+                                )}
+                                {r.status === "approved" && (
+                                    <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10 }}>
+                                        {r.hidden && <span style={{ fontSize: 11, fontWeight: 700, color: "#f87171", background: "rgba(248,113,113,0.15)", padding: "3px 10px", borderRadius: 6 }}>🚫 議事録BOX非表示中</span>}
+                                        <button disabled={busyId === r.id} onClick={() => toggleHidden(r)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: r.hidden ? "#34d399" : "#9ca3af", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{r.hidden ? "👁 議事録BOXに公開する" : "🚫 議事録BOXで非表示にする"}</button>
                                     </div>
                                 )}
                             </div>

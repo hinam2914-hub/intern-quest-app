@@ -22,7 +22,7 @@ export default function MtgBoxPage() {
         const { data: me } = await supabase.from("profiles").select("grade").eq("id", user.id).single();
         if (!me || me.grade !== "社会人") { setAllowed(false); setLoading(false); return; }
         setAllowed(true);
-        const { data: r } = await supabase.from("mtg_reports").select("*").eq("status", "approved").order("mtg_date", { ascending: false });
+        const { data: r } = await supabase.from("mtg_reports").select("*").eq("status", "approved").neq("hidden", true).order("mtg_date", { ascending: false });
         const reps = (r || []) as Report[];
         setReports(reps);
         const { data: p } = await supabase.from("profiles").select("id, name");
