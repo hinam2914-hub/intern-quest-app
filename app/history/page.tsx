@@ -325,7 +325,7 @@ export default function HistoryPage() {
                             {pointsHistory.length === 0 ? (
                                 <div style={{ color: "#6b7280", fontSize: 14, padding: 16 }}>履歴がありません</div>
                             ) : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 480, overflowY: "auto", paddingRight: 4 }}>
                                     {pointsHistory.map((item) => (
                                         <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
