@@ -1,4 +1,5 @@
 "use client";
+import TopMenuButton from "../components/TopMenuButton";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
@@ -278,6 +279,7 @@ export default function ReportPage() {
 
                 {/* ===== ヘッダー（統一） ===== */}
                 <div style={{ marginBottom: 32 }}>
+                    <div><TopMenuButton /></div>
                     <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📝 日報提出</h1>
                     <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14 }}>今日の活動を記録してポイントを獲得しましょう</p>
