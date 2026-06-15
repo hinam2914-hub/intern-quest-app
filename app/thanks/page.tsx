@@ -346,7 +346,7 @@ export default function ThanksPage() {
                     {filteredList.length === 0 ? (
                         <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 24 }}>まだサンキューはありません</div>
                     ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 480, overflowY: "auto", paddingRight: 4 }}>
                             {filteredList.map((item) => {
                                 const isReceived = item.to_user_id === myId;
                                 const isSent = item.from_user_id === myId;
