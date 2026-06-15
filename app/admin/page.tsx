@@ -406,6 +406,11 @@ export default function AdminPage() {
     const [allUserTags, setAllUserTags] = useState<{ user_id: string; tag: string }[]>([]);
     const [pendingAdvices, setPendingAdvices] = useState<any[]>([]);
     const [pendingAdviceCount, setPendingAdviceCount] = useState(0);
+    const [pendingMtgCount, setPendingMtgCount] = useState(0);
+    const [pendingMedakaCount, setPendingMedakaCount] = useState(0);
+    const [pendingMentorCount, setPendingMentorCount] = useState(0);
+    const [pendingKkcCount, setPendingKkcCount] = useState(0);
+    const [pendingTestCount, setPendingTestCount] = useState(0);
     // ===== 人材アーカイブ =====
     const [archiveSubTab, setArchiveSubTab] = useState<"resignations" | "rejected">("resignations");
     const [resignations, setResignations] = useState<any[]>([]);
@@ -737,6 +742,16 @@ export default function AdminPage() {
             });
             setPendingAdvices(adviceWithNames);
             setPendingAdviceCount(adviceWithNames.filter((a: any) => a.status === "pending").length);
+            const { count: mtgC } = await supabase.from("mtg_reports").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingMtgCount(mtgC || 0);
+            const { count: medakaC } = await supabase.from("medaka_box").select("*", { count: "exact", head: true }).eq("status", "open");
+            setPendingMedakaCount(medakaC || 0);
+            const { count: mentorC } = await supabase.from("mentor_reports").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingMentorCount(mentorC || 0);
+            const { count: kkcC } = await supabase.from("problem_solutions").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingKkcCount(kkcC || 0);
+            const { count: testC } = await supabase.from("manager_tests").select("*", { count: "exact", head: true }).eq("status", "submitted");
+            setPendingTestCount(testC || 0);
             // 人材アーカイブ取得
             const { data: resignRows } = await supabase
                 .from("resignations")
@@ -1338,10 +1353,10 @@ export default function AdminPage() {
                             tabs: [
                                 { key: "announce", label: "お知らせ" },
                                 { key: "survey", label: "アンケート" },
-                                { key: "kkc", label: "KKC" },
+                                { key: "kkc", label: `KKC${pendingKkcCount > 0 ? `(${pendingKkcCount})` : ""}` },
                                { key: "advice", label: `アドバイス${pendingAdviceCount > 0 ? `(${pendingAdviceCount})` : ""}` },
-                                { key: "medaka_manage", label: "🐟 メダカBOX" },
-                                { key: "mentor_report", label: "🤝 ペイフォワード" },
+                                { key: "medaka_manage", label: `🐟 メダカBOX${pendingMedakaCount > 0 ? `(${pendingMedakaCount})` : ""}` },
+                                { key: "mentor_report", label: `🤝 ペイフォワード${pendingMentorCount > 0 ? `(${pendingMentorCount})` : ""}` },
                                 { key: "badge", label: "🏅 バッジ" },
                             ],
                         },
@@ -1357,8 +1372,8 @@ export default function AdminPage() {
                                 { key: "urgent", label: "🚨 緊急通知" },
                                 { key: "thanks_history", label: "サンキュー履歴" },
                                 { key: "routine_check", label: "ルーティン" },
-                                { key: "mtg_report", label: "MTG報告書" },
-                                { key: "tests", label: "テスト結果" },
+                                { key: "mtg_report", label: `MTG報告書${pendingMtgCount > 0 ? `(${pendingMtgCount})` : ""}` },
+                                { key: "tests", label: `テスト結果${pendingTestCount > 0 ? `(${pendingTestCount})` : ""}` },
                                 { key: "challenges", label: "チャレンジ" },
                             ],
                         },
