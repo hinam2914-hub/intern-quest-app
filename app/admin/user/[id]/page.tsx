@@ -9,7 +9,7 @@ type PointHistory = { id: string; change: number; reason: string | null; created
 type Submission = { id: string; content: string; created_at: string };
 type KpiLog = { id: string; kpi_item_id: string; value: number; created_at: string; kpiTitle?: string; unit?: string; target?: number };
 type Thanks = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
-type ContentCompletion = { id: string; content_id: string; created_at: string; contentTitle?: string };
+type ContentCompletion = { id: string; content_id: string; created_at: string; contentTitle?: string; status?: string; review?: string | null; feedback?: string | null };
 type GraphData = { date: string; points: number };
 type BreakdownData = { name: string; value: number; color: string };
 type MonthlyKpiRecord = { id: string; year_month: string; department_id: string; target: number; result: number; approved: boolean; points_awarded: number; deptName?: string; rate?: number; officialTarget?: number; };
@@ -126,7 +126,7 @@ export default function UserDetailPage() {
     const [breakdownData, setBreakdownData] = useState<BreakdownData[]>([]);
     const [graphTab, setGraphTab] = useState<"points" | "breakdown">("points");
     const [monthlyKpiHistory, setMonthlyKpiHistory] = useState<MonthlyKpiRecord[]>([]);
-    const [activeTab, setActiveTab] = useState<"overview" | "monthly_kpi" | "tests" | "challenges">("overview");
+    const [activeTab, setActiveTab] = useState<"overview" | "monthly_kpi" | "tests" | "challenges" | "learn">("overview");
     const [resigning, setResigning] = useState(false);
     const [testAttempts, setTestAttempts] = useState<any[]>([]);
     const [challenges, setChallenges] = useState<any[]>([]);
@@ -680,6 +680,43 @@ export default function UserDetailPage() {
                     </div>
                 )}
 
+                {activeTab === "learn" && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📖 学習コンテンツ ({completions.length}件)</div>
+                        {completions.length === 0 ? (
+                            <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>まだ学習記録はありません</div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                {completions.map((c: any) => {
+                                    const si = c.status === "approved"
+                                        ? { color: "#10b981", bg: "rgba(16,185,129,0.05)", border: "rgba(16,185,129,0.2)", label: "✅ 承認済み", text: "#6ee7b7" }
+                                        : c.status === "rejected"
+                                            ? { color: "#ef4444", bg: "rgba(239,68,68,0.05)", border: "rgba(239,68,68,0.2)", label: "❌ 差戻し", text: "#fca5a5" }
+                                            : { color: "#fbbf24", bg: "rgba(251,191,36,0.05)", border: "rgba(251,191,36,0.2)", label: "⏳ 承認待ち", text: "#fde68a" };
+                                    return (
+                                        <div key={c.id} style={{ background: si.bg, border: `1px solid ${si.border}`, borderRadius: 8, padding: 12 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                                                <span style={{ padding: "2px 8px", background: `${si.color}20`, border: `1px solid ${si.color}40`, borderRadius: 4, fontSize: 11, color: si.text, fontWeight: 600 }}>{si.label}</span>
+                                                <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb", flex: 1, minWidth: 0 }}>{c.contentTitle}</div>
+                                            </div>
+                                            {c.review && (
+                                                <div style={{ marginTop: 6, padding: 10, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 6, fontSize: 12, color: "#c7d2fe", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{c.review}</div>
+                                            )}
+                                            {c.feedback && (
+                                                <div style={{ marginTop: 8, padding: 10, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 6 }}>
+                                                    <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 600, marginBottom: 4 }}>💬 差戻し理由</div>
+                                                    <div style={{ fontSize: 12, color: "#fef3c7", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{c.feedback}</div>
+                                                </div>
+                                            )}
+                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 8 }}>{formatDateTime(c.created_at)}</div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* アドバイス送信モーダル */}
                 {showAdviceModal && (
                     <div onClick={() => !adviceSending && setShowAdviceModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
@@ -743,6 +780,7 @@ export default function UserDetailPage() {
                         { key: "monthly_kpi", label: "📈 月次KPI履歴" },
                         { key: "tests", label: "📝 テスト" },
                         { key: "challenges", label: "🎆 チャレンジ" },
+                        { key: "learn", label: "📖 学習コンテンツ" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 13, background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: activeTab === tab.key ? "#fff" : "#9ca3af" }}>
                             {tab.label}
