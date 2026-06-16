@@ -143,12 +143,13 @@ function getReasonIcon(reason: string): string {
 export default function HistoryPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<"points" | "tests" | "thanks" | "challenges">("points");
+    const [activeTab, setActiveTab] = useState<"points" | "tests" | "thanks" | "challenges" | "learn">("points");
     const [pointsHistory, setPointsHistory] = useState<PointsHistoryItem[]>([]);
     const [totalPoints, setTotalPoints] = useState(0);
     const [tests, setTests] = useState<TestAttempt[]>([]);
     const [thanks, setThanks] = useState<ThanksItem[]>([]);
     const [challenges, setChallenges] = useState<ChallengeSubmission[]>([]);
+    const [learnHistory, setLearnHistory] = useState<any[]>([]);
     const [expandedTest, setExpandedTest] = useState<string | null>(null);
 
     useEffect(() => {
@@ -219,6 +220,14 @@ export default function HistoryPage() {
             setTests(combinedTestData as TestAttempt[]);
             setThanks(thanksWithUser);
             setChallenges((chData || []) as ChallengeSubmission[]);
+
+            // 学習履歴（content_completions × contents）
+            const { data: lhData } = await supabase
+                .from("content_completions")
+                .select("*, contents(id, title, category)")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false });
+            setLearnHistory(lhData || []);
             setLoading(false);
         })();
     }, [router]);
@@ -253,6 +262,7 @@ export default function HistoryPage() {
                         { key: "tests", label: "📚 テスト", count: passedTests.length },
                         { key: "thanks", label: "💌 サンキュー", count: thanks.length },
                         { key: "challenges", label: "🎯 チャレンジ", count: challenges.length },
+                        { key: "learn", label: "📖 学習", count: learnHistory.length },
                     ].map(tab => (
                         <button
                             key={tab.key}
@@ -488,6 +498,52 @@ export default function HistoryPage() {
                                     );
                                 })}
                             </div>
+                        )}
+                    </div>
+                )}
+
+                {/* 学習履歴タブ */}
+                {activeTab === "learn" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {learnHistory.length === 0 ? (
+                            <div style={{ fontSize: 13, color: "#6b7280", textAlign: "center", padding: "40px 0" }}>まだ学習を完了していません</div>
+                        ) : (
+                            learnHistory.map((c: any) => {
+                                const statusInfo = c.status === "approved"
+                                    ? { color: "#10b981", bg: "rgba(16,185,129,0.05)", border: "rgba(16,185,129,0.2)", label: "✅ 承認済み", text: "#6ee7b7" }
+                                    : c.status === "pending"
+                                        ? { color: "#fbbf24", bg: "rgba(251,191,36,0.05)", border: "rgba(251,191,36,0.2)", label: "⏳ 承認待ち", text: "#fde68a" }
+                                        : { color: "#ef4444", bg: "rgba(239,68,68,0.05)", border: "rgba(239,68,68,0.2)", label: "❌ 差戻し", text: "#fca5a5" };
+                                return (
+                                    <div key={c.id} style={{ background: statusInfo.bg, border: `1px solid ${statusInfo.border}`, borderRadius: 8, padding: 12 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                                            <span style={{ padding: "2px 6px", background: `${statusInfo.color}20`, border: `1px solid ${statusInfo.color}50`, borderRadius: 4, fontSize: 10, color: statusInfo.text, fontWeight: 600 }}>
+                                                {statusInfo.label}
+                                            </span>
+                                            <div style={{ fontSize: 14, fontWeight: 600, color: statusInfo.text, flex: 1, minWidth: 0 }}>{c.contents?.title || "学習コンテンツ"}</div>
+                                            {c.contents?.category && (
+                                                <span style={{ padding: "2px 6px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 4, fontSize: 10, color: "#a5b4fc", fontWeight: 600 }}>
+                                                    {c.contents.category}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {c.review && (
+                                            <div style={{ fontSize: 12, color: "#d1d5db", marginTop: 6, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{c.review}</div>
+                                        )}
+                                        {c.feedback && (
+                                            <div style={{ marginTop: 8, padding: 8, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 4 }}>
+                                                <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 600, marginBottom: 4 }}>💬 フィードバック</div>
+                                                <div style={{ fontSize: 12, color: "#fef3c7", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{c.feedback}</div>
+                                            </div>
+                                        )}
+                                        {c.created_at && (
+                                            <div style={{ fontSize: 10, color: "#6b7280", marginTop: 8 }}>
+                                                提出: {new Date(c.created_at).toLocaleDateString("ja-JP")}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
                 )}

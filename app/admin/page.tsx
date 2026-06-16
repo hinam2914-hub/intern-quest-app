@@ -1863,6 +1863,40 @@ export default function AdminPage() {
                             )}
                         </div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2 }}>📖 学習完了 全履歴</div>
+                                <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>全{contentCompletions.length}件</div>
+                            </div>
+                            {contentCompletions.length === 0 ? (
+                                <div style={{ color: "#6b7280", fontSize: 14 }}>学習完了の履歴はありません</div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 480, overflowY: "auto", paddingRight: 4 }}>
+                                    {contentCompletions.map((c) => {
+                                        const si = c.status === "approved"
+                                            ? { bg: "rgba(16,185,129,0.05)", border: "rgba(16,185,129,0.2)", label: "✅ 承認済み", text: "#6ee7b7", color: "#10b981" }
+                                            : c.status === "pending"
+                                                ? { bg: "rgba(251,191,36,0.05)", border: "rgba(251,191,36,0.2)", label: "⏳ 承認待ち", text: "#fde68a", color: "#fbbf24" }
+                                                : { bg: "rgba(239,68,68,0.05)", border: "rgba(239,68,68,0.2)", label: "❌ 差戻し", text: "#fca5a5", color: "#ef4444" };
+                                        return (
+                                            <div key={c.id} style={{ padding: "12px 16px", borderRadius: 12, background: si.bg, border: `1px solid ${si.border}` }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                                                    <span style={{ padding: "2px 8px", borderRadius: 4, background: `${si.color}20`, border: `1px solid ${si.color}50`, color: si.text, fontSize: 11, fontWeight: 600 }}>{si.label}</span>
+                                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{c.userName}</span>
+                                                    <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(99,102,241,0.2)", color: "#818cf8", fontSize: 11, fontWeight: 600 }}>{c.contentTitle}</span>
+                                                </div>
+                                                {c.review && (
+                                                    <div style={{ fontSize: 13, color: "#c7d2fe", padding: "8px 12px", borderRadius: 8, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.15)" }}>{c.review}</div>
+                                                )}
+                                                {c.feedback && (
+                                                    <div style={{ fontSize: 12, color: "#fca5a5", marginTop: 6 }}>差戻し理由: {c.feedback}</div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>CONTENTS</div>
                             {contentsList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>コンテンツがありません</div> : (
                                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
