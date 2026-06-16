@@ -52,8 +52,12 @@ export default function ReportAnalyticsTab() {
                 .from("submissions")
                 .select("user_id, created_at")
                 .gte("created_at", past60.toISOString())
-                .limit(10000);
+                .order("created_at", { ascending: false })
+                .limit(100000);
             const submissions = subs || [];
+            console.log("DEBUG 件数:", submissions.length);
+            console.log("DEBUG 直近日付:", [...new Set(submissions.map((s:any)=>toJSTDate(s.created_at)))].sort().slice(-7));
+            console.log("DEBUG 6/11:", submissions.filter((s:any)=>toJSTDate(s.created_at)==="2026-06-11").length);
 
             // 日付ごとに「提出したユーザーID集合」を作る
             const byDate = new Map<string, Set<string>>();
