@@ -35,7 +35,7 @@ type AnnounceRow = { id: string; title: string; content: string; created_at: str
 type RequestRow = { id: string; user_id: string; shop_item_id: string; cost: number; status: string; note: string | null; created_at: string; userName?: string; itemTitle?: string };
 type KpiStatus = { userId: string; userName: string; kpiId: string; kpiTitle: string; unit: string; target: number; value: number };
 type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; created_at: string; fromName?: string; toName?: string };
-type ContentCompletion = { id: string; userId: string; userName: string; contentId: string; contentTitle: string; created_at: string; status: string; review: string | null };
+type ContentCompletion = { id: string; userId: string; userName: string; contentId: string; contentTitle: string; created_at: string; status: string; review: string | null; feedback?: string | null };
 type Team = { id: string; name: string; color: string; leader_id?: string };
 type Department = { id: string; name: string; code: string };
 type MonthlyKpiRow = { id: string; user_id: string; department_id: string; year_month: string; target: number; result: number; approved: boolean; points_awarded: number; userName?: string; deptName?: string; officialTarget?: number; };
@@ -641,6 +641,7 @@ export default function AdminPage() {
                     created_at: r.created_at,
                     status: r.status || "pending",
                     review: r.review || null,
+                    feedback: r.feedback || null,
                 })));
             }
 
