@@ -1753,7 +1753,7 @@ const handleRoutineCheck = async (routineId: string) => {
                 <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div style={{ width: 64, height: 64, borderRadius: 16, background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}><DotKun size={58} stage={level >= 70 ? 5 : level >= 50 ? 4 : level >= 30 ? 3 : level >= 10 ? 2 : 1} mood={isSubmitted ? "happy" : streak >= 1 ? "happy" : "sad"} /></div>
+                            <div onClick={() => router.push("/dotkun")} title="ドットくんのことを知る" style={{ width: 64, height: 64, borderRadius: 16, background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><DotKun size={58} stage={level >= 70 ? 5 : level >= 50 ? 4 : level >= 30 ? 3 : level >= 10 ? 2 : 1} mood={isSubmitted ? "happy" : streak >= 1 ? "happy" : "sad"} /></div>
                             <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2 }}>ドットくんより</div>
                         </div>
                         <div style={{ fontSize: 12, color: textMuted }}>{new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })}</div>
