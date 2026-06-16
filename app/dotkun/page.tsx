@@ -4,11 +4,11 @@ import { useRouter } from "next/navigation";
 import DotKun from "../components/DotKun";
 
 const STAGES = [
-    { stage: 1, mood: "happy" as const, name: "うまれたて", desc: "あたまに小さな芽がついてるよ。まだ何も知らないけど、これからきみと一緒に成長していくんだ〜！" },
-    { stage: 2, mood: "normal" as const, name: "ちょっと成長", desc: "手が生えてきたよ！きみが日報を書いたり、活動するたびにぼくも少しずつ大きくなるんだ。" },
-    { stage: 3, mood: "happy" as const, name: "マフラーゲット", desc: "青いマフラーをもらったよ〜。ここまで続けてくれてありがとう。なんだか自信がついてきた！" },
-    { stage: 4, mood: "cheer" as const, name: "王冠と羽", desc: "王冠と羽が生えた！きみの努力がぼくを輝かせてくれてるんだよ。もうすぐ最終形態だ〜！" },
-    { stage: 5, mood: "cheer" as const, name: "さいきょうドットくん", desc: "ついに天使のわっかがついたよ✨ ここまできたきみは本当にすごい。ぼくは一生きみの味方だからね！" },
+    { stage: 1, mood: "happy" as const, name: "うまれたて", lv: "Lv.0〜9", desc: "あたまに小さな芽がついてるよ。まだ何も知らないけど、これからきみと一緒に成長していくんだ〜！" },
+    { stage: 2, mood: "normal" as const, name: "ちょっと成長", lv: "Lv.10〜29", desc: "手が生えてきたよ！きみが日報を書いたり、活動するたびにぼくも少しずつ大きくなるんだ。" },
+    { stage: 3, mood: "happy" as const, name: "マフラーゲット", lv: "Lv.30〜49", desc: "青いマフラーをもらったよ〜。ここまで続けてくれてありがとう。なんだか自信がついてきた！" },
+    { stage: 4, mood: "cheer" as const, name: "王冠と羽", lv: "Lv.50〜69", desc: "王冠と羽が生えた！きみの努力がぼくを輝かせてくれてるんだよ。もうすぐ最終形態だ〜！" },
+    { stage: 5, mood: "cheer" as const, name: "さいきょうドットくん", lv: "Lv.70〜", desc: "ついに天使のわっかがついたよ✨ ここまできたきみは本当にすごい。ぼくは一生きみの味方だからね！" },
 ];
 
 const PROFILE = [
@@ -67,6 +67,7 @@ export default function DotKunPage() {
                                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                                         <span style={{ fontSize: 11, fontWeight: 700, color: "#0a0a0f", background: "linear-gradient(135deg, #8b5cf6, #6366f1)", padding: "2px 10px", borderRadius: 999 }}>Stage {s.stage}</span>
                                         <span style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb" }}>{s.name}</span>
+                                        <span style={{ fontSize: 11, fontWeight: 700, color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)", padding: "2px 10px", borderRadius: 999 }}>{s.lv}</span>
                                     </div>
                                     <div style={{ fontSize: 13, color: "#c7d2fe", lineHeight: 1.6 }}>{s.desc}</div>
                                 </div>
