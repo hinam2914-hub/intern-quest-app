@@ -411,6 +411,7 @@ export default function AdminPage() {
     const [pendingMentorCount, setPendingMentorCount] = useState(0);
     const [pendingKkcCount, setPendingKkcCount] = useState(0);
     const [pendingTestCount, setPendingTestCount] = useState(0);
+    const [pendingTaskReportCount, setPendingTaskReportCount] = useState(0);
     // ===== 人材アーカイブ =====
     const [archiveSubTab, setArchiveSubTab] = useState<"resignations" | "rejected">("resignations");
     const [resignations, setResignations] = useState<any[]>([]);
@@ -753,6 +754,8 @@ export default function AdminPage() {
             setPendingKkcCount(kkcC || 0);
             const { count: testC } = await supabase.from("manager_tests").select("*", { count: "exact", head: true }).eq("status", "submitted");
             setPendingTestCount(testC || 0);
+            const { count: taskRepC } = await supabase.from("task_reports").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingTaskReportCount(taskRepC || 0);
             // 人材アーカイブ取得
             const { data: resignRows } = await supabase
                 .from("resignations")
@@ -1364,7 +1367,7 @@ export default function AdminPage() {
                         {
                             category: "🎯 業務管理",
                             tabs: [
-                                { key: "task_management", label: "タスク管理" },
+                                { key: "task_management", label: `タスク管理${pendingTaskReportCount > 0 ? `(${pendingTaskReportCount})` : ""}` },
                                 { key: "es", label: "総合ES" },
                                 { key: "roadmap", label: "ロードマップ" },
                                 { key: "reports", label: "日報" },
