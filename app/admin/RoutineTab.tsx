@@ -60,7 +60,7 @@ export default function RoutineTab() {
 
             {/* 全員時系列 */}
             {mode === "timeline" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 480, overflowY: "auto", paddingRight: 4 }}>
                     {checks.length === 0 ? (
                         <div style={{ color: "#6b7280", fontSize: 14, padding: 16 }}>まだチェック記録がありません。</div>
                     ) : checks.map((c) => (
@@ -107,7 +107,7 @@ export default function RoutineTab() {
                                 </div>
 
                                 <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, marginBottom: 6 }}>チェック履歴</div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 480, overflowY: "auto", paddingRight: 4 }}>
                                     {myChecks.length === 0 ? <span style={{ fontSize: 13, color: "#6b7280" }}>まだチェック記録がありません。</span> : myChecks.map((c) => (
                                         <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                             <span style={{ fontSize: 12, color: "#6b7280", minWidth: 90 }}>{c.check_date}</span>
