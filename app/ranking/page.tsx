@@ -96,22 +96,14 @@ export default function RankingPage() {
 
             // ===== 連続提出日数ランキング（submissionsから都度算出）=====
             // 直近180日分の提出を取得（連続180日超は非現実的なため窓を限定）
-            const streakSinceISO = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
-            const { data: streakProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true);
-            const { data: streakSubs } = await supabase.from("submissions").select("user_id, created_at").gte("created_at", streakSinceISO).order("created_at", { ascending: false }).limit(100000);
-            const subsByUser: Record<string, string[]> = {};
-            (streakSubs || []).forEach((r: any) => {
-                if (!r.user_id) return;
-                if (!subsByUser[r.user_id]) subsByUser[r.user_id] = [];
-                subsByUser[r.user_id].push(r.created_at);
-            });
+            const { data: streakProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active, streak").eq("is_active", true);
             setStreakUsers((streakProfiles || [])
                 .map((row: any) => ({
                     id: row.id,
                     name: row.name,
                     avatar_url: row.avatar_url,
                     is_active: row.is_active,
-                    points: computeReportStreak(subsByUser[row.id] || []),
+                    points: row.streak || 0,
                 }))
                 .filter((u) => u.points > 0)
                 .sort((a, b) => b.points - a.points));
