@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 import { computeReportStreak } from "../lib/date";
 import TodayScheduleReview, { TodayScheduleReviewHandle } from "../components/TodayScheduleReview";
 import DotKun from "../components/DotKun";
+import { generateDotKunFeedback, DotKunFeedback } from "../lib/dotkunFeedback";
 
 type KpiItem = { id: string; title: string; unit: string; target_value: number };
 
@@ -75,6 +76,7 @@ export default function ReportPage() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [success, setSuccess] = useState(false);
+    const [dotkunFb, setDotkunFb] = useState<DotKunFeedback | null>(null);
     const [kpiItems, setKpiItems] = useState<KpiItem[]>([]);
     const [kpiValues, setKpiValues] = useState<Record<string, number>>({});
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
@@ -82,6 +84,8 @@ export default function ReportPage() {
     const [gachaResult, setGachaResult] = useState<number | null>(null);
     const [showGachaModal, setShowGachaModal] = useState(false);
     const [reportDone, setReportDone] = useState(false);
+    const [aiFeedback, setAiFeedback] = useState("");
+const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
 
    useEffect(() => {
         const load = async () => {
@@ -227,6 +231,7 @@ export default function ReportPage() {
 
         setSuccess(true);
         setMessage(bonus > 0 ? `+${addPoints}pt 獲得！連続提出ボーナス +${bonus}pt も獲得しました 🎉` : `+${addPoints}pt 獲得しました！`);
+        setDotkunFb(generateDotKunFeedback({ factText, interpText, actionText, streak: newStreak }));
         setFactText(""); setInterpText(""); setActionText(""); setSelectedTemplate(null); setLoading(false);
         setReportDone(true);
     };
@@ -369,6 +374,20 @@ export default function ReportPage() {
                         <div style={{ marginTop: 20, padding: "16px 20px", borderRadius: 12, background: success ? "rgba(52,211,153,0.1)" : "rgba(248,113,113,0.1)", border: `1px solid ${success ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)"}`, color: success ? "#34d399" : "#f87171", fontWeight: 600, fontSize: 14 }}>
                             {message}
                             {success && <button onClick={() => router.push("/mypage")} style={{ marginLeft: 16, padding: "4px 12px", borderRadius: 6, border: "none", background: "rgba(52,211,153,0.2)", color: "#34d399", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>マイページで確認 →</button>}
+                        </div>
+                    )}
+                    {/* DotKunからのフィードバック */}
+                    {dotkunFb && (
+                        <div style={{ marginTop: 16, padding: "16px 18px", borderRadius: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)", display: "flex", gap: 14, alignItems: "flex-start" }}>
+                            <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: "50%", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <DotKun size={46} mood={dotkunFb.mood} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#818cf8", marginBottom: 6 }}>ドットくんより</div>
+                                {dotkunFb.lines.map((line, i) => (
+                                    <p key={i} style={{ margin: "0 0 6px", fontSize: 14, lineHeight: 1.6, color: "#e5e7eb" }}>{line}</p>
+                                ))}
+                            </div>
                         </div>
                     )}
                     {/* 日報提出後のガチャ */}
