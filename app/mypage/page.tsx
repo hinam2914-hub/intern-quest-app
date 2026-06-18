@@ -998,24 +998,6 @@ export default function MyPage() {
         }
         const { data: adminTaskList } = await taskQuery;
         const allTasks = (adminTaskList || []) as { id: string; title: string; deadline: string | null }[];
-        // 期日アラート：自分の期日付きタスク（個人＋admin宛て）から「期限切れ・今日・明日」を数える
-        {
-            const { data: dueP } = await supabase
-                .from("personal_tasks")
-                .select("deadline")
-                .eq("user_id", user.id)
-                .eq("is_done", false)
-                .not("deadline", "is", null);
-            const today2 = new Date(); today2.setHours(0, 0, 0, 0);
-            const tomorrow2 = new Date(today2.getTime() + 86400000);
-            const isNear2 = (dl: string) => {
-                const due = new Date(dl); due.setHours(0, 0, 0, 0);
-                return due.getTime() <= tomorrow2.getTime();
-            };
-            const personalDue = (dueP || []).filter((t: any) => t.deadline && isNear2(t.deadline)).length;
-            const adminDue = allTasks.filter((t) => t.deadline && isNear2(t.deadline)).length;
-            setDeadlineAlertCount(personalDue + adminDue);
-        }
 
         if (allTasks.length > 0) {
             const taskIds = allTasks.map(t => t.id);
@@ -1043,6 +1025,23 @@ export default function MyPage() {
             });
 
             setPendingAdminTasks(pending);
+
+            // 期日アラート：未完了の自分タスク（個人＋未提出/差戻しのadminタスク）から「期限切れ・今日・明日」を数える
+            const { data: dueP } = await supabase
+                .from("personal_tasks")
+                .select("deadline")
+                .eq("user_id", user.id)
+                .eq("is_done", false)
+                .not("deadline", "is", null);
+            const today2 = new Date(); today2.setHours(0, 0, 0, 0);
+            const tomorrow2 = new Date(today2.getTime() + 86400000);
+            const isNear2 = (dl: string) => {
+                const due = new Date(dl); due.setHours(0, 0, 0, 0);
+                return due.getTime() <= tomorrow2.getTime();
+            };
+            const personalDue = (dueP || []).filter((t: any) => t.deadline && isNear2(t.deadline)).length;
+            const adminDue = pending.filter((t: any) => t.deadline && isNear2(t.deadline)).length;
+            setDeadlineAlertCount(personalDue + adminDue);
         }
 
         setLoading(false);
