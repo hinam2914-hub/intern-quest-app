@@ -41,7 +41,6 @@ export function generateDotKunFeedback(params: {
   // 3) キーワードに反応
   if (/失敗|できなかった|ダメ|うまくいかな|難し|落ち込|凹/.test(all)) {
     lines.push(`うまくいかない日もあるよ。でも原因まで書けてるなら、それもう半分解決してるからね`);
-    if (mood === "normal") mood = "normal";
   } else if (/達成|できた|うまく|成功|アポ|受注|契約/.test(all)) {
     lines.push(`できたこと、しっかり言葉にできてるの最高。明日もこの感覚で〜`);
     if (mood !== "cheer") mood = "happy";
