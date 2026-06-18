@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { computeReportStreak } from "../lib/date";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
 import { AnimatePresence, motion } from "framer-motion";
 import DotKun from "../components/DotKun";
@@ -755,7 +756,7 @@ export default function MyPage() {
             const profile = profileData as ProfileRow;
             setName(profile.name || "");
             setInputName(profile.name || "");
-            setStreak(profile.streak ?? 0);
+            // streak は submissions から算出（loadPage 下部で設定）
             setEducation(profile.education || "");
             setDepartmentId((profileData as any)?.department_id || "");
             setAvatarUrl((profileData as any)?.avatar_url || null);
@@ -825,8 +826,9 @@ export default function MyPage() {
         setKpiDepts(usedDepts as any);
         setMonthlyKpis((monthlyKpiRows || []) as any);
         if (usedDepts.length > 0) setSelectedDeptId((usedDepts[0] as any).id);
-        const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
+        const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(400);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
+        setStreak(computeReportStreak((submissionRows || []).map((r: any) => r.created_at)));
 
         if (!profileData?.name) setShowNameModal(true);
 

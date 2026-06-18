@@ -3,6 +3,7 @@ import TopMenuButton from "../components/TopMenuButton";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { computeReportStreak } from "../lib/date";
 import TodayScheduleReview, { TodayScheduleReviewHandle } from "../components/TodayScheduleReview";
 import DotKun from "../components/DotKun";
 
@@ -145,20 +146,17 @@ export default function ReportPage() {
 
         const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
         const currentPoints = pointRow?.points || 0;
-        const { data: profileRow } = await supabase.from("profiles").select("streak, last_report_date").eq("id", user.id).single();
 
-        let newStreak = 1;
+        // streak は submissions から都度算出（今insertした分を含む）。累積加算をやめ、ズレが蓄積しないようにする。
+        const { data: streakRows } = await supabase
+            .from("submissions")
+            .select("created_at")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(400);
+        const newStreak = computeReportStreak((streakRows || []).map((r: any) => r.created_at));
+
         let bonus = 0;
-        if (profileRow?.last_report_date) {
-            const lastYmd = toJSTDateOnly(profileRow.last_report_date);
-            const todayDate = new Date(`${todayYmd}T00:00:00+09:00`);
-            const yesterdayDate = new Date(todayDate);
-            yesterdayDate.setDate(todayDate.getDate() - 1);
-            const yesterdayYmd = yesterdayDate.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
-            if (lastYmd === yesterdayYmd) newStreak = (profileRow.streak || 0) + 1;
-            else if (lastYmd === todayYmd) newStreak = profileRow.streak || 1;
-            else newStreak = 1;
-        }
         if (newStreak >= 3) bonus = 5;
         if (newStreak >= 7) bonus = 10;
         const addPoints = 2 + bonus;

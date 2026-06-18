@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { computeReportStreak } from "../lib/date";
 
 type StatItem = { icon: string; label: string; value: string | number; sub?: string; color: string };
 
@@ -41,7 +42,7 @@ export default function StatsPage() {
             // プロフィール
             const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
             setName(profile?.name || "");
-            setStreak(profile?.streak || 0);
+            // streak は submissions から都度算出
             setGrowthRank((profile as any)?.growth_rank || "");
             setGrowthGrade((profile as any)?.growth_grade || "");
             if ((profile as any)?.started_at) {
@@ -56,6 +57,8 @@ export default function StatsPage() {
             // 日報
             const { count: sCount } = await supabase.from("submissions").select("*", { count: "exact", head: true }).eq("user_id", user.id);
             setSubmissionCount(sCount || 0);
+            const { data: subDateRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(400);
+            setStreak(computeReportStreak((subDateRows || []).map((r: any) => r.created_at)));
 
             // サンキュー受領
             const { count: trCount } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("to_user_id", user.id);

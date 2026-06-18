@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { computeReportStreak } from "../../../lib/date";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 type PointHistory = { id: string; change: number; reason: string | null; created_at: string };
@@ -187,7 +188,7 @@ export default function UserDetailPage() {
 
             const { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).single();
             setName(profile?.name || "名前未設定");
-            setStreak(profile?.streak || 0);
+            // streak は submissions から都度算出（下部で設定）
             setRole(profile?.role || "");
             setEducation(profile?.education || "");
             setAvatarUrl(profile?.avatar_url || null);
@@ -225,6 +226,9 @@ export default function UserDetailPage() {
 
             const { data: subRows } = await supabase.from("submissions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
             setSubmissions((subRows || []) as Submission[]);
+            // streak: submissions(created_at) から都度算出（直近400件で十分）
+            const { data: streakRows } = await supabase.from("submissions").select("created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(400);
+            setStreak(computeReportStreak((streakRows || []).map((r: any) => r.created_at)));
             
             // テスト履歴取得
             const { data: testData } = await supabase.from("test_attempts").select("*").eq("user_id", userId).order("created_at", { ascending: false });

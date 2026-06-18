@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { computeReportStreak } from "../lib/date";
 
 type RankingUser = {
     id: string;
@@ -93,15 +94,27 @@ export default function RankingPage() {
                 })).sort((a, b) => b.points - a.points));
             }
 
-            // ===== 連続提出日数ランキング =====
-            const { data: streakRows } = await supabase.from("profiles").select("id, name, avatar_url, is_active, streak").eq("is_active", true).gt("streak", 0).order("streak", { ascending: false });
-            setStreakUsers((streakRows || []).map((row: any) => ({
-                id: row.id,
-                name: row.name,
-                avatar_url: row.avatar_url,
-                is_active: row.is_active,
-                points: row.streak || 0,
-            })));
+            // ===== 連続提出日数ランキング（submissionsから都度算出）=====
+            // 直近180日分の提出を取得（連続180日超は非現実的なため窓を限定）
+            const streakSinceISO = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
+            const { data: streakProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true);
+            const { data: streakSubs } = await supabase.from("submissions").select("user_id, created_at").gte("created_at", streakSinceISO);
+            const subsByUser: Record<string, string[]> = {};
+            (streakSubs || []).forEach((r: any) => {
+                if (!r.user_id) return;
+                if (!subsByUser[r.user_id]) subsByUser[r.user_id] = [];
+                subsByUser[r.user_id].push(r.created_at);
+            });
+            setStreakUsers((streakProfiles || [])
+                .map((row: any) => ({
+                    id: row.id,
+                    name: row.name,
+                    avatar_url: row.avatar_url,
+                    is_active: row.is_active,
+                    points: computeReportStreak(subsByUser[row.id] || []),
+                }))
+                .filter((u) => u.points > 0)
+                .sort((a, b) => b.points - a.points));
             // ===== サンキュー受信数ランキング =====
             const { data: thanksAllRows } = await supabase.from("thanks").select("to_user_id");
             const thanksCounts: { [id: string]: number } = {};

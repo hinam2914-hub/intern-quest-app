@@ -19,6 +19,7 @@ import UrgentNotifyTab from "./UrgentNotifyTab";
 import MedakaManageTab from "./MedakaManageTab";
 import MentorReportTab from "./MentorReportTab";
 import { createNotification } from "../lib/createNotification";
+import { computeReportStreak } from "../lib/date";
 import ScheduleManagementTab from "./ScheduleManagementTab";
 
 type UserRow = { id: string; name: string | null };
@@ -485,7 +486,7 @@ export default function AdminPage() {
             const { data: pointRows } = await supabase.from("user_points").select("id, points, total_earned");
             const { data: thanksSentRows } = await supabase.from("thanks").select("to_user_id");
             const { data: kpiLogRows } = await supabase.from("kpi_logs").select("user_id");
-            const { data: subCountRows } = await supabase.from("submissions").select("user_id");
+            const { data: subCountRows } = await supabase.from("submissions").select("user_id, created_at");
             // アクティブ判定用：7日以内のポイント履歴（user_idごとの最終活動日）
             const sevenDaysAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
             const { data: recentActivityRows } = await supabase.from("points_history").select("user_id, created_at").gte("created_at", sevenDaysAgoISO).order("created_at", { ascending: false });
@@ -503,7 +504,7 @@ export default function AdminPage() {
                     id: p.id,
                     name: p.name || "名前未設定",
                     points: pointRows?.find((pt: any) => pt.id === p.id)?.total_earned || pointRows?.find((pt: any) => pt.id === p.id)?.points || 0,
-                    streak: p.streak || 0,
+                    streak: computeReportStreak((subCountRows || []).filter((r: any) => r.user_id === p.id).map((r: any) => r.created_at)),
                     role: p.role || "Member",
                     submissionCount: subCountRows?.filter((r: any) => r.user_id === p.id).length || 0,
                     thanksCount: thanksSentRows?.filter((r: any) => r.to_user_id === p.id).length || 0,
