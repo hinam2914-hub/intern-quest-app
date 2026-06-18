@@ -486,7 +486,7 @@ export default function AdminPage() {
             const { data: pointRows } = await supabase.from("user_points").select("id, points, total_earned");
             const { data: thanksSentRows } = await supabase.from("thanks").select("to_user_id");
             const { data: kpiLogRows } = await supabase.from("kpi_logs").select("user_id");
-            const { data: subCountRows } = await supabase.from("submissions").select("user_id, created_at");
+            const { data: subCountRows } = await supabase.from("submissions").select("user_id, created_at").order("created_at", { ascending: false }).limit(100000);
             // アクティブ判定用：7日以内のポイント履歴（user_idごとの最終活動日）
             const sevenDaysAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
             const { data: recentActivityRows } = await supabase.from("points_history").select("user_id, created_at").gte("created_at", sevenDaysAgoISO).order("created_at", { ascending: false });

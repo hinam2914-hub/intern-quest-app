@@ -335,7 +335,7 @@ export default function RankingPage() {
             // 2. team_idがあるプロフィール取得
             const { data: teamMemberProfiles } = await supabase.from("profiles").select("id, team_id").eq("is_active", true).not("team_id", "is", null);
             // 3. 今週のsubmissions取得
-            const { data: subsData } = await supabase.from("submissions").select("user_id, created_at").gte("created_at", getOneWeekAgoISO());
+            const { data: subsData } = await supabase.from("submissions").select("user_id, created_at").gte("created_at", getOneWeekAgoISO()).order("created_at", { ascending: false }).limit(100000);
 
             // チームごとの集計
             const teams = teamsData || [];
