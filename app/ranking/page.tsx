@@ -96,13 +96,10 @@ export default function RankingPage() {
 
             // ===== 連続提出日数ランキング（submissionsから都度算出）=====
             // 直近180日分の提出を取得（連続180日超は非現実的なため窓を限定）
-            const streakSinceISO = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
+            const streakSinceISO = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
             const { data: streakProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true);
             const { data: streakSubs } = await supabase.from("submissions").select("user_id, created_at").gte("created_at", streakSinceISO).order("created_at", { ascending: false }).limit(100000);
             const subsByUser: Record<string, string[]> = {};
-            console.log("DEBUG streakSubs総数:", (streakSubs || []).length);
-            const __moe = (streakSubs || []).filter((r:any)=>r.user_id==="dd8dc6b9-9ead-4ff1-8c36-b948a575ba07");
-            console.log("DEBUG 中島の件数:", __moe.length, "最古:", __moe.map((r:any)=>r.created_at).sort()[0]);
             (streakSubs || []).forEach((r: any) => {
                 if (!r.user_id) return;
                 if (!subsByUser[r.user_id]) subsByUser[r.user_id] = [];
