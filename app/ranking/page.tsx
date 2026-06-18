@@ -98,7 +98,7 @@ export default function RankingPage() {
             // 直近180日分の提出を取得（連続180日超は非現実的なため窓を限定）
             const streakSinceISO = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
             const { data: streakProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true);
-            const { data: streakSubs } = await supabase.from("submissions").select("user_id, created_at").gte("created_at", streakSinceISO);
+            const { data: streakSubs } = await supabase.from("submissions").select("user_id, created_at").gte("created_at", streakSinceISO).order("created_at", { ascending: false }).limit(100000);
             const subsByUser: Record<string, string[]> = {};
             (streakSubs || []).forEach((r: any) => {
                 if (!r.user_id) return;
