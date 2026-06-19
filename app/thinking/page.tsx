@@ -203,7 +203,7 @@ export default function ThinkingPage() {
     return (
         <div style={{ minHeight: "100vh", background: bg, padding: "32px 20px", transition: "background 0.3s" }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
-                <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: accent, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: accent, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                 <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 20px" }}>{isOogiri ? "🎤 大喜利グランプリ" : "🧠 思考クエスト"}</h1>
 
                 <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
