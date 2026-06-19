@@ -37,12 +37,17 @@ interface Q {
     created_at: string; name: string; sympathy: number;
 }
 
+const cmt_uids = (list: any[]): string[] => list.map((c) => c.user_id);
+
 export default function QuestionsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState("");
     const [questions, setQuestions] = useState<Q[]>([]);
     const [mySympathy, setMySympathy] = useState<Set<string>>(new Set());
+    const [comments, setComments] = useState<Record<string, { id: string; content: string; name: string }[]>>({});
+    const [openComment, setOpenComment] = useState<string | null>(null);
+    const [commentText, setCommentText] = useState("");
     const [content, setContent] = useState("");
     const [tplCat, setTplCat] = useState(0);
     const [submitting, setSubmitting] = useState(false);
@@ -79,6 +84,29 @@ export default function QuestionsPage() {
             return b.sympathy - a.sympathy || new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
         setQuestions(withMeta);
+        // コメント取得
+        if (qIds.length > 0) {
+            const { data: cRows } = await supabase
+                .from("thinking_comments")
+                .select("id, target_id, user_id, content, created_at")
+                .eq("target_type", "question").in("target_id", qIds)
+                .order("created_at", { ascending: true });
+            const clist = (cRows || []) as any[];
+            const cIds = Array.from(new Set(cmt_uids(clist)));
+            const cNameMap: Record<string, string> = {};
+            if (cIds.length > 0) {
+                const { data: cp } = await supabase.from("profiles").select("id, name").in("id", cIds);
+                (cp || []).forEach((pf: any) => { cNameMap[pf.id] = pf.name || "名前未設定"; });
+            }
+            const byTarget: Record<string, any[]> = {};
+            clist.forEach((c: any) => {
+                if (!byTarget[c.target_id]) byTarget[c.target_id] = [];
+                byTarget[c.target_id].push({ id: c.id, content: c.content, name: cNameMap[c.user_id] || "名前未設定" });
+            });
+            setComments(byTarget);
+        } else {
+            setComments({});
+        }
         setLoading(false);
     }, []);
 
@@ -109,6 +137,13 @@ export default function QuestionsPage() {
         } else {
             await supabase.from("questions_box_sympathy").insert({ question_id: qid, user_id: userId });
         }
+        await loadData(userId);
+    };
+
+    const submitComment = async (qid: string) => {
+        if (!commentText.trim()) return;
+        await supabase.from("thinking_comments").insert({ target_type: "question", target_id: qid, user_id: userId, content: commentText.trim() });
+        setCommentText("");
         await loadData(userId);
     };
 
@@ -167,7 +202,22 @@ export default function QuestionsPage() {
                                     🙋 同じ質問ある！
                                 </button>
                                 <span style={{ fontSize: 14, fontWeight: 800, color: q.sympathy > 0 ? "#818cf8" : "#6b7280" }}>{q.sympathy}</span>
+                                <button onClick={() => setOpenComment(openComment === q.id ? null : q.id)} style={{ marginLeft: "auto", padding: "6px 12px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💬 {(comments[q.id]?.length || 0)}</button>
                             </div>
+                            {openComment === q.id && (
+                                <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                                    {(comments[q.id] || []).map((c) => (
+                                        <div key={c.id} style={{ marginBottom: 8 }}>
+                                            <span style={{ fontSize: 12, fontWeight: 700, color: "#818cf8", marginRight: 8 }}>{c.name}</span>
+                                            <span style={{ fontSize: 13, color: "#d1d5db" }}>{c.content}</span>
+                                        </div>
+                                    ))}
+                                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                                        <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="コメントする..." style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(0,0,0,0.2)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                        <button onClick={() => submitComment(q.id)} disabled={!commentText.trim()} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: commentText.trim() ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(120,120,120,0.4)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: commentText.trim() ? "pointer" : "not-allowed" }}>送信</button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))
                 )}
