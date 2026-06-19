@@ -20,6 +20,9 @@ export default function ThinkingPage() {
     const [comments, setComments] = useState<Record<string, { id: string; content: string; name: string; created_at: string }[]>>({});
     const [openComment, setOpenComment] = useState<string | null>(null);
     const [commentText, setCommentText] = useState("");
+    const [pastQuestions, setPastQuestions] = useState<Question[]>([]);
+    const [openPast, setOpenPast] = useState<string | null>(null);
+    const [pastAnswers, setPastAnswers] = useState<Record<string, { id: string; content: string; name: string }[]>>({});
     const [myAnswer, setMyAnswer] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
@@ -35,6 +38,9 @@ export default function ThinkingPage() {
         const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
         const dayNumber = Math.floor(jstNow.getTime() / 86400000); // 1970年からの日数(JST)
         const q = pool.length > 0 ? pool[dayNumber % pool.length] : undefined;
+        // 過去のお題（今表示中のお題以外、新しい順）
+        setPastQuestions(pool.filter(pq => !q || pq.id !== q.id).reverse());
+        setOpenPast(null); setPastAnswers({});
         setQuestion(q || null);
         setAnswers([]); setMyVote(null);
         if (q) {
@@ -143,6 +149,24 @@ export default function ThinkingPage() {
         await loadData(tab, userId);
     };
 
+    const togglePast = async (qid: string) => {
+        if (openPast === qid) { setOpenPast(null); return; }
+        setOpenPast(qid);
+        if (!pastAnswers[qid]) {
+            const { data: aRows } = await supabase
+                .from("thinking_answers").select("id, user_id, content")
+                .eq("question_id", qid).order("created_at", { ascending: false }).limit(100);
+            const rows = (aRows || []) as any[];
+            const ids = Array.from(new Set(rows.map(r => r.user_id)));
+            const nameMap: Record<string, string> = {};
+            if (ids.length > 0) {
+                const { data: profs } = await supabase.from("profiles").select("id, name").in("id", ids);
+                (profs || []).forEach((pf: any) => { nameMap[pf.id] = pf.name || "名前未設定"; });
+            }
+            setPastAnswers(prev => ({ ...prev, [qid]: rows.map(r => ({ id: r.id, content: r.content, name: nameMap[r.user_id] || "名前未設定" })) }));
+        }
+    };
+
     // IPPON（1人1票・お題内で付け替え。自分のボケには押せない）
     const handleVote = async (answerId: string, answerOwner: string) => {
         if (answerOwner === userId) return; // 自分のには投票不可
@@ -248,6 +272,34 @@ export default function ThinkingPage() {
                             })
                         )}
                     </>
+                )}
+
+                {!loading && pastQuestions.length > 0 && (
+                    <div style={{ marginTop: 36 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#9ca3af", marginBottom: 12 }}>📜 過去のお題（{pastQuestions.length}）</div>
+                        {pastQuestions.map((pq) => (
+                            <div key={pq.id} style={{ marginBottom: 10, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden" }}>
+                                <button onClick={() => togglePast(pq.id)} style={{ width: "100%", textAlign: "left", padding: "14px 16px", background: "transparent", border: "none", cursor: "pointer", color: "#e5e7eb", fontSize: 14, fontWeight: 600, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                                    <span>{pq.content}</span>
+                                    <span style={{ color: accent, flexShrink: 0 }}>{openPast === pq.id ? "−" : "+"}</span>
+                                </button>
+                                {openPast === pq.id && (
+                                    <div style={{ padding: "0 16px 14px" }}>
+                                        {(pastAnswers[pq.id] || []).length === 0 ? (
+                                            <div style={{ fontSize: 13, color: "#6b7280", padding: "8px 0" }}>回答はありませんでした。</div>
+                                        ) : (
+                                            (pastAnswers[pq.id] || []).map((a) => (
+                                                <div key={a.id} style={{ padding: "10px 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                                    <span style={{ fontSize: 12, fontWeight: 700, color: accent, marginRight: 8 }}>{a.name}</span>
+                                                    <span style={{ fontSize: 13, color: "#d1d5db", whiteSpace: "pre-wrap" }}>{a.content}</span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 )}
 
                 <button onClick={() => router.push("/menu")} style={{ marginTop: 32, padding: "12px 32px", borderRadius: 10, background: accentGrad, color: isOogiri ? "#1a1206" : "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}>メニューへ戻る</button>
