@@ -52,6 +52,7 @@ export default function QuestionsPage() {
         setLoading(true);
         const { data: qRows } = await supabase
             .from("questions_box").select("*")
+            .eq("status", "approved")
             .order("created_at", { ascending: false }).limit(200);
         const rows = (qRows || []) as any[];
         const ids = Array.from(new Set(rows.map(r => r.user_id)));
@@ -96,7 +97,7 @@ export default function QuestionsPage() {
         const { error } = await supabase.from("questions_box").insert({ user_id: userId, content: content.trim() });
         if (error) { setMessage("投稿に失敗しました"); setSubmitting(false); return; }
         setContent("");
-        setMessage("質問を投稿しました！");
+        setMessage("質問を送信しました！承認されると公開されます。");
         await loadData(userId);
         setSubmitting(false);
         setTimeout(() => setMessage(""), 2500);
