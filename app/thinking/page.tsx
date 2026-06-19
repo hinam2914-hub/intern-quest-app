@@ -38,8 +38,15 @@ export default function ThinkingPage() {
         const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
         const dayNumber = Math.floor(jstNow.getTime() / 86400000); // 1970年からの日数(JST)
         const q = pool.length > 0 ? pool[dayNumber % pool.length] : undefined;
-        // 過去のお題（今表示中のお題以外、新しい順）
-        setPastQuestions(pool.filter(pq => !q || pq.id !== q.id).reverse());
+        // 過去のお題：回答が1件以上ついたお題のみ（＝過去に出題済み）。今日のお題は除く。
+        const poolIds = pool.map(pq => pq.id);
+        let answeredQids: string[] = [];
+        if (poolIds.length > 0) {
+            const { data: ansRows } = await supabase.from("thinking_answers").select("question_id").in("question_id", poolIds);
+            answeredQids = Array.from(new Set((ansRows || []).map((r: any) => r.question_id)));
+        }
+        const past = pool.filter(pq => answeredQids.includes(pq.id) && (!q || pq.id !== q.id)).reverse();
+        setPastQuestions(past);
         setOpenPast(null); setPastAnswers({});
         setQuestion(q || null);
         setAnswers([]); setMyVote(null);
