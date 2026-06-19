@@ -76,14 +76,14 @@ export default function ThinkingPage() {
                     .eq("target_type", "thinking").in("target_id", answerIds)
                     .order("created_at", { ascending: true });
                 const clist = (cRows || []) as any[];
-                const cIds = Array.from(new Set(cList_uids(cList)));
+                const cIds = Array.from(new Set(cList_uids(clist)));
                 const cNameMap: Record<string, string> = {};
                 if (cIds.length > 0) {
                     const { data: cp } = await supabase.from("profiles").select("id, name").in("id", cIds);
                     (cp || []).forEach((pf: any) => { cNameMap[pf.id] = pf.name || "名前未設定"; });
                 }
                 const byTarget: Record<string, any[]> = {};
-                cList.forEach((c: any) => {
+                clist.forEach((c: any) => {
                     if (!byTarget[c.target_id]) byTarget[c.target_id] = [];
                     byTarget[c.target_id].push({ id: c.id, content: c.content, name: cNameMap[c.user_id] || "名前未設定", created_at: c.created_at });
                 });
