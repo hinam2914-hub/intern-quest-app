@@ -3,6 +3,34 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
+const TEMPLATE_CATEGORIES: { label: string; items: string[] }[] = [
+    { label: "💼 仕事・営業", items: [
+        "アポが取れないとき、どう気持ちを切り替えてますか？",
+        "トークが噛んでしまいます。練習以外に効く方法はありますか？",
+        "断られ続けるとへこみます。みなさんはどう乗り越えてましたか？",
+    ]},
+    { label: "📈 成長・キャリア", items: [
+        "今の自分に一番足りないものって、客観的にどう見えてますか？",
+        "成果を出してる先輩は、1年目の頃どんな動きをしてましたか？",
+        "このまま続けて、半年後どうなっていたら理想ですか？",
+    ]},
+    { label: "🧠 考え方・マインド", items: [
+        "モチベが続かないとき、どうやって立て直してますか？",
+        "失敗したとき、引きずらないコツはありますか？",
+        "自信がないまま動くのが怖いです。どうしたらいいですか？",
+    ]},
+    { label: "🤝 人間関係・チーム", items: [
+        "メンバーともっと仲良くなるには、何から始めるといいですか？",
+        "年上の人とどう接したらいいか迷います。",
+        "相談したいけど忙しそうで声をかけづらいです。どうしたら？",
+    ]},
+    { label: "🌱 なんでも・雑談", items: [
+        "最近モヤモヤしてることがあって聞いてほしいです。",
+        "みなさんの息抜きの方法を教えてください。",
+        "働くうえで大事にしてる価値観ってありますか？",
+    ]},
+];
+
 interface Q {
     id: string; user_id: string; content: string;
     admin_answer: string | null; answered_at: string | null;
@@ -16,6 +44,7 @@ export default function QuestionsPage() {
     const [questions, setQuestions] = useState<Q[]>([]);
     const [mySympathy, setMySympathy] = useState<Set<string>>(new Set());
     const [content, setContent] = useState("");
+    const [tplCat, setTplCat] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -89,6 +118,19 @@ export default function QuestionsPage() {
                 <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 8px" }}>❓ 質問クエスト</h1>
                 <p style={{ fontSize: 13, color: "#9ca3af", margin: "0 0 24px" }}>上司に質問・相談ができます。回答はみんなに公開されます。</p>
 
+                <div style={{ marginBottom: 16, padding: "16px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#9ca3af", marginBottom: 10 }}>💡 何を聞こうか迷ったら、タップして使ってね</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+                        {TEMPLATE_CATEGORIES.map((c, i) => (
+                            <button key={i} onClick={() => setTplCat(i)} style={{ padding: "6px 12px", borderRadius: 16, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: tplCat === i ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.05)", color: tplCat === i ? "#fff" : "#9ca3af" }}>{c.label}</button>
+                        ))}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {TEMPLATE_CATEGORIES[tplCat].items.map((ex, i) => (
+                            <button key={i} onClick={() => setContent(ex)} style={{ textAlign: "left", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.2)", background: "rgba(99,102,241,0.05)", color: "#d1d5db", fontSize: 13, cursor: "pointer", lineHeight: 1.5 }}>{ex}</button>
+                        ))}
+                    </div>
+                </div>
                 <div style={{ marginBottom: 32 }}>
                     <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="気になっていること・相談したいことを書いてみよう..." rows={3} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.08)", color: "#f9fafb", fontSize: 15, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }} />
                     <button onClick={handleSubmit} disabled={submitting || !content.trim()} style={{ marginTop: 10, width: "100%", padding: "14px", borderRadius: 12, border: "none", background: submitting || !content.trim() ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 800, cursor: submitting || !content.trim() ? "not-allowed" : "pointer", fontSize: 15 }}>
