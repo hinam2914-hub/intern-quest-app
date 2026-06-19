@@ -24,8 +24,12 @@ export default function ThinkingPage() {
         const { data: qRows } = await supabase
             .from("thinking_questions").select("*")
             .eq("is_active", true).eq("type", t)
-            .order("created_at", { ascending: false }).limit(1);
-        const q = (qRows || [])[0] as Question | undefined;
+            .order("created_at", { ascending: true });
+        const pool = (qRows || []) as Question[];
+        // 今日(JST)の通算日数で、お題プールから1問を決定的に選ぶ（毎日自動で切り替わる）
+        const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+        const dayNumber = Math.floor(jstNow.getTime() / 86400000); // 1970年からの日数(JST)
+        const q = pool.length > 0 ? pool[dayNumber % pool.length] : undefined;
         setQuestion(q || null);
         setAnswers([]); setMyVote(null);
         if (q) {
