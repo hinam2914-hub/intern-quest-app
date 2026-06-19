@@ -59,6 +59,7 @@ export default function MenuPage() {
                 { icon: "📝", label: "テスト一覧", desc: "価値観・適性を測る各種テスト", path: "/tests", color: "#a78bfa" },
                 { icon: "💡", label: "KKC 課題解決案", desc: "ドットの課題に解決案を申請", path: "/kkc", color: "#f59e0b" },
                 { icon: "🐟", label: "メダカBOX", desc: "匿名で意見・課題を投稿できる掲示板", path: "/medaka", color: "#06b6d4" },
+                { icon: "🧠", label: "思考クエスト", desc: "お題に答えて思考力を鍛える・大喜利も", path: "/thinking", color: "#f5c542" },
                 { icon: "🎯", label: "ライフチャレンジ", desc: "人生の経験値を積んでスタンプを集めよう", path: "/challenge", color: "#f59e0b" },
                 { icon: "📖", label: "用語集", desc: "社内・就活用語をまとめました", path: "/wiki", color: "#6366f1" },
             ],
