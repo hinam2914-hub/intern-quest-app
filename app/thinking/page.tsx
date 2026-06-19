@@ -7,6 +7,8 @@ interface Question { id: string; content: string; type: string; created_at: stri
 interface Answer { id: string; question_id: string; user_id: string; content: string; created_at: string; name: string; ippon: number; }
 type Tab = "thinking" | "oogiri";
 
+const cList_uids = (list: any[]): string[] => list.map((c) => c.user_id);
+
 export default function ThinkingPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -15,6 +17,9 @@ export default function ThinkingPage() {
     const [question, setQuestion] = useState<Question | null>(null);
     const [answers, setAnswers] = useState<Answer[]>([]);
     const [myVote, setMyVote] = useState<string | null>(null); // 自分がIPPONした answer_id（このお題内）
+    const [comments, setComments] = useState<Record<string, { id: string; content: string; name: string; created_at: string }[]>>({});
+    const [openComment, setOpenComment] = useState<string | null>(null);
+    const [commentText, setCommentText] = useState("");
     const [myAnswer, setMyAnswer] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
@@ -63,6 +68,29 @@ export default function ThinkingPage() {
             const withMeta = rows.map(r => ({ ...r, name: nameMap[r.user_id] || "名前未設定", ippon: ipponCount[r.id] || 0 }));
             withMeta.sort((a, b) => b.ippon - a.ippon || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             setAnswers(withMeta);
+            // コメント取得
+            if (answerIds.length > 0) {
+                const { data: cRows } = await supabase
+                    .from("thinking_comments")
+                    .select("id, target_id, user_id, content, created_at")
+                    .eq("target_type", "thinking").in("target_id", answerIds)
+                    .order("created_at", { ascending: true });
+                const clist = (cRows || []) as any[];
+                const cIds = Array.from(new Set(cList_uids(cList)));
+                const cNameMap: Record<string, string> = {};
+                if (cIds.length > 0) {
+                    const { data: cp } = await supabase.from("profiles").select("id, name").in("id", cIds);
+                    (cp || []).forEach((pf: any) => { cNameMap[pf.id] = pf.name || "名前未設定"; });
+                }
+                const byTarget: Record<string, any[]> = {};
+                cList.forEach((c: any) => {
+                    if (!byTarget[c.target_id]) byTarget[c.target_id] = [];
+                    byTarget[c.target_id].push({ id: c.id, content: c.content, name: cNameMap[c.user_id] || "名前未設定", created_at: c.created_at });
+                });
+                setComments(byTarget);
+            } else {
+                setComments({});
+            }
         }
         setLoading(false);
     }, []);
@@ -105,6 +133,14 @@ export default function ThinkingPage() {
         await loadData(tab, userId);
         setSubmitting(false);
         setTimeout(() => setMessage(""), 2500);
+    };
+
+    // コメント投稿
+    const submitComment = async (answerId: string) => {
+        if (!commentText.trim()) return;
+        await supabase.from("thinking_comments").insert({ target_type: "thinking", target_id: answerId, user_id: userId, content: commentText.trim() });
+        setCommentText("");
+        await loadData(tab, userId);
     };
 
     // IPPON（1人1票・お題内で付け替え。自分のボケには押せない）
@@ -191,7 +227,22 @@ export default function ThinkingPage() {
                                             </button>
                                             <span style={{ fontSize: 14, fontWeight: 800, color: a.ippon > 0 ? accent : "#6b7280" }}>{a.ippon}</span>
                                             {isMine && <span style={{ fontSize: 11, color: "#6b7280" }}>（自分の投稿）</span>}
+                                            <button onClick={() => setOpenComment(openComment === a.id ? null : a.id)} style={{ marginLeft: "auto", padding: "6px 12px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💬 {(comments[a.id]?.length || 0)}</button>
                                         </div>
+                                        {openComment === a.id && (
+                                            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                                                {(comments[a.id] || []).map((c) => (
+                                                    <div key={c.id} style={{ marginBottom: 8 }}>
+                                                        <span style={{ fontSize: 12, fontWeight: 700, color: accent, marginRight: 8 }}>{c.name}</span>
+                                                        <span style={{ fontSize: 13, color: "#d1d5db" }}>{c.content}</span>
+                                                    </div>
+                                                ))}
+                                                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                                                    <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="コメントする..." style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(0,0,0,0.2)", color: "#f9fafb", fontSize: 13, outline: "none" }} />
+                                                    <button onClick={() => submitComment(a.id)} disabled={!commentText.trim()} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: commentText.trim() ? accentGrad : "rgba(120,120,120,0.4)", color: isOogiri ? "#1a1206" : "#fff", fontWeight: 700, fontSize: 13, cursor: commentText.trim() ? "pointer" : "not-allowed" }}>送信</button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })
