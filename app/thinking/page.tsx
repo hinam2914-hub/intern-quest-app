@@ -101,9 +101,9 @@ export default function ThinkingPage() {
                     <>
                         {/* お題 */}
                         {isOogiri ? (
-                            <div style={{ padding: "32px 24px", borderRadius: 16, background: "linear-gradient(160deg, #1a1206, #2a1d08)", border: "2px solid #f5c542", marginBottom: 24, textAlign: "center", boxShadow: "0 0 30px rgba(245,197,66,0.15)" }}>
-                                <div style={{ fontSize: 12, fontWeight: 800, color: "#f5c542", letterSpacing: 4, marginBottom: 12 }}>お 題</div>
-                                <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.6 }}>{question.content}</div>
+                            <div style={{ borderRadius: 16, background: "#f2d025", marginBottom: 24, textAlign: "center", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, boxShadow: "0 8px 30px rgba(0,0,0,0.4)" }}>
+                                <div style={{ fontSize: 12, fontWeight: 900, color: "#1a1a1a", letterSpacing: 6, marginBottom: 16, opacity: 0.7 }}>お 題</div>
+                                <div style={{ fontSize: 30, fontWeight: 900, color: "#111", lineHeight: 1.45, letterSpacing: 1, fontFamily: "'Hiragino Sans', 'Yu Gothic', sans-serif" }}>{question.content}</div>
                             </div>
                         ) : (
                             <div style={{ padding: "24px", borderRadius: 16, background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.3)", marginBottom: 24 }}>
