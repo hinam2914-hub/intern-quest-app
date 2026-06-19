@@ -3,32 +3,34 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
-interface Question { id: string; content: string; created_at: string; }
+interface Question { id: string; content: string; type: string; created_at: string; }
 interface Answer { id: string; question_id: string; user_id: string; content: string; created_at: string; name: string; }
+type Tab = "thinking" | "oogiri";
 
 export default function ThinkingPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState("");
+    const [tab, setTab] = useState<Tab>("thinking");
     const [question, setQuestion] = useState<Question | null>(null);
     const [answers, setAnswers] = useState<Answer[]>([]);
     const [myAnswer, setMyAnswer] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState("");
 
-    const loadData = useCallback(async () => {
-        // 出題中の最新お題を1つ取得
+    const loadData = useCallback(async (t: Tab) => {
+        setLoading(true);
         const { data: qRows } = await supabase
             .from("thinking_questions")
             .select("*")
             .eq("is_active", true)
+            .eq("type", t)
             .order("created_at", { ascending: false })
             .limit(1);
         const q = (qRows || [])[0] as Question | undefined;
         setQuestion(q || null);
-
+        setAnswers([]);
         if (q) {
-            // そのお題への回答を取得
             const { data: aRows } = await supabase
                 .from("thinking_answers")
                 .select("id, question_id, user_id, content, created_at")
@@ -36,7 +38,6 @@ export default function ThinkingPage() {
                 .order("created_at", { ascending: false })
                 .limit(200);
             const rows = (aRows || []) as Omit<Answer, "name">[];
-            // 名前を引く
             const ids = Array.from(new Set(rows.map(r => r.user_id)));
             const nameMap: Record<string, string> = {};
             if (ids.length > 0) {
@@ -53,78 +54,92 @@ export default function ThinkingPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-            await loadData();
+            await loadData("thinking");
         })();
     }, [loadData, router]);
+
+    const switchTab = (t: Tab) => { setTab(t); setMyAnswer(""); setMessage(""); loadData(t); };
 
     const handleSubmit = async () => {
         if (!myAnswer.trim() || !question || submitting) return;
         setSubmitting(true);
         const { error } = await supabase.from("thinking_answers").insert({
-            question_id: question.id,
-            user_id: userId,
-            content: myAnswer.trim(),
+            question_id: question.id, user_id: userId, content: myAnswer.trim(),
         });
         if (error) { setMessage("投稿に失敗しました"); setSubmitting(false); return; }
         setMyAnswer("");
-        setMessage("投稿しました！");
-        await loadData();
+        setMessage(tab === "oogiri" ? "ナイスボケ！🎤" : "投稿しました！");
+        await loadData(tab);
         setSubmitting(false);
         setTimeout(() => setMessage(""), 2500);
     };
 
-    if (loading) return <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#9ca3af", display: "flex", alignItems: "center", justifyContent: "center" }}>読み込み中...</div>;
+    const isOogiri = tab === "oogiri";
+    // テーマ色
+    const bg = isOogiri ? "#0d0a04" : "#0a0a0f";
+    const accent = isOogiri ? "#f5c542" : "#818cf8";
+    const accentGrad = isOogiri ? "linear-gradient(135deg, #f5c542, #d4a017)" : "linear-gradient(135deg, #6366f1, #8b5cf6)";
 
     return (
-        <div style={{ minHeight: "100vh", background: "#0a0a0f", padding: "32px 20px" }}>
+        <div style={{ minHeight: "100vh", background: bg, padding: "32px 20px", transition: "background 0.3s" }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
-                <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
-                <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 24px" }}>🧠 思考クエスト</h1>
+                <div onClick={() => router.push("/menu")} style={{ fontSize: 12, color: accent, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 20px" }}>{isOogiri ? "🎤 大喜利グランプリ" : "🧠 思考クエスト"}</h1>
 
-                {!question ? (
-                    <div style={{ padding: 24, borderRadius: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", color: "#9ca3af" }}>今出題中のお題はありません。</div>
+                {/* タブ */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+                    {([["thinking", "🧠 思考クエスト"], ["oogiri", "🎤 大喜利"]] as [Tab, string][]).map(([t, label]) => (
+                        <button key={t} onClick={() => switchTab(t)} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: tab === t ? (t === "oogiri" ? "linear-gradient(135deg, #f5c542, #d4a017)" : "linear-gradient(135deg, #6366f1, #8b5cf6)") : "rgba(255,255,255,0.05)", color: tab === t ? (t === "oogiri" ? "#1a1206" : "#fff") : "#9ca3af" }}>{label}</button>
+                    ))}
+                </div>
+
+                {loading ? (
+                    <div style={{ color: "#9ca3af", textAlign: "center", padding: 40 }}>読み込み中...</div>
+                ) : !question ? (
+                    <div style={{ padding: 24, borderRadius: 16, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#9ca3af" }}>今出題中のお題はありません。</div>
                 ) : (
                     <>
                         {/* お題 */}
-                        <div style={{ padding: "24px", borderRadius: 16, background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.3)", marginBottom: 24 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#818cf8", marginBottom: 8 }}>今日のお題</div>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: "#f9fafb", lineHeight: 1.6 }}>{question.content}</div>
-                        </div>
+                        {isOogiri ? (
+                            <div style={{ padding: "32px 24px", borderRadius: 16, background: "linear-gradient(160deg, #1a1206, #2a1d08)", border: "2px solid #f5c542", marginBottom: 24, textAlign: "center", boxShadow: "0 0 30px rgba(245,197,66,0.15)" }}>
+                                <div style={{ fontSize: 12, fontWeight: 800, color: "#f5c542", letterSpacing: 4, marginBottom: 12 }}>お 題</div>
+                                <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.6 }}>{question.content}</div>
+                            </div>
+                        ) : (
+                            <div style={{ padding: "24px", borderRadius: 16, background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.3)", marginBottom: 24 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#818cf8", marginBottom: 8 }}>今日のお題</div>
+                                <div style={{ fontSize: 18, fontWeight: 700, color: "#f9fafb", lineHeight: 1.6 }}>{question.content}</div>
+                            </div>
+                        )}
 
                         {/* 回答フォーム */}
                         <div style={{ marginBottom: 28 }}>
-                            <textarea
-                                value={myAnswer}
-                                onChange={(e) => setMyAnswer(e.target.value)}
-                                placeholder="自分の考えを書いてみよう..."
-                                rows={4}
-                                style={{ width: "100%", padding: "14px", borderRadius: 12, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.08)", color: "#f9fafb", fontSize: 15, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }}
-                            />
-                            <button onClick={handleSubmit} disabled={submitting || !myAnswer.trim()} style={{ marginTop: 10, width: "100%", padding: "14px", borderRadius: 12, border: "none", background: submitting || !myAnswer.trim() ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: submitting || !myAnswer.trim() ? "not-allowed" : "pointer", fontSize: 15 }}>
-                                {submitting ? "送信中..." : "考えを投稿する"}
+                            <textarea value={myAnswer} onChange={(e) => setMyAnswer(e.target.value)} placeholder={isOogiri ? "ここでボケる！🎤" : "自分の考えを書いてみよう..."} rows={isOogiri ? 2 : 4} style={{ width: "100%", padding: "14px", borderRadius: 12, border: `1px solid ${isOogiri ? "rgba(245,197,66,0.4)" : "rgba(99,102,241,0.4)"}`, background: isOogiri ? "rgba(245,197,66,0.06)" : "rgba(99,102,241,0.08)", color: "#f9fafb", fontSize: 15, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6 }} />
+                            <button onClick={handleSubmit} disabled={submitting || !myAnswer.trim()} style={{ marginTop: 10, width: "100%", padding: "14px", borderRadius: 12, border: "none", background: submitting || !myAnswer.trim() ? "rgba(120,120,120,0.4)" : accentGrad, color: isOogiri ? "#1a1206" : "#fff", fontWeight: 800, cursor: submitting || !myAnswer.trim() ? "not-allowed" : "pointer", fontSize: 15 }}>
+                                {submitting ? "送信中..." : isOogiri ? "ボケを投稿する🎤" : "考えを投稿する"}
                             </button>
-                            {message && <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.3)", color: "#34d399", fontWeight: 600, fontSize: 14 }}>{message}</div>}
+                            {message && <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 10, background: isOogiri ? "rgba(245,197,66,0.12)" : "rgba(52,211,153,0.1)", border: `1px solid ${isOogiri ? "rgba(245,197,66,0.4)" : "rgba(52,211,153,0.3)"}`, color: isOogiri ? "#f5c542" : "#34d399", fontWeight: 700, fontSize: 14 }}>{message}</div>}
                         </div>
 
-                        {/* みんなの回答 */}
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#9ca3af", marginBottom: 12 }}>みんなの考え（{answers.length}）</div>
+                        {/* 回答一覧 */}
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#9ca3af", marginBottom: 12 }}>{isOogiri ? `みんなのボケ（${answers.length}）` : `みんなの考え（${answers.length}）`}</div>
                         {answers.length === 0 ? (
-                            <div style={{ padding: 20, color: "#6b7280", fontSize: 14, textAlign: "center" }}>まだ回答がありません。最初の一人になろう！</div>
+                            <div style={{ padding: 20, color: "#6b7280", fontSize: 14, textAlign: "center" }}>{isOogiri ? "まだボケがありません。トップバッターになろう！🎤" : "まだ回答がありません。最初の一人になろう！"}</div>
                         ) : (
                             answers.map((a) => (
-                                <div key={a.id} style={{ padding: "16px 18px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 12 }}>
+                                <div key={a.id} style={{ padding: "16px 18px", borderRadius: 12, background: isOogiri ? "rgba(245,197,66,0.05)" : "rgba(255,255,255,0.03)", border: `1px solid ${isOogiri ? "rgba(245,197,66,0.15)" : "rgba(255,255,255,0.06)"}`, marginBottom: 12 }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                                        <span style={{ fontSize: 13, fontWeight: 700, color: "#818cf8" }}>{a.name}</span>
+                                        <span style={{ fontSize: 13, fontWeight: 700, color: accent }}>{a.name}</span>
                                         <span style={{ fontSize: 11, color: "#6b7280" }}>{new Date(a.created_at).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })}</span>
                                     </div>
-                                    <div style={{ fontSize: 14, color: "#e5e7eb", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{a.content}</div>
+                                    <div style={{ fontSize: isOogiri ? 16 : 14, fontWeight: isOogiri ? 700 : 400, color: "#e5e7eb", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{a.content}</div>
                                 </div>
                             ))
                         )}
                     </>
                 )}
 
-                <button onClick={() => router.push("/menu")} style={{ marginTop: 32, padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}>メニューへ戻る</button>
+                <button onClick={() => router.push("/menu")} style={{ marginTop: 32, padding: "12px 32px", borderRadius: 10, background: accentGrad, color: isOogiri ? "#1a1206" : "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}>メニューへ戻る</button>
             </div>
         </div>
     );
