@@ -85,8 +85,23 @@ export default function ThinkingPage() {
             question_id: question.id, user_id: userId, content: myAnswer.trim(),
         });
         if (error) { setMessage("投稿に失敗しました"); setSubmitting(false); return; }
+
+        // 投稿ポイント：このお題で初投稿のときだけ +5pt
+        const reason = `thinking_post:${question.id}`;
+        const { data: already } = await supabase
+            .from("points_history").select("id")
+            .eq("user_id", userId).eq("reason", reason).limit(1);
+        let gainedPt = false;
+        if (!already || already.length === 0) {
+            const { data: pr } = await supabase.from("user_points").select("points").eq("id", userId).single();
+            const cur = pr?.points || 0;
+            await supabase.from("user_points").update({ points: cur + 5 }).eq("id", userId);
+            await supabase.from("points_history").insert({ user_id: userId, change: 5, reason });
+            gainedPt = true;
+        }
+
         setMyAnswer("");
-        setMessage(tab === "oogiri" ? "ナイスボケ！🎤" : "投稿しました！");
+        setMessage((tab === "oogiri" ? "ナイスボケ！🎤" : "投稿しました！") + (gainedPt ? " +5pt獲得" : ""));
         await loadData(tab, userId);
         setSubmitting(false);
         setTimeout(() => setMessage(""), 2500);
@@ -102,6 +117,11 @@ export default function ThinkingPage() {
             // このお題で既に押してた票を消してから付け替え
             if (myVote) await supabase.from("thinking_ippon").delete().eq("answer_id", myVote).eq("user_id", userId);
             await supabase.from("thinking_ippon").insert({ answer_id: answerId, user_id: userId });
+            // ボケ主へ +3pt（押されたら加点。取り消しでは減点しない）
+            const { data: pr } = await supabase.from("user_points").select("points").eq("id", answerOwner).single();
+            const cur = pr?.points || 0;
+            await supabase.from("user_points").update({ points: cur + 3 }).eq("id", answerOwner);
+            await supabase.from("points_history").insert({ user_id: answerOwner, change: 3, reason: "thinking_ippon_received" });
         }
         await loadData(tab, userId);
     };
