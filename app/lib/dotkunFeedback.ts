@@ -22,20 +22,12 @@ export function generateDotKunFeedback(params: {
   else if (streak === 1) { lines.push(`今日も書いてくれてありがとう！まずは1日、ここからだよ`); mood = "happy"; }
   else { lines.push(`今日もお疲れさま〜！ちゃんと書いてえらい`); mood = "happy"; }
 
-  // 2) 数字を拾って反応
-  const nums = (factText.match(/\d+/g) || []).map(Number).filter(n => n > 0);
-  if (nums.length >= 2) {
-    const a = nums[0], b = nums[1];
-    if (a > 0 && b <= a) {
-      const rate = Math.round((b / a) * 100);
-      lines.push(`数字で見ると${a}件中${b}件、${rate}%だね。次は1%でも上げられたら勝ちだよ`);
-    } else {
-      lines.push(`${nums.slice(0, 2).join("件と")}件か、ちゃんと数字で振り返れてるのいいね`);
-    }
-  } else if (nums.length === 1) {
-    lines.push(`${nums[0]}っていう数字、ちゃんと残してるのえらい。明日はこれ超えてこ`);
+  // 2) 数字の有無で反応（意味は読めないので件数などには踏み込まない）
+  const hasNumber = /\d/.test(factText);
+  if (hasNumber) {
+    lines.push(`数字を入れて振り返れてるの、すごくいいね。続けてこ〜`);
   } else {
-    lines.push(`次はできれば数字も1個入れてみて、振り返りが一気に鋭くなるよ`);
+    lines.push(`次はできれば数字も1個入れてみて。振り返りが一気に鋭くなるよ`);
   }
 
   // 3) キーワードに反応
