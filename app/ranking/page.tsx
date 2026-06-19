@@ -44,6 +44,8 @@ export default function RankingPage() {
     const [adviceUsers, setAdviceUsers] = useState<RankingUser[]>([]);
     const [learnUsers, setLearnUsers] = useState<RankingUser[]>([]);
     const [workUsers, setWorkUsers] = useState<RankingUser[]>([]);
+    const [thinkingUsers, setThinkingUsers] = useState<RankingUser[]>([]);
+    const [questionUsers, setQuestionUsers] = useState<RankingUser[]>([]);
     const [kpiUsers, setKpiUsers] = useState<RankingUser[]>([]);
     const [salesMonthUsers, setSalesMonthUsers] = useState<RankingUser[]>([]);
     const [salesTotalUsers, setSalesTotalUsers] = useState<RankingUser[]>([]);
@@ -53,7 +55,7 @@ export default function RankingPage() {
     const [loading, setLoading] = useState(true);
     const [myTeamId, setMyTeamId] = useState<string | null>(null);
     const [myId, setMyId] = useState("");
-    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "sankyu_sent" |"challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total" | "job_rank" | "pay_forward">("total");
+    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "sankyu_sent" |"challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total" | "job_rank" | "pay_forward" | "thinking" | "question">("total");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -165,6 +167,30 @@ export default function RankingPage() {
                     avatar_url: row.avatar_url,
                     is_active: row.is_active,
                     points: challengeCounts[row.id] || 0,
+                })).sort((a, b) => b.points - a.points));
+            }
+            // ===== 思考クエスト回答数ランキング =====
+            const { data: thinkingAllRows } = await supabase.from("thinking_answers").select("user_id");
+            const thinkingCounts: { [id: string]: number } = {};
+            (thinkingAllRows || []).forEach((row: any) => { if (row.user_id) thinkingCounts[row.user_id] = (thinkingCounts[row.user_id] || 0) + 1; });
+            const thinkingIds = Object.keys(thinkingCounts);
+            if (thinkingIds.length > 0) {
+                const { data: tProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true).in("id", thinkingIds);
+                setThinkingUsers((tProfiles || []).map((row: any) => ({
+                    id: row.id, name: row.name, avatar_url: row.avatar_url, is_active: row.is_active,
+                    points: thinkingCounts[row.id] || 0,
+                })).sort((a, b) => b.points - a.points));
+            }
+            // ===== 質問クエスト投稿数ランキング =====
+            const { data: questionAllRows } = await supabase.from("questions_box").select("user_id");
+            const questionCounts: { [id: string]: number } = {};
+            (questionAllRows || []).forEach((row: any) => { if (row.user_id) questionCounts[row.user_id] = (questionCounts[row.user_id] || 0) + 1; });
+            const questionIds = Object.keys(questionCounts);
+            if (questionIds.length > 0) {
+                const { data: qProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true).in("id", questionIds);
+                setQuestionUsers((qProfiles || []).map((row: any) => ({
+                    id: row.id, name: row.name, avatar_url: row.avatar_url, is_active: row.is_active,
+                    points: questionCounts[row.id] || 0,
                 })).sort((a, b) => b.points - a.points));
             }
             // ===== テスト合格数ランキング =====
@@ -397,6 +423,8 @@ export default function RankingPage() {
         if (activeTab === "sankyu") return `${user.points}個`;
         if (activeTab === "sankyu_sent") return `${user.points}個`;
         if (activeTab === "challenge") return `${user.points}個`;
+        if (activeTab === "thinking") return `${user.points}回`;
+        if (activeTab === "question") return `${user.points}件`;
         if (activeTab === "test") return `${user.points}個`;
         if (activeTab === "advice") return `${user.points}件`;
         if (activeTab === "learn") return `${user.points}個`;
@@ -509,7 +537,7 @@ export default function RankingPage() {
         );
     }
 
-   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "sankyu_sent" ? sankyuSentUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : activeTab === "maru_total" ? maruTotalUsers : activeTab === "job_rank" ? jobRankUsers : activeTab === "pay_forward" ? payForwardUsers : teamRanking;
+   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "sankyu_sent" ? sankyuSentUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : activeTab === "maru_total" ? maruTotalUsers : activeTab === "job_rank" ? jobRankUsers : activeTab === "pay_forward" ? payForwardUsers : activeTab === "thinking" ? thinkingUsers : activeTab === "question" ? questionUsers : teamRanking;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -543,6 +571,8 @@ export default function RankingPage() {
                         { key: "maru_total", label: "☀️スケジュール" },
                         { key: "job_rank", label: "🎓 就活ランク" },
                         { key: "pay_forward", label: "🤝 ペイフォワード" },
+                        { key: "thinking", label: "🧠 思考クエスト" },
+                        { key: "question", label: "❓ 質問" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flexShrink: 0, padding: "10px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, whiteSpace: "nowrap", background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
                             {tab.label}
