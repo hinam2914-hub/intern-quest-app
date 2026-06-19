@@ -390,6 +390,16 @@ const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
                             </div>
                         </div>
                     )}
+                    {/* このまま学習する？導線 */}
+                    {reportDone && (
+                        <div style={{ marginTop: 20, padding: "20px 22px", borderRadius: 16, background: "linear-gradient(135deg, rgba(6,182,212,0.18), rgba(99,102,241,0.15))", border: "1px solid rgba(6,182,212,0.35)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                            <div>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: "#f9fafb", marginBottom: 4 }}>📚 この勢いで、学習も進めちゃおう！</div>
+                                <div style={{ fontSize: 13, color: "#9ca3af" }}>日報を出した今がチャンス。動画・記事を見てポイントもGET</div>
+                            </div>
+                            <button onClick={() => router.push("/learn")} style={{ flexShrink: 0, padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #06b6d4, #6366f1)", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", boxShadow: "0 4px 12px rgba(6,182,212,0.3)" }}>続けて学習する →</button>
+                        </div>
+                    )}
                     {/* 日報提出後のガチャ */}
                     {reportDone && (
                         <div style={{ marginTop: 20, padding: "24px", borderRadius: 16, background: "linear-gradient(135deg, #fbbf24 0%, #ec4899 50%, #8b5cf6 100%)", textAlign: "center" }}>
