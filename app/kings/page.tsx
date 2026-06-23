@@ -14,6 +14,17 @@ function jstYesterday(): string {
   const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000);
   return jst.toISOString().slice(0, 10);
 }
+// 昨日のJST 0:00〜24:00 を UTC ISO文字列の範囲で返す
+function yesterdayRangeUTC(): { start: string; end: string } {
+  const now = new Date();
+  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const y = jstNow.getUTCFullYear(), m = jstNow.getUTCMonth(), d = jstNow.getUTCDate();
+  // 今日のJST0時(UTC) = 昨日のJST末。昨日のJST0時 = それの24時間前
+  const todayJst0_utc = Date.UTC(y, m, d) - 9 * 60 * 60 * 1000;
+  const start = new Date(todayJst0_utc - 24 * 60 * 60 * 1000).toISOString();
+  const end = new Date(todayJst0_utc).toISOString();
+  return { start, end };
+}
 function countEmoji(s: string): number {
   const m = s.match(/\p{Extended_Pictographic}/gu);
   return m ? m.length : 0;
@@ -44,21 +55,19 @@ export default function KingsPage() {
       const nameMap: Record<string, string> = {};
       (profs || []).forEach((p: any) => { nameMap[p.id] = p.name || "名前未設定"; });
 
+      const range = yesterdayRangeUTC();
       const { data: logins } = await supabase
         .from("points_history").select("user_id, created_at")
         .eq("reason", "login_bonus")
-        .order("created_at", { ascending: true }).limit(1000);
-      const dayLogins = (logins || []).filter((r: any) => toJSTDateOnly(r.created_at) === ymd);
+        .gte("created_at", range.start).lt("created_at", range.end)
+        .order("created_at", { ascending: true });
+      const dayLogins = logins || [];
 
       const { data: subs } = await supabase
         .from("submissions").select("user_id, created_at, content")
-        .order("created_at", { ascending: true }).limit(1000);
-      const daySubs = (subs || []).filter((r: any) => toJSTDateOnly(r.created_at) === ymd);
-      console.log("=== KINGS DEBUG ===");
-      console.log("ymd(昨日):", ymd);
-      console.log("subs総数:", (subs || []).length);
-      console.log("最初の3件:", (subs || []).slice(0,3).map((r:any)=>({raw:r.created_at, jst:toJSTDateOnly(r.created_at)})));
-      console.log("daySubs(6/22該当):", daySubs.length);
+        .gte("created_at", range.start).lt("created_at", range.end)
+        .order("created_at", { ascending: true });
+      const daySubs = subs || [];
 
       const nm = (uid: string | undefined): string | null => uid ? (nameMap[uid] || "名前未設定") : null;
       const result: King[] = [];
