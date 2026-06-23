@@ -46,6 +46,7 @@ export default function RankingPage() {
     const [workUsers, setWorkUsers] = useState<RankingUser[]>([]);
     const [thinkingUsers, setThinkingUsers] = useState<RankingUser[]>([]);
     const [questionUsers, setQuestionUsers] = useState<RankingUser[]>([]);
+    const [ipponUsers, setIpponUsers] = useState<RankingUser[]>([]);
     const [kpiUsers, setKpiUsers] = useState<RankingUser[]>([]);
     const [salesMonthUsers, setSalesMonthUsers] = useState<RankingUser[]>([]);
     const [salesTotalUsers, setSalesTotalUsers] = useState<RankingUser[]>([]);
@@ -55,7 +56,7 @@ export default function RankingPage() {
     const [loading, setLoading] = useState(true);
     const [myTeamId, setMyTeamId] = useState<string | null>(null);
     const [myId, setMyId] = useState("");
-    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "sankyu_sent" |"challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total" | "job_rank" | "pay_forward" | "thinking" | "question">("total");
+    const [activeTab, setActiveTab] = useState<"total" | "weekly" | "teams" | "streak" | "sankyu" | "sankyu_sent" |"challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total" | "job_rank" | "pay_forward" | "thinking" | "question" | "ippon">("total");
 
     useEffect(() => {
         const loadRanking = async () => {
@@ -192,6 +193,30 @@ export default function RankingPage() {
                     id: row.id, name: row.name, avatar_url: row.avatar_url, is_active: row.is_active,
                     points: questionCounts[row.id] || 0,
                 })).sort((a, b) => b.points - a.points));
+            }
+            // ===== もらったIPPON数ランキング =====
+            // IPPON記録（answer_id）を取得し、各回答の持ち主に紐付けて集計
+            const { data: ipponRows } = await supabase.from("thinking_ippon").select("answer_id");
+            const ipponAnswerIds = Array.from(new Set((ipponRows || []).map((r: any) => r.answer_id).filter(Boolean)));
+            if (ipponAnswerIds.length > 0) {
+                // answer_id → 回答者user_id の対応を取得
+                const { data: ansOwners } = await supabase.from("thinking_answers").select("id, user_id").in("id", ipponAnswerIds);
+                const ownerMap: { [aid: string]: string } = {};
+                (ansOwners || []).forEach((a: any) => { ownerMap[a.id] = a.user_id; });
+                // 回答者ごとにIPPON数を集計
+                const ipponCounts: { [uid: string]: number } = {};
+                (ipponRows || []).forEach((r: any) => {
+                    const owner = ownerMap[r.answer_id];
+                    if (owner) ipponCounts[owner] = (ipponCounts[owner] || 0) + 1;
+                });
+                const ipponIds = Object.keys(ipponCounts);
+                if (ipponIds.length > 0) {
+                    const { data: ipProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true).in("id", ipponIds);
+                    setIpponUsers((ipProfiles || []).map((row: any) => ({
+                        id: row.id, name: row.name, avatar_url: row.avatar_url, is_active: row.is_active,
+                        points: ipponCounts[row.id] || 0,
+                    })).sort((a, b) => b.points - a.points));
+                }
             }
             // ===== テスト合格数ランキング =====
             const { data: testProfileRows } = await supabase.from("profiles").select("*").eq("is_active", true);
@@ -425,6 +450,7 @@ export default function RankingPage() {
         if (activeTab === "challenge") return `${user.points}個`;
         if (activeTab === "thinking") return `${user.points}回`;
         if (activeTab === "question") return `${user.points}件`;
+        if (activeTab === "ippon") return `${user.points}IPPON`;
         if (activeTab === "test") return `${user.points}個`;
         if (activeTab === "advice") return `${user.points}件`;
         if (activeTab === "learn") return `${user.points}個`;
@@ -537,7 +563,7 @@ export default function RankingPage() {
         );
     }
 
-   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "sankyu_sent" ? sankyuSentUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : activeTab === "maru_total" ? maruTotalUsers : activeTab === "job_rank" ? jobRankUsers : activeTab === "pay_forward" ? payForwardUsers : activeTab === "thinking" ? thinkingUsers : activeTab === "question" ? questionUsers : teamRanking;
+   const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "sankyu_sent" ? sankyuSentUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : activeTab === "maru_total" ? maruTotalUsers : activeTab === "job_rank" ? jobRankUsers : activeTab === "pay_forward" ? payForwardUsers : activeTab === "thinking" ? thinkingUsers : activeTab === "question" ? questionUsers : activeTab === "ippon" ? ipponUsers : teamRanking;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -573,6 +599,7 @@ export default function RankingPage() {
                         { key: "pay_forward", label: "🤝 ペイフォワード" },
                         { key: "thinking", label: "🧠 思考クエスト" },
                         { key: "question", label: "❓ 質問" },
+                        { key: "ippon", label: "🎤 IPPON" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flexShrink: 0, padding: "10px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, whiteSpace: "nowrap", background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
                             {tab.label}
