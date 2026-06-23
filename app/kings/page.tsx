@@ -2,16 +2,23 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import DotKun from "../components/DotKun";
 
 function toJSTDateOnly(iso: string): string {
   const d = new Date(iso);
   const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
   return jst.toISOString().slice(0, 10);
 }
-function jstToday(): string {
+function jstYesterday(): string {
   const now = new Date();
-  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000);
   return jst.toISOString().slice(0, 10);
+}
+function seededPick(arr, seedStr) {
+  if (!arr.length) return null;
+  let h = 0;
+  for (let i = 0; i < seedStr.length; i++) { h = (h * 31 + seedStr.charCodeAt(i)) >>> 0; }
+  return arr[h % arr.length];
 }
 function countEmoji(s: string): number {
   const m = s.match(/\p{Extended_Pictographic}/gu);
@@ -19,7 +26,7 @@ function countEmoji(s: string): number {
 }
 const TIRED_WORDS = ["疲れ", "つかれ", "しんど", "だるい", "ねむい", "眠い"];
 
-type King = { emoji: string; title: string; desc: string; name: string | null; detail?: string };
+type King = { emoji: string; title: string; desc: string; name: string | null; detail?: string; dotkun: string; mood: "happy" | "cheer" | "normal" };
 
 export default function KingsPage() {
   const router = useRouter();
@@ -29,7 +36,7 @@ export default function KingsPage() {
 
   useEffect(() => {
     (async () => {
-      const ymd = jstToday();
+      const ymd = jstYesterday();
       setToday(ymd);
 
       const { data: profs } = await supabase.from("profiles").select("id, name").eq("is_active", true);
@@ -103,30 +110,38 @@ export default function KingsPage() {
     <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#fff", padding: "32px 16px 80px" }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
         <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
-        <h1 style={{ fontSize: 30, fontWeight: 900, margin: "12px 0 4px" }}>👑 今日の○○王</h1>
-        <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 28 }}>{today}　毎日0時に入れ替わるよ</p>
+        <h1 style={{ fontSize: 30, fontWeight: 900, margin: "12px 0 4px" }}>👑 昨日の○○王</h1>
+        <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 28 }}>{today} の結果　毎朝0時に確定するよ</p>
 
         {loading ? (
           <p style={{ color: "#9ca3af" }}>集計中...</p>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {kings.map((k, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 18px", borderRadius: 14, background: k.name ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ fontSize: 34, flexShrink: 0 }}>{k.emoji}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 17, fontWeight: 800 }}>{k.title}</div>
-                  <div style={{ fontSize: 12, color: "#9ca3af" }}>{k.desc}</div>
+              <div key={i} style={{ padding: "16px 18px", borderRadius: 14, background: k.name ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ fontSize: 34, flexShrink: 0 }}>{k.emoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 17, fontWeight: 800 }}>{k.title}</div>
+                    <div style={{ fontSize: 12, color: "#9ca3af" }}>{k.desc}</div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    {k.name ? (
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: "#fbbf24" }}>{k.name}</div>
+                        {k.detail ? <div style={{ fontSize: 11, color: "#6b7280" }}>{k.detail}</div> : null}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 13, color: "#6b7280" }}>まだ不在</div>
+                    )}
+                  </div>
                 </div>
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  {k.name ? (
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: "#fbbf24" }}>{k.name}</div>
-                      {k.detail ? <div style={{ fontSize: 11, color: "#6b7280" }}>{k.detail}</div> : null}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: 13, color: "#6b7280" }}>まだ不在</div>
-                  )}
-                </div>
+                {k.name ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 9, background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><DotKun size={30} mood={k.mood} /></div>
+                    <div style={{ fontSize: 13, color: "#d1d5db", background: "rgba(99,102,241,0.1)", borderRadius: "2px 12px 12px 12px", padding: "8px 12px" }}>{k.dotkun}</div>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
