@@ -54,6 +54,11 @@ export default function KingsPage() {
         .from("submissions").select("user_id, created_at, content")
         .order("created_at", { ascending: true }).limit(1000);
       const daySubs = (subs || []).filter((r: any) => toJSTDateOnly(r.created_at) === ymd);
+      console.log("=== KINGS DEBUG ===");
+      console.log("ymd(昨日):", ymd);
+      console.log("subs総数:", (subs || []).length);
+      console.log("最初の3件:", (subs || []).slice(0,3).map((r:any)=>({raw:r.created_at, jst:toJSTDateOnly(r.created_at)})));
+      console.log("daySubs(6/22該当):", daySubs.length);
 
       const nm = (uid: string | undefined): string | null => uid ? (nameMap[uid] || "名前未設定") : null;
       const result: King[] = [];
