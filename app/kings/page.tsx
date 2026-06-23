@@ -14,7 +14,7 @@ function jstYesterday(): string {
   const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000);
   return jst.toISOString().slice(0, 10);
 }
-function seededPick(arr, seedStr) {
+function seededPick<T>(arr: T[], seedStr: string): T | null {
   if (!arr.length) return null;
   let h = 0;
   for (let i = 0; i < seedStr.length; i++) { h = (h * 31 + seedStr.charCodeAt(i)) >>> 0; }
