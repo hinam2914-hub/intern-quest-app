@@ -69,15 +69,15 @@ export default function KingsPage() {
 
       const nm = (uid: string | undefined): string | null => uid ? (nameMap[uid] || "名前未設定") : null;
       const result: King[] = [];
-
-      // 連続記録王（streak最大）
-      const byStreak = [...(profs || [])]
-        .map((p: any) => ({ uid: p.id, streak: p.streak || 0 }))
-        .filter(p => p.streak > 0)
-        .sort((a, b) => b.streak - a.streak);
-      result.push({ emoji: "🔥", title: "連続記録王", desc: "日報の連続記録がいちばん長い", dotkun: "毎日えらすぎ…その継続力、尊敬しかない🔥", mood: "happy",
-        name: byStreak.length ? nm(byStreak[0].uid) : null,
-        detail: byStreak.length ? `${byStreak[0].streak}日連続` : undefined });
+       // ゾロ目王（日報の提出時刻の「分」がゾロ目だった人から抽選）
+      const zoro = daySubs.filter((s: any) => {
+        const jst = new Date(new Date(s.created_at).getTime() + 9 * 60 * 60 * 1000);
+        const mm = jst.getUTCMinutes();
+        return mm % 11 === 0; // 00,11,22,33,44,55
+      });
+      result.push({ emoji: "🕛", title: "ゾロ目王", desc: "日報の提出時刻がゾロ目だった強運の持ち主", dotkun: "その時刻、狙ってないよね？運もってるわ〜🕛✨", mood: "cheer",
+        name: zoro.length ? nm(seededPick(zoro, ymd + "zoro")!.user_id) : null,
+        detail: zoro.length ? (() => { const jst = new Date(new Date(seededPick(zoro, ymd + "zoro")!.created_at).getTime() + 9 * 60 * 60 * 1000); return `${String(jst.getUTCHours()).padStart(2, "0")}:${String(jst.getUTCMinutes()).padStart(2, "0")}`; })() : undefined });
       // サンキュー王（昨日いちばんサンキューを受け取った人）
       const thanksCount: Record<string, number> = {};
       dayThanks.forEach((t: any) => { if (t.to_user_id) thanksCount[t.to_user_id] = (thanksCount[t.to_user_id] || 0) + 1; });
