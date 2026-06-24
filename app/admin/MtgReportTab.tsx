@@ -139,7 +139,7 @@ export default function MtgReportTab() {
                                 {(r.status === "pending" || r.status === "rejected") && (
                                     <div style={{ marginTop: 12 }}>
                                         <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-                                            <button disabled={busyId === r.id} onClick={() => approve(r, 10)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.2)", color: "#34d399", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>承認 +10pt</button>
+                                            <button disabled={busyId === r.id} onClick={() => approve(r, 3)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.2)", color: "#34d399", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>承認 +3pt</button>
                                             <button disabled={busyId === r.id} onClick={() => approve(r, 30)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.3)", color: "#34d399", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>承認 +30pt</button>
                                         </div>
                                         <textarea
