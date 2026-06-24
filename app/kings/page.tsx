@@ -51,17 +51,15 @@ export default function KingsPage() {
       const ymd = jstYesterday();
       setToday(ymd);
 
-      const { data: profs } = await supabase.from("profiles").select("id, name").eq("is_active", true);
+      const { data: profs } = await supabase.from("profiles").select("id, name, streak").eq("is_active", true);
       const nameMap: Record<string, string> = {};
       (profs || []).forEach((p: any) => { nameMap[p.id] = p.name || "名前未設定"; });
 
       const range = yesterdayRangeUTC();
-      const { data: logins } = await supabase
-        .from("points_history").select("user_id, created_at")
-        .eq("reason", "login_bonus")
-        .gte("created_at", range.start).lt("created_at", range.end)
-        .order("created_at", { ascending: true });
-      const dayLogins = logins || [];
+      const { data: thanksRows } = await supabase
+        .from("thanks").select("to_user_id, created_at")
+        .gte("created_at", range.start).lt("created_at", range.end);
+      const dayThanks = thanksRows || [];
 
       const { data: subs } = await supabase
         .from("submissions").select("user_id, created_at, content")
@@ -72,13 +70,21 @@ export default function KingsPage() {
       const nm = (uid: string | undefined): string | null => uid ? (nameMap[uid] || "名前未設定") : null;
       const result: King[] = [];
 
-      // 早起き王
-      result.push({ emoji: "⚡", title: "早起き王", desc: "昨日いちばん早くログイン", dotkun: "朝はやっ！えらすぎでしょ☀️", mood: "cheer",
-        name: dayLogins.length ? nm(dayLogins[0].user_id) : null });
-      // 夜ふかし王
-      result.push({ emoji: "🌙", title: "夜ふかし王", desc: "昨日いちばん遅くログイン", dotkun: "夜ふかしダメだよ〜でもおつかれ🌙", mood: "normal",
-        name: dayLogins.length ? nm(dayLogins[dayLogins.length - 1].user_id) : null });
-      // 一番乗り王
+      // 連続記録王（streak最大）
+      const byStreak = [...(profs || [])]
+        .map((p: any) => ({ uid: p.id, streak: p.streak || 0 }))
+        .filter(p => p.streak > 0)
+        .sort((a, b) => b.streak - a.streak);
+      result.push({ emoji: "🔥", title: "連続記録王", desc: "日報の連続記録がいちばん長い", dotkun: "毎日えらすぎ…その継続力、尊敬しかない🔥", mood: "happy",
+        name: byStreak.length ? nm(byStreak[0].uid) : null,
+        detail: byStreak.length ? `${byStreak[0].streak}日連続` : undefined });
+      // サンキュー王（昨日いちばんサンキューを受け取った人）
+      const thanksCount: Record<string, number> = {};
+      dayThanks.forEach((t: any) => { if (t.to_user_id) thanksCount[t.to_user_id] = (thanksCount[t.to_user_id] || 0) + 1; });
+      const byThanks = Object.entries(thanksCount).sort((a, b) => b[1] - a[1]);
+      result.push({ emoji: "🙏", title: "サンキュー王", desc: "昨日いちばんサンキューをもらった", dotkun: "みんなから感謝されてる…人徳だね🙏✨", mood: "happy",
+        name: byThanks.length ? nm(byThanks[0][0]) : null,
+        detail: byThanks.length ? `${byThanks[0][1]}件` : undefined });
       result.push({ emoji: "📝", title: "一番乗り王", desc: "昨日いちばん早く日報を提出", dotkun: "一番乗り！さすがの仕事の速さ⚡", mood: "cheer",
         name: daySubs.length ? nm(daySubs[0].user_id) : null });
       // ラストマン王
@@ -113,7 +119,7 @@ export default function KingsPage() {
 
       // ラッキー王・本日の主役
       const activeIds = Array.from(new Set([
-        ...dayLogins.map((r: any) => r.user_id),
+        ...dayThanks.map((r: any) => r.to_user_id),
         ...daySubs.map((r: any) => r.user_id),
       ]));
       result.push({ emoji: "🎲", title: "ラッキー王", desc: "運だけで選ばれし者", dotkun: "運だけで王になったね、おめでとうw🎲", mood: "cheer",
