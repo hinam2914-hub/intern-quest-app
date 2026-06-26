@@ -175,10 +175,10 @@ function calculateGrowthCourse(params: { mbti: string; education: string; sibyl:
     const isE = params.mbti[0] === "E";
     const total = s.cog + s.grit + s.social + s.drive + s.create;
     const level = total >= 70 ? "トップ" : total >= 50 ? "ミドル" : "スタンダード";
-    if (color === "緑") return { color, colorCode: "#2E7D5B", courseName: "緑｜外交官（人を導く・支える）", entry: high ? "テレアポ" : "訪販", goal: "Aランク企業内定 → キャリアアドバイザー or 人事。卒業後もドット残留（愛社精神）", roleModel: "学生＝向井／社会人＝寺内", level };
-    if (color === "紫") return { color, colorCode: "#6A4C9C", courseName: "紫｜分析家（戦略・仕組み）", entry: high ? "テレアポ" : "テレアポ or インフラ", goal: "AIチーム＋戦略管理マネージャー" + (isE ? "（E型につきクローザーも有力）" : ""), roleModel: "中島・高崎・前田・小守谷", level };
-    if (color === "青") return { color, colorCode: "#2B6CB0", courseName: "青｜番人（地道にやり切る／クローザー不可）", entry: high ? "管理方向" : "訪販", goal: high ? "管理マネージャー" : "鉄人・牧田コース（訪販でめっちゃ取る）", roleModel: high ? "（現在不在）" : "牧田", level };
-    return { color, colorCode: "#C99A00", courseName: "黄｜探検家（瞬発力と華で勝負）", entry: "訪販 or クローザー", goal: "クローザーでめっちゃ売る or コミュニティプレジデント", roleModel: "クローザー＝小林／ディレクター＝清原", level };
+    if (color === "緑") return { color, colorCode: "#2E7D5B", courseName: "外交官タイプ｜人を導き、支える", entry: high ? "テレアポ" : "訪問営業", goal: "Aランク企業内定を経て、キャリアアドバイザーまたは人事へ。卒業後も組織に残り中核を担う", roleModel: "学生＝向井／社会人＝寺内", level };
+    if (color === "紫") return { color, colorCode: "#6A4C9C", courseName: "分析家タイプ｜戦略と仕組みで価値を生む", entry: high ? "テレアポ" : "テレアポまたはインフラ業務", goal: "AIチーム・戦略管理マネージャー" + (isE ? "（外向型はクローザーも適性あり）" : ""), roleModel: "中島・高崎・前田・小守谷", level };
+    if (color === "青") return { color, colorCode: "#2B6CB0", courseName: "番人タイプ｜地道に、確実にやり切る", entry: high ? "管理・マネジメント" : "訪問営業", goal: high ? "管理マネージャーとして運用を統括する" : "鉄人型。訪問営業で安定した成果を上げ続ける", roleModel: high ? "（現在不在）" : "牧田", level };
+    return { color, colorCode: "#C99A00", courseName: "探検家タイプ｜瞬発力と華で勝負する", entry: "訪問営業またはクローザー", goal: "トップクローザー、またはコミュニティプレジデント", roleModel: "クローザー＝小林／ディレクター＝清原", level };
 }
 // ============ 育成コース診断ここまで ============
 function getEducationScore(education: string): number {
