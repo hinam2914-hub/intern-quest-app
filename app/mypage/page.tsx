@@ -524,6 +524,7 @@ export default function MyPage() {
     const [kpiCount, setKpiCount] = useState(0);
     const [approvedKpiCount, setApprovedKpiCount] = useState(0);
     const [kkcApprovedCount, setKkcApprovedCount] = useState(0);
+    const [thinkingAnswerCount, setThinkingAnswerCount] = useState(0);
     const [mentorCount, setMentorCount] = useState(0);
     const [esUpdateCount, setEsUpdateCount] = useState(0);
     const [activeDays, setActiveDays] = useState(0);
@@ -861,6 +862,8 @@ export default function MyPage() {
         const { count: approvedKpiCnt } = await supabase.from("monthly_kpi").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("approved", true);
         setApprovedKpiCount(approvedKpiCnt || 0);
         const { count: kkcCnt } = await supabase.from("problem_solutions").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved");
+        const { count: thinkingCnt } = await supabase.from("thinking_answers").select("*", { count: "exact", head: true }).eq("user_id", user.id);
+        setThinkingAnswerCount(thinkingCnt || 0);
         const { count: chalCnt } = await supabase.from("challenge_submissions").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved");
         setChallengeCount(chalCnt || 0);
         setKkcApprovedCount(kkcCnt || 0);
@@ -1909,10 +1912,11 @@ const handleRoutineCheck = async (routineId: string) => {
                                                     { axis: "学歴", value: getEducationScore(education), fullMark: 20 },
                                                     { axis: "活動期間", value: Math.min(activeDays * (15 / 730), 15), fullMark: 20 },
                                                     { axis: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), fullMark: 20 },
+
                                                     { axis: "メタ認知", value: Math.min(level * (4 / 15), 10), fullMark: 20 },
                                                     { axis: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), fullMark: 20 },
                                                     { axis: "リーダー", value: Math.min(Math.floor((thanksCount + mentorCount) / 20), 10), fullMark: 20 },
-                                                    { axis: "思考力", value: Math.min(kkcApprovedCount, 20), fullMark: 20 },
+                                                    { axis: "思考力", value: Math.min(thinkingAnswerCount, 20), fullMark: 20 },
                                                 ]}>
                                                     <PolarGrid stroke={barBg} />
                                                     <PolarAngleAxis dataKey="axis" tick={{ fill: textMuted, fontSize: 10, fontWeight: 600 }} />
@@ -1924,7 +1928,7 @@ const handleRoutineCheck = async (routineId: string) => {
                                                     { label: "学歴", value: getEducationScore(education), max: 10, color: "#6366f1" },
                                                     { label: "活動期間", value: Math.min(activeDays * (15 / 730), 15), max: 15, color: "#8b5cf6" },
                                                     { label: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), max: 15, color: "#06b6d4" },
-                                                    { label: "思考力", value: Math.min(kkcApprovedCount, 20), max: 20, color: "#f59e0b" },
+                                                    { label: "思考力", value: Math.min(thinkingAnswerCount, 20), max: 20, color: "#f59e0b" },
                                                     { label: "リーダー", value: Math.min(Math.floor((thanksCount + mentorCount) / 20), 10), max: 10, color: "#ec4899" },
                                                     { label: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), max: 20, color: "#10b981" },
                                                     { label: "メタ認知", value: Math.min(level * (4 / 15), 10), max: 10, color: "#f97316" },
