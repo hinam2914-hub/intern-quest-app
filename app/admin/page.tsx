@@ -5248,19 +5248,29 @@ export default function AdminPage() {
                                         const course = calculateGrowthCourse({ mbti: u.mbti || "", education: u.education || "", sibyl });
                                         if (!course) return null;
                                         return (
-                                            <div style={{ marginBottom: 16, padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.03)", borderLeft: `4px solid ${course.colorCode}` }}>
-                                                <div style={{ fontSize: 11, color: course.colorCode, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>🎓 育成コース診断</div>
-                                                <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb", marginBottom: 8 }}>
-                                                    {course.courseName}
-                                                    <span style={{ fontSize: 11, fontWeight: 700, color: course.colorCode, marginLeft: 8, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,0.06)" }}>到達想定：{course.level}</span>
+                                            <div style={{ marginBottom: 16, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", borderLeft: `4px solid ${course.colorCode}` }}>
+                                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                                                    <span style={{ fontSize: 11, color: course.colorCode, fontWeight: 700, letterSpacing: 2 }}>🎓 育成コース</span>
+                                                    <span style={{ fontSize: 13, fontWeight: 800, color: "#f9fafb" }}>{course.courseName}</span>
                                                 </div>
-                                                <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#d1d5db" }}>
-                                                    <div><span style={{ color: "#9ca3af" }}>入口：</span>{course.entry}</div>
-                                                    <div><span style={{ color: "#9ca3af" }}>最終キャリア：</span>{course.goal}</div>
-                                                    <div><span style={{ color: "#9ca3af" }}>ロールモデル：</span>{course.roleModel}</div>
+                                                <div style={{ display: "flex", alignItems: "stretch", gap: 10, marginBottom: 14 }}>
+                                                    <div style={{ flex: 1, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", textAlign: "center" }}>
+                                                        <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 4 }}>入口</div>
+                                                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{course.entry}</div>
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", color: course.colorCode, fontSize: 20, fontWeight: 800 }}>→</div>
+                                                    <div style={{ flex: 2, padding: "10px 12px", borderRadius: 8, background: `${course.colorCode}22`, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                                                        <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 4 }}>最終キャリア</div>
+                                                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb", lineHeight: 1.5 }}>{course.goal}</div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#9ca3af", paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                                    <span>到達想定：<span style={{ color: course.colorCode, fontWeight: 700 }}>{course.level}</span></span>
+                                                    <span>ロールモデル：{course.roleModel}</span>
                                                 </div>
                                             </div>
                                         );
+                                    })()}
                                     })()}
                                     {/* 入力データ編集フォーム */}
                                     <details style={{ marginTop: 12 }}>
