@@ -155,6 +155,32 @@ function calculateDepartmentMatch(s: { cog: number; grit: number; social: number
     return results;
 }
 // ============ シビュラシステムここまで ============
+
+// ============ 育成コース診断 ============
+type GrowthCourse = { color: string; colorCode: string; courseName: string; entry: string; goal: string; roleModel: string; level: string; };
+function getMbtiColor(mbti: string): "緑" | "紫" | "青" | "黄" | null {
+    if (!mbti || mbti.length < 4) return null;
+    if (mbti[1] === "N" && mbti[2] === "F") return "緑";
+    if (mbti[1] === "N" && mbti[2] === "T") return "紫";
+    if (mbti[1] === "S" && mbti[3] === "J") return "青";
+    if (mbti[1] === "S" && mbti[3] === "P") return "黄";
+    return null;
+}
+function isHighEducation(education: string): boolean { return getEducationSibyl(education).cog >= 7; }
+function calculateGrowthCourse(params: { mbti: string; education: string; sibyl: { cog: number; grit: number; social: number; drive: number; create: number }; }): GrowthCourse | null {
+    const color = getMbtiColor(params.mbti);
+    if (!color) return null;
+    const high = isHighEducation(params.education);
+    const s = params.sibyl;
+    const isE = params.mbti[0] === "E";
+    const total = s.cog + s.grit + s.social + s.drive + s.create;
+    const level = total >= 70 ? "トップ" : total >= 50 ? "ミドル" : "スタンダード";
+    if (color === "緑") return { color, colorCode: "#2E7D5B", courseName: "緑｜外交官（人を導く・支える）", entry: high ? "テレアポ" : "訪販", goal: "Aランク企業内定 → キャリアアドバイザー or 人事。卒業後もドット残留（愛社精神）", roleModel: "学生＝向井／社会人＝寺内", level };
+    if (color === "紫") return { color, colorCode: "#6A4C9C", courseName: "紫｜分析家（戦略・仕組み）", entry: high ? "テレアポ" : "テレアポ or インフラ", goal: "AIチーム＋戦略管理マネージャー" + (isE ? "（E型につきクローザーも有力）" : ""), roleModel: "中島・高崎・前田・小守谷", level };
+    if (color === "青") return { color, colorCode: "#2B6CB0", courseName: "青｜番人（地道にやり切る／クローザー不可）", entry: high ? "管理方向" : "訪販", goal: high ? "管理マネージャー" : "鉄人・牧田コース（訪販でめっちゃ取る）", roleModel: high ? "（現在不在）" : "牧田", level };
+    return { color, colorCode: "#C99A00", courseName: "黄｜探検家（瞬発力と華で勝負）", entry: "訪販 or クローザー", goal: "クローザーでめっちゃ売る or コミュニティプレジデント", roleModel: "クローザー＝小林／ディレクター＝清原", level };
+}
+// ============ 育成コース診断ここまで ============
 function getEducationScore(education: string): number {
     if (!education) return 0;
     const e = education;
@@ -5217,6 +5243,25 @@ export default function AdminPage() {
                                         </div>
                                     </div>
 
+                                    {/* 育成コース診断 */}
+                                    {(() => {
+                                        const course = calculateGrowthCourse({ mbti: u.mbti || "", education: u.education || "", sibyl });
+                                        if (!course) return null;
+                                        return (
+                                            <div style={{ marginBottom: 16, padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.03)", borderLeft: `4px solid ${course.colorCode}` }}>
+                                                <div style={{ fontSize: 11, color: course.colorCode, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>🎓 育成コース診断</div>
+                                                <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb", marginBottom: 8 }}>
+                                                    {course.courseName}
+                                                    <span style={{ fontSize: 11, fontWeight: 700, color: course.colorCode, marginLeft: 8, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,0.06)" }}>到達想定：{course.level}</span>
+                                                </div>
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "#d1d5db" }}>
+                                                    <div><span style={{ color: "#9ca3af" }}>入口：</span>{course.entry}</div>
+                                                    <div><span style={{ color: "#9ca3af" }}>最終キャリア：</span>{course.goal}</div>
+                                                    <div><span style={{ color: "#9ca3af" }}>ロールモデル：</span>{course.roleModel}</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                     {/* 入力データ編集フォーム */}
                                     <details style={{ marginTop: 12 }}>
                                         <summary style={{ fontSize: 12, color: "#9ca3af", cursor: "pointer", fontWeight: 600, padding: "6px 0" }}>📝 データを編集（{[u.mbti, u.education, u.club_category, u.hobby_category].filter(Boolean).length}/4項目入力済み）</summary>
