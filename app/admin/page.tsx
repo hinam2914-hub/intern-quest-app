@@ -5271,7 +5271,6 @@ export default function AdminPage() {
                                             </div>
                                         );
                                     })()}
-                                    })()}
                                     {/* 入力データ編集フォーム */}
                                     <details style={{ marginTop: 12 }}>
                                         <summary style={{ fontSize: 12, color: "#9ca3af", cursor: "pointer", fontWeight: 600, padding: "6px 0" }}>📝 データを編集（{[u.mbti, u.education, u.club_category, u.hobby_category].filter(Boolean).length}/4項目入力済み）</summary>
