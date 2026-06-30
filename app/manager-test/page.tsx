@@ -58,10 +58,6 @@ export default function ManagerTestPage() {
 
             const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
             const role = profile?.role || "";
-            setUserRole(role);
-
-            if (!["Manager", "Owner"].includes(role)) {
-                setLoading(false);
                 return;
             }
 
@@ -155,18 +151,6 @@ export default function ManagerTestPage() {
         </main>
     );
 
-    if (!["Manager", "Owner"].includes(userRole)) {
-        return (
-            <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px", fontFamily: "'Inter', sans-serif" }}>
-                <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center", paddingTop: 80 }}>
-                    <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-                    <h1 style={{ color: "#f9fafb", fontSize: 24, fontWeight: 800, marginBottom: 12 }}>このテストはマネージャー限定です</h1>
-                    <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 32 }}>Manager または Owner 権限が必要です</p>
-                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>メニューへ戻る</button>
-                </div>
-            </main>
-        );
-    }
 
     if (alreadyCertified) {
         return (
