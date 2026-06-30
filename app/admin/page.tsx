@@ -5236,125 +5236,115 @@ export default function AdminPage() {
                                         <div style={{ fontSize: 16, fontWeight: 700, color: "#f9fafb" }}>👤 {u.name}</div>
                                         {!hasData && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, fontWeight: 700 }}>データ未入力</span>}
                                     </div>
-
-                                    {/* 5軸スコア */}
-                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
-                                        {[
-                                            { label: "地頭", value: sibyl.cog, color: "#6366f1" },
-                                            { label: "胆力", value: sibyl.grit, color: "#ef4444" },
-                                            { label: "対人", value: sibyl.social, color: "#10b981" },
-                                            { label: "瞬発", value: sibyl.drive, color: "#f59e0b" },
-                                            { label: "創造", value: sibyl.create, color: "#a855f7" },
-                                        ].map(ax => (
-                                            <div key={ax.label} style={{ padding: 10, borderRadius: 8, background: "rgba(0,0,0,0.3)", textAlign: "center" }}>
-                                                <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>{ax.label}</div>
-                                                <div style={{ fontSize: 18, fontWeight: 800, color: ax.color }}>{ax.value}</div>
-                                                <div style={{ fontSize: 9, color: "#6b7280" }}>/20</div>
-                                                <div style={{ height: 4, background: "rgba(255,255,255,0.05)", borderRadius: 2, marginTop: 4, overflow: "hidden" }}>
-                                                    <div style={{ height: "100%", width: `${(ax.value / 20) * 100}%`, background: ax.color }} />
-                                                </div>
+                                    {/* 診断書タブ */}
+                                    {(() => {
+                                        const tab = sibylTab[u.id] || "ability";
+                                        const TabBtn = ({ id, label }: { id: string; label: string }) => (
+                                            <button onClick={() => setSibylTab(prev => ({ ...prev, [u.id]: id }))} style={{ padding: "6px 14px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: tab === id ? "rgba(99,102,241,0.25)" : "rgba(255,255,255,0.04)", color: tab === id ? "#a5b4fc" : "#9ca3af" }}>{label}</button>
+                                        );
+                                        const course = calculateGrowthCourse({ mbti: u.mbti || "", education: u.education || "", sibyl });
+                                        const guide = getIkuseiGuide(u.mbti || "");
+                                        const mentorCands = u.mbti ? userDetails.filter(o => o.id !== u.id && o.mbti).map(o => { const c = mentorCompat(u.mbti || "", o.mbti || ""); return c ? { name: o.name, mbti: o.mbti, ...c, sameEdu: !!(o.education && u.education && isHighEducation(o.education) === isHighEducation(u.education)) } : null; }).filter(Boolean).sort((a: any, b: any) => (b.rank + (b.sameEdu ? 0.5 : 0)) - (a.rank + (a.sameEdu ? 0.5 : 0))).slice(0, 3) : [];
+                                        const lblColor: Record<string, string> = { "最適": "#34d399", "良好": "#a3e635", "成長軸": "#a78bfa", "要橋渡し": "#fbbf24" };
+                                        const peerColor = getMbtiColor(u.mbti || "");
+                                        return (
+                                        <div style={{ marginBottom: 12 }}>
+                                            <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
+                                                <TabBtn id="ability" label="能力" />
+                                                <TabBtn id="growth" label="育成" />
+                                                <TabBtn id="compat" label="相性" />
                                             </div>
-                                        ))}
-                                    </div>
 
-                                    {/* 事業部マッチング */}
-                                    <div style={{ marginBottom: 16 }}>
-                                        <div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>🎯 事業部マッチング</div>
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                            {matches.map((m, idx) => {
-                                                const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "  ";
-                                                const barColor = idx === 0 ? "#10b981" : idx === 1 ? "#6366f1" : idx === 2 ? "#f59e0b" : "#6b7280";
-                                                const maxPossible = 100;
-                                                return (
-                                                    <div key={m.dept} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                        <div style={{ width: 30, fontSize: 14 }}>{medal}</div>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 600, color: "#d1d5db", marginBottom: 2 }}>
-                                                                <span>{m.dept}</span>
-                                                                <span style={{ color: barColor }}>{m.score}点</span>
-                                                            </div>
-                                                            <div style={{ height: 6, background: "rgba(255,255,255,0.05)", borderRadius: 3, overflow: "hidden" }}>
-                                                                <div style={{ height: "100%", width: `${Math.min((m.score / maxPossible) * 100, 100)}%`, background: barColor }} />
+                                            {tab === "ability" && (
+                                            <div>
+                                                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
+                                                    {[
+                                                        { label: "地頭", value: sibyl.cog, color: "#6366f1" },
+                                                        { label: "胆力", value: sibyl.grit, color: "#ef4444" },
+                                                        { label: "対人", value: sibyl.social, color: "#10b981" },
+                                                        { label: "瞬発", value: sibyl.drive, color: "#f59e0b" },
+                                                        { label: "創造", value: sibyl.create, color: "#a855f7" },
+                                                    ].map(ax => (
+                                                        <div key={ax.label} style={{ padding: 10, borderRadius: 8, background: "rgba(0,0,0,0.3)", textAlign: "center" }}>
+                                                            <div style={{ fontSize: 10, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>{ax.label}</div>
+                                                            <div style={{ fontSize: 18, fontWeight: 800, color: ax.color }}>{ax.value}</div>
+                                                            <div style={{ fontSize: 9, color: "#6b7280" }}>/20</div>
+                                                            <div style={{ height: 4, background: "rgba(255,255,255,0.05)", borderRadius: 2, marginTop: 4, overflow: "hidden" }}>
+                                                                <div style={{ height: "100%", width: `${(ax.value / 20) * 100}%`, background: ax.color }} />
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
+                                                    ))}
+                                                </div>
+                                                <div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>🎯 事業部マッチング</div>
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                                    {matches.map((m, idx) => {
+                                                        const barColor = idx === 0 ? "#10b981" : idx === 1 ? "#6366f1" : idx === 2 ? "#f59e0b" : "#6b7280";
+                                                        const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "  ";
+                                                        return (
+                                                            <div key={m.dept} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                                <div style={{ width: 30, fontSize: 14 }}>{medal}</div>
+                                                                <div style={{ flex: 1 }}>
+                                                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 600, color: "#d1d5db", marginBottom: 2 }}>
+                                                                        <span>{m.dept}</span><span style={{ color: barColor }}>{m.score}点</span>
+                                                                    </div>
+                                                                    <div style={{ height: 6, background: "rgba(255,255,255,0.05)", borderRadius: 3, overflow: "hidden" }}>
+                                                                        <div style={{ height: "100%", width: `${Math.min((m.score / 100) * 100, 100)}%`, background: barColor }} />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                            )}
 
-                                    {/* 育成コース診断 */}
-                                    {(() => {
-                                        const course = calculateGrowthCourse({ mbti: u.mbti || "", education: u.education || "", sibyl });
-                                        if (!course) return null;
-                                        return (
-                                            <div style={{ marginBottom: 16, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", borderLeft: `4px solid ${course.colorCode}` }}>
-                                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                                                    <span style={{ fontSize: 11, color: course.colorCode, fontWeight: 700, letterSpacing: 2 }}>🎓 育成コース</span>
-                                                    <span style={{ fontSize: 13, fontWeight: 800, color: "#f9fafb" }}>{course.courseName}</span>
-                                                </div>
-                                                <div style={{ display: "flex", alignItems: "stretch", gap: 10, marginBottom: 14 }}>
-                                                    <div style={{ flex: 1, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", textAlign: "center" }}>
-                                                        <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 4 }}>入口</div>
-                                                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{course.entry}</div>
+                                            {tab === "growth" && (
+                                            <div>
+                                                {course && (
+                                                <div style={{ marginBottom: 16, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", borderLeft: `4px solid ${course.colorCode}` }}>
+                                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                                                        <span style={{ fontSize: 11, color: course.colorCode, fontWeight: 700, letterSpacing: 2 }}>🎓 育成コース</span>
+                                                        <span style={{ fontSize: 13, fontWeight: 800, color: "#f9fafb" }}>{course.courseName}</span>
                                                     </div>
-                                                    <div style={{ display: "flex", alignItems: "center", color: course.colorCode, fontSize: 20, fontWeight: 800 }}>→</div>
-                                                    <div style={{ flex: 2, padding: "10px 12px", borderRadius: 8, background: `${course.colorCode}22`, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                                                        <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 4 }}>最終キャリア</div>
-                                                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb", lineHeight: 1.5 }}>{course.goal}</div>
+                                                    <div style={{ display: "flex", alignItems: "stretch", gap: 10, marginBottom: 14 }}>
+                                                        <div style={{ flex: 1, padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", textAlign: "center" }}>
+                                                            <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 4 }}>入口</div>
+                                                            <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb" }}>{course.entry}</div>
+                                                        </div>
+                                                        <div style={{ display: "flex", alignItems: "center", color: course.colorCode, fontSize: 20, fontWeight: 800 }}>→</div>
+                                                        <div style={{ flex: 2, padding: "10px 12px", borderRadius: 8, background: `${course.colorCode}22`, textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                                                            <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 4 }}>最終キャリア</div>
+                                                            <div style={{ fontSize: 13, fontWeight: 700, color: "#f9fafb", lineHeight: 1.5 }}>{course.goal}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#9ca3af", paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                                        <span>到達想定：<span style={{ color: course.colorCode, fontWeight: 700 }}>{course.level}</span></span>
+                                                        <span>ロールモデル：{course.roleModel}</span>
                                                     </div>
                                                 </div>
-                                                <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#9ca3af", paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                                                    <span>到達想定：<span style={{ color: course.colorCode, fontWeight: 700 }}>{course.level}</span></span>
-                                                    <span>ロールモデル：{course.roleModel}</span>
+                                                )}
+                                                {guide && (
+                                                <div style={{ padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", borderLeft: `4px solid ${guide.colorCode}` }}>
+                                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                                                        <span style={{ fontSize: 11, color: guide.colorCode, fontWeight: 700, letterSpacing: 2 }}>🌱 育成のヒント</span>
+                                                        <span style={{ fontSize: 12, color: "#9ca3af" }}>{guide.color}タイプ ・ {guide.tag}</span>
+                                                    </div>
+                                                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                        <div><div style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginBottom: 3 }}>◎ 響く接し方</div><div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.talk}</div></div>
+                                                        <div><div style={{ fontSize: 11, color: "#f87171", fontWeight: 700, marginBottom: 3 }}>✕ 避けるべき接し方</div><div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.avoid}</div></div>
+                                                        <div><div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 700, marginBottom: 3 }}>↗ 伸ばし方</div><div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.grow}</div></div>
+                                                    </div>
                                                 </div>
+                                                )}
                                             </div>
-                                        );
-                                    })()}
-                                    {/* 気質別育成方針 */}
-                                    {(() => {
-                                        const guide = getIkuseiGuide(u.mbti || "");
-                                        if (!guide) return null;
-                                        return (
-                                            <div style={{ marginBottom: 16, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", borderLeft: `4px solid ${guide.colorCode}` }}>
-                                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                                                    <span style={{ fontSize: 11, color: guide.colorCode, fontWeight: 700, letterSpacing: 2 }}>🌱 育成のヒント</span>
-                                                    <span style={{ fontSize: 12, color: "#9ca3af" }}>{guide.color}タイプ ・ {guide.tag}</span>
-                                                </div>
-                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                                    <div>
-                                                        <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginBottom: 3 }}>◎ 響く接し方</div>
-                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.talk}</div>
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ fontSize: 11, color: "#f87171", fontWeight: 700, marginBottom: 3 }}>✕ 避けるべき接し方</div>
-                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.avoid}</div>
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 700, marginBottom: 3 }}>↗ 伸ばし方</div>
-                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.grow}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-                                    {/* メンター相性 */}
-                                    {(() => {
-                                        if (!u.mbti) return null;
-                                        const cands = userDetails
-                                            .filter(o => o.id !== u.id && o.mbti)
-                                            .map(o => { const c = mentorCompat(u.mbti || "", o.mbti || ""); return c ? { name: o.name, mbti: o.mbti, edu: o.education, ...c, sameEdu: !!(o.education && u.education && isHighEducation(o.education) === isHighEducation(u.education)) } : null; })
-                                            .filter(Boolean)
-                                            .sort((a: any, b: any) => (b.rank + (b.sameEdu ? 0.5 : 0)) - (a.rank + (a.sameEdu ? 0.5 : 0)))
-                                            .slice(0, 3);
-                                        if (cands.length === 0) return null;
-                                        const lblColor: Record<string, string> = { "最適": "#34d399", "良好": "#a3e635", "成長軸": "#a78bfa", "要橋渡し": "#fbbf24" };
-                                        return (
-                                            <div style={{ marginBottom: 16, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", borderLeft: "4px solid #6366f1" }}>
+                                            )}
+
+                                            {tab === "compat" && (
+                                            <div>
                                                 <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>🤝 メンター相性</div>
                                                 <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 12 }}>在籍メンバーの中での推奨メンター候補</div>
-                                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                                    {(cands as any[]).map((c, i) => (
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+                                                    {(mentorCands as any[]).length === 0 ? <div style={{ fontSize: 12, color: "#6b7280" }}>MBTI未入力のため判定できません</div> : (mentorCands as any[]).map((c, i) => (
                                                         <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 10 }}>
                                                             <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#a5b4fc" }}>{c.name?.charAt(0) || "?"}</div>
                                                             <div style={{ flex: 1 }}>
@@ -5365,7 +5355,27 @@ export default function AdminPage() {
                                                         </div>
                                                     ))}
                                                 </div>
+                                                {peerColor && (
+                                                <div>
+                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>👥 同僚相性</div>
+                                                    <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+                                                        <div style={{ flex: 1, padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
+                                                            <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginBottom: 4 }}>気が楽な相手</div>
+                                                            <div style={{ fontSize: 13, color: "#f9fafb", marginBottom: 2 }}>{peerColor === "緑" || peerColor === "紫" ? "同じN寄りのタイプ" : "同じS寄りのタイプ"}</div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af" }}>話のテンポと価値観が合う</div>
+                                                        </div>
+                                                        <div style={{ flex: 1, padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
+                                                            <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, marginBottom: 4 }}>刺激になる相手</div>
+                                                            <div style={{ fontSize: 13, color: "#f9fafb", marginBottom: 2 }}>{peerColor === "緑" || peerColor === "紫" ? "S寄りのタイプ" : "N寄りのタイプ"}</div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af" }}>具体と抽象を補い合える</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>N/S軸の一致を重視して算出。違う相手は「合わない」ではなく、スタイルを一言共有すると噛み合う。</div>
+                                                </div>
+                                                )}
                                             </div>
+                                            )}
+                                        </div>
                                         );
                                     })()}
                                     {/* 入力データ編集フォーム */}
