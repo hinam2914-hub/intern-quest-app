@@ -181,6 +181,29 @@ function calculateGrowthCourse(params: { mbti: string; education: string; sibyl:
     return { color, colorCode: "#C99A00", courseName: "探検家タイプ｜瞬発力と華で勝負する", entry: "訪問営業またはクローザー", goal: "トップクローザー、またはコミュニティプレジデント", roleModel: "クローザー＝小林／ディレクター＝清原", level };
 }
 // ============ 育成コース診断ここまで ============
+
+// ============ 気質別育成方針 ============
+function getIkuseiGuide(mbti: string): { color: string; colorCode: string; tag: string; talk: string; avoid: string; grow: string } | null {
+    const color = getMbtiColor(mbti);
+    if (!color) return null;
+    if (color === "緑") return { color, colorCode: "#2E7D5B", tag: "意味とつながりで動く",
+        talk: "行動の先にある価値を言語化して伝える。プロセスや姿勢も頻繁に承認する。1on1で感情面に触れる。",
+        avoid: "数字だけを詰める／競争を煽る／放置する／他人と比較する。静かに離脱させる要因になる。",
+        grow: "比較ではなく『先週の自分より』で評価。同気質の先輩をメンターにつけ安心を確保した上で挑戦させる。" };
+    if (color === "紫") return { color, colorCode: "#6A4C9C", tag: "論理と仕組みで動く",
+        talk: "理由と背景をセットで伝える。裁量を与えて自分で設計させる。知的に面白い課題を渡すと燃える。",
+        avoid: "理由なき命令／マイクロマネジメント／感情だけの叱責。納得できないルールの押し付けで冷める。",
+        grow: "裁量と責任を渡して考える余地を作る。苦手な対人・感情は緑タイプとの協働で補わせる。" };
+    if (color === "青") return { color, colorCode: "#2B6CB0", tag: "秩序と継続で動く",
+        talk: "やるべきことを具体的・明確に示す。手順や基準をはっきりさせる。地道な継続そのものを認める。",
+        avoid: "曖昧な指示／頻繁な方針変更／丸投げ。先が読めない状態が続くと不安で動けなくなる。",
+        grow: "型を与え安定させた上で、少しずつ『なぜ』や応用を足して視座を上げる。小さな成功体験を積ませる。" };
+    return { color, colorCode: "#C99A00", tag: "行動と臨機応変で動く",
+        talk: "理屈を長く語るより、やらせて体で覚えさせる。即時のフィードバックと小刻みな達成で乗せる。",
+        avoid: "長い座学／細かい計画の強制／反復だけ。退屈すると熱が冷める。ムラは継続の仕組みでフォロー。",
+        grow: "瞬発力を活かしつつ、青タイプの型や継続の仕組みでムラを減らす。短期の達成を積み上げさせる。" };
+}
+// ============ 気質別育成方針ここまで ============
 function getEducationScore(education: string): number {
     if (!education) return 0;
     const e = education;
@@ -5267,6 +5290,33 @@ export default function AdminPage() {
                                                 <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#9ca3af", paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                                                     <span>到達想定：<span style={{ color: course.colorCode, fontWeight: 700 }}>{course.level}</span></span>
                                                     <span>ロールモデル：{course.roleModel}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                    {/* 気質別育成方針 */}
+                                    {(() => {
+                                        const guide = getIkuseiGuide(u.mbti || "");
+                                        if (!guide) return null;
+                                        return (
+                                            <div style={{ marginBottom: 16, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", borderLeft: `4px solid ${guide.colorCode}` }}>
+                                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                                                    <span style={{ fontSize: 11, color: guide.colorCode, fontWeight: 700, letterSpacing: 2 }}>🌱 育成のヒント</span>
+                                                    <span style={{ fontSize: 12, color: "#9ca3af" }}>{guide.color}タイプ ・ {guide.tag}</span>
+                                                </div>
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginBottom: 3 }}>◎ 響く接し方</div>
+                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.talk}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#f87171", fontWeight: 700, marginBottom: 3 }}>✕ 避けるべき接し方</div>
+                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.avoid}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 700, marginBottom: 3 }}>↗ 伸ばし方</div>
+                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.grow}</div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
