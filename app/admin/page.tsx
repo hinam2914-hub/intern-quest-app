@@ -5357,7 +5357,7 @@ export default function AdminPage() {
                                                 <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>🤝 メンター相性</div>
                                                 <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 12 }}>在籍メンバーの中での推奨メンター候補</div>
                                                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-                                                    {(mentorCands as any[]).length === 0 ? <div style={{ fontSize: 12, color: "#6b7280" }}>MBTI未入力のため判定できません</div> : (mentorCands as any[]).map((c, i) => (
+                                                    {(mentorCands as any[]).length === 0 ? <div style={{ fontSize: 12, color: "#6b7280" }}>{!u.mbti ? "MBTI未入力のため判定できません" : "該当する先輩メンバーが見つかりません"}</div> : (mentorCands as any[]).map((c, i) => (
                                                         <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 10 }}>
                                                             <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#a5b4fc" }}>{c.name?.charAt(0) || "?"}</div>
                                                             <div style={{ flex: 1 }}>
