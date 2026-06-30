@@ -433,6 +433,7 @@ export default function AdminPage() {
     const [thanksViewMode, setThanksViewMode] = useState<"timeline" | "byuser">("timeline");
     const [selectedThanksUserId, setSelectedThanksUserId] = useState<string | null>(null);
     const [sibylDept, setSibylDept] = useState<string>("all");
+    const [sibylTab, setSibylTab] = useState<Record<string, string>>({});
     // ===== アンケート機能 =====
     const [surveys, setSurveys] = useState<Survey[]>([]);
     const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestion[]>([]);
