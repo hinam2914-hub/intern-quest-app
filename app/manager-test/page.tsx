@@ -38,7 +38,6 @@ export default function ManagerTestPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState("");
-    const [userRole, setUserRole] = useState("");
     const [alreadyCertified, setAlreadyCertified] = useState(false);
     const [canRetry, setCanRetry] = useState(true);
     const [nextRetryAt, setNextRetryAt] = useState<string | null>(null);
@@ -55,11 +54,7 @@ export default function ManagerTestPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-
             const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-            const role = profile?.role || "";
-                return;
-            }
 
             if ((profile as any)?.manager_certified) {
                 setAlreadyCertified(true);
