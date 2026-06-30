@@ -5259,7 +5259,7 @@ export default function AdminPage() {
                                         const peerColor = getMbtiColor(u.mbti || "");
                                         const peerScored = u.mbti ? userDetails.filter(o => o.id !== u.id && o.mbti).map(o => { const pc = peerCompat(u.mbti || "", o.mbti || ""); return pc ? { name: o.name, mbti: o.mbti, ...pc } : null; }).filter(Boolean) as any[] : [];
                                         const peerEasy = [...peerScored].sort((a, b) => b.match - a.match).slice(0, 2);
-                                        const peerStim = [...peerScored].filter(x => !x.ns).slice(0, 2);
+                                        const peerHard = [...peerScored].sort((a, b) => a.match - b.match).slice(0, 2);
                                         return (
                                         <div style={{ marginBottom: 12 }}>
                                             <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
@@ -5380,14 +5380,14 @@ export default function AdminPage() {
                                                             <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>話のテンポと価値観が合う</div>
                                                         </div>
                                                         <div style={{ flex: 1, padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
-                                                            <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, marginBottom: 6 }}>刺激になる相手</div>
-                                                            {peerStim.length === 0 ? <div style={{ fontSize: 12, color: "#6b7280" }}>該当なし</div> : peerStim.map((x, i) => (
+                                                            <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, marginBottom: 6 }}>相性が悪い相手</div>
+                                                            {peerHard.length === 0 ? <div style={{ fontSize: 12, color: "#6b7280" }}>該当なし</div> : peerHard.map((x, i) => (
                                                                 <div key={i} style={{ fontSize: 13, color: "#f9fafb", marginBottom: 3 }}>{x.name}<span style={{ fontSize: 11, color: "#6b7280", marginLeft: 5 }}>{x.mbti}</span></div>
                                                             ))}
-                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>具体と抽象を補い合える</div>
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>関わり方に少し配慮を</div>
                                                         </div>
                                                     </div>
-                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>N/S軸の一致を重視して算出。違う相手は「合わない」ではなく、スタイルを一言共有すると噛み合う。</div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280" }}>MBTI4軸の一致度で算出。マネジメントの参考であり、相性が悪い＝悪い人ではない。配置や関わり方の目安に。</div>
                                                 </div>
                                                 )}
                                             </div>
