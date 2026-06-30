@@ -204,6 +204,22 @@ function getIkuseiGuide(mbti: string): { color: string; colorCode: string; tag: 
         grow: "瞬発力を活かしつつ、青タイプの型や継続の仕組みでムラを減らす。短期の達成を積み上げさせる。" };
 }
 // ============ 気質別育成方針ここまで ============
+
+// ============ メンター相性 ============
+function mentorCompat(menteeMbti: string, mentorMbti: string): { label: string; note: string; rank: number } | null {
+    const m = getMbtiColor(menteeMbti);
+    const t = getMbtiColor(mentorMbti);
+    if (!m || !t) return null;
+    const table: Record<string, Record<string, [string, string, number]>> = {
+        "緑": { "緑": ["最適", "価値観が通じ感情ケア可", 3], "紫": ["成長軸", "視座が上がる/感情へ翻訳を", 1], "青": ["良好", "情熱を継続で支える", 2], "黄": ["要橋渡し", "学びの定着に工夫を", 0] },
+        "紫": { "緑": ["成長軸", "感情の機微を学べる", 1], "紫": ["最適", "論理が通じ話が早い", 3], "青": ["良好", "構想を実行に落とす", 2], "黄": ["要橋渡し", "抽象と具体ですれ違い", 0] },
+        "青": { "緑": ["良好", "意味づけで動機を温める", 2], "紫": ["成長軸", "背景と戦略を学べる", 1], "青": ["最適", "手順が明確で安心", 3], "黄": ["要橋渡し", "進め方の好みが逆", 0] },
+        "黄": { "緑": ["良好", "承認で乗せ感情を支える", 2], "紫": ["要橋渡し", "座学的/動かして教える", 0], "青": ["良好", "型と継続でムラを減らす", 2], "黄": ["最適", "現場で背中を見せる", 3] },
+    };
+    const r = table[m][t];
+    return { label: r[0], note: r[1], rank: r[2] };
+}
+// ============ メンター相性ここまで ============
 function getEducationScore(education: string): number {
     if (!education) return 0;
     const e = education;
@@ -5317,6 +5333,36 @@ export default function AdminPage() {
                                                         <div style={{ fontSize: 11, color: "#a78bfa", fontWeight: 700, marginBottom: 3 }}>↗ 伸ばし方</div>
                                                         <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>{guide.grow}</div>
                                                     </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                    {/* メンター相性 */}
+                                    {(() => {
+                                        if (!u.mbti) return null;
+                                        const cands = userDetails
+                                            .filter(o => o.id !== u.id && o.mbti)
+                                            .map(o => { const c = mentorCompat(u.mbti, o.mbti); return c ? { name: o.name, mbti: o.mbti, edu: o.education, ...c, sameEdu: !!(o.education && u.education && isHighEducation(o.education) === isHighEducation(u.education)) } : null; })
+                                            .filter(Boolean)
+                                            .sort((a: any, b: any) => (b.rank + (b.sameEdu ? 0.5 : 0)) - (a.rank + (a.sameEdu ? 0.5 : 0)))
+                                            .slice(0, 3);
+                                        if (cands.length === 0) return null;
+                                        const lblColor: Record<string, string> = { "最適": "#34d399", "良好": "#a3e635", "成長軸": "#a78bfa", "要橋渡し": "#fbbf24" };
+                                        return (
+                                            <div style={{ marginBottom: 16, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", borderLeft: "4px solid #6366f1" }}>
+                                                <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>🤝 メンター相性</div>
+                                                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 12 }}>在籍メンバーの中での推奨メンター候補</div>
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                                    {(cands as any[]).map((c, i) => (
+                                                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 10 }}>
+                                                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#a5b4fc" }}>{c.name?.charAt(0) || "?"}</div>
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ fontSize: 13, color: "#f9fafb" }}>{c.name}<span style={{ fontSize: 11, color: "#6b7280", marginLeft: 6 }}>{c.mbti}{c.sameEdu ? " ・ 同学歴帯" : ""}</span></div>
+                                                                <div style={{ fontSize: 11, color: "#9ca3af" }}>{c.note}</div>
+                                                            </div>
+                                                            <span style={{ fontSize: 11, fontWeight: 700, color: lblColor[c.label] || "#9ca3af", padding: "3px 10px", borderRadius: 12, background: "rgba(255,255,255,0.05)" }}>{c.label}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         );
