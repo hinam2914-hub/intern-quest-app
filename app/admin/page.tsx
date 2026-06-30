@@ -5342,7 +5342,7 @@ export default function AdminPage() {
                                         if (!u.mbti) return null;
                                         const cands = userDetails
                                             .filter(o => o.id !== u.id && o.mbti)
-                                            .map(o => { const c = mentorCompat(u.mbti, o.mbti); return c ? { name: o.name, mbti: o.mbti, edu: o.education, ...c, sameEdu: !!(o.education && u.education && isHighEducation(o.education) === isHighEducation(u.education)) } : null; })
+                                            .map(o => { const c = mentorCompat(u.mbti || "", o.mbti); return c ? { name: o.name, mbti: o.mbti, edu: o.education, ...c, sameEdu: !!(o.education && u.education && isHighEducation(o.education) === isHighEducation(u.education)) } : null; })
                                             .filter(Boolean)
                                             .sort((a: any, b: any) => (b.rank + (b.sameEdu ? 0.5 : 0)) - (a.rank + (a.sameEdu ? 0.5 : 0)))
                                             .slice(0, 3);
