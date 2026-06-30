@@ -220,6 +220,16 @@ function mentorCompat(menteeMbti: string, mentorMbti: string): { label: string; 
     return { label: r[0], note: r[1], rank: r[2] };
 }
 // ============ メンター相性ここまで ============
+
+// ============ 同僚相性 ============
+function peerCompat(a: string, b: string): { match: number; ns: boolean } | null {
+    if (!a || a.length < 4 || !b || b.length < 4) return null;
+    let match = 0;
+    for (let i = 0; i < 4; i++) if (a[i] === b[i]) match++;
+    const ns = a[1] === b[1]; // N/S軸が一致してるか
+    return { match, ns };
+}
+// ============ 同僚相性ここまで ============
 function getEducationScore(education: string): number {
     if (!education) return 0;
     const e = education;
@@ -5244,9 +5254,12 @@ export default function AdminPage() {
                                         );
                                         const course = calculateGrowthCourse({ mbti: u.mbti || "", education: u.education || "", sibyl });
                                         const guide = getIkuseiGuide(u.mbti || "");
-                                        const mentorCands = u.mbti ? userDetails.filter(o => o.id !== u.id && o.mbti).map(o => { const c = mentorCompat(u.mbti || "", o.mbti || ""); return c ? { name: o.name, mbti: o.mbti, ...c, sameEdu: !!(o.education && u.education && isHighEducation(o.education) === isHighEducation(u.education)) } : null; }).filter(Boolean).sort((a: any, b: any) => (b.rank + (b.sameEdu ? 0.5 : 0)) - (a.rank + (a.sameEdu ? 0.5 : 0))).slice(0, 3) : [];
+                                        const mentorCands = u.mbti ? userDetails.filter(o => o.id !== u.id && o.mbti && o.createdAt && u.createdAt && o.createdAt < u.createdAt).map(o => { const c = mentorCompat(u.mbti || "", o.mbti || ""); return c ? { name: o.name, mbti: o.mbti, ...c, sameEdu: !!(o.education && u.education && isHighEducation(o.education) === isHighEducation(u.education)) } : null; }).filter(Boolean).sort((a: any, b: any) => (b.rank + (b.sameEdu ? 0.5 : 0)) - (a.rank + (a.sameEdu ? 0.5 : 0))).slice(0, 3) : [];
                                         const lblColor: Record<string, string> = { "最適": "#34d399", "良好": "#a3e635", "成長軸": "#a78bfa", "要橋渡し": "#fbbf24" };
                                         const peerColor = getMbtiColor(u.mbti || "");
+                                        const peerScored = u.mbti ? userDetails.filter(o => o.id !== u.id && o.mbti).map(o => { const pc = peerCompat(u.mbti || "", o.mbti || ""); return pc ? { name: o.name, mbti: o.mbti, ...pc } : null; }).filter(Boolean) as any[] : [];
+                                        const peerEasy = [...peerScored].sort((a, b) => b.match - a.match).slice(0, 2);
+                                        const peerStim = [...peerScored].filter(x => !x.ns).slice(0, 2);
                                         return (
                                         <div style={{ marginBottom: 12 }}>
                                             <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
@@ -5360,14 +5373,18 @@ export default function AdminPage() {
                                                     <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>👥 同僚相性</div>
                                                     <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
                                                         <div style={{ flex: 1, padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
-                                                            <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginBottom: 4 }}>気が楽な相手</div>
-                                                            <div style={{ fontSize: 13, color: "#f9fafb", marginBottom: 2 }}>{peerColor === "緑" || peerColor === "紫" ? "同じN寄りのタイプ" : "同じS寄りのタイプ"}</div>
-                                                            <div style={{ fontSize: 11, color: "#9ca3af" }}>話のテンポと価値観が合う</div>
+                                                            <div style={{ fontSize: 11, color: "#34d399", fontWeight: 700, marginBottom: 6 }}>気が楽な相手</div>
+                                                            {peerEasy.length === 0 ? <div style={{ fontSize: 12, color: "#6b7280" }}>該当なし</div> : peerEasy.map((x, i) => (
+                                                                <div key={i} style={{ fontSize: 13, color: "#f9fafb", marginBottom: 3 }}>{x.name}<span style={{ fontSize: 11, color: "#6b7280", marginLeft: 5 }}>{x.mbti}</span></div>
+                                                            ))}
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>話のテンポと価値観が合う</div>
                                                         </div>
                                                         <div style={{ flex: 1, padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
-                                                            <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, marginBottom: 4 }}>刺激になる相手</div>
-                                                            <div style={{ fontSize: 13, color: "#f9fafb", marginBottom: 2 }}>{peerColor === "緑" || peerColor === "紫" ? "S寄りのタイプ" : "N寄りのタイプ"}</div>
-                                                            <div style={{ fontSize: 11, color: "#9ca3af" }}>具体と抽象を補い合える</div>
+                                                            <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 700, marginBottom: 6 }}>刺激になる相手</div>
+                                                            {peerStim.length === 0 ? <div style={{ fontSize: 12, color: "#6b7280" }}>該当なし</div> : peerStim.map((x, i) => (
+                                                                <div key={i} style={{ fontSize: 13, color: "#f9fafb", marginBottom: 3 }}>{x.name}<span style={{ fontSize: 11, color: "#6b7280", marginLeft: 5 }}>{x.mbti}</span></div>
+                                                            ))}
+                                                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>具体と抽象を補い合える</div>
                                                         </div>
                                                     </div>
                                                     <div style={{ fontSize: 11, color: "#6b7280" }}>N/S軸の一致を重視して算出。違う相手は「合わない」ではなく、スタイルを一言共有すると噛み合う。</div>
