@@ -240,8 +240,6 @@ function getSuggestions(p: { thinkingAnswerCount: number; challengeCount: number
     if (!p.mbti) list.push({ icon: "🔮", text: "プロフィールを埋めてくれたら、シビュラできみの適性を占えるよ！", href: "/mypage", cta: "入力する" });
     if (p.challengeCount === 0) list.push({ icon: "🎯", text: "ライフチャレンジ、まだ見てないでしょ？楽しみながらポイント貯まるよ！", href: "/challenge", cta: "見てみる" });
     if (p.points < 500) list.push({ icon: "💰", text: "ライフチャレンジやテストで、ポイントどんどん貯められるよ！一緒にやろう", href: "/challenge", cta: "稼ぐ" });
-    if (!p.isSubmitted) list.push({ icon: "📝", text: "今日の日報、まだ待ってるよ〜！今日はどんな一日だった？", href: "/", cta: "書く" });
-    if (p.streak === 0) list.push({ icon: "🔥", text: "今日から日報の連続記録、また一緒に伸ばしていこう！", href: "/", cta: "書く" });
     if (p.contentCompletionCount === 0) list.push({ icon: "📚", text: "学習コンテンツで新しい武器を手に入れちゃおう！きみならできる", href: "/learn", cta: "学ぶ" });
     if (!p.education) list.push({ icon: "🎓", text: "学歴を教えてくれると、シビュラの診断がもっと当たるようになるよ！", href: "/mypage", cta: "入力する" });
     if (p.kkcApprovedCount === 0) list.push({ icon: "🐟", text: "メダカBOXにきみの気づき、投稿してみてよ！組織を動かす一言になるかも", href: "/medaka", cta: "投稿する" });
