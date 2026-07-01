@@ -232,6 +232,23 @@ function getDailyMission(p: { hour: number; hasScheduleToday: boolean; isSubmitt
     if (p.mentorCount < 1) return "後輩を連れて行ったら、ペイフォワード報告をしてみよう。誰かを助けると自分も伸びるよ。";
     return "今日のミッションは全部クリア！本当によくがんばったね。ゆっくり休んでね。";
 }
+
+type Suggestion = { icon: string; text: string; href: string; cta: string };
+function getSuggestions(p: { thinkingAnswerCount: number; challengeCount: number; mbti: string; points: number; isSubmitted: boolean; streak: number; contentCompletionCount: number; education: string; kkcApprovedCount: number }): Suggestion[] {
+    const list: Suggestion[] = [];
+    if (p.thinkingAnswerCount === 0) list.push({ icon: "🧠", text: "今日の思考クエストで一緒に頭を動かそうよ！きみの考え、聞かせてほしいな", href: "/thinking", cta: "答える" });
+    if (!p.mbti) list.push({ icon: "🔮", text: "プロフィールを埋めてくれたら、シビュラできみの適性を占えるよ！", href: "/mypage", cta: "入力する" });
+    if (p.challengeCount === 0) list.push({ icon: "🎯", text: "ライフチャレンジ、まだ見てないでしょ？楽しみながらポイント貯まるよ！", href: "/challenge", cta: "見てみる" });
+    if (p.points < 500) list.push({ icon: "💰", text: "ライフチャレンジやテストで、ポイントどんどん貯められるよ！一緒にやろう", href: "/challenge", cta: "稼ぐ" });
+    if (!p.isSubmitted) list.push({ icon: "📝", text: "今日の日報、まだ待ってるよ〜！今日はどんな一日だった？", href: "/", cta: "書く" });
+    if (p.streak === 0) list.push({ icon: "🔥", text: "今日から日報の連続記録、また一緒に伸ばしていこう！", href: "/", cta: "書く" });
+    if (p.contentCompletionCount === 0) list.push({ icon: "📚", text: "学習コンテンツで新しい武器を手に入れちゃおう！きみならできる", href: "/learn", cta: "学ぶ" });
+    if (!p.education) list.push({ icon: "🎓", text: "学歴を教えてくれると、シビュラの診断がもっと当たるようになるよ！", href: "/mypage", cta: "入力する" });
+    if (p.kkcApprovedCount === 0) list.push({ icon: "🐟", text: "メダカBOXにきみの気づき、投稿してみてよ！組織を動かす一言になるかも", href: "/medaka", cta: "投稿する" });
+    if (p.thinkingAnswerCount > 0 && p.thinkingAnswerCount < 5) list.push({ icon: "🧠", text: "思考クエスト、いい感じ！この調子でどんどん答えていこう", href: "/thinking", cta: "答える" });
+    if (p.challengeCount > 0 && p.challengeCount < 3) list.push({ icon: "🎯", text: "ライフチャレンジ、もっと増やしていこうよ！応援してるね", href: "/challenge", cta: "見てみる" });
+    return list;
+}
 function buildGraphData(history: PointHistory[]): GraphData[] {
     const dayMap: Record<string, number> = {};
     [...history].reverse().forEach((item) => {
@@ -718,6 +735,7 @@ export default function MyPage() {
     const nextRankInfo = getNextRankInfo(rank2);
     const aiComment = generateAIComment({ name, level, rank2, rankScore, streak, isSubmitted, points, hasScheduleToday });
     const dotKunSuggestion = getDotKunSuggestion({ thanksCount, mentorCount, kkcApprovedCount, esUpdateCount, approvedKpiCount, challengeCount, contentCompletionCount, points });
+    const suggestions = getSuggestions({ thinkingAnswerCount, challengeCount, mbti, points, isSubmitted, streak, contentCompletionCount, education, kkcApprovedCount }).slice(0, 3);
     const dailyMission = getDailyMission({ hour: new Date().getHours(), hasScheduleToday, isSubmitted, todayThanksDone, todayLearnDone, todayKpiDone, challengeCount, mentorCount, kkcApprovedCount });
     const badges = getBadges(totalEarned, streak, esCompleted, profileFlags, contentCompletionCount);
     const trophies = getTrophies({ points: totalEarned, streak, submissionCount, thanksCount, rank2, contentCompletionCount, challengeCount, approvedKpiCount, kkcApprovedCount, esUpdateCount });
@@ -1770,6 +1788,18 @@ const handleRoutineCheck = async (routineId: string) => {
                         <div style={{ fontSize: 11, color: "#f43f5e", fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>🎯 まずはこれをやってみよう</div>
                         <div style={{ fontSize: 14, color: isLightBg ? "#4b5563" : "#fda4af", fontWeight: 600, lineHeight: 1.6 }}>{dailyMission}</div>
                     </div>
+                    {suggestions.length > 0 && (
+                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 1, marginBottom: 2 }}>💡 ドットくんからのおすすめ</div>
+                        {suggestions.map((sg, i) => (
+                            <div key={i} onClick={() => router.push(sg.href)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 10, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.18)", cursor: "pointer" }}>
+                                <div style={{ fontSize: 22 }}>{sg.icon}</div>
+                                <div style={{ flex: 1, fontSize: 13, color: isLightBg ? "#4b5563" : "#c7d2fe", fontWeight: 600, lineHeight: 1.5 }}>{sg.text}</div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", padding: "6px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>{sg.cta}</div>
+                            </div>
+                        ))}
+                    </div>
+                    )}
                 </div>
                 
                 <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 16 : 0, marginBottom: 20 }}>
