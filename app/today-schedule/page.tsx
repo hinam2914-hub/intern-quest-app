@@ -45,7 +45,14 @@ export default function TodaySchedulePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rejectReason, setRejectReason] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayJST());
   const today = getTodayJST();
+  const shiftDate = (days: number) => {
+    const d = new Date(selectedDate + "T00:00:00+09:00");
+    d.setDate(d.getDate() + days);
+    const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+    setSelectedDate(`${jst.getUTCFullYear()}-${String(jst.getUTCMonth() + 1).padStart(2, "0")}-${String(jst.getUTCDate()).padStart(2, "0")}`);
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -60,19 +67,23 @@ export default function TodaySchedulePage() {
         .from("daily_schedules")
         .select("slots, schedule_status, schedule_reject_reason")
         .eq("user_id", user.id)
-        .eq("date", today)
+        .eq("date", selectedDate)
         .maybeSingle();
 
       if (data && Array.isArray((data as any).slots) && (data as any).slots.length > 0) {
         setSlots((data as any).slots as Slot[]);
+      } else {
+        setSlots(defaultSlots());
       }
       if (data && (data as any).schedule_status === "rejected") {
         setRejectReason((data as any).schedule_reject_reason || "スケジュールの内容を見直してください");
+      } else {
+        setRejectReason(null);
       }
       setLoading(false);
     };
     init();
-  }, [router, today]);
+  }, [router, selectedDate]);
 
   const updateSlot = (index: number, field: keyof Slot, value: string) => {
     setSlots((prev) => {
@@ -99,7 +110,7 @@ export default function TodaySchedulePage() {
       .upsert(
         {
           user_id: userId,
-          date: today,
+          date: selectedDate,
           slots: slots,
           schedule_status: null,
           schedule_reject_reason: null,
@@ -158,9 +169,18 @@ export default function TodaySchedulePage() {
         <h1 style={{ fontSize: 26, fontWeight: "bold", marginBottom: 4 }}>
           ☀️ 今日のスケジュール
         </h1>
-      <p style={{ color: textMuted, marginBottom: 24, fontSize: 14 }}>
-          {today} ／ 今日の予定を時間ごとに書き出しましょう
-        </p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 24 }}>
+          <button onClick={() => shiftDate(-1)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>◀ 前日</button>
+          <div style={{ minWidth: 160, textAlign: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: textPrimary }}>{selectedDate}{selectedDate === today ? "（今日）" : ""}</div>
+          </div>
+          <button onClick={() => shiftDate(1)} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>翌日 ▶</button>
+        </div>
+        {selectedDate !== today && (
+          <div style={{ textAlign: "center", marginBottom: 16 }}>
+            <button onClick={() => setSelectedDate(today)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", background: "rgba(99,102,241,0.15)", color: "#a5b4fc", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>今日に戻る</button>
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 16, marginBottom: 24 }}>
           <div style={{ width: 56, height: 56, borderRadius: 14, background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><DotKun size={50} /></div>
           <div style={{ fontSize: 14, color: "#818cf8", fontWeight: 600, lineHeight: 1.6 }}>今日の予定を立てよう！何をやるか決めると、1日がぐっと動きやすくなるよ。迷ったらメニューから選んでね。</div>
