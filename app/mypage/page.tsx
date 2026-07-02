@@ -223,7 +223,6 @@ function getDotKunSuggestion(p: { thanksCount: number; mentorCount: number; kkcA
 }
 function getDailyMission(p: { hour: number; hasScheduleToday: boolean; isSubmitted: boolean; todayThanksDone: boolean; todayLearnDone: boolean; todayKpiDone: boolean; challengeCount: number; mentorCount: number; kkcApprovedCount: number }): string {
     if (p.hour < 12 && !p.hasScheduleToday) return "まずは今日のスケジュールを立てよう。何をやるか決めると一日が動きやすくなるよ。";
-    if (p.hour >= 18 && !p.isSubmitted) return "今日を振り返って日報を書こう。一日の終わりに記録を残すと、明日がラクになるよ。";
     if (!p.todayThanksDone) return "誰かにサンキューを送ってみよう。感謝を伝えると、自分もちょっと嬉しくなるよ。";
     if (!p.todayLearnDone) return "学習コンテンツを1つ進めよう。今日の小さな一歩が未来の武器になるよ。";
     if (!p.todayKpiDone) return "今日の数字（KPI）を記録しよう。成果は数で見えると面白くなるよ。";
