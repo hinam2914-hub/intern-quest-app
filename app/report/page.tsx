@@ -76,6 +76,7 @@ export default function ReportPage() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [success, setSuccess] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [dotkunFb, setDotkunFb] = useState<DotKunFeedback | null>(null);
     const [kpiItems, setKpiItems] = useState<KpiItem[]>([]);
     const [kpiValues, setKpiValues] = useState<Record<string, number>>({});
@@ -114,6 +115,9 @@ const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
     };
 
     const handleSubmit = async () => {
+        if (submitting) return;
+        setSubmitting(true);
+        try {
         const combinedText = `【事実】今日やったこと・数字\n${factText.trim()}\n\n【解釈】なぜその結果になったか／そこから何が言えるか\n${interpText.trim()}\n\n【次の行動】明日、何をどう変えるか\n${actionText.trim()}`;
         const totalLength = factText.trim().length + interpText.trim().length + actionText.trim().length;
         if (totalLength === 0) { setMessage("日報を書いてください"); return; }
@@ -234,6 +238,9 @@ const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
         setDotkunFb(generateDotKunFeedback({ factText, interpText, actionText, streak: newStreak }));
         setFactText(""); setInterpText(""); setActionText(""); setSelectedTemplate(null); setLoading(false);
         setReportDone(true);
+        } finally {
+            setSubmitting(false);
+        }
     };
     // 日報提出後のガチャ
     const handleGachaSpin = async () => {
