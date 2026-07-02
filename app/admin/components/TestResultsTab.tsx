@@ -15,7 +15,9 @@ type Attempt = {
     written_points_awarded?: number;
     evaluated_at?: string | null;
     userName?: string;
-    source: "quiz_attempts" | "test_attempts";
+    source: "quiz_attempts" | "test_attempts" | "manager_tests";
+    written?: { id: string; question_num: number; answer: string }[];
+    manager_written_status?: "pending" | "approved" | "rejected" | "skipped";
 };
 
 type ManagerTest = {
@@ -360,22 +362,31 @@ export default function TestResultsTab() {
                     source: "quiz_attempts",
                 });
             });
-            merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            setAttempts(merged);
-
-            // マネージャーテスト取得
+            // マネージャーテストも受験履歴に合流（他テストと同じ扱い）
             const { data: mgrRows } = await supabase.from("manager_tests").select("*").eq("status", "submitted").order("submitted_at", { ascending: false });
             if (mgrRows && mgrRows.length > 0) {
-                const mgrWithDetails = await Promise.all((mgrRows as any[]).map(async (t: any) => {
+                await Promise.all((mgrRows as any[]).map(async (t: any) => {
                     const { data: written } = await supabase.from("manager_test_written_answers").select("*").eq("test_id", t.id).order("question_num");
-                    return {
-                        ...t,
-                        userName: profileRows?.find((p: any) => p.id === t.user_id)?.name || "（名前未設定）",
+                    const evalMap: Record<string, "high" | "mid" | "none" | null> = { approved: t.points_awarded >= 30 ? "high" : "mid", rejected: "none", pending: null, skipped: null };
+                    merged.push({
+                        id: t.id,
+                        user_id: t.user_id,
+                        test_key: "manager",
+                        score: t.score_choice,
+                        passed: t.passed_choice,
+                        created_at: t.submitted_at,
+                        written_answers: null,
                         written: written || [],
-                    };
+                        written_evaluation: evalMap[t.written_status] ?? null,
+                        written_points_awarded: t.points_awarded,
+                        manager_written_status: t.written_status,
+                        userName: profileRows?.find((p: any) => p.id === t.user_id)?.name || "（名前未設定）",
+                        source: "manager_tests",
+                    });
                 }));
-                setManagerTests(mgrWithDetails as ManagerTest[]);
             }
+            merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setAttempts(merged);
 
             setLoading(false);
         };
@@ -394,13 +405,21 @@ export default function TestResultsTab() {
         const nowIso = new Date().toISOString();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // 評価をDBに記録
-        await supabase.from(attempt.source).update({
-            written_evaluation: evaluation,
-            written_points_awarded: newPoints,
-            evaluated_at: nowIso,
-            evaluated_by: user?.id,
-        }).eq("id", attempt.id);
+        // 評価をDBに記録（マネージャーテストは別テーブル・別カラム）
+        if (attempt.source === "manager_tests") {
+            await supabase.from("manager_tests").update({
+                written_status: evaluation === "none" ? "rejected" : "approved",
+                points_awarded: newPoints,
+                approved_at: nowIso,
+            }).eq("id", attempt.id);
+        } else {
+            await supabase.from(attempt.source).update({
+                written_evaluation: evaluation,
+                written_points_awarded: newPoints,
+                evaluated_at: nowIso,
+                evaluated_by: user?.id,
+            }).eq("id", attempt.id);
+        }
 
         // ポイント差分を反映
         if (diff !== 0) {
@@ -496,62 +515,6 @@ export default function TestResultsTab() {
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>📝 テスト結果管理</div>
                 <div style={{ fontSize: 12, color: "#9ca3af" }}>全テストの受験履歴・合格者・記述式回答を確認できます。記述に評価を付けるとポイント付与されます。</div>
             </div>
-
-            {/* ===== マネージャーテスト承認エリア ===== */}
-            {managerTests.length > 0 && (
-                <div style={{ padding: 20, borderRadius: 14, background: "rgba(236,72,153,0.05)", border: "1px solid rgba(236,72,153,0.3)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-                        <div>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: "#ec4899" }}>🎖️ マネージャーテスト承認</div>
-                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>選択式合格者の記述を確認 / 記述評価でポイント付与（高評価+30 / 中評価+10）</div>
-                        </div>
-                        <div style={{ display: "flex", gap: 6 }}>
-                            <button onClick={() => setManagerFilter("pending")} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 11, background: managerFilter === "pending" ? "linear-gradient(135deg, #ec4899, #f472b6)" : "rgba(255,255,255,0.05)", color: managerFilter === "pending" ? "#fff" : "#9ca3af" }}>レビュー待ち{pendingManagerCount > 0 ? `(${pendingManagerCount})` : ""}</button>
-                            <button onClick={() => setManagerFilter("all")} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 11, background: managerFilter === "all" ? "linear-gradient(135deg, #ec4899, #f472b6)" : "rgba(255,255,255,0.05)", color: managerFilter === "all" ? "#fff" : "#9ca3af" }}>すべて</button>
-                        </div>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {managerTests.filter(t => managerFilter === "all" || t.written_status === "pending").map(test => (
-                            <div key={test.id} style={{ padding: 16, borderRadius: 10, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-                                    <div>
-                                        <div style={{ color: "#f9fafb", fontSize: 14, fontWeight: 700 }}>{test.userName}</div>
-                                        <div style={{ color: "#6b7280", fontSize: 11 }}>提出: {new Date(test.submitted_at).toLocaleString("ja-JP")}</div>
-                                    </div>
-                                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                        <div style={{ padding: "3px 8px", borderRadius: 6, background: test.passed_choice ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)", color: test.passed_choice ? "#34d399" : "#f87171", fontSize: 11, fontWeight: 700 }}>選択式: {test.score_choice}/{test.score_choice_total}</div>
-                                        <div style={{ padding: "3px 8px", borderRadius: 6, background: test.written_status === "approved" ? "rgba(52,211,153,0.15)" : test.written_status === "rejected" ? "rgba(248,113,113,0.15)" : test.written_status === "skipped" ? "rgba(107,114,128,0.15)" : "rgba(251,191,36,0.15)", color: test.written_status === "approved" ? "#34d399" : test.written_status === "rejected" ? "#f87171" : test.written_status === "skipped" ? "#9ca3af" : "#fbbf24", fontSize: 11, fontWeight: 700 }}>{test.written_status === "approved" ? "✅ 承認済" : test.written_status === "rejected" ? "❌ 却下" : test.written_status === "skipped" ? "選択式不合格" : "⏳ レビュー待ち"}</div>
-                                    </div>
-                                </div>
-
-                                {test.written && test.written.length > 0 && (
-                                    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                                        <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>記述式回答</div>
-                                        {test.written.map((w) => (
-                                            <div key={w.id} style={{ padding: 10, borderRadius: 6, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.04)" }}>
-                                                <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 700, marginBottom: 4 }}>Q{w.question_num}. {WRITTEN_QUESTIONS.manager_written?.[w.question_num - 16] || ""}</div>
-                                                <div style={{ color: "#d1d5db", fontSize: 12, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{w.answer}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {test.written_status === "pending" && test.passed_choice && (
-                                    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                                        <button onClick={() => handleApproveManager(test, "high")} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.4)", background: "rgba(251,191,36,0.1)", color: "#fbbf24", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥇 高評価 +30pt</button>
-                                        <button onClick={() => handleApproveManager(test, "mid")} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(148,163,184,0.4)", background: "rgba(148,163,184,0.1)", color: "#94a3b8", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🥈 中評価 +10pt</button>
-                                        <button onClick={() => handleApproveManager(test, "none")} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(107,114,128,0.4)", background: "rgba(107,114,128,0.1)", color: "#9ca3af", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>⚪ 評価なし</button>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                        {managerTests.filter(t => managerFilter === "all" || t.written_status === "pending").length === 0 && (
-                            <div style={{ textAlign: "center", color: "#6b7280", fontSize: 12, padding: 20 }}>該当する提出はありません</div>
-                        )}
-                    </div>
-                </div>
-            )}
 
             {/* 合格者サマリー */}
             <div>
