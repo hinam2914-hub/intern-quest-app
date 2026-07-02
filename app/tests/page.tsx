@@ -62,7 +62,6 @@ const TESTS: TestItem[] = [
     { key: "profit_thinking", label: "利益思考・判断センス", desc: "感情ではなく利益で動けるか", path: "/tests/profit-thinking", icon: "💰", color: "#10b981", passedField: "profit_thinking_passed", rewardText: "合格で +10pt", table: "test_attempts" },
     { key: "essence_thinking", label: "本質思考・タスク整理", desc: "“余計なことを増やさない人”になる", path: "/tests/essence-thinking", icon: "🔍", color: "#06b6d4", passedField: "essence_thinking_passed", rewardText: "合格で +10pt", table: "test_attempts" },
     { key: "standard_keeping", label: "基準維持・妥協耐性", desc: "“すぐ妥協しない人”になる", path: "/tests/standard-keeping", icon: "⚖️", color: "#f97316", passedField: "standard_keeping_passed", rewardText: "合格で +10pt", table: "test_attempts" },
-    { key: "market_value", label: "市場価値認識テスト", desc: "“選ばれる側”の視点を持てるか", path: "/tests/market-value", icon: "💪", color: "#0891b2", passedField: "market_value_passed", rewardText: "合格で +10pt", table: "test_attempts" },
     { key: "quiz", label: "確認ワークテスト", desc: "価値観と仕事の基本をチェック", path: "/quiz", icon: "🧠", color: "#a78bfa", passedField: "quiz_passed", rewardText: "合格で +10pt", table: "quiz_attempts" },
     { key: "teiou", label: "Dot.A 帝王学", desc: "思想・判断・覚悟の最高ランク", path: "/tests/teiou", icon: "👑", color: "#fbbf24", passedField: "teiou_passed", rewardText: "合格で +10pt", table: "test_attempts" },
     { key: "marketer", label: "マーケター適性テスト", desc: "売れる仕組みを作れるか", path: "/tests/marketer", icon: "📊", color: "#06b6d4", passedField: "marketer_passed", rewardText: "満点合格で +10pt", table: "test_attempts" },

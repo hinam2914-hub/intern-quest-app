@@ -49,7 +49,6 @@ const TEST_LABELS: Record<string, { label: string; color: string; icon: string }
     teiou: { label: "Dot.A 帝王学", color: "#fbbf24", icon: "👑" },
     essence_thinking: { label: "本質思考", color: "#06b6d4", icon: "🔍" },
     standard_keeping: { label: "基準維持", color: "#f97316", icon: "⚖️" },
-    market_value: { label: "市場価値認識", color: "#0891b2", icon: "💪" },
     standard_raising: { label: "基準上昇", color: "#f43f5e", icon: "🚀" },
     management_collab: { label: "マネジメント協働", color: "#06b6d4", icon: "🤝" },
     cert_market_value: { label: "資格依存改善", color: "#14b8a6", icon: "💎" },
