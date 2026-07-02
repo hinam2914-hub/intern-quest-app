@@ -503,7 +503,7 @@ export default function TestResultsTab() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                         <div>
                             <div style={{ fontSize: 14, fontWeight: 800, color: "#ec4899" }}>🎖️ マネージャーテスト承認</div>
-                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>選択式合格者の記述を確認 / 承認で50pt付与＋マネージャー認定</div>
+                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>選択式合格者の記述を確認 / 記述評価でポイント付与（高評価+30 / 中評価+10）</div>
                         </div>
                         <div style={{ display: "flex", gap: 6 }}>
                             <button onClick={() => setManagerFilter("pending")} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 11, background: managerFilter === "pending" ? "linear-gradient(135deg, #ec4899, #f472b6)" : "rgba(255,255,255,0.05)", color: managerFilter === "pending" ? "#fff" : "#9ca3af" }}>レビュー待ち{pendingManagerCount > 0 ? `(${pendingManagerCount})` : ""}</button>
