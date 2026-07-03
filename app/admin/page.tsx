@@ -5258,7 +5258,7 @@ export default function AdminPage() {
                                         const mentorCands = u.mbti ? userDetails.filter(o => o.id !== u.id && o.mbti && o.createdAt && u.createdAt && o.createdAt < u.createdAt).map(o => { const c = mentorCompat(u.mbti || "", o.mbti || ""); return c ? { name: o.name, mbti: o.mbti, ...c, sameEdu: !!(o.education && u.education && isHighEducation(o.education) === isHighEducation(u.education)) } : null; }).filter(Boolean).sort((a: any, b: any) => (b.rank + (b.sameEdu ? 0.5 : 0)) - (a.rank + (a.sameEdu ? 0.5 : 0))).slice(0, 3) : [];
                                         const lblColor: Record<string, string> = { "最適": "#34d399", "良好": "#a3e635", "成長軸": "#a78bfa", "要橋渡し": "#fbbf24" };
                                         const peerColor = getMbtiColor(u.mbti || "");
-                                        const peerScored = u.mbti ? userDetails.filter(o => o.id !== u.id && o.mbti).map(o => { const pc = peerCompat(u.mbti || "", o.mbti || ""); return pc ? { name: o.name, mbti: o.mbti, ...pc } : null; }).filter(Boolean) as any[] : [];
+                                        const peerScored = u.mbti ? userDetails.filter(o => o.id !== u.id && o.mbti && o.department_id && u.department_id && o.department_id === u.department_id).map(o => { const pc = peerCompat(u.mbti || "", o.mbti || ""); return pc ? { name: o.name, mbti: o.mbti, ...pc } : null; }).filter(Boolean) as any[] : [];
                                         const peerEasy = [...peerScored].sort((a, b) => b.match - a.match).slice(0, 2);
                                         const peerHard = [...peerScored].sort((a, b) => a.match - b.match).slice(0, 2);
                                         return (
