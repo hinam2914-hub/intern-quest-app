@@ -831,8 +831,9 @@ export default function AdminPage() {
             setPendingMentorCount(mentorC || 0);
             const { count: kkcC } = await supabase.from("problem_solutions").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingKkcCount(kkcC || 0);
-            const { count: testC } = await supabase.from("manager_tests").select("*", { count: "exact", head: true }).eq("status", "submitted");
-            setPendingTestCount(testC || 0);
+            const { count: mgrPendingC } = await supabase.from("manager_tests").select("*", { count: "exact", head: true }).eq("status", "submitted").or("written_status.is.null,written_status.eq.pending");
+            const { count: normalPendingC } = await supabase.from("test_attempts").select("*", { count: "exact", head: true }).eq("passed", true).not("written_answers", "is", null).is("written_evaluation", null);
+            setPendingTestCount((mgrPendingC || 0) + (normalPendingC || 0));
             const { count: taskRepC } = await supabase.from("task_reports").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingTaskReportCount(taskRepC || 0);
             // 人材アーカイブ取得
