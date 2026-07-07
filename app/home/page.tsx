@@ -107,7 +107,6 @@ export default function HomePage() {
 
       // 中央ボタンの決定
       const seed = todayYmd + user.id;
-      let chosen: Task;
       const hourJST = new Date(Date.now() + 9 * 60 * 60 * 1000).getUTCHours();
       let chosen: Task;
       if (hourJST >= 20 && !reportDone) {
