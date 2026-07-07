@@ -5,12 +5,67 @@ import { supabase } from "../lib/supabase";
 import DotKun from "../components/DotKun";
 
 type Theme = "light" | "dark";
-type Task = { icon: string; label: string; href: string };
+type Task = { key: string; icon: string; label: string; href: string };
 
 function getTodayJST(): string {
   const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return jst.toISOString().slice(0, 10);
 }
+// 今日のJST 0:00〜24:00 をUTC範囲で
+function todayRangeUTC(): { start: string; end: string } {
+  const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const y = jstNow.getUTCFullYear(), m = jstNow.getUTCMonth(), d = jstNow.getUTCDate();
+  const start_utc = Date.UTC(y, m, d) - 9 * 60 * 60 * 1000;
+  return { start: new Date(start_utc).toISOString(), end: new Date(start_utc + 24 * 60 * 60 * 1000).toISOString() };
+}
+function seededPick<T>(arr: T[], seedStr: string): T {
+  let h = 0;
+  for (let i = 0; i < seedStr.length; i++) { h = (h * 31 + seedStr.charCodeAt(i)) >>> 0; }
+  return arr[h % arr.length];
+}
+function greeting(): string {
+  const hour = new Date(Date.now() + 9 * 60 * 60 * 1000).getUTCHours();
+  if (hour < 11) return "おはよう☀️";
+  if (hour < 18) return "こんにちは";
+  return "おつかれさま🌙";
+}
+
+// タスクごとのドットくんセリフ（日替わりで1つ選ばれる）
+const DOT_MSGS: Record<string, string[]> = {
+  report: [
+    "今日の日報、待ってるよ！どんな一日だった？",
+    "まずは日報から！書くと頭が整理されるよ📝",
+    "日報タイム！今日の自分を振り返ってみよう",
+  ],
+  schedule: [
+    "今日の予定を立てよう！決めると一日が動きやすくなるよ",
+    "まずスケジュール！何をやるか決めちゃおう☀️",
+  ],
+  thinking: [
+    "今日は思考クエストの日！きみの考え、聞かせて🧠",
+    "頭の体操いこう！今日のお題、なかなか面白いよ",
+  ],
+  oogiri: [
+    "今日は大喜利の日🎤 きみのボケ、待ってるよ！",
+    "たまには笑いも大事！今日のお題でボケてみて",
+  ],
+  learn: [
+    "今日は学習の日📚 新しい武器を1つ手に入れよう",
+    "学習コンテンツ、1本だけでも見てみない？未来の自分が喜ぶよ",
+  ],
+  challenge: [
+    "今日はライフチャレンジ！楽しみながらポイント稼ごう🎯",
+    "チャレンジ日和だね！小さな挑戦が毎日を変えるよ",
+  ],
+  medaka: [
+    "今日はメダカBOXの日🐟 きみの気づき、組織を動かすかも",
+    "最近気づいたこと、メダカBOXに投稿してみない？",
+  ],
+  gacha: [
+    "今日のクエスト全部クリア！ご褒美にガチャ回そう🎰",
+    "全部やりきったね、えらい！ガチャで運試ししよ🎰",
+  ],
+};
 
 export default function HomePage() {
   const router = useRouter();
@@ -18,10 +73,9 @@ export default function HomePage() {
   const [name, setName] = useState("");
   const [streak, setStreak] = useState(0);
   const [theme, setTheme] = useState<Theme>("dark");
-  // 今日のタスク（今は仮固定。次のステップで判定ロジックを入れる）
-  const [task, setTask] = useState<Task>({ icon: "📝", label: "日報を書く", href: "/report" });
-  const [doneCount, setDoneCount] = useState(2);
-  const [dotMsg, setDotMsg] = useState("あとは日報だけ！書いたら今日のリング完成だよ🎉");
+  const [task, setTask] = useState<Task>({ key: "report", icon: "📝", label: "日報を書く", href: "/report" });
+  const [doneCount, setDoneCount] = useState(0);
+  const [dotMsg, setDotMsg] = useState("");
 
   useEffect(() => {
     const saved = (typeof window !== "undefined" && localStorage.getItem("homeTheme")) as Theme | null;
@@ -37,6 +91,46 @@ export default function HomePage() {
         setName((profile as any).name || "");
         setStreak((profile as any).streak || 0);
       }
+      const todayYmd = getTodayJST();
+      const range = todayRangeUTC();
+
+      // 今日の状況を取得
+      const { data: subRows } = await supabase.from("submissions").select("id").eq("user_id", user.id).gte("created_at", range.start).lt("created_at", range.end).limit(1);
+      const reportDone = !!(subRows && subRows.length > 0);
+      const { data: schedRow } = await supabase.from("daily_schedules").select("id").eq("user_id", user.id).eq("date", todayYmd).maybeSingle();
+      const scheduleDone = !!schedRow;
+      const { data: thinkRows } = await supabase.from("thinking_answers").select("id").eq("user_id", user.id).gte("created_at", range.start).lt("created_at", range.end).limit(1);
+      const thinkingDone = !!(thinkRows && thinkRows.length > 0);
+
+      // リング: コアタスク3つ（スケジュール・日報・思考系）
+      setDoneCount([scheduleDone, reportDone, thinkingDone].filter(Boolean).length);
+
+      // 中央ボタンの決定
+      const seed = todayYmd + user.id;
+      let chosen: Task;
+      if (!reportDone) {
+        // 日報は最優先（固定ルール）
+        chosen = { key: "report", icon: "📝", label: "日報を書く", href: "/report" };
+      } else {
+        // 日報済み → 今日まだやってないことから日替わりランダム
+        const pool: Task[] = [];
+        if (!scheduleDone) pool.push({ key: "schedule", icon: "☀️", label: "予定を立てる", href: "/today-schedule" });
+        if (!thinkingDone) {
+          pool.push({ key: "thinking", icon: "🧠", label: "今日のお題", href: "/thinking" });
+          pool.push({ key: "oogiri", icon: "🎤", label: "大喜利でボケる", href: "/thinking" });
+        }
+        pool.push({ key: "learn", icon: "📚", label: "学習する", href: "/learn" });
+        pool.push({ key: "challenge", icon: "🎯", label: "チャレンジ", href: "/challenge" });
+        pool.push({ key: "medaka", icon: "🐟", label: "気づきを投稿", href: "/medaka" });
+        chosen = pool.length > 0 ? seededPick(pool, seed) : { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/mypage" };
+        // 全コアタスク完了ならガチャ優先
+        if (reportDone && scheduleDone && thinkingDone) {
+          chosen = seededPick([chosen, { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/mypage" }], seed + "g");
+        }
+      }
+      setTask(chosen);
+      const msgs = DOT_MSGS[chosen.key] || ["今日もいこう！"];
+      setDotMsg(seededPick(msgs, seed + "m"));
       setLoading(false);
     };
     load();
@@ -49,21 +143,18 @@ export default function HomePage() {
   };
 
   const isDark = theme === "dark";
-  const bg = isDark
-    ? "radial-gradient(circle at 50% 30%, #14142b 0%, #0a0a0f 65%)"
-    : "#fdfdfb";
+  const bg = isDark ? "radial-gradient(circle at 50% 30%, #14142b 0%, #0a0a0f 65%)" : "#fdfdfb";
   const nameColor = isDark ? "#f9fafb" : "#2b3440";
   const helloColor = isDark ? "#6b7280" : "#8a94a0";
   const flameStyle = isDark
     ? { background: "rgba(245,158,11,.12)", border: "1px solid rgba(245,158,11,.35)", color: "#fbbf24" }
     : { background: "#fff", border: "none", color: "#e8590c", boxShadow: "0 4px 14px rgba(43,52,64,.08)" };
+  const pct = (doneCount / 3) * 100;
   const ringBg = isDark
-    ? `conic-gradient(#8b5cf6 0 ${(doneCount / 3) * 100}%, rgba(139,92,246,.12) ${(doneCount / 3) * 100}% 100%)`
-    : `conic-gradient(#ffa94d 0 ${(doneCount / 3) * 100}%, #eceae4 ${(doneCount / 3) * 100}% 100%)`;
+    ? `conic-gradient(#8b5cf6 0 ${pct}%, rgba(139,92,246,.12) ${pct}% 100%)`
+    : `conic-gradient(#ffa94d 0 ${pct}%, #eceae4 ${pct}% 100%)`;
   const ringInner = isDark ? "#0d0d18" : "#fdfdfb";
-  const btnBg = isDark
-    ? "linear-gradient(150deg, #6366f1, #8b5cf6)"
-    : "linear-gradient(150deg, #ff7d94, #f74f6e)";
+  const btnBg = isDark ? "linear-gradient(150deg, #6366f1, #8b5cf6)" : "linear-gradient(150deg, #ff7d94, #f74f6e)";
   const btnShadow = isDark
     ? "0 0 50px rgba(99,102,241,.5), inset 0 -6px 0 rgba(0,0,0,.2)"
     : "0 18px 40px rgba(247,79,110,.35), inset 0 -8px 0 rgba(0,0,0,.08)";
@@ -76,37 +167,41 @@ export default function HomePage() {
   if (loading) return <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center", color: helloColor }}>読み込み中...</div>;
 
   return (
-    <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 30px", position: "relative" }}>
-      {/* 上部 */}
-      <div style={{ width: "100%", maxWidth: 420, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <div style={{ fontSize: 13, color: helloColor }}>おはよう</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: nameColor }}>{name || "ゲスト"}さん</div>
+    <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 30px" }}>
+      <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
+        {/* 上部 */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 13, color: helloColor }}>{greeting()}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: nameColor }}>{name || "ゲスト"}さん</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button onClick={toggleTheme} style={{ border: "none", background: isDark ? "rgba(255,255,255,.06)" : "#fff", borderRadius: 20, padding: "7px 12px", fontSize: 16, cursor: "pointer", boxShadow: isDark ? "none" : "0 4px 14px rgba(43,52,64,.08)" }}>{isDark ? "🌙" : "☀️"}</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 20, padding: "7px 13px", fontSize: 14, fontWeight: 900, ...flameStyle }}>🔥 {streak}</div>
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={toggleTheme} style={{ border: "none", background: isDark ? "rgba(255,255,255,.06)" : "#fff", borderRadius: 20, padding: "7px 12px", fontSize: 16, cursor: "pointer", boxShadow: isDark ? "none" : "0 4px 14px rgba(43,52,64,.08)" }}>{isDark ? "🌙" : "☀️"}</button>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 20, padding: "7px 13px", fontSize: 14, fontWeight: 900, ...flameStyle }}>🔥 {streak}</div>
-        </div>
-      </div>
 
-      {/* 中央 */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, filter: isDark ? "drop-shadow(0 0 24px rgba(139,92,246,.35))" : "none" }}>
-          <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
-          <button onClick={() => router.push(task.href)} style={{ position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 44, background: btnBg, boxShadow: btnShadow, border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", zIndex: 2 }}>
-            <div style={{ fontSize: 52 }}>{task.icon}</div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: 1 }}>{task.label}</div>
-          </button>
-        </div>
-        <div style={{ marginTop: 16, fontSize: 11.5, color: otherColor }}>今日のクエスト <b style={{ color: isDark ? "#a78bfa" : "#e8590c" }}>{doneCount}/3</b> 達成</div>
-      </div>
+        {/* 中央 */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18 }}>
+          <div style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, filter: isDark ? "drop-shadow(0 0 24px rgba(139,92,246,.35))" : "none" }}>
+            <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
+            <button onClick={() => router.push(task.href)} style={{ position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 44, background: btnBg, boxShadow: btnShadow, border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", zIndex: 2 }}>
+              <div style={{ fontSize: 52 }}>{task.icon}</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: 1 }}>{task.label}</div>
+            </button>
+          </div>
+          <div style={{ fontSize: 11.5, color: otherColor }}>今日のクエスト <b style={{ color: isDark ? "#a78bfa" : "#e8590c" }}>{doneCount}/3</b> 達成</div>
 
-      {/* ドットくん */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", marginBottom: 14, maxWidth: 420, width: "100%", ...dotRowStyle }}>
-        <div style={{ flexShrink: 0 }}><DotKun size={44} mood="cheer" /></div>
-        <p style={{ fontSize: 12, color: dotTextColor, lineHeight: 1.6 }}>{dotMsg}</p>
+          {/* ドットくん（リングのすぐ下） */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", ...dotRowStyle }}>
+            <div style={{ flexShrink: 0 }}><DotKun size={44} mood="cheer" /></div>
+            <p style={{ fontSize: 12.5, color: dotTextColor, lineHeight: 1.6 }}>{dotMsg}</p>
+          </div>
+        </div>
+
+        {/* 下部 */}
+        <div onClick={() => router.push("/menu")} style={{ textAlign: "center", fontSize: 13, color: otherColor, fontWeight: 700, cursor: "pointer", padding: "12px 0" }}>ほかのことをする →</div>
       </div>
-      <div onClick={() => router.push("/menu")} style={{ fontSize: 12.5, color: otherColor, fontWeight: 700, cursor: "pointer" }}>ほかのことをする →</div>
     </div>
   );
 }
