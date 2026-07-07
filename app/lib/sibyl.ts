@@ -1,0 +1,165 @@
+// シビュラシステム 計算ロジック（admin と本人用ページで共用）
+// ============ シビュラシステム用マスター＆計算関数 ============
+export const MBTI_SCORES: Record<string, { cog: number; grit: number; social: number; drive: number; create: number }> = {
+    "INTJ": { cog: 10, grit: 8, social: 3, drive: 2, create: 9 },
+    "INTP": { cog: 10, grit: 6, social: 2, drive: 2, create: 10 },
+    "ENTJ": { cog: 9, grit: 9, social: 7, drive: 8, create: 7 },
+    "ENTP": { cog: 9, grit: 6, social: 7, drive: 8, create: 10 },
+    "INFJ": { cog: 8, grit: 7, social: 8, drive: 3, create: 9 },
+    "INFP": { cog: 7, grit: 5, social: 7, drive: 3, create: 10 },
+    "ENFJ": { cog: 7, grit: 7, social: 10, drive: 7, create: 8 },
+    "ENFP": { cog: 6, grit: 5, social: 9, drive: 9, create: 9 },
+    "ISTJ": { cog: 7, grit: 9, social: 4, drive: 3, create: 3 },
+    "ISFJ": { cog: 5, grit: 8, social: 7, drive: 3, create: 3 },
+    "ESTJ": { cog: 7, grit: 9, social: 6, drive: 7, create: 4 },
+    "ESFJ": { cog: 5, grit: 7, social: 9, drive: 6, create: 4 },
+    "ISTP": { cog: 7, grit: 7, social: 3, drive: 9, create: 6 },
+    "ISFP": { cog: 4, grit: 4, social: 6, drive: 6, create: 7 },
+    "ESTP": { cog: 6, grit: 8, social: 7, drive: 10, create: 5 },
+    "ESFP": { cog: 4, grit: 5, social: 9, drive: 10, create: 6 },
+};
+
+export const CLUB_SCORES: Record<string, { grit: number; drive: number; social: number }> = {
+    "野球部": { grit: 10, drive: 10, social: 9 },
+    "体育会系（全国レベル）": { grit: 9, drive: 9, social: 7 },
+    "体育会系（一般）": { grit: 8, drive: 7, social: 6 },
+    "チームスポーツ系": { grit: 7, drive: 7, social: 8 },
+    "個人競技系": { grit: 8, drive: 8, social: 3 },
+    "文化部（発表系）": { grit: 6, drive: 5, social: 7 },
+    "文化部（創作系）": { grit: 4, drive: 3, social: 3 },
+    "帰宅部": { grit: 2, drive: 2, social: 2 },
+};
+
+export const HOBBY_SCORES: Record<string, { cog: number; social: number; drive: number; create: number }> = {
+    "読書・勉強": { cog: 9, social: 2, drive: 2, create: 5 },
+    "ゲーム（戦略）": { cog: 8, social: 4, drive: 5, create: 5 },
+    "ゲーム（アクション）": { cog: 4, social: 4, drive: 9, create: 3 },
+    "スポーツ・運動": { cog: 3, social: 7, drive: 9, create: 3 },
+    "音楽・楽器": { cog: 5, social: 6, drive: 5, create: 9 },
+    "アート・創作": { cog: 5, social: 3, drive: 3, create: 10 },
+    "旅行": { cog: 4, social: 7, drive: 5, create: 6 },
+    "グルメ・食べ歩き": { cog: 3, social: 8, drive: 5, create: 5 },
+    "映画・ドラマ鑑賞": { cog: 5, social: 4, drive: 2, create: 6 },
+    "アウトドア": { cog: 3, social: 7, drive: 8, create: 4 },
+    "SNS・配信": { cog: 5, social: 9, drive: 6, create: 7 },
+};
+
+export function getEducationSibyl(education: string): { cog: number; grit: number } {
+    if (!education) return { cog: 0, grit: 0 };
+    const e = education;
+    if (/東京大学|^東大|京都大学|^京大|大阪大学|^阪大|名古屋大学|^名大|東北大学|九州大学|^九大|北海道大学|^北大/.test(e)) return { cog: 10, grit: 6 };
+    if (/早稲田|慶應|慶応|上智/.test(e)) return { cog: 9, grit: 5 };
+    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政|東京理科大学|理科大/.test(e)) return { cog: 7, grit: 5 };
+    if (/成城|成蹊|明治学院|獨協|國學院|国学院|武蔵大学|武蔵大/.test(e)) return { cog: 6, grit: 4 };
+    if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修/.test(e)) return { cog: 5, grit: 4 };
+    return { cog: 3, grit: 3 };
+}
+
+export function calculateSibyl(params: { mbti: string; education: string; club: string; hobby: string }): { cog: number; grit: number; social: number; drive: number; create: number } {
+    const m = MBTI_SCORES[params.mbti] || { cog: 0, grit: 0, social: 0, drive: 0, create: 0 };
+    const e = getEducationSibyl(params.education);
+    const c = CLUB_SCORES[params.club] || { grit: 0, drive: 0, social: 0 };
+    const h = HOBBY_SCORES[params.hobby] || { cog: 0, social: 0, drive: 0, create: 0 };
+
+    return {
+        cog: Math.min(Math.round(m.cog * 0.5 + e.cog * 0.5 + h.cog * 0.3), 20),
+        grit: Math.min(Math.round(m.grit * 0.5 + e.grit * 0.3 + c.grit * 0.8), 20),
+        social: Math.min(Math.round(m.social * 0.8 + c.social * 0.4 + h.social * 0.4), 20),
+        drive: Math.min(Math.round(m.drive * 0.8 + c.drive * 0.6 + h.drive * 0.4), 20),
+        create: Math.min(Math.round(m.create * 1.0 + h.create * 0.8), 20),
+    };
+}
+
+export function calculateDepartmentMatch(s: { cog: number; grit: number; social: number; drive: number; create: number }): { dept: string; score: number }[] {
+    // 各職種「その職種らしい軸」を主軸×2・準軸×2・補助×1（係数合計5で統一）
+    const results = [
+        { dept: "IP", score: s.drive * 2 + s.grit * 2 + s.social * 1 },
+        { dept: "クローザー", score: s.social * 2 + s.drive * 2 + s.grit * 1 },
+        { dept: "マネージャー", score: s.social * 2 + s.grit * 2 + s.cog * 1 },
+        { dept: "コンサル", score: s.cog * 2 + s.create * 2 + s.social * 1 },
+        { dept: "テレアポ", score: s.social * 2 + s.drive * 2 + s.grit * 1 },
+        { dept: "人事", score: s.social * 2 + s.cog * 2 + s.create * 1 },
+    ];
+    results.sort((a, b) => b.score - a.score);
+    const maxScore = results[0]?.score || 0;
+    if (maxScore < 60) {
+        results.push({ dept: "マーケ", score: Math.round((s.cog + s.create) * 2) });
+    }
+    return results;
+}
+// ============ シビュラシステムここまで ============
+
+// ============ 育成コース診断 ============
+export type GrowthCourse = { color: string; colorCode: string; courseName: string; entry: string; goal: string; roleModel: string; level: string; };
+export function getMbtiColor(mbti: string): "緑" | "紫" | "青" | "黄" | null {
+    if (!mbti || mbti.length < 4) return null;
+    if (mbti[1] === "N" && mbti[2] === "F") return "緑";
+    if (mbti[1] === "N" && mbti[2] === "T") return "紫";
+    if (mbti[1] === "S" && mbti[3] === "J") return "青";
+    if (mbti[1] === "S" && mbti[3] === "P") return "黄";
+    return null;
+}
+export function isHighEducation(education: string): boolean { return getEducationSibyl(education).cog >= 7; }
+export function calculateGrowthCourse(params: { mbti: string; education: string; sibyl: { cog: number; grit: number; social: number; drive: number; create: number }; }): GrowthCourse | null {
+    const color = getMbtiColor(params.mbti);
+    if (!color) return null;
+    const high = isHighEducation(params.education);
+    const s = params.sibyl;
+    const isE = params.mbti[0] === "E";
+    const total = s.cog + s.grit + s.social + s.drive + s.create;
+    const level = total >= 70 ? "トップ" : total >= 50 ? "ミドル" : "スタンダード";
+    if (color === "緑") return { color, colorCode: "#2E7D5B", courseName: "外交官タイプ｜人を導き、支える", entry: high ? "テレアポ" : "訪問営業", goal: "Aランク企業内定を経て、キャリアアドバイザーまたは人事へ。卒業後も組織に残り中核を担う", roleModel: "学生＝向井／社会人＝寺内", level };
+    if (color === "紫") return { color, colorCode: "#6A4C9C", courseName: "分析家タイプ｜戦略と仕組みで価値を生む", entry: high ? "テレアポ" : "テレアポまたはインフラ業務", goal: "AIチーム・戦略管理マネージャー" + (isE ? "（外向型はクローザーも適性あり）" : ""), roleModel: "中島・高崎・前田・小守谷", level };
+    if (color === "青") return { color, colorCode: "#2B6CB0", courseName: "番人タイプ｜地道に、確実にやり切る", entry: high ? "管理・マネジメント" : "訪問営業", goal: high ? "管理マネージャーとして運用を統括する" : "鉄人型。訪問営業で安定した成果を上げ続ける", roleModel: high ? "（現在不在）" : "牧田", level };
+    return { color, colorCode: "#C99A00", courseName: "探検家タイプ｜瞬発力と華で勝負する", entry: "訪問営業またはクローザー", goal: "トップクローザー、またはコミュニティプレジデント", roleModel: "クローザー＝小林／ディレクター＝清原", level };
+}
+// ============ 育成コース診断ここまで ============
+
+// ============ 気質別育成方針 ============
+export function getIkuseiGuide(mbti: string): { color: string; colorCode: string; tag: string; talk: string; avoid: string; grow: string } | null {
+    const color = getMbtiColor(mbti);
+    if (!color) return null;
+    if (color === "緑") return { color, colorCode: "#2E7D5B", tag: "意味とつながりで動く",
+        talk: "行動の先にある価値を言語化して伝える。プロセスや姿勢も頻繁に承認する。1on1で感情面に触れる。",
+        avoid: "数字だけを詰める／競争を煽る／放置する／他人と比較する。静かに離脱させる要因になる。",
+        grow: "比較ではなく『先週の自分より』で評価。同気質の先輩をメンターにつけ安心を確保した上で挑戦させる。" };
+    if (color === "紫") return { color, colorCode: "#6A4C9C", tag: "論理と仕組みで動く",
+        talk: "理由と背景をセットで伝える。裁量を与えて自分で設計させる。知的に面白い課題を渡すと燃える。",
+        avoid: "理由なき命令／マイクロマネジメント／感情だけの叱責。納得できないルールの押し付けで冷める。",
+        grow: "裁量と責任を渡して考える余地を作る。苦手な対人・感情は緑タイプとの協働で補わせる。" };
+    if (color === "青") return { color, colorCode: "#2B6CB0", tag: "秩序と継続で動く",
+        talk: "やるべきことを具体的・明確に示す。手順や基準をはっきりさせる。地道な継続そのものを認める。",
+        avoid: "曖昧な指示／頻繁な方針変更／丸投げ。先が読めない状態が続くと不安で動けなくなる。",
+        grow: "型を与え安定させた上で、少しずつ『なぜ』や応用を足して視座を上げる。小さな成功体験を積ませる。" };
+    return { color, colorCode: "#C99A00", tag: "行動と臨機応変で動く",
+        talk: "理屈を長く語るより、やらせて体で覚えさせる。即時のフィードバックと小刻みな達成で乗せる。",
+        avoid: "長い座学／細かい計画の強制／反復だけ。退屈すると熱が冷める。ムラは継続の仕組みでフォロー。",
+        grow: "瞬発力を活かしつつ、青タイプの型や継続の仕組みでムラを減らす。短期の達成を積み上げさせる。" };
+}
+// ============ 気質別育成方針ここまで ============
+
+// ============ メンター相性 ============
+export function mentorCompat(menteeMbti: string, mentorMbti: string): { label: string; note: string; rank: number } | null {
+    const m = getMbtiColor(menteeMbti);
+    const t = getMbtiColor(mentorMbti);
+    if (!m || !t) return null;
+    const table: Record<string, Record<string, [string, string, number]>> = {
+        "緑": { "緑": ["最適", "価値観が通じ感情ケア可", 3], "紫": ["成長軸", "視座が上がる/感情へ翻訳を", 1], "青": ["良好", "情熱を継続で支える", 2], "黄": ["要橋渡し", "学びの定着に工夫を", 0] },
+        "紫": { "緑": ["成長軸", "感情の機微を学べる", 1], "紫": ["最適", "論理が通じ話が早い", 3], "青": ["良好", "構想を実行に落とす", 2], "黄": ["要橋渡し", "抽象と具体ですれ違い", 0] },
+        "青": { "緑": ["良好", "意味づけで動機を温める", 2], "紫": ["成長軸", "背景と戦略を学べる", 1], "青": ["最適", "手順が明確で安心", 3], "黄": ["要橋渡し", "進め方の好みが逆", 0] },
+        "黄": { "緑": ["良好", "承認で乗せ感情を支える", 2], "紫": ["要橋渡し", "座学的/動かして教える", 0], "青": ["良好", "型と継続でムラを減らす", 2], "黄": ["最適", "現場で背中を見せる", 3] },
+    };
+    const r = table[m][t];
+    return { label: r[0], note: r[1], rank: r[2] };
+}
+// ============ メンター相性ここまで ============
+
+// ============ 同僚相性 ============
+export function peerCompat(a: string, b: string): { match: number; ns: boolean } | null {
+    if (!a || a.length < 4 || !b || b.length < 4) return null;
+    let match = 0;
+    for (let i = 0; i < 4; i++) if (a[i] === b[i]) match++;
+    const ns = a[1] === b[1]; // N/S軸が一致してるか
+    return { match, ns };
+}
+// ============ 同僚相性ここまで ============
