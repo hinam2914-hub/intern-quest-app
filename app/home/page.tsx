@@ -108,11 +108,11 @@ export default function HomePage() {
       // 中央ボタンの決定
       const seed = todayYmd + user.id;
       let chosen: Task;
-      if (!reportDone) {
-        // 日報は最優先（固定ルール）
+      const hourJST = new Date(Date.now() + 9 * 60 * 60 * 1000).getUTCHours();
+      let chosen: Task;
+      if (hourJST >= 20 && !reportDone) {
         chosen = { key: "report", icon: "📝", label: "日報を書く", href: "/report" };
       } else {
-        // 日報済み → 今日まだやってないことから日替わりランダム
         const pool: Task[] = [];
         if (!scheduleDone) pool.push({ key: "schedule", icon: "☀️", label: "予定を立てる", href: "/today-schedule" });
         if (!thinkingDone) {
@@ -123,8 +123,7 @@ export default function HomePage() {
         pool.push({ key: "challenge", icon: "🎯", label: "チャレンジ", href: "/challenge" });
         pool.push({ key: "medaka", icon: "🐟", label: "気づきを投稿", href: "/medaka" });
         chosen = pool.length > 0 ? seededPick(pool, seed) : { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/mypage" };
-        // 全コアタスク完了ならガチャ優先
-        if (reportDone && scheduleDone && thinkingDone) {
+        if (scheduleDone && thinkingDone) {
           chosen = seededPick([chosen, { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/mypage" }], seed + "g");
         }
       }
