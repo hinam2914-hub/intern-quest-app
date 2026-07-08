@@ -6,6 +6,7 @@ import DotKun from "../components/DotKun";
 
 type Theme = "light" | "dark";
 type Task = { key: string; icon: string; label: string; href: string };
+type MyKing = { emoji: string; title: string; dotkun: string };
 
 function getTodayJST(): string {
   const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -17,6 +18,12 @@ function todayRangeUTC(): { start: string; end: string } {
   const y = jstNow.getUTCFullYear(), m = jstNow.getUTCMonth(), d = jstNow.getUTCDate();
   const start_utc = Date.UTC(y, m, d) - 9 * 60 * 60 * 1000;
   return { start: new Date(start_utc).toISOString(), end: new Date(start_utc + 24 * 60 * 60 * 1000).toISOString() };
+}
+function yesterdayRangeUTC(): { start: string; end: string } {
+  const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const y = jstNow.getUTCFullYear(), m = jstNow.getUTCMonth(), d = jstNow.getUTCDate();
+  const todayJst0_utc = Date.UTC(y, m, d) - 9 * 60 * 60 * 1000;
+  return { start: new Date(todayJst0_utc - 24 * 60 * 60 * 1000).toISOString(), end: new Date(todayJst0_utc).toISOString() };
 }
 function seededPick<T>(arr: T[], seedStr: string): T {
   let h = 0;
@@ -76,6 +83,8 @@ export default function HomePage() {
   const [task, setTask] = useState<Task>({ key: "report", icon: "📝", label: "日報を書く", href: "/report" });
   const [doneCount, setDoneCount] = useState(0);
   const [dotMsg, setDotMsg] = useState("");
+  const [myKings, setMyKings] = useState<MyKing[]>([]);
+  const [showKingPopup, setShowKingPopup] = useState(false);
 
   useEffect(() => {
     const saved = (typeof window !== "undefined" && localStorage.getItem("homeTheme")) as Theme | null;
@@ -129,6 +138,30 @@ export default function HomePage() {
       setTask(chosen);
       const msgs = DOT_MSGS[chosen.key] || ["今日もいこう！"];
       setDotMsg(seededPick(msgs, seed + "m"));
+      // 昨日の称号判定（自分が該当する称号をポップアップで祝う）
+      try {
+        const kingRange = yesterdayRangeUTC();
+        const myKingList: MyKing[] = [];
+        const { data: kThanks } = await supabase.from("thanks").select("to_user_id").gte("created_at", kingRange.start).lt("created_at", kingRange.end);
+        if (kThanks && kThanks.length > 0) {
+          const cnt: Record<string, number> = {};
+          (kThanks as any[]).forEach(t => { cnt[t.to_user_id] = (cnt[t.to_user_id] || 0) + 1; });
+          const maxCnt = Math.max(...Object.values(cnt));
+          if (maxCnt > 0 && cnt[user.id] === maxCnt) myKingList.push({ emoji: "🙏", title: "サンキュー王", dotkun: "昨日いちばんサンキューをもらったよ！みんなから感謝されてる、人徳だね🙏✨" });
+        }
+        const { data: kSubs } = await supabase.from("submissions").select("user_id, content, created_at").gte("created_at", kingRange.start).lt("created_at", kingRange.end).order("created_at", { ascending: true });
+        if (kSubs && kSubs.length > 0) {
+          const subs = kSubs as any[];
+          if (subs[0].user_id === user.id) myKingList.push({ emoji: "📝", title: "一番乗り王", dotkun: "昨日いちばん早く日報を出したね！さすがの仕事の速さ⚡" });
+          let longest = subs[0];
+          subs.forEach(s => { if ((s.content?.length || 0) > (longest.content?.length || 0)) longest = s; });
+          if (longest.user_id === user.id) myKingList.push({ emoji: "💬", title: "長文王", dotkun: "昨日いちばん熱のこもった長い日報だったよ！熱意、伝わってる📖" });
+        }
+        if (myKingList.length > 0 && localStorage.getItem("kingPopupSeen") !== todayYmd) {
+          setMyKings(myKingList);
+          setShowKingPopup(true);
+        }
+      } catch (e) { /* 称号判定の失敗はhome本体に影響させない */ }
       setLoading(false);
     };
     load();
@@ -213,6 +246,28 @@ export default function HomePage() {
           </button>
         ))}
       </div>
+      {showKingPopup && myKings.length > 0 && (
+        <div onClick={() => { localStorage.setItem("kingPopupSeen", getTodayJST()); setShowKingPopup(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20, cursor: "pointer" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 24, padding: "32px 28px", maxWidth: 380, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", cursor: "default" }}>
+            <div style={{ fontSize: 40, marginBottom: 4 }}>👑</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: "#b45309", marginBottom: 4 }}>昨日の称号発表！</div>
+            <div style={{ fontSize: 13, color: "#92400e", marginBottom: 20 }}>きみ、こんなにすごかったんだよ</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}><DotKun size={80} mood="cheer" /></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+              {myKings.map((k, i) => (
+                <div key={i} style={{ background: "rgba(255,255,255,0.7)", borderRadius: 14, padding: "14px 16px", textAlign: "left", display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <div style={{ fontSize: 32, flexShrink: 0 }}>{k.emoji}</div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#b45309", marginBottom: 3 }}>{k.title}</div>
+                    <div style={{ fontSize: 12, color: "#78350f", lineHeight: 1.6 }}>{k.dotkun}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => { localStorage.setItem("kingPopupSeen", getTodayJST()); setShowKingPopup(false); }} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>ありがとう！</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
