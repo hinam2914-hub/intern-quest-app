@@ -81,7 +81,7 @@ export default function HomePage() {
   const [name, setName] = useState("");
   const [streak, setStreak] = useState(0);
   const [totalEarned, setTotalEarned] = useState(0);
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
   const [task, setTask] = useState<Task>({ key: "report", icon: "📝", label: "日報を書く", href: "/report" });
   const [doneCount, setDoneCount] = useState(0);
   const [dotMsg, setDotMsg] = useState("");
@@ -202,6 +202,11 @@ export default function HomePage() {
   if (loading) return <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center", color: helloColor }}>読み込み中...</div>;
 
   return (
+    <>
+    <style>{`
+      @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+      @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+    `}</style>
     <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
         {/* 上部 */}
@@ -220,7 +225,7 @@ export default function HomePage() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18 }}>
           <div style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, filter: isDark ? "drop-shadow(0 0 24px rgba(139,92,246,.35))" : "none" }}>
             <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
-            <button onClick={() => router.push(task.href)} style={{ position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 44, background: btnBg, boxShadow: btnShadow, border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", zIndex: 2 }}>
+            <button onClick={() => router.push(task.href)} style={{ animation: "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 44, background: btnBg, boxShadow: btnShadow, border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", zIndex: 2 }}>
               <div style={{ fontSize: 52 }}>{task.icon}</div>
               <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: 1 }}>{task.label}</div>
             </button>
@@ -234,7 +239,7 @@ export default function HomePage() {
 
           {/* ドットくん（リングのすぐ下） */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", ...dotRowStyle }}>
-            <div style={{ flexShrink: 0 }}><DotKun size={44} mood="cheer" /></div>
+            <div style={{ flexShrink: 0, animation: "floaty 2.6s ease-in-out infinite" }}><DotKun size={44} mood="cheer" /></div>
             <p style={{ fontSize: 12.5, color: dotTextColor, lineHeight: 1.6 }}>{dotMsg}</p>
           </div>
         </div>
@@ -278,5 +283,6 @@ export default function HomePage() {
         </div>
       )}
     </div>
+    </>
   );
 }
