@@ -121,9 +121,9 @@ export default function HomePage() {
         pool.push({ key: "learn", icon: "📚", label: "学習する", href: "/learn" });
         pool.push({ key: "challenge", icon: "🎯", label: "チャレンジ", href: "/challenge" });
         pool.push({ key: "medaka", icon: "🐟", label: "気づきを投稿", href: "/medaka" });
-        chosen = pool.length > 0 ? seededPick(pool, seed) : { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/mypage" };
+        chosen = pool.length > 0 ? seededPick(pool, seed) : { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/gacha" };
         if (scheduleDone && thinkingDone) {
-          chosen = seededPick([chosen, { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/mypage" }], seed + "g");
+          chosen = seededPick([chosen, { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/gacha" }], seed + "g");
         }
       }
       setTask(chosen);
