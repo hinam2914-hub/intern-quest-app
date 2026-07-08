@@ -165,7 +165,7 @@ export default function HomePage() {
   if (loading) return <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center", color: helloColor }}>読み込み中...</div>;
 
   return (
-    <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 30px" }}>
+    <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
         {/* 上部 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -198,8 +198,21 @@ export default function HomePage() {
         </div>
 
         {/* 下部 */}
-        <div onClick={() => router.push("/menu")} style={{ textAlign: "center", fontSize: 13, color: otherColor, fontWeight: 700, cursor: "pointer", padding: "12px 0" }}>ほかのことをする →</div>
       </div>
-    </div>
+      </div>
+      {/* 下部固定ナビ */}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 64, background: isDark ? "rgba(13,13,24,0.92)" : "rgba(255,255,255,0.95)", borderTop: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.06)", backdropFilter: "blur(12px)", display: "flex", zIndex: 50 }}>
+        {[
+          { ic: "🏠", label: "ホーム", href: "/home", active: true },
+          { ic: "🏆", label: "ランキング", href: "/ranking", active: false },
+          { ic: "👤", label: "マイページ", href: "/mypage", active: false },
+          { ic: "☰", label: "メニュー", href: "/menu", active: false },
+        ].map((t) => (
+          <button key={t.href} onClick={() => router.push(t.href)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#e8590c") : (isDark ? "#6b7280" : "#9ca3af") }}>
+            <div style={{ fontSize: 20 }}>{t.ic}</div>
+            <div style={{ fontSize: 10, fontWeight: 700 }}>{t.label}</div>
+          </button>
+        ))}
+      </div>
   );
 }
