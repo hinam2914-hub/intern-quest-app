@@ -206,11 +206,13 @@ export default function HomePage() {
     <style>{`
       @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
       @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+      @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes ringGlow { 0%, 100% { filter: drop-shadow(0 0 18px rgba(139,92,246,0.25)); } 50% { filter: drop-shadow(0 0 34px rgba(139,92,246,0.55)); } }
     `}</style>
     <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
         {/* 上部 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", animation: "fadeInUp 0.5s ease-out both" }}>
           <div>
             <div style={{ fontSize: 13, color: helloColor }}>{greeting()}</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: nameColor }}>{name || "ゲスト"}さん</div>
@@ -222,8 +224,8 @@ export default function HomePage() {
         </div>
 
         {/* 中央 */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18 }}>
-          <div style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, filter: isDark ? "drop-shadow(0 0 24px rgba(139,92,246,.35))" : "none" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, animation: "fadeInUp 0.5s ease-out 0.15s both" }}>
+          <div style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, animation: isDark ? "ringGlow 3s ease-in-out infinite" : "none" }}>
             <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
             <button onClick={() => router.push(task.href)} style={{ animation: "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 44, background: btnBg, boxShadow: btnShadow, border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", zIndex: 2 }}>
               <div style={{ fontSize: 52 }}>{task.icon}</div>
@@ -233,12 +235,12 @@ export default function HomePage() {
           <div style={{ fontSize: 11.5, color: otherColor }}>今日のクエスト <b style={{ color: isDark ? "#a78bfa" : "#e8590c" }}>{doneCount}/3</b> 達成</div>
 
           {/* ドットくんの家（累計ポイントで育つ） */}
-          <div style={{ width: "100%", marginTop: 4 }}>
+          <div style={{ width: "100%", marginTop: 4, animation: "fadeInUp 0.5s ease-out 0.3s both" }}>
             <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#e8590c"} />
           </div>
 
           {/* ドットくん（リングのすぐ下） */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", ...dotRowStyle }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "fadeInUp 0.5s ease-out 0.45s both", ...dotRowStyle }}>
             <div style={{ flexShrink: 0, animation: "floaty 2.6s ease-in-out infinite" }}><DotKun size={44} mood="cheer" /></div>
             <p style={{ fontSize: 12.5, color: dotTextColor, lineHeight: 1.6 }}>{dotMsg}</p>
           </div>
