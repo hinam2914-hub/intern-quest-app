@@ -122,7 +122,7 @@ export default function HomePage() {
       const seed = todayYmd + user.id;
       const hourJST = new Date(Date.now() + 9 * 60 * 60 * 1000).getUTCHours();
       let chosen: Task;
-      if (hourJST >= 20 && !reportDone) {
+      if (hourJST >= 18 && !reportDone) {
         chosen = { key: "report", icon: "📝", label: "日報を書く", href: "/report" };
       } else {
         const pool: Task[] = [];
@@ -134,10 +134,7 @@ export default function HomePage() {
         pool.push({ key: "learn", icon: "📚", label: "学習する", href: "/learn" });
         pool.push({ key: "challenge", icon: "🎯", label: "チャレンジ", href: "/challenge" });
         pool.push({ key: "medaka", icon: "🐟", label: "気づきを投稿", href: "/medaka" });
-        chosen = pool.length > 0 ? seededPick(pool, seed) : { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/gacha" };
-        if (scheduleDone && thinkingDone) {
-          chosen = seededPick([chosen, { key: "gacha", icon: "🎰", label: "ガチャを回す", href: "/gacha" }], seed + "g");
-        }
+        chosen = pool.length > 0 ? seededPick(pool, seed) : { key: "learn", icon: "📚", label: "学習する", href: "/learn" };
       }
       setTask(chosen);
       const msgs = DOT_MSGS[chosen.key] || ["今日もいこう！"];
