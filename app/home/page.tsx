@@ -186,8 +186,8 @@ export default function HomePage() {
     : { background: "#fff", border: "none", color: "#e8590c", boxShadow: "0 4px 14px rgba(43,52,64,.08)" };
   const pct = (doneCount / 3) * 100;
   const ringBg = isDark
-    ? `conic-gradient(#8b5cf6 0 ${pct}%, rgba(139,92,246,.12) ${pct}% 100%)`
-    : `conic-gradient(#ffa94d 0 ${pct}%, #eceae4 ${pct}% 100%)`;
+    ? `conic-gradient(#8b5cf6 0 var(--ringPct), rgba(139,92,246,.12) var(--ringPct) 100%)`
+    : `conic-gradient(#ffa94d 0 var(--ringPct), #eceae4 var(--ringPct) 100%)`;
   const ringInner = isDark ? "#0d0d18" : "#fdfdfb";
   const btnBg = isDark ? "linear-gradient(150deg, #6366f1, #8b5cf6)" : "linear-gradient(150deg, #ff7d94, #f74f6e)";
   const btnShadow = isDark
@@ -209,6 +209,9 @@ export default function HomePage() {
       @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes ringGlow { 0%, 100% { filter: drop-shadow(0 0 18px rgba(139,92,246,0.25)); } 50% { filter: drop-shadow(0 0 34px rgba(139,92,246,0.55)); } }
       @keyframes confettiFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; } }
+      @property --ringPct { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+      @keyframes ringFill { from { --ringPct: 0%; } }
+      .iq-ring { animation: ringFill 1.1s ease-out both; }
     `}</style>
     <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
@@ -226,7 +229,7 @@ export default function HomePage() {
 
         {/* 中央 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, animation: "fadeInUp 0.5s ease-out 0.15s both" }}>
-          <div style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, animation: isDark ? "ringGlow 3s ease-in-out infinite" : "none" }}>
+          <div className="iq-ring" style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, ["--ringPct" as any]: `${pct}%`, filter: isDark ? undefined : undefined }}>
             <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
             <button onClick={() => router.push(task.href)} style={{ animation: "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 44, background: btnBg, boxShadow: btnShadow, border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", zIndex: 2 }}>
               <div style={{ fontSize: 52 }}>{task.icon}</div>
