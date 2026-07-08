@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import DotKun from "../components/DotKun";
+import DotHouse from "../components/DotHouse";
 
 type Theme = "light" | "dark";
 type Task = { key: string; icon: string; label: string; href: string };
@@ -79,6 +80,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [streak, setStreak] = useState(0);
+  const [totalEarned, setTotalEarned] = useState(0);
   const [theme, setTheme] = useState<Theme>("dark");
   const [task, setTask] = useState<Task>({ key: "report", icon: "📝", label: "日報を書く", href: "/report" });
   const [doneCount, setDoneCount] = useState(0);
@@ -96,6 +98,8 @@ export default function HomePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
       const { data: profile } = await supabase.from("profiles").select("name, streak").eq("id", user.id).single();
+      const { data: pointRow } = await supabase.from("user_points").select("total_earned").eq("id", user.id).single();
+      setTotalEarned((pointRow as any)?.total_earned || 0);
       if (profile) {
         setName((profile as any).name || "");
         setStreak((profile as any).streak || 0);
@@ -227,6 +231,11 @@ export default function HomePage() {
           <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", ...dotRowStyle }}>
             <div style={{ flexShrink: 0 }}><DotKun size={44} mood="cheer" /></div>
             <p style={{ fontSize: 12.5, color: dotTextColor, lineHeight: 1.6 }}>{dotMsg}</p>
+          </div>
+
+          {/* ドットくんの家（累計ポイントで育つ） */}
+          <div style={{ width: "100%", marginTop: 4 }}>
+            <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#e8590c"} />
           </div>
         </div>
 

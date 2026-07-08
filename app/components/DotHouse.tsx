@@ -1,0 +1,135 @@
+"use client";
+import React from "react";
+
+// 累計ポイント(total_earned)から家のステージを返す
+export function getHouseStage(totalEarned: number) {
+  const stages = [
+    { min: 0, max: 500, name: "はじまりのテント", label: "STAGE 1" },
+    { min: 500, max: 1500, name: "丸太小屋", label: "STAGE 2" },
+    { min: 1500, max: 3000, name: "一軒家", label: "STAGE 3" },
+    { min: 3000, max: 5000, name: "大きな家", label: "STAGE 4" },
+    { min: 5000, max: 8000, name: "豪邸", label: "STAGE 5" },
+    { min: 8000, max: 10000, name: "ドットくん城", label: "STAGE 6・GOAL" },
+  ];
+  let idx = stages.findIndex(s => totalEarned < s.max);
+  if (idx === -1) idx = stages.length - 1; // 上限超え
+  const stage = stages[idx];
+  const spanStart = stage.min;
+  const spanEnd = stage.max;
+  const progress = Math.min(100, Math.max(0, ((totalEarned - spanStart) / (spanEnd - spanStart)) * 100));
+  const toNext = Math.max(0, spanEnd - totalEarned);
+  const isMax = idx === stages.length - 1 && totalEarned >= 10000;
+  return { idx, ...stage, progress, toNext, isMax };
+}
+
+// ドットくんの顔（小）
+function DotFace() {
+  return (
+    <div style={{ width: 30, height: 30, borderRadius: 9, background: "#6366f1", position: "relative", zIndex: 5 }}>
+      <div style={{ position: "absolute", top: 9, left: 6, width: 5, height: 5, borderRadius: "50%", background: "#fff", boxShadow: "13px 0 0 #fff" }} />
+      <div style={{ position: "absolute", top: 18, left: 10, width: 10, height: 5, borderRadius: "0 0 6px 6px", background: "#fff" }} />
+    </div>
+  );
+}
+
+// 各ステージの家（CSSで描画）
+function HouseArt({ idx }: { idx: number }) {
+  const win = (extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", width: 14, height: 14, background: "#ffe08a", borderRadius: 3, ...extra });
+  const door = (extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", bottom: 0, width: 14, height: 22, background: "#3a2a1a", borderRadius: "6px 6px 0 0", ...extra });
+
+  if (idx === 0) {
+    return <div style={{ width: 0, height: 0, borderLeft: "34px solid transparent", borderRight: "34px solid transparent", borderBottom: "46px solid #c05a4a", position: "relative" }}>
+      <div style={{ position: "absolute", top: 20, left: -10, width: 20, height: 26, background: "#2a1a14", borderRadius: "10px 10px 0 0" }} />
+    </div>;
+  }
+  if (idx === 1) {
+    return <div style={{ position: "relative" }}>
+      <div style={{ position: "absolute", top: -18, left: -6, width: 0, height: 0, borderLeft: "34px solid transparent", borderRight: "34px solid transparent", borderBottom: "20px solid #6a4a3a" }} />
+      <div style={{ width: 56, height: 40, background: "#8a6a4a", borderRadius: 3 }}>
+        <div style={door({ left: 22 })} />
+      </div>
+    </div>;
+  }
+  if (idx === 2) {
+    return <div style={{ position: "relative" }}>
+      <div style={{ position: "absolute", top: -22, left: -6, width: 0, height: 0, borderLeft: "41px solid transparent", borderRight: "41px solid transparent", borderBottom: "24px solid #b5453b" }} />
+      <div style={{ width: 70, height: 50, background: "#d8c0a0", borderRadius: 3, position: "relative" }}>
+        <div style={win({ top: 12, left: 12 })} />
+        <div style={win({ top: 12, right: 12 })} />
+        <div style={door({ left: 28 })} />
+      </div>
+    </div>;
+  }
+  if (idx === 3) {
+    return <div style={{ position: "relative" }}>
+      <div style={{ position: "absolute", top: -34, right: 14, width: 12, height: 20, background: "#7a5a4a" }} />
+      <div style={{ position: "absolute", top: -24, left: -6, width: 0, height: 0, borderLeft: "52px solid transparent", borderRight: "52px solid transparent", borderBottom: "26px solid #a03e34" }} />
+      <div style={{ width: 92, height: 60, background: "#e0c8a8", borderRadius: 3, position: "relative" }}>
+        <div style={win({ top: 14, left: 14 })} />
+        <div style={win({ top: 14, right: 14 })} />
+        <div style={win({ bottom: 8, left: 14 })} />
+        <div style={door({ left: 39 })} />
+      </div>
+    </div>;
+  }
+  if (idx === 4) {
+    return <div style={{ position: "relative" }}>
+      <div style={{ position: "absolute", top: -44, left: 46, width: 28, height: 40, background: "#e8d8b8" }}>
+        <div style={{ position: "absolute", top: -16, left: -3, width: 0, height: 0, borderLeft: "17px solid transparent", borderRight: "17px solid transparent", borderBottom: "18px solid #8a3a30" }} />
+      </div>
+      <div style={{ position: "absolute", top: -20, left: 6, width: 108, height: 22, background: "#8a3a30", borderRadius: "4px 4px 0 0" }} />
+      <div style={{ width: 120, height: 72, background: "linear-gradient(#f0e4c8, #e0cca0)", borderRadius: 4, position: "relative" }}>
+        <div style={{ position: "absolute", bottom: 0, left: 12, width: 8, height: 40, background: "#fff8e8" }} />
+        <div style={{ position: "absolute", bottom: 0, right: 12, width: 8, height: 40, background: "#fff8e8" }} />
+        <div style={win({ top: 12, left: 30 })} />
+        <div style={win({ top: 12, right: 30 })} />
+        <div style={door({ left: 53, height: 40 })} />
+      </div>
+    </div>;
+  }
+  // idx === 5 城
+  return <div style={{ position: "relative" }}>
+    <div style={{ position: "absolute", top: -30, left: -8, width: 26, height: 50, background: "#b8c0cc" }}>
+      <div style={{ position: "absolute", top: -14, left: -2, width: 0, height: 0, borderLeft: "15px solid transparent", borderRight: "15px solid transparent", borderBottom: "16px solid #7a5cc0" }} />
+    </div>
+    <div style={{ position: "absolute", top: -30, right: -8, width: 26, height: 50, background: "#b8c0cc" }}>
+      <div style={{ position: "absolute", top: -14, left: -2, width: 0, height: 0, borderLeft: "15px solid transparent", borderRight: "15px solid transparent", borderBottom: "16px solid #7a5cc0" }} />
+    </div>
+    <div style={{ position: "absolute", top: -52, left: "50%", width: 2, height: 20, background: "#888" }}>
+      <div style={{ position: "absolute", top: 0, left: 2, width: 16, height: 11, background: "#f5c542", clipPath: "polygon(0 0,100% 0,100% 100%,0 100%,30% 50%)" }} />
+    </div>
+    <div style={{ width: 140, height: 80, background: "linear-gradient(#dfe4ea, #c4ccd6)", borderRadius: 4, position: "relative" }}>
+      <div style={{ position: "absolute", top: -8, left: 0, right: 0, height: 8, background: "repeating-linear-gradient(90deg,#c4ccd6 0 10px, transparent 10px 16px)" }} />
+      <div style={win({ top: 20, left: 24 })} />
+      <div style={win({ top: 20, right: 24 })} />
+      <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 22, height: 34, background: "#4a3a5a", borderRadius: "11px 11px 0 0" }} />
+    </div>
+  </div>;
+}
+
+export default function DotHouse({ totalEarned, accent = "#a78bfa" }: { totalEarned: number; accent?: string }) {
+  const h = getHouseStage(totalEarned);
+  return (
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+      {/* 家のシーン */}
+      <div style={{ width: "100%", height: 140, borderRadius: 18, background: "radial-gradient(circle at 50% 20%, #1a1a35 0%, #0d0d18 70%)", border: "1px solid rgba(255,255,255,0.08)", position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+        <div style={{ position: "absolute", top: 16, right: 24, width: 26, height: 26, borderRadius: "50%", background: "radial-gradient(circle at 60% 40%, #fdf6d8, #e8dca0)", boxShadow: "0 0 20px rgba(253,246,216,0.3)" }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, background: "linear-gradient(180deg, #1e2a3a, #16202c)" }} />
+        <div style={{ position: "relative", display: "flex", alignItems: "flex-end", marginBottom: 30, gap: 8 }}>
+          <HouseArt idx={h.idx} />
+          <DotFace />
+        </div>
+      </div>
+      {/* ステージ情報 */}
+      <div style={{ width: "100%" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>🏠 {h.name}</div>
+          <div style={{ fontSize: 11, color: "#8a8898" }}>{h.isMax ? "MAX！" : `次まであと ${h.toNext.toLocaleString()}pt`}</div>
+        </div>
+        <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
+          <div style={{ width: `${h.progress}%`, height: "100%", background: `linear-gradient(90deg, ${accent}, #8b5cf6)`, borderRadius: 4 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
