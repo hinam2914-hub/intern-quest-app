@@ -199,7 +199,6 @@ export default function HomePage() {
 
         {/* 下部 */}
       </div>
-      </div>
       {/* 下部固定ナビ */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 64, background: isDark ? "rgba(13,13,24,0.92)" : "rgba(255,255,255,0.95)", borderTop: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.06)", backdropFilter: "blur(12px)", display: "flex", zIndex: 50 }}>
         {[
@@ -214,5 +213,6 @@ export default function HomePage() {
           </button>
         ))}
       </div>
+    </div>
   );
 }
