@@ -208,6 +208,7 @@ export default function HomePage() {
       @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
       @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes ringGlow { 0%, 100% { filter: drop-shadow(0 0 18px rgba(139,92,246,0.25)); } 50% { filter: drop-shadow(0 0 34px rgba(139,92,246,0.55)); } }
+      @keyframes confettiFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; } }
     `}</style>
     <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
@@ -264,6 +265,9 @@ export default function HomePage() {
       </div>
       {showKingPopup && myKings.length > 0 && (
         <div onClick={() => { localStorage.setItem("kingPopupSeen", getTodayJST()); setShowKingPopup(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20, cursor: "pointer" }}>
+          {["#fbbf24","#a78bfa","#f472b6","#34d399","#60a5fa","#fbbf24","#f472b6","#a78bfa","#34d399","#fbbf24"].map((c, i) => (
+            <div key={i} style={{ position: "absolute", top: 0, left: `${8 + i * 9}%`, width: 9, height: 9, borderRadius: 2, background: c, animation: `confettiFall ${2.4 + (i % 4) * 0.5}s linear ${(i % 5) * 0.35}s infinite` }} />
+          ))}
           <div onClick={(e) => e.stopPropagation()} style={{ background: "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 24, padding: "32px 28px", maxWidth: 380, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", cursor: "default" }}>
             <div style={{ fontSize: 40, marginBottom: 4 }}>👑</div>
             <div style={{ fontSize: 20, fontWeight: 900, color: "#b45309", marginBottom: 4 }}>昨日の称号発表！</div>
