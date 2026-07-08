@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import DotKun from "./DotKun";
 
 // 累計ポイント(total_earned)から家のステージを返す
 export function getHouseStage(totalEarned: number) {
@@ -117,7 +118,7 @@ export default function DotHouse({ totalEarned, accent = "#a78bfa" }: { totalEar
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, background: "linear-gradient(180deg, #1e2a3a, #16202c)" }} />
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", marginBottom: 30, gap: 8 }}>
           <HouseArt idx={h.idx} />
-          <DotFace />
+          <div style={{ marginLeft: 6, marginBottom: 2 }}><DotKun size={40} mood="cheer" /></div>
         </div>
       </div>
       {/* ステージ情報 */}

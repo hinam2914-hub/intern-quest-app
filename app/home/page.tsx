@@ -227,15 +227,15 @@ export default function HomePage() {
           </div>
           <div style={{ fontSize: 11.5, color: otherColor }}>今日のクエスト <b style={{ color: isDark ? "#a78bfa" : "#e8590c" }}>{doneCount}/3</b> 達成</div>
 
+          {/* ドットくんの家（累計ポイントで育つ） */}
+          <div style={{ width: "100%", marginTop: 4 }}>
+            <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#e8590c"} />
+          </div>
+
           {/* ドットくん（リングのすぐ下） */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", ...dotRowStyle }}>
             <div style={{ flexShrink: 0 }}><DotKun size={44} mood="cheer" /></div>
             <p style={{ fontSize: 12.5, color: dotTextColor, lineHeight: 1.6 }}>{dotMsg}</p>
-          </div>
-
-          {/* ドットくんの家（累計ポイントで育つ） */}
-          <div style={{ width: "100%", marginTop: 4 }}>
-            <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#e8590c"} />
           </div>
         </div>
 
