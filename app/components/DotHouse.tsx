@@ -108,14 +108,14 @@ function HouseArt({ idx }: { idx: number }) {
   </div>;
 }
 
-export default function DotHouse({ totalEarned, accent = "#a78bfa" }: { totalEarned: number; accent?: string }) {
+export default function DotHouse({ totalEarned, accent = "#a78bfa", light = false }: { totalEarned: number; accent?: string; light?: boolean }) {
   const h = getHouseStage(totalEarned);
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
       {/* 家のシーン */}
-      <div style={{ width: "100%", height: 140, borderRadius: 18, background: "radial-gradient(circle at 50% 20%, #1a1a35 0%, #0d0d18 70%)", border: "1px solid rgba(255,255,255,0.08)", position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-        <div style={{ position: "absolute", top: 16, right: 24, width: 26, height: 26, borderRadius: "50%", background: "radial-gradient(circle at 60% 40%, #fdf6d8, #e8dca0)", boxShadow: "0 0 20px rgba(253,246,216,0.3)" }} />
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, background: "linear-gradient(180deg, #1e2a3a, #16202c)" }} />
+      <div style={{ width: "100%", height: 140, borderRadius: 18, background: light ? "linear-gradient(180deg, #cfe9ff 0%, #eef8ff 75%)" : "radial-gradient(circle at 50% 20%, #1a1a35 0%, #0d0d18 70%)", border: light ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.08)", position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+        <div style={{ position: "absolute", top: 16, right: 24, width: 26, height: 26, borderRadius: "50%", background: light ? "radial-gradient(circle at 60% 40%, #fff3b0, #ffd24d)" : "radial-gradient(circle at 60% 40%, #fdf6d8, #e8dca0)", boxShadow: light ? "0 0 24px rgba(255,210,77,0.5)" : "0 0 20px rgba(253,246,216,0.3)" }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, background: light ? "linear-gradient(180deg, #b7e0a8, #9ccf8c)" : "linear-gradient(180deg, #1e2a3a, #16202c)" }} />
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", marginBottom: 30, gap: 8 }}>
           <HouseArt idx={h.idx} />
           <div style={{ marginLeft: 6, marginBottom: 2, animation: "floaty 2.2s ease-in-out infinite" }}><DotKun size={40} mood="cheer" /></div>
@@ -124,10 +124,10 @@ export default function DotHouse({ totalEarned, accent = "#a78bfa" }: { totalEar
       {/* ステージ情報 */}
       <div style={{ width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>🏠 {h.name}</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: light ? "#2b3440" : "#fff" }}>🏠 {h.name}</div>
           <div style={{ fontSize: 11, color: "#8a8898" }}>{h.isMax ? "MAX！" : `次まであと ${h.toNext.toLocaleString()}pt`}</div>
         </div>
-        <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
+        <div style={{ height: 6, background: light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
           <div style={{ width: `${h.progress}%`, height: "100%", background: `linear-gradient(90deg, ${accent}, #8b5cf6)`, borderRadius: 4 }} />
         </div>
       </div>

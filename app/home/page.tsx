@@ -180,7 +180,7 @@ export default function HomePage() {
   const isDark = theme === "dark";
   const bg = isDark ? "radial-gradient(circle at 50% 30%, #14142b 0%, #0a0a0f 65%)" : "#fdfdfb";
   const nameColor = isDark ? "#f9fafb" : "#2b3440";
-  const helloColor = isDark ? "#6b7280" : "#8a94a0";
+  const helloColor = isDark ? "#6b7280" : "#6f7a86";
   const flameStyle = isDark
     ? { background: "rgba(245,158,11,.12)", border: "1px solid rgba(245,158,11,.35)", color: "#fbbf24" }
     : { background: "#fff", border: "none", color: "#e8590c", boxShadow: "0 4px 14px rgba(43,52,64,.08)" };
@@ -189,15 +189,15 @@ export default function HomePage() {
     ? `conic-gradient(#8b5cf6 0 var(--ringPct), rgba(139,92,246,.12) var(--ringPct) 100%)`
     : `conic-gradient(#ffa94d 0 var(--ringPct), #eceae4 var(--ringPct) 100%)`;
   const ringInner = isDark ? "#0d0d18" : "#fdfdfb";
-  const btnBg = isDark ? "linear-gradient(150deg, #6366f1, #8b5cf6)" : "linear-gradient(150deg, #ff7d94, #f74f6e)";
+  const btnBg = isDark ? "linear-gradient(150deg, #6366f1, #8b5cf6)" : "linear-gradient(150deg, #ffb45c, #ff8a3d)";
   const btnShadow = isDark
     ? "0 0 50px rgba(99,102,241,.5), inset 0 -6px 0 rgba(0,0,0,.2)"
-    : "0 18px 40px rgba(247,79,110,.35), inset 0 -8px 0 rgba(0,0,0,.08)";
+    : "0 18px 40px rgba(255,138,61,.35), inset 0 -8px 0 rgba(0,0,0,.08)";
   const dotRowStyle = isDark
     ? { background: "rgba(99,102,241,.08)", border: "1px solid rgba(99,102,241,.22)" }
     : { background: "#fff", boxShadow: "0 6px 20px rgba(43,52,64,.08)" };
   const dotTextColor = isDark ? "#c7d2fe" : "#4b5563";
-  const otherColor = isDark ? "#6b7280" : "#8a94a0";
+  const otherColor = isDark ? "#6b7280" : "#6f7a86";
 
   if (loading) return <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center", color: helloColor }}>読み込み中...</div>;
 
@@ -240,7 +240,7 @@ export default function HomePage() {
 
           {/* ドットくんの家（累計ポイントで育つ） */}
           <div style={{ width: "100%", marginTop: 4, animation: "fadeInUp 0.5s ease-out 0.3s both" }}>
-            <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#e8590c"} />
+            <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} />
           </div>
 
           {/* ドットくん（リングのすぐ下） */}
