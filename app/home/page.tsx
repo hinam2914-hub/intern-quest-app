@@ -9,6 +9,8 @@ type Theme = "light" | "dark";
 type Task = { key: string; icon: string; label: string; href: string };
 type MyKing = { emoji: string; title: string; dotkun: string };
 
+function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
+function dotStage(level: number): number { return level >= 70 ? 5 : level >= 50 ? 4 : level >= 30 ? 3 : level >= 10 ? 2 : 1; }
 function getTodayJST(): string {
   const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return jst.toISOString().slice(0, 10);
@@ -87,6 +89,9 @@ export default function HomePage() {
   const [dotMsg, setDotMsg] = useState("");
   const [myKings, setMyKings] = useState<MyKing[]>([]);
   const [showKingPopup, setShowKingPopup] = useState(false);
+  const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
+  const [petMsg, setPetMsg] = useState<string | null>(null);
+  const [petKey, setPetKey] = useState(0);
 
   useEffect(() => {
     const saved = (typeof window !== "undefined" && localStorage.getItem("homeTheme")) as Theme | null;
@@ -168,6 +173,21 @@ export default function HomePage() {
     load();
   }, [router]);
 
+  const PET_MSGS = ["えへへ、くすぐったいよ〜！", "なでなでありがと！元気でた🥰", "きみのそういうとこ好きだな〜", "ふふ、今日もがんばろっ！", "もっとなでてもいいんだよ？"];
+  const handlePet = () => {
+    const now = Date.now();
+    const newHearts = Array.from({ length: 3 }, (_, i) => ({
+      id: now + i,
+      hx: `${(Math.random() * 60 - 30).toFixed(0)}px`,
+      hr: `${(Math.random() * 80 - 40).toFixed(0)}deg`,
+    }));
+    setPetHearts(prev => [...prev.slice(-6), ...newHearts]);
+    setPetKey(k => k + 1);
+    setPetMsg(PET_MSGS[Math.floor(Math.random() * PET_MSGS.length)]);
+    setTimeout(() => setPetHearts(prev => prev.filter(h => !newHearts.some(n => n.id === h.id))), 900);
+    setTimeout(() => setPetMsg(null), 3000);
+  };
+
   const toggleTheme = () => {
     const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
@@ -209,6 +229,8 @@ export default function HomePage() {
       @property --ringPct { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
       @keyframes ringFill { from { --ringPct: 0%; } }
       .iq-ring { animation: ringFill 1.1s ease-out both; }
+      @keyframes petSquish { 0% { transform: scale(1,1); } 15% { transform: scale(1.15,0.82) translateY(4px); } 40% { transform: scale(0.9,1.15) translateY(-8px); } 65% { transform: scale(1.06,0.96); } 100% { transform: scale(1,1); } }
+      @keyframes heartPop { 0% { transform: translate(0,0) scale(0.3) rotate(0deg); opacity: 1; } 40% { opacity: 1; } 100% { transform: translate(var(--hx), -52px) scale(1.3) rotate(var(--hr)); opacity: 0; } }
     `}</style>
     <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
@@ -242,8 +264,13 @@ export default function HomePage() {
 
           {/* ドットくん（リングのすぐ下） */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "fadeInUp 0.5s ease-out 0.45s both", ...dotRowStyle }}>
-            <div style={{ flexShrink: 0, animation: "floaty 2.6s ease-in-out infinite" }}><DotKun size={44} mood="cheer" /></div>
-            <p style={{ fontSize: 12.5, color: dotTextColor, lineHeight: 1.6 }}>{dotMsg}</p>
+            <div onClick={handlePet} key={petKey} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: petKey > 0 ? "petSquish 0.6s ease-out" : "floaty 2.6s ease-in-out infinite" }}>
+              <DotKun size={44} stage={dotStage(getLevel(totalEarned))} mood="cheer" />
+              {petHearts.map(h => (
+                <div key={h.id} style={{ position: "absolute", top: 4, left: 16, fontSize: 15, pointerEvents: "none", animation: "heartPop 0.9s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
+              ))}
+            </div>
+            <p style={{ fontSize: 12.5, color: dotTextColor, lineHeight: 1.6 }}>{petMsg || dotMsg}</p>
           </div>
         </div>
 

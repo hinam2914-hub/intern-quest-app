@@ -3,6 +3,8 @@ import React from "react";
 import DotKun from "./DotKun";
 
 // 累計ポイント(total_earned)から家のステージを返す
+function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
+function dotStage(level: number): number { return level >= 70 ? 5 : level >= 50 ? 4 : level >= 30 ? 3 : level >= 10 ? 2 : 1; }
 export function getHouseStage(totalEarned: number) {
   const stages = [
     { min: 0, max: 500, name: "はじまりのテント", label: "STAGE 1" },
@@ -118,7 +120,7 @@ export default function DotHouse({ totalEarned, accent = "#a78bfa", light = fals
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, background: light ? "linear-gradient(180deg, #b7e0a8, #9ccf8c)" : "linear-gradient(180deg, #1e2a3a, #16202c)" }} />
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", marginBottom: 30, gap: 8 }}>
           <HouseArt idx={h.idx} />
-          <div style={{ marginLeft: 6, marginBottom: 2, animation: "floaty 2.2s ease-in-out infinite" }}><DotKun size={40} mood="cheer" /></div>
+          <div style={{ marginLeft: 6, marginBottom: 2, animation: "floaty 2.2s ease-in-out infinite" }}><DotKun size={40} stage={dotStage(getLevel(totalEarned))} mood="cheer" /></div>
         </div>
       </div>
       {/* ステージ情報 */}
