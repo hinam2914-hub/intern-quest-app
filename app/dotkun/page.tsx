@@ -23,12 +23,17 @@ const PROFILE = [
 
 function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
 function dotStage(level: number): number { return level >= 70 ? 5 : level >= 50 ? 4 : level >= 30 ? 3 : level >= 10 ? 2 : 1; }
-const PET_MSGS = ["えへへ、くすぐったいよ〜！", "なでなでありがと！元気でた🥰", "きみのそういうとこ好きだな〜", "ふふ、今日もがんばろっ！", "もっとなでていいんだよ？", "きみといると楽しいなあ〜"];
+const PET_MSGS: Record<string, string[]> = {
+  head: ["えへへ、なでられるの好き〜🥰", "気持ちいい…もっとなでて！", "きみになでられると元気でる！"],
+  belly: ["こら〜くすぐったいってば！ふふっ😆", "おなかは弱いんだから〜！", "ひゃっ！そこはダメだよ〜笑"],
+  cheek: ["むにっ…ほっぺぷにぷにしないで〜", "ふにゃ〜ん", "くすぐったいなあ、もう！"],
+};
+const PART_EMOJI: Record<string, string> = { head: "💗", belly: "😆", cheek: "✨" };
 
 export default function DotKunPage() {
     const router = useRouter();
     const [stage, setStage] = useState(5);
-    const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
+    const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string; emoji: string }[]>([]);
     const [petMsg, setPetMsg] = useState<string | null>(null);
     const [petKey, setPetKey] = useState(0);
     const [petCount, setPetCount] = useState(0);
@@ -43,17 +48,21 @@ export default function DotKunPage() {
         })();
     }, []);
 
-    const handlePet = () => {
+    const handlePet = (part: "head" | "belly" | "cheek") => (e: React.MouseEvent) => {
+        e.stopPropagation();
         const now = Date.now();
+        const emoji = PART_EMOJI[part];
         const newHearts = Array.from({ length: 4 }, (_, i) => ({
             id: now + i,
             hx: `${(Math.random() * 100 - 50).toFixed(0)}px`,
             hr: `${(Math.random() * 100 - 50).toFixed(0)}deg`,
+            emoji,
         }));
         setPetHearts(prev => [...prev.slice(-8), ...newHearts]);
         setPetKey(k => k + 1);
         setPetCount(c => c + 1);
-        setPetMsg(PET_MSGS[Math.floor(Math.random() * PET_MSGS.length)]);
+        const msgs = PET_MSGS[part];
+        setPetMsg(msgs[Math.floor(Math.random() * msgs.length)]);
         setTimeout(() => setPetHearts(prev => prev.filter(h => !newHearts.some(n => n.id === h.id))), 1000);
         setTimeout(() => setPetMsg(null), 2800);
     };
@@ -72,10 +81,15 @@ export default function DotKunPage() {
 
                 <div style={{ textAlign: "center", marginBottom: 40, padding: "32px 24px", borderRadius: 24, background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.04))", border: "1px solid rgba(99,102,241,0.2)" }}>
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                        <div onClick={handlePet} key={petKey} style={{ position: "relative", cursor: "pointer", animation: petKey > 0 ? "petSquish 0.6s ease-out" : "none" }}>
+                        <div key={petKey} style={{ position: "relative", width: 160, height: 160, cursor: "pointer", animation: petKey > 0 ? "petSquish 0.6s ease-out" : "none" }}>
                             <DotKun size={160} stage={stage} mood="cheer" />
+                            {/* 部位の当たり判定（透明） */}
+                            <div onClick={handlePet("head")} title="あたまをなでる" style={{ position: "absolute", top: 0, left: 24, width: 112, height: 62, borderRadius: "50%", zIndex: 3 }} />
+                            <div onClick={handlePet("cheek")} title="ほっぺをつつく" style={{ position: "absolute", top: 62, left: 8, width: 40, height: 46, borderRadius: "50%", zIndex: 3 }} />
+                            <div onClick={handlePet("cheek")} title="ほっぺをつつく" style={{ position: "absolute", top: 62, right: 8, width: 40, height: 46, borderRadius: "50%", zIndex: 3 }} />
+                            <div onClick={handlePet("belly")} title="おなかをさわる" style={{ position: "absolute", bottom: 0, left: 40, width: 80, height: 60, borderRadius: "50%", zIndex: 3 }} />
                             {petHearts.map(h => (
-                                <div key={h.id} style={{ position: "absolute", top: 30, left: 70, fontSize: 26, pointerEvents: "none", animation: "heartPop 1s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
+                                <div key={h.id} style={{ position: "absolute", top: 30, left: 70, fontSize: 28, pointerEvents: "none", zIndex: 4, animation: "heartPop 1s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>{h.emoji}</div>
                             ))}
                         </div>
                     </div>
