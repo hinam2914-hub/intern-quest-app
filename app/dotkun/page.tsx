@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
 import DotKun from "../components/DotKun";
 
 const STAGES = [
@@ -19,10 +21,49 @@ const PROFILE = [
     { label: "とくぎ", value: "へこんでる人をそっと励ますこと" },
 ];
 
+function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
+function dotStage(level: number): number { return level >= 70 ? 5 : level >= 50 ? 4 : level >= 30 ? 3 : level >= 10 ? 2 : 1; }
+const PET_MSGS = ["えへへ、くすぐったいよ〜！", "なでなでありがと！元気でた🥰", "きみのそういうとこ好きだな〜", "ふふ、今日もがんばろっ！", "もっとなでていいんだよ？", "きみといると楽しいなあ〜"];
+
 export default function DotKunPage() {
     const router = useRouter();
+    const [stage, setStage] = useState(5);
+    const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
+    const [petMsg, setPetMsg] = useState<string | null>(null);
+    const [petKey, setPetKey] = useState(0);
+    const [petCount, setPetCount] = useState(0);
+
+    useEffect(() => {
+        (async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data: pointRow } = await supabase.from("user_points").select("total_earned").eq("id", user.id).single();
+            const te = (pointRow as any)?.total_earned || 0;
+            setStage(dotStage(getLevel(te)));
+        })();
+    }, []);
+
+    const handlePet = () => {
+        const now = Date.now();
+        const newHearts = Array.from({ length: 4 }, (_, i) => ({
+            id: now + i,
+            hx: `${(Math.random() * 100 - 50).toFixed(0)}px`,
+            hr: `${(Math.random() * 100 - 50).toFixed(0)}deg`,
+        }));
+        setPetHearts(prev => [...prev.slice(-8), ...newHearts]);
+        setPetKey(k => k + 1);
+        setPetCount(c => c + 1);
+        setPetMsg(PET_MSGS[Math.floor(Math.random() * PET_MSGS.length)]);
+        setTimeout(() => setPetHearts(prev => prev.filter(h => !newHearts.some(n => n.id === h.id))), 1000);
+        setTimeout(() => setPetMsg(null), 2800);
+    };
 
     return (
+        <>
+        <style>{`
+          @keyframes petSquish { 0% { transform: scale(1,1); } 15% { transform: scale(1.15,0.82) translateY(6px); } 40% { transform: scale(0.88,1.16) translateY(-12px); } 65% { transform: scale(1.07,0.95); } 100% { transform: scale(1,1); } }
+          @keyframes heartPop { 0% { transform: translate(0,0) scale(0.3) rotate(0deg); opacity: 1; } 40% { opacity: 1; } 100% { transform: translate(var(--hx), -80px) scale(1.4) rotate(var(--hr)); opacity: 0; } }
+        `}</style>
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 50% 20%, rgba(99,102,241,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.08) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
             <div style={{ position: "relative", zIndex: 1, maxWidth: 680, margin: "0 auto" }}>
@@ -31,9 +72,15 @@ export default function DotKunPage() {
 
                 <div style={{ textAlign: "center", marginBottom: 40, padding: "32px 24px", borderRadius: 24, background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.04))", border: "1px solid rgba(99,102,241,0.2)" }}>
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                        <DotKun size={160} stage={5} mood="cheer" />
+                        <div onClick={handlePet} key={petKey} style={{ position: "relative", cursor: "pointer", animation: petKey > 0 ? "petSquish 0.6s ease-out" : "none" }}>
+                            <DotKun size={160} stage={stage} mood="cheer" />
+                            {petHearts.map(h => (
+                                <div key={h.id} style={{ position: "absolute", top: 30, left: 70, fontSize: 26, pointerEvents: "none", animation: "heartPop 1s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
+                            ))}
+                        </div>
                     </div>
-                    <h1 style={{ fontSize: 28, fontWeight: 900, color: "#f9fafb", margin: "0 0 12px" }}>やっほー！ぼくドットくんだよ〜</h1>
+                    <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, marginBottom: 8 }}>👆 タップしてなでてあげよう{petCount > 0 ? `（今日 ${petCount}回）` : ""}</div>
+                    <h1 style={{ fontSize: 28, fontWeight: 900, color: "#f9fafb", margin: "0 0 12px" }}>{petMsg || "やっほー！ぼくドットくんだよ〜"}</h1>
                     <p style={{ fontSize: 15, color: "#c7d2fe", lineHeight: 1.8, margin: 0 }}>
                         きみのインターン生活を、となりでずっと見守ってる相棒だよ。<br />
                         がんばってる日も、ちょっと疲れた日も、ぼくはいつもここにいるからね！
@@ -98,5 +145,6 @@ export default function DotKunPage() {
 
             </div>
         </main>
+        </>
     );
 }

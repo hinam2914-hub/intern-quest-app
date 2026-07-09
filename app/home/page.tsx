@@ -264,7 +264,7 @@ export default function HomePage() {
 
           {/* ドットくん（リングのすぐ下） */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "fadeInUp 0.5s ease-out 0.45s both", ...dotRowStyle }}>
-            <div onClick={handlePet} key={petKey} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: petKey > 0 ? "petSquish 0.6s ease-out" : "floaty 2.6s ease-in-out infinite" }}>
+            <div onClick={() => router.push("/dotkun")} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: "floaty 2.6s ease-in-out infinite" }}>
               <DotKun size={44} stage={dotStage(getLevel(totalEarned))} mood="cheer" />
               {petHearts.map(h => (
                 <div key={h.id} style={{ position: "absolute", top: 4, left: 16, fontSize: 15, pointerEvents: "none", animation: "heartPop 0.9s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
