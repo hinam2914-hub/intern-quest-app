@@ -251,7 +251,14 @@ export default function HomePage() {
       {/* 太陽のきらめき */}
       <div style={{ position: "fixed", top: "6.5%", right: "7%", width: 90, height: 90, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,244,190,.8) 0%, rgba(255,244,190,0) 70%)", animation: "sunPulse 5s ease-in-out infinite", pointerEvents: "none", zIndex: 1 }} />
       {/* 遠くを飛ぶ鳥 */}
-      <div style={{ position: "fixed", top: "13%", left: 0, fontSize: 11, color: "rgba(60,70,90,.55)", animation: "birdFly 34s linear infinite", pointerEvents: "none", zIndex: 1, letterSpacing: 3 }}>ᥫ ᥫ</div>
+      <div style={{ position: "fixed", top: "13%", left: 0, animation: "birdFly 34s linear infinite", pointerEvents: "none", zIndex: 1, display: "flex", gap: 6 }}>
+        {[0,1].map(i => (
+          <div key={i} style={{ width: 14, height: 7, position: "relative", top: i * 4 }}>
+            <div style={{ position: "absolute", left: 0, width: 8, height: 8, border: "1.6px solid rgba(55,65,85,.5)", borderColor: "rgba(55,65,85,.5) transparent transparent transparent", borderRadius: "50%", transform: "rotate(12deg)" }} />
+            <div style={{ position: "absolute", left: 6, width: 8, height: 8, border: "1.6px solid rgba(55,65,85,.5)", borderColor: "rgba(55,65,85,.5) transparent transparent transparent", borderRadius: "50%", transform: "rotate(-12deg)" }} />
+          </div>
+        ))}
+      </div>
       {/* 舞い落ちる葉っぱ */}
       <div style={{ position: "fixed", top: 0, left: "72%", fontSize: 14, animation: "leafFall 16s linear infinite", animationDelay: "-3s", pointerEvents: "none", zIndex: 1, opacity: 0 }}>🍃</div>
       <div style={{ position: "fixed", top: 0, left: "22%", fontSize: 12, animation: "leafFall 21s linear infinite", animationDelay: "-12s", pointerEvents: "none", zIndex: 1, opacity: 0 }}>🍃</div>
