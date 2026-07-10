@@ -214,8 +214,8 @@ export default function HomePage() {
     : "0 18px 40px rgba(255,138,61,.35), inset 0 -8px 0 rgba(0,0,0,.08)";
   const dotRowStyle = isDark
     ? { background: "rgba(99,102,241,.08)", border: "1px solid rgba(99,102,241,.22)" }
-    : { background: "#fff", boxShadow: "0 6px 20px rgba(43,52,64,.08)" };
-  const dotTextColor = isDark ? "#c7d2fe" : "#4b5563";
+    : { background: "linear-gradient(160deg, #b07a4a, #8b5e34)", border: "2px solid #6f4a29", boxShadow: "0 6px 16px rgba(60,38,18,.35), inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 6px rgba(60,38,18,.35)" };
+  const dotTextColor = isDark ? "#c7d2fe" : "#fff";
   const otherColor = isDark ? "#6b7280" : "#6f7a86";
 
   if (loading) return <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center", color: helloColor }}>読み込み中...</div>;
@@ -290,7 +290,7 @@ export default function HomePage() {
                 <div key={h.id} style={{ position: "absolute", top: 4, left: 16, fontSize: 15, pointerEvents: "none", animation: "heartPop 0.9s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
               ))}
             </div>
-            <p style={{ fontSize: 12.5, color: dotTextColor, lineHeight: 1.6 }}>{petMsg || dotMsg}</p>
+            <p style={{ fontSize: 12.5, fontWeight: isDark ? 400 : 600, color: dotTextColor, lineHeight: 1.6, textShadow: isDark ? "none" : "0 1px 3px rgba(40,24,10,.6)" }}>{petMsg || dotMsg}</p>
           </div>
         </div>
 

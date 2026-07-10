@@ -126,8 +126,8 @@ export default function DotHouse({ totalEarned, accent = "#a78bfa", light = fals
       {/* ステージ情報 */}
       <div style={{ width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: light ? "#2b3440" : "#fff" }}>🏠 {h.name}</div>
-          <div style={{ fontSize: 11, color: "#8a8898" }}>{h.isMax ? "MAX！" : `次まであと ${h.toNext.toLocaleString()}pt`}</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", textShadow: light ? "0 1px 3px rgba(0,0,0,.55), 0 0 6px rgba(0,0,0,.35)" : "none" }}>🏠 {h.name}</div>
+          <div style={{ fontSize: 11, fontWeight: light ? 700 : 400, color: light ? "#fff" : "#8a8898", textShadow: light ? "0 1px 3px rgba(0,0,0,.55), 0 0 6px rgba(0,0,0,.35)" : "none" }}>{h.isMax ? "MAX！" : `次まであと ${h.toNext.toLocaleString()}pt`}</div>
         </div>
         <div style={{ height: 6, background: light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
           <div style={{ width: `${h.progress}%`, height: "100%", background: `linear-gradient(90deg, ${accent}, #8b5cf6)`, borderRadius: 4 }} />
