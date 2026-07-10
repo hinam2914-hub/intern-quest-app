@@ -93,6 +93,9 @@ export default function HomePage() {
   const [showEvolve, setShowEvolve] = useState(false);
   const [evolveIdx, setEvolveIdx] = useState(0);
   const [soundOn, setSoundOn] = useState(false);
+  const [ptGain, setPtGain] = useState(0);
+  const [showPtFx, setShowPtFx] = useState(false);
+  const [barFrom, setBarFrom] = useState<number | null>(null);
   const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
   const [petMsg, setPetMsg] = useState<string | null>(null);
   const [petKey, setPetKey] = useState(0);
@@ -123,6 +126,20 @@ export default function HomePage() {
           setEvolveIdx(curIdx);
           setShowEvolve(true);
           localStorage.setItem("lastHouseStage", String(curIdx));
+        }
+        // pt獲得演出（進化演出が出る時はスキップ）
+        const lastTERaw = localStorage.getItem("lastSeenTE");
+        if (lastTERaw === null) {
+          localStorage.setItem("lastSeenTE", String(te));
+        } else {
+          const lastTE = parseInt(lastTERaw, 10);
+          if (te > lastTE && !(prevRaw !== null && curIdx > parseInt(prevRaw, 10))) {
+            setPtGain(te - lastTE);
+            setBarFrom(lastTE);
+            setShowPtFx(true);
+            setTimeout(() => setShowPtFx(false), 3200);
+          }
+          localStorage.setItem("lastSeenTE", String(te));
         }
       } catch {}
       if (profile) {
@@ -273,6 +290,8 @@ export default function HomePage() {
       @keyframes popIn { 0% { opacity: 0; transform: translateY(16px) scale(0.86); } 55% { opacity: 1; transform: translateY(-3px) scale(1.05); } 78% { transform: translateY(1px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
       @keyframes flashGlow { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
       @keyframes houseReveal { 0% { opacity: 0; transform: scale(0.3) translateY(30px); } 55% { opacity: 1; transform: scale(1.15) translateY(-6px); } 75% { transform: scale(0.95) translateY(2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+      @keyframes ptFloat { 0% { opacity: 0; transform: translateY(12px) scale(0.7); } 18% { opacity: 1; transform: translateY(0) scale(1.15); } 30% { transform: translateY(-2px) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-42px) scale(1); } }
+      @keyframes sparklePop { 0% { opacity: 0; transform: translate(0,0) scale(0.3) rotate(0deg); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(1.2) rotate(180deg); } }
       @keyframes ringGlow { 0%, 100% { filter: drop-shadow(0 0 18px rgba(139,92,246,0.25)); } 50% { filter: drop-shadow(0 0 34px rgba(139,92,246,0.55)); } }
       @keyframes confettiFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; } }
       @property --ringPct { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
@@ -352,7 +371,16 @@ export default function HomePage() {
           <div style={{ fontSize: 11.5, color: otherColor }}>今日のクエスト <b style={{ color: isDark ? "#a78bfa" : "#e8590c" }}>{doneCount}/3</b> 達成</div>
 
           {/* ドットくんの家（累計ポイントで育つ） */}
-          <div style={{ width: "100%", marginTop: 4, animation: "popIn 0.5s ease-out 0.3s both" }}>
+          <div style={{ width: "100%", marginTop: 4, animation: "popIn 0.5s ease-out 0.3s both", position: "relative" }}>
+            {showPtFx && (
+              <div style={{ position: "absolute", top: -8, left: 0, right: 0, display: "flex", justifyContent: "center", zIndex: 5, pointerEvents: "none" }}>
+                <div style={{ fontSize: 26, fontWeight: 900, color: "#f59e0b", textShadow: "0 2px 0 #fff, 0 3px 8px rgba(180,120,0,.45)", animation: "ptFloat 3s ease-out both" }}>+{ptGain.toLocaleString()}pt</div>
+                {["-52px,-38px","44px,-46px","-28px,-64px","58px,-20px","-64px,-12px","30px,-70px"].map((d, i) => {
+                  const [sx, sy] = d.split(",");
+                  return <div key={i} style={{ position: "absolute", top: 18, left: "50%", fontSize: 15, animation: `sparklePop ${0.9 + (i % 3) * 0.25}s ease-out ${i * 0.14}s both`, ["--sx" as any]: sx, ["--sy" as any]: sy, pointerEvents: "none" }}>{i % 2 === 0 ? "✨" : "⭐"}</div>;
+                })}
+              </div>
+            )}
             <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} />
           </div>
 

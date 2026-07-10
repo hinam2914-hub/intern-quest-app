@@ -154,7 +154,7 @@ export default function DotHouse({ totalEarned, accent = "#a78bfa", light = fals
             <div style={{ fontSize: 11, fontWeight: light ? 800 : 400, color: light ? "#e8590c" : "#8a8898" }}>{h.isMax ? "MAX！" : `次まであと ${h.toNext.toLocaleString()}pt`}</div>
           </div>
           <div style={{ height: light ? 10 : 6, background: light ? "rgba(150,110,50,.18)" : "rgba(255,255,255,0.08)", borderRadius: 6, overflow: "hidden", boxShadow: light ? "inset 0 1px 2px rgba(120,80,30,.25)" : "none" }}>
-            <div style={{ width: `${h.progress}%`, height: "100%", background: light ? "linear-gradient(180deg, #8ee04a, #5cbf2a)" : `linear-gradient(90deg, ${accent}, #8b5cf6)`, borderRadius: 6 }} />
+            <div style={{ width: `${h.progress}%`, height: "100%", background: light ? "linear-gradient(180deg, #8ee04a, #5cbf2a)" : `linear-gradient(90deg, ${accent}, #8b5cf6)`, borderRadius: 6, transition: "width 1.2s cubic-bezier(.4,1.2,.4,1)" }} />
           </div>
         </div>
       </div>
