@@ -81,6 +81,7 @@ export default function HomePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
+  const [avatarId, setAvatarId] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
   const [totalEarned, setTotalEarned] = useState(0);
   const [theme, setTheme] = useState<Theme>("light");
@@ -102,11 +103,12 @@ export default function HomePage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
-      const { data: profile } = await supabase.from("profiles").select("name, streak").eq("id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("name, streak, avatar_config").eq("id", user.id).single();
       const { data: pointRow } = await supabase.from("user_points").select("total_earned").eq("id", user.id).single();
       setTotalEarned((pointRow as any)?.total_earned || 0);
       if (profile) {
         setName((profile as any).name || "");
+        setAvatarId((profile as any).avatar_config?.id || null);
         setStreak((profile as any).streak || 0);
       }
       const todayYmd = getTodayJST();
@@ -236,9 +238,15 @@ export default function HomePage() {
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
         {/* 上部 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", animation: "fadeInUp 0.5s ease-out both" }}>
-          <div>
-            <div style={{ fontSize: 13, color: helloColor }}>{greeting()}</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: nameColor }}>{name || "ゲスト"}さん</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {avatarId && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={`/avatars/${avatarId}.png`} alt="avatar" onClick={() => router.push("/avatar")} style={{ width: 46, height: 46, objectFit: "cover", objectPosition: "top", borderRadius: "50%", background: "#fff", boxShadow: "0 4px 12px rgba(43,52,64,.12)", cursor: "pointer" }} />
+            )}
+            <div>
+              <div style={{ fontSize: 13, color: helloColor }}>{greeting()}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: nameColor }}>{name || "ゲスト"}さん</div>
+            </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={toggleTheme} style={{ border: "none", background: isDark ? "rgba(255,255,255,.06)" : "#fff", borderRadius: 20, padding: "7px 12px", fontSize: 16, cursor: "pointer", boxShadow: isDark ? "none" : "0 4px 14px rgba(43,52,64,.08)" }}>{isDark ? "🌙" : "☀️"}</button>
