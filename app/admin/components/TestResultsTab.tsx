@@ -64,6 +64,7 @@ const TEST_LABELS: Record<string, { label: string; color: string; icon: string }
 
 const TEST_MAX_SCORES: Record<string, number> = {
     quiz: 15,
+    manager: 15,
     common_sense: 15,
     social_standard: 15,
     profit_thinking: 15,
