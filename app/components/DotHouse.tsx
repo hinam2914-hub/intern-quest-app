@@ -124,13 +124,16 @@ export default function DotHouse({ totalEarned, accent = "#a78bfa", light = fals
         </div>
       </div>
       {/* ステージ情報 */}
-      <div style={{ width: "100%" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", textShadow: light ? "0 1px 3px rgba(0,0,0,.55), 0 0 6px rgba(0,0,0,.35)" : "none" }}>🏠 {h.name}</div>
-          <div style={{ fontSize: 11, fontWeight: light ? 700 : 400, color: light ? "#fff" : "#8a8898", textShadow: light ? "0 1px 3px rgba(0,0,0,.55), 0 0 6px rgba(0,0,0,.35)" : "none" }}>{h.isMax ? "MAX！" : `次まであと ${h.toNext.toLocaleString()}pt`}</div>
-        </div>
-        <div style={{ height: 6, background: light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
-          <div style={{ width: `${h.progress}%`, height: "100%", background: `linear-gradient(90deg, ${accent}, #8b5cf6)`, borderRadius: 4 }} />
+      <div style={light ? { width: "100%", background: "url(/island/level_bar_bg.png) center / 100% 100% no-repeat", padding: "14px 24px 16px", display: "flex", alignItems: "center", gap: 12 } : { width: "100%" }}>
+        {light && <div style={{ fontSize: 24, flexShrink: 0, filter: "drop-shadow(0 1px 2px rgba(150,100,30,.35))" }}>⭐</div>}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: light ? "#7a5a2b" : "#fff" }}>🏠 {h.name}</div>
+            <div style={{ fontSize: 11, fontWeight: light ? 800 : 400, color: light ? "#e8590c" : "#8a8898" }}>{h.isMax ? "MAX！" : `次まであと ${h.toNext.toLocaleString()}pt`}</div>
+          </div>
+          <div style={{ height: light ? 10 : 6, background: light ? "rgba(150,110,50,.18)" : "rgba(255,255,255,0.08)", borderRadius: 6, overflow: "hidden", boxShadow: light ? "inset 0 1px 2px rgba(120,80,30,.25)" : "none" }}>
+            <div style={{ width: `${h.progress}%`, height: "100%", background: light ? "linear-gradient(180deg, #8ee04a, #5cbf2a)" : `linear-gradient(90deg, ${accent}, #8b5cf6)`, borderRadius: 6 }} />
+          </div>
         </div>
       </div>
     </div>
