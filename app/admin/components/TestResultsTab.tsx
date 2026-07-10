@@ -79,7 +79,6 @@ const TEST_MAX_SCORES: Record<string, number> = {
     marketer: 100,
     sales: 100,
     planner: 100,
-    manager: 100,
     standard_raising: 15,
     management_collab: 15,
     cert_market_value: 15,
