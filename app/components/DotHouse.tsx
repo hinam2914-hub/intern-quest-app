@@ -39,7 +39,12 @@ function DotFace() {
 function HouseArt({ idx }: { idx: number }) {
   // 画像がある段階は画像を表示（なければ下のCSS描画にフォールバック）
   const HOUSE_IMAGES: Record<number, { src: string; w: number }> = {
-    4: { src: "/island/house/4_mansion.png", w: 150 },
+    0: { src: "/island/house/0_tent.png", w: 96 },
+    1: { src: "/island/house/1_cabin.png", w: 118 },
+    2: { src: "/island/house/2_house.png", w: 134 },
+    3: { src: "/island/house/3_big.png", w: 150 },
+    4: { src: "/island/house/4_mansion.png", w: 172 },
+    5: { src: "/island/house/5_castle.png", w: 168 },
   };
   const img = HOUSE_IMAGES[idx];
   if (img) {
