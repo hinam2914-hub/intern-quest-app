@@ -228,6 +228,7 @@ export default function HomePage() {
       @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
       @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
       @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes popIn { 0% { opacity: 0; transform: translateY(16px) scale(0.86); } 55% { opacity: 1; transform: translateY(-3px) scale(1.05); } 78% { transform: translateY(1px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
       @keyframes ringGlow { 0%, 100% { filter: drop-shadow(0 0 18px rgba(139,92,246,0.25)); } 50% { filter: drop-shadow(0 0 34px rgba(139,92,246,0.55)); } }
       @keyframes confettiFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; } }
       @property --ringPct { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
@@ -264,7 +265,7 @@ export default function HomePage() {
       <div style={{ position: "fixed", top: 0, left: "22%", fontSize: 12, animation: "leafFall 21s linear infinite", animationDelay: "-12s", pointerEvents: "none", zIndex: 1, opacity: 0 }}>🍃</div>
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
         {/* 上部 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", animation: "fadeInUp 0.5s ease-out both" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", animation: "popIn 0.5s ease-out both" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {avatarId && (
               /* eslint-disable-next-line @next/next/no-img-element */
@@ -283,7 +284,7 @@ export default function HomePage() {
 
         {/* アバター未作成の人への導線 */}
         {!avatarId && (
-          <div onClick={() => router.push("/avatar")} style={{ marginTop: 14, borderRadius: 18, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, background: isDark ? "linear-gradient(135deg, rgba(255,180,92,.15), rgba(255,138,61,.08))" : "linear-gradient(135deg, #fff3e4, #ffe8d1)", border: isDark ? "1px solid rgba(255,180,92,.3)" : "1px solid #ffd9ae", animation: "fadeInUp 0.5s ease-out 0.1s both" }}>
+          <div onClick={() => router.push("/avatar")} style={{ marginTop: 14, borderRadius: 18, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, background: isDark ? "linear-gradient(135deg, rgba(255,180,92,.15), rgba(255,138,61,.08))" : "linear-gradient(135deg, #fff3e4, #ffe8d1)", border: isDark ? "1px solid rgba(255,180,92,.3)" : "1px solid #ffd9ae", animation: "popIn 0.5s ease-out 0.1s both" }}>
             <div style={{ fontSize: 30 }}>🧑‍🎨</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13.5, fontWeight: 900, color: isDark ? "#ffcf9e" : "#c2410c" }}>きみの分身をつくろう！</div>
@@ -294,7 +295,7 @@ export default function HomePage() {
         )}
 
         {/* 中央 */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, animation: "fadeInUp 0.5s ease-out 0.15s both" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, animation: "popIn 0.5s ease-out 0.15s both" }}>
           <div className="iq-ring" style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, ["--ringPct" as any]: `${pct}%`, filter: isDark ? undefined : undefined }}>
             <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
             <button onPointerDown={() => setBtnPop(false)} onClick={() => { setBtnPop(true); setTimeout(() => router.push(task.href), 260); }} style={{ animation: btnPop ? "pushPop 0.4s ease-out" : "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2, transition: "transform 0.08s", transform: "scale(1)", WebkitTapHighlightColor: "transparent" }} onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.93)"; }} onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
@@ -306,12 +307,12 @@ export default function HomePage() {
           <div style={{ fontSize: 11.5, color: otherColor }}>今日のクエスト <b style={{ color: isDark ? "#a78bfa" : "#e8590c" }}>{doneCount}/3</b> 達成</div>
 
           {/* ドットくんの家（累計ポイントで育つ） */}
-          <div style={{ width: "100%", marginTop: 4, animation: "fadeInUp 0.5s ease-out 0.3s both" }}>
+          <div style={{ width: "100%", marginTop: 4, animation: "popIn 0.5s ease-out 0.3s both" }}>
             <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} />
           </div>
 
           {/* ドットくん（リングのすぐ下） */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "fadeInUp 0.5s ease-out 0.45s both", ...dotRowStyle }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "popIn 0.5s ease-out 0.45s both", ...dotRowStyle }}>
             <div onClick={() => router.push("/dotkun")} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: "floaty 2.6s ease-in-out infinite" }}><div style={{ animation: "dotHop 7s ease-in-out infinite" }}>
               <DotKun size={44} stage={dotStage(getLevel(totalEarned))} mood="cheer" /></div>
               {petHearts.map(h => (
