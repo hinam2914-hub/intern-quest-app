@@ -558,8 +558,8 @@ export default function TestResultsTab() {
                         const info = TEST_LABELS[a.test_key] || { label: a.test_key, color: "#6b7280", icon: "📄" };
                         const isExpanded = expandedId === a.id;
                         const questions = WRITTEN_QUESTIONS[a.test_key] || [];
-                        const hasWritten = a.written_answers && (Array.isArray(a.written_answers) ? a.written_answers.length > 0 : Object.keys(a.written_answers).length > 0);
-                        const writtenArr = normalizeWrittenAnswers(a.written_answers);
+                        const hasWritten = (a.written_answers && (Array.isArray(a.written_answers) ? a.written_answers.length > 0 : Object.keys(a.written_answers).length > 0)) || (a.written && a.written.length > 0);
+                        const writtenArr = (a.source === "manager_tests" && a.written && a.written.length > 0) ? a.written.map((w: any) => ({ question: "", answer: w.answer })) : normalizeWrittenAnswers(a.written_answers);
                         const evalLabel = a.written_evaluation === "high" ? "🥇 高評価" : a.written_evaluation === "mid" ? "🥈 中評価" : a.written_evaluation === "none" ? "⚪ 評価なし" : null;
                         const evalColor = a.written_evaluation === "high" ? "#fbbf24" : a.written_evaluation === "mid" ? "#94a3b8" : a.written_evaluation === "none" ? "#6b7280" : null;
 
