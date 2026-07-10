@@ -115,9 +115,9 @@ export default function DotHouse({ totalEarned, accent = "#a78bfa", light = fals
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
       {/* 家のシーン */}
-      <div style={{ width: "100%", height: 140, borderRadius: 18, background: light ? "linear-gradient(180deg, #cfe9ff 0%, #eef8ff 75%)" : "radial-gradient(circle at 50% 20%, #1a1a35 0%, #0d0d18 70%)", border: light ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.08)", position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-        <div style={{ position: "absolute", top: 16, right: 24, width: 26, height: 26, borderRadius: "50%", background: light ? "radial-gradient(circle at 60% 40%, #fff3b0, #ffd24d)" : "radial-gradient(circle at 60% 40%, #fdf6d8, #e8dca0)", boxShadow: light ? "0 0 24px rgba(255,210,77,0.5)" : "0 0 20px rgba(253,246,216,0.3)" }} />
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, background: light ? "linear-gradient(180deg, #b7e0a8, #9ccf8c)" : "linear-gradient(180deg, #1e2a3a, #16202c)" }} />
+      <div style={{ width: "100%", height: 140, borderRadius: 18, background: light ? "transparent" : "radial-gradient(circle at 50% 20%, #1a1a35 0%, #0d0d18 70%)", border: light ? "none" : "1px solid rgba(255,255,255,0.08)", position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+        {!light && <div style={{ position: "absolute", top: 16, right: 24, width: 26, height: 26, borderRadius: "50%", background: "radial-gradient(circle at 60% 40%, #fdf6d8, #e8dca0)", boxShadow: "0 0 20px rgba(253,246,216,0.3)" }} />}
+        {!light && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, background: "linear-gradient(180deg, #1e2a3a, #16202c)" }} />}
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", marginBottom: 30, gap: 8 }}>
           <HouseArt idx={h.idx} />
           <div style={{ marginLeft: 6, marginBottom: 2, animation: "floaty 2.2s ease-in-out infinite" }}><DotKun size={40} stage={dotStage(getLevel(totalEarned))} mood="cheer" /></div>
