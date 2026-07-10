@@ -196,7 +196,7 @@ export default function HomePage() {
     if (typeof window !== "undefined") localStorage.setItem("homeTheme", next);
   };
 
-  const isDark = theme === "dark";
+  const isDark = false; // ダーク廃止・島テーマ一本化（theme切替は無効化）
   const bg = isDark ? "radial-gradient(circle at 50% 30%, #14142b 0%, #0a0a0f 65%)" : "url(/island_bg.png) center top / cover no-repeat fixed, #bfe3f5";
   const nameColor = isDark ? "#f9fafb" : "#2b3440";
   const helloColor = isDark ? "#6b7280" : "#6f7a86";
@@ -249,7 +249,7 @@ export default function HomePage() {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button onClick={toggleTheme} style={{ border: "none", background: isDark ? "rgba(255,255,255,.06)" : "#fff", borderRadius: 20, padding: "7px 12px", fontSize: 16, cursor: "pointer", boxShadow: isDark ? "none" : "0 4px 14px rgba(43,52,64,.08)" }}>{isDark ? "🌙" : "☀️"}</button>
+            
             <div style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 20, padding: "7px 13px", fontSize: 14, fontWeight: 900, ...flameStyle }}>🔥 {streak}</div>
           </div>
         </div>
@@ -297,14 +297,14 @@ export default function HomePage() {
         {/* 下部 */}
       </div>
       {/* 下部固定ナビ */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 64, background: isDark ? "rgba(13,13,24,0.92)" : "rgba(255,255,255,0.95)", borderTop: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.06)", backdropFilter: "blur(12px)", display: "flex", zIndex: 50 }}>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: isDark ? 64 : 74, background: isDark ? "rgba(13,13,24,0.92)" : "transparent", borderTop: isDark ? "1px solid rgba(255,255,255,0.08)" : "none", backdropFilter: isDark ? "blur(12px)" : "none", display: "flex", zIndex: 50, ...(isDark ? {} : { paddingBottom: 6 }) }}>{!isDark && <div style={{ position: "absolute", inset: "6px 8px 8px", background: "url(/island/nav_wood.png) center / 100% 100% no-repeat", zIndex: -1 }} />}
         {[
           { ic: "🏠", label: "ホーム", href: "/home", active: true },
           { ic: "🏆", label: "ランキング", href: "/ranking", active: false },
           { ic: "👤", label: "マイページ", href: "/mypage", active: false },
           { ic: "☰", label: "メニュー", href: "/menu", active: false },
         ].map((t) => (
-          <button key={t.href} onClick={() => router.push(t.href)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#e8590c") : (isDark ? "#6b7280" : "#9ca3af") }}>
+          <button key={t.href} onClick={() => router.push(t.href)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#fff") : (isDark ? "#6b7280" : "rgba(255,255,255,.75)"), textShadow: isDark ? "none" : "0 1px 2px rgba(90,55,20,.6)" }}>
             <div style={{ fontSize: 20 }}>{t.ic}</div>
             <div style={{ fontSize: 10, fontWeight: 700 }}>{t.label}</div>
           </button>
