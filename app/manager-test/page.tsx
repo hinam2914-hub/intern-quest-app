@@ -98,7 +98,7 @@ export default function ManagerTestPage() {
 
         let correct = 0;
         CHOICE_QUESTIONS.forEach(q => { if (choiceAnswers[q.num] === q.answer) correct++; });
-        const passed = correct >= 14;
+        const passed = correct >= 15;
 
         const nextRetry = !passed ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() : null;
 
@@ -196,7 +196,7 @@ export default function ManagerTestPage() {
                     <h1 style={{ color: "#f9fafb", fontSize: 28, fontWeight: 800, marginBottom: 12 }}>{result.passed ? "選択式 合格！" : "選択式 不合格"}</h1>
                     <p style={{ color: "#9ca3af", fontSize: 16, marginBottom: 8 }}>スコア: <span style={{ color: result.passed ? "#34d399" : "#f87171", fontWeight: 800 }}>{result.score} / 15</span></p>
                     {result.passed && <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 32 }}>記述式の回答は運営レビュー中です。承認されるとマネージャー認定となり500ptが付与されます</p>}
-                    {!result.passed && <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 32 }}>合格基準: 14問以上。3日後に再挑戦できます</p>}
+                    {!result.passed && <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 32 }}>合格基準: 全問正解（15問）。3日後に再挑戦できます</p>}
                     <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>メニューへ戻る</button>
                 </div>
             </main>
@@ -212,7 +212,7 @@ export default function ManagerTestPage() {
 
                 <div style={{ padding: "16px 20px", borderRadius: 12, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", marginBottom: 32 }}>
                     <div style={{ color: "#f59e0b", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>⚠️ 合格基準</div>
-                    <div style={{ color: "#d1d5db", fontSize: 12, lineHeight: 1.7 }}>選択式: 14問以上正解（厳しめ）／記述式: 各問20文字以上、運営レビュー制／不合格時は3日後に再挑戦可能</div>
+                    <div style={{ color: "#d1d5db", fontSize: 12, lineHeight: 1.7 }}>選択式: 全問正解（15問・満点）／記述式: 各問20文字以上、運営レビュー制／不合格時は3日後に再挑戦可能</div>
                 </div>
 
                 <h2 style={{ color: "#818cf8", fontSize: 13, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>PART 1: 選択式（15問）</h2>
