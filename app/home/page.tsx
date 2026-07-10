@@ -93,6 +93,8 @@ export default function HomePage() {
   const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
   const [petMsg, setPetMsg] = useState<string | null>(null);
   const [petKey, setPetKey] = useState(0);
+  const [btnPop, setBtnPop] = useState(false);
+  const [hopNav, setHopNav] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = (typeof window !== "undefined" && localStorage.getItem("homeTheme")) as Theme | null;
@@ -233,6 +235,8 @@ export default function HomePage() {
       .iq-ring { animation: ringFill 1.1s ease-out both; }
       @keyframes petSquish { 0% { transform: scale(1,1); } 15% { transform: scale(1.15,0.82) translateY(4px); } 40% { transform: scale(0.9,1.15) translateY(-8px); } 65% { transform: scale(1.06,0.96); } 100% { transform: scale(1,1); } }
       @keyframes heartPop { 0% { transform: translate(0,0) scale(0.3) rotate(0deg); opacity: 1; } 40% { opacity: 1; } 100% { transform: translate(var(--hx), -52px) scale(1.3) rotate(var(--hr)); opacity: 0; } }
+      @keyframes pushPop { 0% { transform: scale(0.9); } 45% { transform: scale(1.08); } 70% { transform: scale(0.97); } 100% { transform: scale(1); } }
+      @keyframes hop { 0% { transform: translateY(0) scale(1); } 30% { transform: translateY(-7px) scale(1.12, 0.9); } 60% { transform: translateY(0) scale(0.94, 1.08); } 100% { transform: translateY(0) scale(1); } }
     `}</style>
     <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
@@ -270,7 +274,7 @@ export default function HomePage() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, animation: "fadeInUp 0.5s ease-out 0.15s both" }}>
           <div className="iq-ring" style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, ["--ringPct" as any]: `${pct}%`, filter: isDark ? undefined : undefined }}>
             <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
-            <button onClick={() => router.push(task.href)} style={{ animation: "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2 }}>
+            <button onPointerDown={() => setBtnPop(false)} onClick={() => { setBtnPop(true); setTimeout(() => router.push(task.href), 260); }} style={{ animation: btnPop ? "pushPop 0.4s ease-out" : "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2, transition: "transform 0.08s", transform: "scale(1)", WebkitTapHighlightColor: "transparent" }} onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.93)"; }} onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
               <div style={{ fontSize: 50, filter: isDark ? "none" : "drop-shadow(0 2px 3px rgba(120,72,20,.35))" }}>{task.icon}</div>
               <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: 1, textShadow: isDark ? "none" : "0 2px 4px rgba(150,90,20,.7)" }}>{task.label}</div>
             </button>
@@ -304,7 +308,7 @@ export default function HomePage() {
           { ic: "👤", label: "マイページ", href: "/mypage", active: false },
           { ic: "☰", label: "メニュー", href: "/menu", active: false },
         ].map((t) => (
-          <button key={t.href} onClick={() => router.push(t.href)} style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, paddingBottom: 4, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#fff") : (isDark ? "#6b7280" : "rgba(255,255,255,.75)"), textShadow: isDark ? "none" : "0 1px 2px rgba(90,55,20,.6)" }}>
+          <button key={t.href} onClick={() => { setHopNav(t.href); setTimeout(() => router.push(t.href), 180); }} style={{ position: "relative", zIndex: 1, flex: 1, animation: hopNav === t.href ? "hop 0.35s ease-out" : "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, paddingBottom: 4, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#fff") : (isDark ? "#6b7280" : "rgba(255,255,255,.75)"), textShadow: isDark ? "none" : "0 1px 2px rgba(90,55,20,.6)" }}>
             <div style={{ fontSize: 20 }}>{t.ic}</div>
             <div style={{ fontSize: 10, fontWeight: 700 }}>{t.label}</div>
           </button>
