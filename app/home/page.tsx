@@ -254,6 +254,18 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* アバター未作成の人への導線 */}
+        {!avatarId && (
+          <div onClick={() => router.push("/avatar")} style={{ marginTop: 14, borderRadius: 18, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, background: isDark ? "linear-gradient(135deg, rgba(255,180,92,.15), rgba(255,138,61,.08))" : "linear-gradient(135deg, #fff3e4, #ffe8d1)", border: isDark ? "1px solid rgba(255,180,92,.3)" : "1px solid #ffd9ae", animation: "fadeInUp 0.5s ease-out 0.1s both" }}>
+            <div style={{ fontSize: 30 }}>🧑‍🎨</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 900, color: isDark ? "#ffcf9e" : "#c2410c" }}>きみの分身をつくろう！</div>
+              <div style={{ fontSize: 11.5, color: isDark ? "#c9a882" : "#9a6a3a", marginTop: 2 }}>ホームに登場するアバターをえらべるよ</div>
+            </div>
+            <div style={{ fontSize: 16, color: isDark ? "#ffb45c" : "#ff8a3d", fontWeight: 900 }}>→</div>
+          </div>
+        )}
+
         {/* 中央 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, animation: "fadeInUp 0.5s ease-out 0.15s both" }}>
           <div className="iq-ring" style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, ["--ringPct" as any]: `${pct}%`, filter: isDark ? undefined : undefined }}>
