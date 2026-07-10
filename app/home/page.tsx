@@ -297,14 +297,14 @@ export default function HomePage() {
         {/* 下部 */}
       </div>
       {/* 下部固定ナビ */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: isDark ? 64 : 74, background: isDark ? "rgba(13,13,24,0.92)" : "transparent", borderTop: isDark ? "1px solid rgba(255,255,255,0.08)" : "none", backdropFilter: isDark ? "blur(12px)" : "none", display: "flex", zIndex: 50, ...(isDark ? {} : { paddingBottom: 6 }) }}>{!isDark && <div style={{ position: "absolute", inset: "6px 8px 8px", background: "url(/island/nav_wood.png) center / 100% 100% no-repeat", zIndex: -1 }} />}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: isDark ? 64 : 74, background: isDark ? "rgba(13,13,24,0.92)" : "transparent", borderTop: isDark ? "1px solid rgba(255,255,255,0.08)" : "none", backdropFilter: isDark ? "blur(12px)" : "none", display: "flex", zIndex: 50, ...(isDark ? {} : { paddingBottom: 6 }) }}>{!isDark && <div style={{ position: "absolute", inset: "6px 8px 8px", background: "url(/island/nav_wood.png) center / 100% 100% no-repeat", zIndex: 0, pointerEvents: "none" }} />}
         {[
           { ic: "🏠", label: "ホーム", href: "/home", active: true },
           { ic: "🏆", label: "ランキング", href: "/ranking", active: false },
           { ic: "👤", label: "マイページ", href: "/mypage", active: false },
           { ic: "☰", label: "メニュー", href: "/menu", active: false },
         ].map((t) => (
-          <button key={t.href} onClick={() => router.push(t.href)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#fff") : (isDark ? "#6b7280" : "rgba(255,255,255,.75)"), textShadow: isDark ? "none" : "0 1px 2px rgba(90,55,20,.6)" }}>
+          <button key={t.href} onClick={() => router.push(t.href)} style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#fff") : (isDark ? "#6b7280" : "rgba(255,255,255,.75)"), textShadow: isDark ? "none" : "0 1px 2px rgba(90,55,20,.6)" }}>
             <div style={{ fontSize: 20 }}>{t.ic}</div>
             <div style={{ fontSize: 10, fontWeight: 700 }}>{t.label}</div>
           </button>
