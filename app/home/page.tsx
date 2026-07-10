@@ -238,11 +238,23 @@ export default function HomePage() {
       @keyframes pushPop { 0% { transform: scale(0.9); } 45% { transform: scale(1.08); } 70% { transform: scale(0.97); } 100% { transform: scale(1); } }
       @keyframes hop { 0% { transform: translateY(0) scale(1); } 30% { transform: translateY(-7px) scale(1.12, 0.9); } 60% { transform: translateY(0) scale(0.94, 1.08); } 100% { transform: translateY(0) scale(1); } }
       @keyframes cloudDrift { 0% { transform: translateX(-30vw); } 100% { transform: translateX(130vw); } }
+      @keyframes dotHop { 0%, 88%, 100% { transform: translateY(0); } 92% { transform: translateY(-9px) scale(1.06, 0.94); } 96% { transform: translateY(0) scale(0.96, 1.05); } }
+      @keyframes sunPulse { 0%, 100% { opacity: .35; transform: scale(1); } 50% { opacity: .7; transform: scale(1.18); } }
+      @keyframes btnShine { 0%, 82% { transform: translateX(-120%) rotate(18deg); opacity: 0; } 86% { opacity: .9; } 94%, 100% { transform: translateX(160%) rotate(18deg); opacity: 0; } }
+      @keyframes birdFly { 0% { transform: translate(-10vw, 0); } 50% { transform: translate(55vw, -24px); } 100% { transform: translate(120vw, -8px); } }
+      @keyframes leafFall { 0% { transform: translate(0, -5vh) rotate(0deg); opacity: 0; } 8% { opacity: .9; } 100% { transform: translate(-90px, 108vh) rotate(560deg); opacity: 0; } }
     `}</style>
     <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
       {/* 流れる雲（島の生きてる感） */}
       <div style={{ position: "fixed", top: "8%", left: 0, width: 120, height: 36, background: "rgba(255,255,255,.75)", borderRadius: 999, filter: "blur(2px)", animation: "cloudDrift 75s linear infinite", pointerEvents: "none", zIndex: 1, boxShadow: "30px -12px 0 -4px rgba(255,255,255,.65), 60px 0 0 -2px rgba(255,255,255,.7)" }} />
       <div style={{ position: "fixed", top: "16%", left: 0, width: 90, height: 28, background: "rgba(255,255,255,.6)", borderRadius: 999, filter: "blur(2px)", animation: "cloudDrift 110s linear infinite", animationDelay: "-40s", pointerEvents: "none", zIndex: 1, boxShadow: "24px -10px 0 -3px rgba(255,255,255,.5)" }} />
+      {/* 太陽のきらめき */}
+      <div style={{ position: "fixed", top: "6.5%", right: "7%", width: 90, height: 90, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,244,190,.8) 0%, rgba(255,244,190,0) 70%)", animation: "sunPulse 5s ease-in-out infinite", pointerEvents: "none", zIndex: 1 }} />
+      {/* 遠くを飛ぶ鳥 */}
+      <div style={{ position: "fixed", top: "13%", left: 0, fontSize: 11, color: "rgba(60,70,90,.55)", animation: "birdFly 34s linear infinite", pointerEvents: "none", zIndex: 1, letterSpacing: 3 }}>ᥫ ᥫ</div>
+      {/* 舞い落ちる葉っぱ */}
+      <div style={{ position: "fixed", top: 0, left: "72%", fontSize: 14, animation: "leafFall 16s linear infinite", animationDelay: "-3s", pointerEvents: "none", zIndex: 1, opacity: 0 }}>🍃</div>
+      <div style={{ position: "fixed", top: 0, left: "22%", fontSize: 12, animation: "leafFall 21s linear infinite", animationDelay: "-12s", pointerEvents: "none", zIndex: 1, opacity: 0 }}>🍃</div>
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
         {/* 上部 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", animation: "fadeInUp 0.5s ease-out both" }}>
@@ -279,6 +291,7 @@ export default function HomePage() {
           <div className="iq-ring" style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, ["--ringPct" as any]: `${pct}%`, filter: isDark ? undefined : undefined }}>
             <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
             <button onPointerDown={() => setBtnPop(false)} onClick={() => { setBtnPop(true); setTimeout(() => router.push(task.href), 260); }} style={{ animation: btnPop ? "pushPop 0.4s ease-out" : "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2, transition: "transform 0.08s", transform: "scale(1)", WebkitTapHighlightColor: "transparent" }} onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.93)"; }} onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
+              {!isDark && <div style={{ position: "absolute", inset: "14% 12%", borderRadius: "50%", overflow: "hidden", pointerEvents: "none" }}><div style={{ position: "absolute", top: "-20%", left: 0, width: "36%", height: "140%", background: "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%)", animation: "btnShine 6.5s ease-in-out infinite" }} /></div>}
               <div style={{ fontSize: 50, filter: isDark ? "none" : "drop-shadow(0 2px 3px rgba(120,72,20,.35))" }}>{task.icon}</div>
               <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: 1, textShadow: isDark ? "none" : "0 2px 4px rgba(150,90,20,.7)" }}>{task.label}</div>
             </button>
@@ -292,8 +305,8 @@ export default function HomePage() {
 
           {/* ドットくん（リングのすぐ下） */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "fadeInUp 0.5s ease-out 0.45s both", ...dotRowStyle }}>
-            <div onClick={() => router.push("/dotkun")} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: "floaty 2.6s ease-in-out infinite" }}>
-              <DotKun size={44} stage={dotStage(getLevel(totalEarned))} mood="cheer" />
+            <div onClick={() => router.push("/dotkun")} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: "floaty 2.6s ease-in-out infinite" }}><div style={{ animation: "dotHop 7s ease-in-out infinite" }}>
+              <DotKun size={44} stage={dotStage(getLevel(totalEarned))} mood="cheer" /></div>
               {petHearts.map(h => (
                 <div key={h.id} style={{ position: "absolute", top: 4, left: 16, fontSize: 15, pointerEvents: "none", animation: "heartPop 0.9s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
               ))}
