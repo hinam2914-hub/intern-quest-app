@@ -197,7 +197,7 @@ export default function HomePage() {
   };
 
   const isDark = theme === "dark";
-  const bg = isDark ? "radial-gradient(circle at 50% 30%, #14142b 0%, #0a0a0f 65%)" : "#fdfdfb";
+  const bg = isDark ? "radial-gradient(circle at 50% 30%, #14142b 0%, #0a0a0f 65%)" : "url(/island_bg.png) center top / cover no-repeat fixed, #bfe3f5";
   const nameColor = isDark ? "#f9fafb" : "#2b3440";
   const helloColor = isDark ? "#6b7280" : "#6f7a86";
   const flameStyle = isDark
