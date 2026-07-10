@@ -37,6 +37,14 @@ function DotFace() {
 
 // 各ステージの家（CSSで描画）
 function HouseArt({ idx }: { idx: number }) {
+  // 画像がある段階は画像を表示（なければ下のCSS描画にフォールバック）
+  const HOUSE_IMAGES: Record<number, { src: string; w: number }> = {
+    4: { src: "/island/house/4_mansion.png", w: 150 },
+  };
+  const img = HOUSE_IMAGES[idx];
+  if (img) {
+    return <img src={img.src} alt="house" style={{ width: img.w, height: "auto", display: "block", filter: "drop-shadow(0 8px 12px rgba(60,50,30,.28))" }} />;
+  }
   const win = (extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", width: 14, height: 14, background: "#ffe08a", borderRadius: 3, ...extra });
   const door = (extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", bottom: 0, width: 14, height: 22, background: "#3a2a1a", borderRadius: "6px 6px 0 0", ...extra });
 
