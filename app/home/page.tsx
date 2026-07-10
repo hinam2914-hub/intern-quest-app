@@ -237,8 +237,12 @@ export default function HomePage() {
       @keyframes heartPop { 0% { transform: translate(0,0) scale(0.3) rotate(0deg); opacity: 1; } 40% { opacity: 1; } 100% { transform: translate(var(--hx), -52px) scale(1.3) rotate(var(--hr)); opacity: 0; } }
       @keyframes pushPop { 0% { transform: scale(0.9); } 45% { transform: scale(1.08); } 70% { transform: scale(0.97); } 100% { transform: scale(1); } }
       @keyframes hop { 0% { transform: translateY(0) scale(1); } 30% { transform: translateY(-7px) scale(1.12, 0.9); } 60% { transform: translateY(0) scale(0.94, 1.08); } 100% { transform: translateY(0) scale(1); } }
+      @keyframes cloudDrift { 0% { transform: translateX(-30vw); } 100% { transform: translateX(130vw); } }
     `}</style>
     <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
+      {/* 流れる雲（島の生きてる感） */}
+      <div style={{ position: "fixed", top: "8%", left: 0, width: 120, height: 36, background: "rgba(255,255,255,.75)", borderRadius: 999, filter: "blur(2px)", animation: "cloudDrift 75s linear infinite", pointerEvents: "none", zIndex: 1, boxShadow: "30px -12px 0 -4px rgba(255,255,255,.65), 60px 0 0 -2px rgba(255,255,255,.7)" }} />
+      <div style={{ position: "fixed", top: "16%", left: 0, width: 90, height: 28, background: "rgba(255,255,255,.6)", borderRadius: 999, filter: "blur(2px)", animation: "cloudDrift 110s linear infinite", animationDelay: "-40s", pointerEvents: "none", zIndex: 1, boxShadow: "24px -10px 0 -3px rgba(255,255,255,.5)" }} />
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
         {/* 上部 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", animation: "fadeInUp 0.5s ease-out both" }}>

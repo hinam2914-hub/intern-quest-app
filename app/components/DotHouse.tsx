@@ -48,7 +48,16 @@ function HouseArt({ idx }: { idx: number }) {
   };
   const img = HOUSE_IMAGES[idx];
   if (img) {
-    return <img src={img.src} alt="house" style={{ width: img.w, height: "auto", display: "block", filter: "drop-shadow(0 8px 12px rgba(60,50,30,.28))" }} />;
+    const hasChimney = idx === 3 || idx === 4;
+    return (
+      <div style={{ position: "relative" }}>
+        {hasChimney && [0, 1, 2].map(i => (
+          <div key={i} style={{ position: "absolute", top: idx === 4 ? "2%" : "6%", right: idx === 4 ? "10%" : "16%", width: 10 + i * 3, height: 10 + i * 3, borderRadius: "50%", background: "rgba(255,255,255,.55)", filter: "blur(1.5px)", animation: `smokeRise 3.2s ease-out ${i * 1.05}s infinite`, pointerEvents: "none" }} />
+        ))}
+        <img src={img.src} alt="house" style={{ width: img.w, height: "auto", display: "block", filter: "drop-shadow(0 8px 12px rgba(60,50,30,.28))" }} />
+        <style>{`@keyframes smokeRise { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 15% { opacity: .8; } 100% { transform: translateY(-46px) scale(1.4); opacity: 0; } }`}</style>
+      </div>
+    );
   }
   const win = (extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", width: 14, height: 14, background: "#ffe08a", borderRadius: 3, ...extra });
   const door = (extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", bottom: 0, width: 14, height: 22, background: "#3a2a1a", borderRadius: "6px 6px 0 0", ...extra });
