@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import DotKun from "../components/DotKun";
-import DotHouse from "../components/DotHouse";
+import DotHouse, { getHouseStage } from "../components/DotHouse";
 
 type Theme = "light" | "dark";
 type Task = { key: string; icon: string; label: string; href: string };
@@ -90,6 +90,8 @@ export default function HomePage() {
   const [dotMsg, setDotMsg] = useState("");
   const [myKings, setMyKings] = useState<MyKing[]>([]);
   const [showKingPopup, setShowKingPopup] = useState(false);
+  const [showEvolve, setShowEvolve] = useState(false);
+  const [evolveIdx, setEvolveIdx] = useState(0);
   const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
   const [petMsg, setPetMsg] = useState<string | null>(null);
   const [petKey, setPetKey] = useState(0);
@@ -107,7 +109,20 @@ export default function HomePage() {
       if (!user) { router.push("/login"); return; }
       const { data: profile } = await supabase.from("profiles").select("name, streak, avatar_config").eq("id", user.id).single();
       const { data: pointRow } = await supabase.from("user_points").select("total_earned").eq("id", user.id).single();
-      setTotalEarned((pointRow as any)?.total_earned || 0);
+      const te = (pointRow as any)?.total_earned || 0;
+      setTotalEarned(te);
+      // 家の進化検知（前回見た段階より上がってたら1回だけ祝う）
+      try {
+        const curIdx = getHouseStage(te).idx;
+        const prevRaw = localStorage.getItem("lastHouseStage");
+        if (prevRaw === null) {
+          localStorage.setItem("lastHouseStage", String(curIdx));
+        } else if (curIdx > parseInt(prevRaw, 10)) {
+          setEvolveIdx(curIdx);
+          setShowEvolve(true);
+          localStorage.setItem("lastHouseStage", String(curIdx));
+        }
+      } catch {}
       if (profile) {
         setName((profile as any).name || "");
         setAvatarId((profile as any).avatar_config?.id || null);
@@ -229,6 +244,8 @@ export default function HomePage() {
       @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
       @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes popIn { 0% { opacity: 0; transform: translateY(16px) scale(0.86); } 55% { opacity: 1; transform: translateY(-3px) scale(1.05); } 78% { transform: translateY(1px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+      @keyframes flashGlow { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+      @keyframes houseReveal { 0% { opacity: 0; transform: scale(0.3) translateY(30px); } 55% { opacity: 1; transform: scale(1.15) translateY(-6px); } 75% { transform: scale(0.95) translateY(2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
       @keyframes ringGlow { 0%, 100% { filter: drop-shadow(0 0 18px rgba(139,92,246,0.25)); } 50% { filter: drop-shadow(0 0 34px rgba(139,92,246,0.55)); } }
       @keyframes confettiFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; } }
       @property --ringPct { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
@@ -339,6 +356,29 @@ export default function HomePage() {
           </button>
         ))}
       </div>
+      {showEvolve && (() => {
+        const NAMES = ["はじまりのテント", "丸太小屋", "一軒家", "大きな家", "豪邸", "ドットくん城"];
+        const IMGS = ["/island/house/0_tent.png", "/island/house/1_cabin.png", "/island/house/2_house.png", "/island/house/3_big.png", "/island/house/4_mansion.png", "/island/house/5_castle.png"];
+        const isCastle = evolveIdx === 5;
+        const confs = isCastle
+          ? ["#ffd700","#ffec8b","#f59e0b","#fbbf24","#fff3b0","#ffd700","#f59e0b","#ffec8b","#fbbf24","#ffd700","#fff3b0","#f59e0b","#ffd700","#fbbf24"]
+          : ["#fbbf24","#a78bfa","#f472b6","#34d399","#60a5fa","#fbbf24","#f472b6","#a78bfa"];
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2200, padding: 20 }}>
+            <div style={{ position: "absolute", inset: 0, background: isCastle ? "radial-gradient(circle, rgba(255,215,0,.5) 0%, rgba(255,215,0,0) 70%)" : "radial-gradient(circle, rgba(255,255,255,.45) 0%, rgba(255,255,255,0) 70%)", animation: "flashGlow 1.4s ease-out" }} />
+            {confs.map((c, i) => (
+              <div key={i} style={{ position: "absolute", top: 0, left: `${4 + i * (92 / confs.length)}%`, width: isCastle ? 11 : 9, height: isCastle ? 11 : 9, borderRadius: 2, background: c, animation: `confettiFall ${2.2 + (i % 4) * 0.5}s linear ${(i % 5) * 0.3}s infinite` }} />
+            ))}
+            <div style={{ background: isCastle ? "linear-gradient(135deg, #fff9e0, #ffedb0)" : "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 24, padding: "30px 26px", maxWidth: 380, width: "100%", textAlign: "center", boxShadow: isCastle ? "0 20px 70px rgba(200,150,0,.5)" : "0 20px 60px rgba(0,0,0,0.3)", position: "relative" }}>
+              <div style={{ fontSize: 15, fontWeight: 900, color: "#b45309", marginBottom: 2 }}>{isCastle ? "👑 GOAL!! 👑" : "✨ おうちが進化！ ✨"}</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: isCastle ? "#a16207" : "#b45309", marginBottom: 14 }}>{NAMES[evolveIdx]}{isCastle ? "、完成！" : "になった！"}</div>
+              <img src={IMGS[evolveIdx]} alt="new house" style={{ width: isCastle ? 190 : 165, height: "auto", margin: "0 auto 14px", display: "block", animation: "houseReveal 0.9s cubic-bezier(.5,1.6,.4,1) 0.35s both", filter: "drop-shadow(0 10px 16px rgba(120,90,20,.3))" }} />
+              <div style={{ fontSize: 12.5, color: "#92400e", lineHeight: 1.7, marginBottom: 18 }}>{isCastle ? "テントから始まった冒険、ついに城まで来たね。きみの積み重ねはホンモノだよ。" : "コツコツの積み重ねがカタチになったよ。この調子！"}</div>
+              <button onClick={() => setShowEvolve(false)} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: isCastle ? "linear-gradient(135deg, #f5c542, #d99e06)" : "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>{isCastle ? "最高！" : "やった！"}</button>
+            </div>
+          </div>
+        );
+      })()}
       {showKingPopup && myKings.length > 0 && (
         <div onClick={() => { localStorage.setItem("kingPopupSeen", getTodayJST()); setShowKingPopup(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20, cursor: "pointer" }}>
           {["#fbbf24","#a78bfa","#f472b6","#34d399","#60a5fa","#fbbf24","#f472b6","#a78bfa","#34d399","#fbbf24"].map((c, i) => (
