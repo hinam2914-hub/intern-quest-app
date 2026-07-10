@@ -92,6 +92,7 @@ export default function HomePage() {
   const [showKingPopup, setShowKingPopup] = useState(false);
   const [showEvolve, setShowEvolve] = useState(false);
   const [evolveIdx, setEvolveIdx] = useState(0);
+  const [soundOn, setSoundOn] = useState(false);
   const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
   const [petMsg, setPetMsg] = useState<string | null>(null);
   const [petKey, setPetKey] = useState(0);
@@ -101,6 +102,7 @@ export default function HomePage() {
   useEffect(() => {
     const saved = (typeof window !== "undefined" && localStorage.getItem("homeTheme")) as Theme | null;
     if (saved === "light" || saved === "dark") setTheme(saved);
+    if (typeof window !== "undefined" && localStorage.getItem("homeSound") === "on") setSoundOn(true);
   }, []);
 
   useEffect(() => {
@@ -213,6 +215,31 @@ export default function HomePage() {
     if (typeof window !== "undefined") localStorage.setItem("homeTheme", next);
   };
 
+  // --- 効果音（Web Audio合成、音源ファイル不要） ---
+  const playPoko = () => {
+    if (!soundOn) return;
+    try {
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx: AudioContext = (window as any).__iqAudio || new AC();
+      (window as any).__iqAudio = ctx;
+      if (ctx.state === "suspended") ctx.resume();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(660, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 0.09);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.13);
+    } catch {}
+  };
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    if (typeof window !== "undefined") localStorage.setItem("homeSound", next ? "on" : "off");
+    if (next) setTimeout(() => { try { const AC = (window as any).AudioContext || (window as any).webkitAudioContext; const ctx: AudioContext = (window as any).__iqAudio || new AC(); (window as any).__iqAudio = ctx; ctx.resume(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = "sine"; osc.frequency.setValueAtTime(660, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 0.09); gain.gain.setValueAtTime(0.25, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.13); } catch {} }, 50);
+  };
   const isDark = false; // ダーク廃止・島テーマ一本化（theme切替は無効化）
   const bg = isDark ? "radial-gradient(circle at 50% 30%, #14142b 0%, #0a0a0f 65%)" : "url(/island_bg.png) center top / cover no-repeat fixed, #bfe3f5";
   const nameColor = isDark ? "#f9fafb" : "#2b3440";
@@ -295,6 +322,7 @@ export default function HomePage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             
+            <button onClick={toggleSound} style={{ border: "none", background: "#fff", borderRadius: 20, padding: "7px 12px", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 14px rgba(43,52,64,.08)", opacity: soundOn ? 1 : 0.55 }}>{soundOn ? "🔊" : "🔇"}</button>
             <div style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 20, padding: "7px 13px", fontSize: 14, fontWeight: 900, ...flameStyle }}>🔥 {streak}</div>
           </div>
         </div>
@@ -315,7 +343,7 @@ export default function HomePage() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, animation: "popIn 0.5s ease-out 0.15s both" }}>
           <div className="iq-ring" style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, ["--ringPct" as any]: `${pct}%`, filter: isDark ? undefined : undefined }}>
             <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
-            <button onPointerDown={() => setBtnPop(false)} onClick={() => { setBtnPop(true); setTimeout(() => router.push(task.href), 260); }} style={{ animation: btnPop ? "pushPop 0.4s ease-out" : "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2, transition: "transform 0.08s", transform: "scale(1)", WebkitTapHighlightColor: "transparent" }} onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.93)"; }} onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
+            <button onPointerDown={() => setBtnPop(false)} onClick={() => { playPoko(); setBtnPop(true); setTimeout(() => router.push(task.href), 260); }} style={{ animation: btnPop ? "pushPop 0.4s ease-out" : "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2, transition: "transform 0.08s", transform: "scale(1)", WebkitTapHighlightColor: "transparent" }} onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.93)"; }} onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
               {!isDark && <div style={{ position: "absolute", inset: "14% 12%", borderRadius: "50%", overflow: "hidden", pointerEvents: "none" }}><div style={{ position: "absolute", top: "-20%", left: 0, width: "36%", height: "140%", background: "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%)", animation: "btnShine 6.5s ease-in-out infinite" }} /></div>}
               <div style={{ fontSize: 50, filter: isDark ? "none" : "drop-shadow(0 2px 3px rgba(120,72,20,.35))" }}>{task.icon}</div>
               <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: 1, textShadow: isDark ? "none" : "0 2px 4px rgba(150,90,20,.7)" }}>{task.label}</div>
@@ -350,7 +378,7 @@ export default function HomePage() {
           { ic: "👤", label: "マイページ", href: "/mypage", active: false },
           { ic: "☰", label: "メニュー", href: "/menu", active: false },
         ].map((t) => (
-          <button key={t.href} onClick={() => { setHopNav(t.href); setTimeout(() => router.push(t.href), 180); }} style={{ position: "relative", zIndex: 1, flex: 1, animation: hopNav === t.href ? "hop 0.35s ease-out" : "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, paddingBottom: 4, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#fff") : (isDark ? "#6b7280" : "rgba(255,255,255,.75)"), textShadow: isDark ? "none" : "0 1px 2px rgba(90,55,20,.6)" }}>
+          <button key={t.href} onClick={() => { playPoko(); setHopNav(t.href); setTimeout(() => router.push(t.href), 180); }} style={{ position: "relative", zIndex: 1, flex: 1, animation: hopNav === t.href ? "hop 0.35s ease-out" : "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, paddingBottom: 4, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#fff") : (isDark ? "#6b7280" : "rgba(255,255,255,.75)"), textShadow: isDark ? "none" : "0 1px 2px rgba(90,55,20,.6)" }}>
             <div style={{ fontSize: 20 }}>{t.ic}</div>
             <div style={{ fontSize: 10, fontWeight: 700 }}>{t.label}</div>
           </button>
