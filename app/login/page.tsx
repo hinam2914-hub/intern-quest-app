@@ -55,24 +55,7 @@ export default function LoginPage() {
             return;
         }
 
-        let destination = (!profile?.name || profile.name.trim() === "") ? "/register" : ((profile as any)?.onboarding_done ? "/mypage" : "/onboarding");
-
-        // mypageに行くケースのみ、今日のスケジュール未入力なら今日のスケジュールへ
-        if (destination === "/mypage") {
-            const now = new Date();
-            const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-            const todayJST = jst.toISOString().slice(0, 10);
-            const { data: sched } = await supabase
-                .from("daily_schedules")
-                .select("slots")
-                .eq("user_id", user.id)
-                .eq("date", todayJST)
-                .maybeSingle();
-            const filled = sched && Array.isArray((sched as any).slots)
-                && (sched as any).slots.some((s: any) => s.content && s.content.trim() !== "");
-            if (!filled) destination = "/today-schedule";
-        }
-
+        const destination = (!profile?.name || profile.name.trim() === "") ? "/register" : ((profile as any)?.onboarding_done ? "/home" : "/onboarding");
         setTimeout(() => router.push(destination), 1200);
         setLoading(false);
     };
