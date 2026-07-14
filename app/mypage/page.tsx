@@ -2280,7 +2280,7 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     )}
                 </div>
-                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                <div style={{ display: "none", marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎯 今日のミッション</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{[true, isSubmitted, todayThanksDone, todayLearnDone].filter(Boolean).length + routineCheckedIds.length} / {4 + routines.length} 完了</div>
