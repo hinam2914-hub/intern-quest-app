@@ -2003,7 +2003,7 @@ const handleRoutineCheck = async (routineId: string) => {
                                         </div>
 
                                         {/* レーダーチャート + 軸バー（PCは2列、スマホは縦並び） */}
-                                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "center", marginBottom: 12 }}>
+                                        <div style={{ display: "none", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "center", marginBottom: 12 }}>
                                             <ResponsiveContainer width="100%" height={220}>
                                                 <RadarChart data={[
                                                     { axis: "学歴", value: getEducationScore(education), fullMark: 20 },
@@ -2160,7 +2160,7 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     ))}
                 </div>
-                {myKpis.length > 0 && (
+                {false && myKpis.length > 0 && (
                     <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                             <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>MONTHLY KPI</div>
@@ -2278,7 +2278,7 @@ const handleRoutineCheck = async (routineId: string) => {
                         <div style={{ fontSize: 11, color: textSecondary, textAlign: "right", lineHeight: 1.4, maxWidth: 200 }}>{actionMessage}</div>
                     </div>
                     {/* ルーティンのストリーク表示 */}
-                    {routines.length > 0 && (
+                    {false && routines.length > 0 && (
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 12, background: routineStreak > 0 ? "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.10))" : isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${routineStreak > 0 ? "rgba(99,102,241,0.3)" : cardBorder}`, marginBottom: 12 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                 <span style={{ fontSize: 24 }}>🔁</span>
@@ -2357,7 +2357,7 @@ const handleRoutineCheck = async (routineId: string) => {
                         {/* マイルーティン設定への入口 */}
                         <div
                             onClick={() => router.push("/routine")}
-                            style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, padding: "11px 16px", borderRadius: 12, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)", border: `1px dashed ${cardBorder}`, cursor: "pointer", marginTop: 2 }}
+                            style={{ display: "none", justifyContent: "center", alignItems: "center", gap: 8, padding: "11px 16px", borderRadius: 12, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)", border: `1px dashed ${cardBorder}`, cursor: "pointer", marginTop: 2 }}
                         >
                             <span style={{ fontSize: 14 }}>⚙️</span>
                             <span style={{ fontSize: 13, fontWeight: 600, color: textMuted }}>マイルーティンを追加・編集する</span>
@@ -2365,7 +2365,7 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     </div>
                 </div>
-                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                <div style={{ display: "none", marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>POINT GROWTH</div>
                     {graphData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={180}>
@@ -2381,7 +2381,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     )}
                 </div>
 
-                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                <div style={{ display: "none", marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>KPI GROWTH</div>
                         {kpiDepts.length > 0 && (
