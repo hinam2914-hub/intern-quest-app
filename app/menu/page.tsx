@@ -1,33 +1,88 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
+type MenuItem = { icon: string; label: string; path: string };
+type Category = { key: string; icon: string; title: string; items: MenuItem[] };
+
+const SHORTCUTS: MenuItem[] = [
+    { icon: "📋", label: "日報を書く", path: "/report" },
+    { icon: "☀️", label: "今日の予定", path: "/today-schedule" },
+    { icon: "🧠", label: "思考クエスト", path: "/thinking" },
+    { icon: "🎯", label: "ライフチャレンジ", path: "/challenge" },
+];
+
+const CATEGORIES: Category[] = [
+    {
+        key: "daily", icon: "📅", title: "デイリー", items: [
+            { icon: "☀️", label: "今日の予定", path: "/today-schedule" },
+            { icon: "📋", label: "日報", path: "/report" },
+            { icon: "✅", label: "マイタスク", path: "/my-tasks" },
+            { icon: "🔁", label: "マイルーティン", path: "/routine" },
+        ]
+    },
+    {
+        key: "learn", icon: "🎓", title: "学ぶ・挑戦", items: [
+            { icon: "📚", label: "学習コンテンツ", path: "/learn" },
+            { icon: "📝", label: "テスト", path: "/tests" },
+            { icon: "🧠", label: "思考クエスト", path: "/thinking" },
+            { icon: "🎯", label: "ライフチャレンジ", path: "/challenge" },
+            { icon: "📖", label: "Wiki・用語集", path: "/wiki" },
+            { icon: "📂", label: "資料", path: "/resources" },
+        ]
+    },
+    {
+        key: "rank", icon: "🏆", title: "実績・ランキング", items: [
+            { icon: "🏆", label: "ランキング", path: "/ranking" },
+            { icon: "👑", label: "昨日の〇〇王", path: "/kings" },
+            { icon: "🎖️", label: "バッジ", path: "/badges" },
+            { icon: "📜", label: "ポイント履歴", path: "/history" },
+            { icon: "🎰", label: "ガチャ", path: "/gacha" },
+        ]
+    },
+    {
+        key: "commu", icon: "💬", title: "コミュニケーション", items: [
+            { icon: "🙏", label: "サンキュー", path: "/thanks" },
+            { icon: "🐟", label: "メダカBOX", path: "/medaka" },
+            { icon: "📄", label: "MTGレポート", path: "/mtg-report" },
+            { icon: "🧑‍🏫", label: "メンター報告", path: "/mentor-report" },
+            { icon: "🗳️", label: "アンケート", path: "/surveys" },
+        ]
+    },
+    {
+        key: "career", icon: "💼", title: "就活・キャリア", items: [
+            { icon: "✍️", label: "ES", path: "/es" },
+            { icon: "📈", label: "就活市場ランク", path: "/rank" },
+            { icon: "🗺️", label: "ロードマップ", path: "/roadmap" },
+            { icon: "💼", label: "キャリアBOX", path: "/career" },
+            { icon: "🎯", label: "月次KPI", path: "/kpi" },
+        ]
+    },
+    {
+        key: "setting", icon: "⚙️", title: "設定・サポート", items: [
+            { icon: "🧍", label: "アバター", path: "/avatar" },
+            { icon: "🔔", label: "通知", path: "/notifications" },
+            { icon: "🐡", label: "ドットくんとは", path: "/dotkun" },
+        ]
+    },
+];
+
 export default function MenuPage() {
     const router = useRouter();
-    const [name, setName] = useState("");
-    const [points, setPoints] = useState(0);
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [userRole, setUserRole] = useState("");
-    const [grade, setGrade] = useState("");
     const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [openCat, setOpenCat] = useState<string | null>(null);
 
     useEffect(() => {
-        const load = async () => {
+        const init = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
-            const { data: profile } = await supabase.from("profiles").select("name, role, grade").eq("id", user.id).single();
-            const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
-            setName(profile?.name || "");
-            setPoints(pointRow?.points || 0);
-            const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
-            setIsAdmin(!!user.email && adminEmails.includes(user.email));
-            setUserRole((profile as any)?.role || "");
-            setGrade((profile as any)?.grade || "");
-            setLoading(false); setLoading(false);
+            const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim()).filter(Boolean);
+            if (user.email && adminEmails.includes(user.email)) setIsAdmin(true);
+            setLoading(false);
         };
-        load();
+        init();
     }, [router]);
 
     const handleLogout = async () => {
@@ -35,152 +90,88 @@ export default function MenuPage() {
         router.push("/login");
     };
 
-    const menuSections = [
-        {
-            title: "🌅 デイリー",
-            items: [
-                { icon: "🏠", label: "マイページ", desc: "ホーム・ステータス確認", path: "/mypage", color: "#6366f1" },
-                { icon: "📋", label: "タスク管理", desc: "デイリー・個人タスク・admin指示", path: "/my-tasks", color: "#a78bfa" },
-                { icon: "☀️", label: "今日のスケジュール", desc: "今日の予定を立てて1日を設計する", path: "/today-schedule", color: "#f59e0b" },
-                { icon: "📋", label: "日報提出", desc: "今日の活動を記録してポイント獲得", path: "/report", color: "#8b5cf6" },
-                { icon: "🔁", label: "マイルーティン", desc: "デイリールーティンを設定・管理", path: "/routine", color: "#6366f1" },
-                { icon: "📝", label: "MTG報告書", desc: "MTGの議事録を提出・申請する", path: "/mtg-report", color: "#0ea5e9" },
-                { icon: "📋", label: "議事録BOX", desc: "みんなのMTG議事録を見る", path: "/mtg-box", color: "#0ea5e9" },
-                { icon: "📊", label: "月次KPI", desc: "月次実績を入力してポイント獲得", path: "/kpi", color: "#06b6d4" },
-                { icon: "🎉", label: "サンキュー", desc: "感謝を伝えてポイントをプレゼント", path: "/thanks", color: "#f59e0b" },
-                { icon: "💌", label: "アドバイス", desc: "改善のための気づきを匿名で送る", path: "/advice", color: "#f97316" },
-                { icon: "🤝", label: "ペイフォワード報告", desc: "後輩を連れて行った・面倒を見た報告でリーダー度UP", path: "/mentor-report", color: "#ec4899" },
-            ],
-        },
-        {
-            title: "📚 学ぶ・挑む",
-            items: [
-                { icon: "📚", label: "学習コンテンツ", desc: "動画・記事を学習してポイント獲得", path: "/learn", color: "#06b6d4" },
-                { icon: "📝", label: "テスト一覧", desc: "価値観・適性を測る各種テスト", path: "/tests", color: "#a78bfa" },
-                { icon: "💡", label: "KKC 課題解決案", desc: "ドットの課題に解決案を申請", path: "/kkc", color: "#f59e0b" },
-                { icon: "🐟", label: "メダカBOX", desc: "匿名で意見・課題を投稿できる掲示板", path: "/medaka", color: "#06b6d4" },
-                { icon: "🧠", label: "思考クエスト", desc: "お題に答えて思考力を鍛える・大喜利も", path: "/thinking", color: "#f5c542" },
-                { icon: "👑", label: "昨日の○○王", desc: "毎朝入れ替わるしょうもない称号", path: "/kings", color: "#fbbf24" },
-                { icon: "❓", label: "質問クエスト", desc: "上司に質問・相談できる。回答は公開", path: "/questions", color: "#06b6d4" },
-                { icon: "🎯", label: "ライフチャレンジ", desc: "人生の経験値を積んでスタンプを集めよう", path: "/challenge", color: "#f59e0b" },
-                { icon: "📖", label: "用語集", desc: "社内・就活用語をまとめました", path: "/wiki", color: "#6366f1" },
-            ],
-        },
-        {
-            title: "🏆 実績・ご褒美",
-            items: [
-                { icon: "🏆", label: "ランキング", desc: "全員のポイントランキングを確認", path: "/ranking", color: "#ef4444" },
-                { icon: "📖", label: "バッジ図鑑", desc: "全員のバッジとレア度を見る", path: "/badges", color: "#a855f7" },
-                { icon: "👥", label: "メンバー一覧", desc: "事業部別のメンバーを見る", path: "/members", color: "#a855f7" },
-                { icon: "📊", label: "自分の実績", desc: "累計データ・ランク・順位を確認", path: "/stats", color: "#06b6d4" },
-                { icon: "📜", label: "履歴", desc: "ポイント・テスト・サンキュー・チャレンジ", path: "/history", color: "#6b7280" },
-                { icon: "🛍️", label: "ポイントショップ", desc: "ポイントでアイテムと交換", path: "/shop", color: "#10b981" },
-                { icon: "🎰", label: "ポイントガチャ", desc: "50ptで挑戦！1日10回まで", path: "/gacha", color: "#f43f5e" },
-            ],
-        },
-        {
-            title: "💼 就活・ドキュメント",
-            items: [
-                { icon: "📝", label: "総合ES", desc: "エントリーシートを作成・更新", path: "/es", color: "#8b5cf6" },
-                { icon: "💼", label: "就活ボックス", desc: "大学別・企業別の就活情報をチェック", path: "/career", color: "#ec4899" },
-                { icon: "📁", label: "参考資料BOX", desc: "業務に役立つ資料・リンクをまとめています", path: "/resources", color: "#34d399" },
-                { icon: "🗺️", label: "ロードマップ", desc: "現在地から理想の未来までを描く", path: "/roadmap", color: "#8b5cf6" },
-                { icon: "🎯", label: "就活市場ランク", desc: "あなたの就活市場ランクを確認", path: "/rank", color: "#fbbf24" },
-            ],
-        },
-        {
-            title: "⚙️ 設定・サポート",
-            items: [
-                { icon: "📸", label: "プロフィール写真", desc: "顔写真をアップロードする", path: "/profile", color: "#ec4899" },
-                { icon: "📖", label: "使い方", desc: "Intern Questの使い方を確認する", path: "/onboarding", color: "#34d399" },
-                { icon: "📖", label: "制度・評価ロジック", desc: "ポイント・ランク・評価基準を公開", path: "/spec", color: "#a78bfa" },
-            ],
-        },
-    ];
-
-    if (loading) {
-        return (
-            <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ color: "#6366f1", fontSize: 18, fontWeight: 700 }}>Loading...</div>
-            </main>
-        );
-    }
+    if (loading) return <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #cfe9f7, #eaf6ee)", display: "flex", alignItems: "center", justifyContent: "center", color: "#7a6a4a" }}>読み込み中...</div>;
 
     return (
-        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
-            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 50% 30%, rgba(99,102,241,0.08) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
-
-            <div style={{ position: "relative", zIndex: 1, maxWidth: 800, margin: "0 auto" }}>
-
+        <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #cfe9f7 0%, #e8f4e4 55%, #f6efdd 100%)", padding: "28px 18px 96px" }}>
+            <div style={{ maxWidth: 480, margin: "0 auto" }}>
                 {/* ヘッダー */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 40 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
                     <div>
-                        {/* ✅ ロゴクリックでホームへ */}
-                        <div
-                            onClick={() => router.push("/home")}
-                            style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}
-                        >
-                            INTERN QUEST
-                        </div>
-                        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>{name || "名前未設定"}</h1>
+                        <div onClick={() => router.push("/home")} style={{ fontSize: 11, color: "#b0641f", fontWeight: 800, letterSpacing: 3, cursor: "pointer" }}>INTERN QUEST</div>
+                        <div style={{ fontSize: 22, fontWeight: 900, color: "#4a3a26" }}>☰ メニュー</div>
                     </div>
-                    <div style={{ padding: "10px 20px", borderRadius: 12, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 18, fontWeight: 800, color: "#818cf8" }}>
-                        {points.toLocaleString()} pt
-                    </div>
+                    <button onClick={() => router.push("/home")} style={{ border: "1.5px solid rgba(160,120,60,.35)", background: "rgba(255,255,255,.8)", borderRadius: 12, padding: "8px 14px", fontSize: 12.5, fontWeight: 700, color: "#7a5a2b", cursor: "pointer" }}>🏝️ 島へ戻る</button>
                 </div>
 
-                {/* メニューセクション */}
-                {menuSections.map((section) => (
-                    <div key={section.title} style={{ marginBottom: 32 }}>
-                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 12, paddingLeft: 4 }}>
-                            {section.title}
+                {/* よく使うショートカット */}
+                <div style={{ fontSize: 12, fontWeight: 900, color: "#8a6a3a", letterSpacing: 1, marginBottom: 8 }}>⚡ よく使う</div>
+                <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8, marginBottom: 18, WebkitOverflowScrolling: "touch" }}>
+                    {SHORTCUTS.map((s) => (
+                        <div key={s.path + s.label} onClick={() => router.push(s.path)} style={{ flexShrink: 0, width: 108, padding: "16px 8px 14px", borderRadius: 18, textAlign: "center", cursor: "pointer", background: "linear-gradient(165deg, #fffdf4, #f7edd8)", border: "1.5px solid rgba(190,160,110,.4)", boxShadow: "0 5px 14px rgba(120,90,40,.15), inset 0 1px 0 rgba(255,255,255,.8)" }}>
+                            <div style={{ fontSize: 30, marginBottom: 6 }}>{s.icon}</div>
+                            <div style={{ fontSize: 11.5, fontWeight: 800, color: "#6b5232", lineHeight: 1.3 }}>{s.label}</div>
                         </div>
-                        <div className="menu-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                            {section.items.filter((item) => item.path !== "/mtg-box" || grade === "社会人").map((item) => (
-                                <button
-                                    key={item.path}
-                                    onClick={() => router.push(item.path)}
-                                    style={{ padding: "20px 24px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", cursor: "pointer", textAlign: "left", transition: "all 0.2s" }}
-                                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.borderColor = `${item.color}40`; }}
-                                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.08)"; }}
-                                >
-                                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                                        <div style={{ width: 44, height: 44, borderRadius: 12, background: `${item.color}20`, border: `1px solid ${item.color}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
-                                            {item.icon}
-                                        </div>
-                                        <div style={{ fontSize: 16, fontWeight: 700, color: "#f9fafb" }}>{item.label}</div>
-                                    </div>
-                                    <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>{item.desc}</div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
 
-                {/* 管理者メニュー */}
-                {isAdmin && (
-                    <button
-                        onClick={() => router.push("/admin")}
-                        style={{ width: "100%", padding: "20px 24px", borderRadius: 16, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", cursor: "pointer", textAlign: "left", marginBottom: 16 }}
-                    >
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>⚙️</div>
-                            <div>
-                                <div style={{ fontSize: 16, fontWeight: 700, color: "#818cf8" }}>管理者ダッシュボード</div>
-                                <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>ユーザー管理・KPI・コンテンツ・申請管理</div>
+                {/* 折りたたみカテゴリ */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+                    {CATEGORIES.map((cat) => {
+                        const open = openCat === cat.key;
+                        return (
+                            <div key={cat.key} style={{ borderRadius: 18, overflow: "hidden", background: "rgba(255,253,244,.92)", border: "1.5px solid rgba(190,160,110,.35)", boxShadow: "0 4px 12px rgba(120,90,40,.1)" }}>
+                                <div onClick={() => setOpenCat(open ? null : cat.key)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "15px 18px", cursor: "pointer" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                        <span style={{ fontSize: 20 }}>{cat.icon}</span>
+                                        <span style={{ fontSize: 14.5, fontWeight: 800, color: "#4a3a26" }}>{cat.title}</span>
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #d8a44a, #b9843a)", borderRadius: 999, padding: "2px 9px" }}>{cat.items.length}</span>
+                                        <span style={{ fontSize: 12, color: "#a08050", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▼</span>
+                                    </div>
+                                </div>
+                                {open && (
+                                    <div style={{ borderTop: "1px solid rgba(190,160,110,.25)", padding: "6px 8px 10px" }}>
+                                        {cat.items.map((item) => (
+                                            <div key={item.path + item.label} onClick={() => router.push(item.path)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 12px", borderRadius: 12, cursor: "pointer" }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(216,164,74,.12)"; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                                            >
+                                                <span style={{ fontSize: 19 }}>{item.icon}</span>
+                                                <span style={{ flex: 1, fontSize: 13.5, fontWeight: 700, color: "#5a4630" }}>{item.label}</span>
+                                                <span style={{ fontSize: 12, color: "#c0a070" }}>→</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    </button>
+                        );
+                    })}
+                </div>
+
+                {/* ポイントショップ */}
+                <div onClick={() => router.push("/shop")} style={{ borderRadius: 18, padding: "18px 20px", marginBottom: 18, cursor: "pointer", display: "flex", alignItems: "center", gap: 14, background: "linear-gradient(150deg, #fff3d6, #ffe3b8)", border: "1.5px solid rgba(210,150,60,.45)", boxShadow: "0 5px 14px rgba(160,110,40,.18)" }}>
+                    <div style={{ fontSize: 34 }}>🎁</div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 15, fontWeight: 900, color: "#8a5a1a" }}>ポイントショップ</div>
+                        <div style={{ fontSize: 11.5, fontWeight: 600, color: "#a97b3a", marginTop: 2 }}>貯めたptでアイテムと交換しよう</div>
+                    </div>
+                    <div style={{ fontSize: 14, color: "#b9843a", fontWeight: 800 }}>→</div>
+                </div>
+
+                {/* 管理者 */}
+                {isAdmin && (
+                    <div onClick={() => router.push("/admin")} style={{ borderRadius: 16, padding: "14px 18px", marginBottom: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, background: "rgba(99,102,241,.1)", border: "1.5px solid rgba(99,102,241,.35)" }}>
+                        <span style={{ fontSize: 20 }}>🛠️</span>
+                        <span style={{ flex: 1, fontSize: 13.5, fontWeight: 800, color: "#5b5bd6" }}>管理者ページ</span>
+                        <span style={{ fontSize: 12, color: "#8b8bd6" }}>→</span>
+                    </div>
                 )}
 
                 {/* ログアウト */}
-                <button
-                    onClick={handleLogout}
-                    style={{ width: "100%", padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.06)", background: "transparent", color: "#6b7280", fontWeight: 600, cursor: "pointer", fontSize: 14 }}
-                >
-                    ログアウト
-                </button>
+                <button onClick={handleLogout} style={{ width: "100%", padding: "13px 0", borderRadius: 14, border: "1.5px solid rgba(190,120,110,.4)", background: "rgba(255,255,255,.7)", color: "#b05a4a", fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>ログアウト</button>
             </div>
-        </main>
+        </div>
     );
 }
