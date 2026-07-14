@@ -383,7 +383,7 @@ export default function HomePage() {
                 })}
               </div>
             )}
-            <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} />
+            <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} onHouseClick={() => { playPoko(); router.push("/mypage"); }} />
           </div>
           <div style={{ width: "100%", marginTop: 12, borderRadius: 20, padding: "14px 16px 12px", background: "linear-gradient(180deg, rgba(255,252,242,.96), rgba(252,244,226,.96))", boxShadow: "0 6px 18px rgba(120,90,40,.16), inset 0 1px 0 rgba(255,255,255,.7)", border: "1.5px solid rgba(190,160,110,.35)", animation: "popIn 0.5s ease-out 0.38s both" }}>
             <div style={{ fontSize: 12.5, fontWeight: 900, color: "#8a6a3a", marginBottom: 8, letterSpacing: 1 }}>今日のミッション</div>

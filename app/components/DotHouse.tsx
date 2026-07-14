@@ -49,12 +49,12 @@ function DotFace() {
 function HouseArt({ idx }: { idx: number }) {
   // 画像がある段階は画像を表示（なければ下のCSS描画にフォールバック）
   const HOUSE_IMAGES: Record<number, { src: string; w: number }> = {
-    0: { src: "/island/house/0_tent.png", w: 96 },
-    1: { src: "/island/house/1_cabin.png", w: 118 },
-    2: { src: "/island/house/2_house.png", w: 134 },
-    3: { src: "/island/house/3_big.png", w: 150 },
-    4: { src: "/island/house/4_mansion.png", w: 172 },
-    5: { src: "/island/house/5_castle.png", w: 168 },
+    0: { src: "/island/house/0_tent.png", w: 128 },
+    1: { src: "/island/house/1_cabin.png", w: 152 },
+    2: { src: "/island/house/2_house.png", w: 172 },
+    3: { src: "/island/house/3_big.png", w: 190 },
+    4: { src: "/island/house/4_mansion.png", w: 214 },
+    5: { src: "/island/house/5_castle.png", w: 208 },
   };
   const img = HOUSE_IMAGES[idx];
   if (img) {
@@ -142,16 +142,18 @@ function HouseArt({ idx }: { idx: number }) {
   </div>;
 }
 
-export default function DotHouse({ totalEarned, accent = "#a78bfa", light = false }: { totalEarned: number; accent?: string; light?: boolean }) {
+export default function DotHouse({ totalEarned, accent = "#a78bfa", light = false, onHouseClick }: { totalEarned: number; accent?: string; light?: boolean; onHouseClick?: () => void }) {
   const h = getHouseStage(totalEarned);
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
       {/* 家のシーン */}
-      <div style={{ width: "100%", height: light ? 170 : 140, borderRadius: 18, background: light ? "transparent" : "radial-gradient(circle at 50% 20%, #1a1a35 0%, #0d0d18 70%)", border: light ? "none" : "1px solid rgba(255,255,255,0.08)", position: "relative", overflow: light ? "visible" : "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div style={{ width: "100%", height: light ? 205 : 140, borderRadius: 18, background: light ? "transparent" : "radial-gradient(circle at 50% 20%, #1a1a35 0%, #0d0d18 70%)", border: light ? "none" : "1px solid rgba(255,255,255,0.08)", position: "relative", overflow: light ? "visible" : "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
         {!light && <div style={{ position: "absolute", top: 16, right: 24, width: 26, height: 26, borderRadius: "50%", background: "radial-gradient(circle at 60% 40%, #fdf6d8, #e8dca0)", boxShadow: "0 0 20px rgba(253,246,216,0.3)" }} />}
         {!light && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 36, background: "linear-gradient(180deg, #1e2a3a, #16202c)" }} />}
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", marginBottom: light ? 6 : 30, gap: 8 }}>
-          <HouseArt idx={h.idx} />
+          <div onClick={onHouseClick} style={{ cursor: onHouseClick ? "pointer" : "default", transition: "transform 0.15s" }} onMouseDown={(e) => { if (onHouseClick) e.currentTarget.style.transform = "scale(0.96)"; }} onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
+            <HouseArt idx={h.idx} />
+          </div>
           <div style={{ marginLeft: 6, marginBottom: 2, animation: "floaty 2.2s ease-in-out infinite" }}><DotKun size={40} stage={dotStage(getLevel(totalEarned))} mood="cheer" /></div>
         </div>
       </div>
