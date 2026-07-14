@@ -1956,6 +1956,44 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                     <div style={{ fontSize: 40, flexShrink: 0 }}>🎁</div>
                 </div>
+                {/* ===== 努力ランクカード（モック準拠） ===== */}
+                {(() => {
+                    const AXES = [
+                        { axis: "学歴", value: getEducationScore(education), full: 20 },
+                        { axis: "活動期間", value: Math.min(activeDays * (15 / 730), 15), full: 20 },
+                        { axis: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), full: 20 },
+                        { axis: "メタ認知", value: Math.min(level * (4 / 15), 10), full: 20 },
+                        { axis: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), full: 20 },
+                        { axis: "リーダー", value: Math.min(Math.floor((thanksCount + mentorCount) / 20), 10), full: 20 },
+                        { axis: "思考力", value: Math.min(Math.floor(thinkingAnswerCount / 5), 20), full: 20 },
+                    ];
+                    const sorted = [...AXES].sort((a, b) => (b.value / b.full) - (a.value / a.full));
+                    const best = sorted[0], worst = sorted[sorted.length - 1];
+                    return (
+                        <div style={{ order: -1, marginBottom: 16, borderRadius: 20, padding: "18px 20px", background: "rgba(255,253,246,.8)", border: "1px solid rgba(190,170,130,.22)", boxShadow: "0 4px 14px rgba(120,100,60,.08)" }}>
+                            <div style={{ fontSize: 13.5, fontWeight: 900, color: "#4a3f66", marginBottom: 14 }}>努力ランク</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                                    <div style={{ width: 52, height: 60, borderRadius: 12, background: "linear-gradient(150deg, #8b5cf6, #6d28d9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", boxShadow: "0 4px 12px rgba(109,40,217,.35)" }}>{rank2 || "-"}</div>
+                                    <div>
+                                        <div style={{ fontSize: 11, fontWeight: 700, color: "#9a8fb0" }}>スコア</div>
+                                        <div style={{ fontSize: 26, fontWeight: 900, color: "#4a3f66", lineHeight: 1.1 }}>{rankScore}<span style={{ fontSize: 12, color: "#9a8fb0", fontWeight: 700 }}>/100</span></div>
+                                    </div>
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10.5, fontWeight: 700, color: "#9a8fb0" }}><span>⭐</span><span>あなたの強み</span></div>
+                                    <div style={{ fontSize: 14, fontWeight: 900, color: "#b0641f", marginBottom: 8, marginLeft: 2 }}>{best.axis}</div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10.5, fontWeight: 700, color: "#9a8fb0" }}><span>🔹</span><span>次に伸ばすと良い項目</span></div>
+                                    <div style={{ fontSize: 14, fontWeight: 900, color: "#5a7fb0", marginLeft: 2 }}>{worst.axis}</div>
+                                </div>
+                            </div>
+                            <div style={{ marginTop: 12, height: 6, borderRadius: 999, background: "rgba(120,100,150,.14)" }}>
+                                <div style={{ height: "100%", width: `${rankScore}%`, borderRadius: 999, background: "linear-gradient(90deg, #a78bfa, #7c5ce0)" }} />
+                            </div>
+                            <div style={{ marginTop: 7, fontSize: 11, fontWeight: 700, color: "#9a8fb0", textAlign: "right" }}>{nextRankInfo}</div>
+                        </div>
+                    );
+                })()}
                 {/* ===== 成長カード ===== */}
                 <div style={{ order: -1, marginBottom: 16, borderRadius: 20, padding: "16px 20px", background: "rgba(255,255,255,.65)", border: "1.5px solid rgba(190,170,130,.3)", boxShadow: "0 4px 14px rgba(120,100,60,.1)" }}>
                     <div style={{ fontSize: 11, color: "#9a8fb0", fontWeight: 800, letterSpacing: 2, marginBottom: 10 }}>📈 成長のきろく</div>
