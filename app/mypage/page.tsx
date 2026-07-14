@@ -2089,7 +2089,7 @@ const handleRoutineCheck = async (routineId: string) => {
                                     </div>
                                 )
                             },
-                        ].map((card) => (
+                        ].filter((card) => card.title !== "EFFORT RANK").map((card) => (
                             <div key={card.title} style={{ position: "relative" }}
                                 onMouseEnter={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "block"; }}
                                 onMouseLeave={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "none"; }}
