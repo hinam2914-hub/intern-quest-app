@@ -182,8 +182,15 @@ export default function HomePage() {
         chosen = pool.length > 0 ? seededPick(pool, seed) : { key: "learn", icon: "📚", label: "学習する", href: "/learn" };
       }
       setTask(chosen);
-      const msgs = DOT_MSGS[chosen.key] || ["今日もいこう！"];
-      setDotMsg(seededPick(msgs, seed + "m"));
+      const doneN = [scheduleDone, reportDone, thinkingDone].filter(Boolean).length;
+      const shortMsgs = doneN >= 3
+        ? ["ぜんぶクリア！最高だね🎉", "3つコンプリート！さすが✨"]
+        : doneN === 2
+        ? ["あと1つでコンプリート！", "ラスト1つ、いける！🔥"]
+        : doneN === 1
+        ? ["いい調子！あと2つだよ", "その調子でいこう！"]
+        : ["今日も始めよう！", "まずは1つ、いこう💪"];
+      setDotMsg(seededPick(shortMsgs, seed + "m"));
       // 昨日の称号判定（自分が該当する称号をポップアップで祝う）
       try {
         const kingRange = yesterdayRangeUTC();
@@ -385,84 +392,3 @@ export default function HomePage() {
             )}
             <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} />
           </div>
-
-          {/* ドットくん（リングのすぐ下） */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "popIn 0.5s ease-out 0.45s both", ...dotRowStyle }}>
-            <div onClick={() => router.push("/dotkun")} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: "floaty 2.6s ease-in-out infinite" }}><div style={{ animation: "dotHop 7s ease-in-out infinite" }}>
-              <DotKun size={44} stage={dotStage(getLevel(totalEarned))} mood="cheer" /></div>
-              {petHearts.map(h => (
-                <div key={h.id} style={{ position: "absolute", top: 4, left: 16, fontSize: 15, pointerEvents: "none", animation: "heartPop 0.9s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
-              ))}
-            </div>
-            <p style={{ fontSize: 12.5, fontWeight: isDark ? 400 : 600, color: dotTextColor, lineHeight: 1.6, textShadow: isDark ? "none" : "0 1px 3px rgba(40,24,10,.6)" }}>{petMsg || dotMsg}</p>
-          </div>
-        </div>
-
-        {/* 下部 */}
-      </div>
-      {/* 下部固定ナビ */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: isDark ? 64 : 88, background: isDark ? "rgba(13,13,24,0.92)" : "transparent", borderTop: isDark ? "1px solid rgba(255,255,255,0.08)" : "none", backdropFilter: isDark ? "blur(12px)" : "none", display: "flex", zIndex: 50, ...(isDark ? {} : { paddingBottom: 6 }) }}>{!isDark && <div style={{ position: "absolute", inset: "4px 6px 10px", background: "url(/island/nav_wood.png) center / 100% 100% no-repeat", zIndex: 0, pointerEvents: "none" }} />}
-        {[
-          { ic: "🏠", label: "ホーム", href: "/home", active: true },
-          { ic: "🏆", label: "ランキング", href: "/ranking", active: false },
-          { ic: "👤", label: "マイページ", href: "/mypage", active: false },
-          { ic: "☰", label: "メニュー", href: "/menu", active: false },
-        ].map((t) => (
-          <button key={t.href} onClick={() => { playPoko(); setHopNav(t.href); setTimeout(() => router.push(t.href), 180); }} style={{ position: "relative", zIndex: 1, flex: 1, animation: hopNav === t.href ? "hop 0.35s ease-out" : "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, paddingBottom: 4, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#fff") : (isDark ? "#6b7280" : "rgba(255,255,255,.75)"), textShadow: isDark ? "none" : "0 1px 2px rgba(90,55,20,.6)" }}>
-            <div style={{ fontSize: 20 }}>{t.ic}</div>
-            <div style={{ fontSize: 10, fontWeight: 700 }}>{t.label}</div>
-          </button>
-        ))}
-      </div>
-      {showEvolve && (() => {
-        const NAMES = ["はじまりのテント", "丸太小屋", "一軒家", "大きな家", "豪邸", "ドットくん城"];
-        const IMGS = ["/island/house/0_tent.png", "/island/house/1_cabin.png", "/island/house/2_house.png", "/island/house/3_big.png", "/island/house/4_mansion.png", "/island/house/5_castle.png"];
-        const isCastle = evolveIdx === 5;
-        const confs = isCastle
-          ? ["#ffd700","#ffec8b","#f59e0b","#fbbf24","#fff3b0","#ffd700","#f59e0b","#ffec8b","#fbbf24","#ffd700","#fff3b0","#f59e0b","#ffd700","#fbbf24"]
-          : ["#fbbf24","#a78bfa","#f472b6","#34d399","#60a5fa","#fbbf24","#f472b6","#a78bfa"];
-        return (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2200, padding: 20 }}>
-            <div style={{ position: "absolute", inset: 0, background: isCastle ? "radial-gradient(circle, rgba(255,215,0,.5) 0%, rgba(255,215,0,0) 70%)" : "radial-gradient(circle, rgba(255,255,255,.45) 0%, rgba(255,255,255,0) 70%)", animation: "flashGlow 1.4s ease-out" }} />
-            {confs.map((c, i) => (
-              <div key={i} style={{ position: "absolute", top: 0, left: `${4 + i * (92 / confs.length)}%`, width: isCastle ? 11 : 9, height: isCastle ? 11 : 9, borderRadius: 2, background: c, animation: `confettiFall ${2.2 + (i % 4) * 0.5}s linear ${(i % 5) * 0.3}s infinite` }} />
-            ))}
-            <div style={{ background: isCastle ? "linear-gradient(135deg, #fff9e0, #ffedb0)" : "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 24, padding: "30px 26px", maxWidth: 380, width: "100%", textAlign: "center", boxShadow: isCastle ? "0 20px 70px rgba(200,150,0,.5)" : "0 20px 60px rgba(0,0,0,0.3)", position: "relative" }}>
-              <div style={{ fontSize: 15, fontWeight: 900, color: "#b45309", marginBottom: 2 }}>{isCastle ? "👑 GOAL!! 👑" : "✨ おうちが進化！ ✨"}</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: isCastle ? "#a16207" : "#b45309", marginBottom: 14 }}>{NAMES[evolveIdx]}{isCastle ? "、完成！" : "になった！"}</div>
-              <img src={IMGS[evolveIdx]} alt="new house" style={{ width: isCastle ? 190 : 165, height: "auto", margin: "0 auto 14px", display: "block", animation: "houseReveal 0.9s cubic-bezier(.5,1.6,.4,1) 0.35s both", filter: "drop-shadow(0 10px 16px rgba(120,90,20,.3))" }} />
-              <div style={{ fontSize: 12.5, color: "#92400e", lineHeight: 1.7, marginBottom: 18 }}>{isCastle ? "テントから始まった冒険、ついに城まで来たね。きみの積み重ねはホンモノだよ。" : "コツコツの積み重ねがカタチになったよ。この調子！"}</div>
-              <button onClick={() => setShowEvolve(false)} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: isCastle ? "linear-gradient(135deg, #f5c542, #d99e06)" : "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>{isCastle ? "最高！" : "やった！"}</button>
-            </div>
-          </div>
-        );
-      })()}
-      {showKingPopup && myKings.length > 0 && (
-        <div onClick={() => { localStorage.setItem("kingPopupSeen", getTodayJST()); setShowKingPopup(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20, cursor: "pointer" }}>
-          {["#fbbf24","#a78bfa","#f472b6","#34d399","#60a5fa","#fbbf24","#f472b6","#a78bfa","#34d399","#fbbf24"].map((c, i) => (
-            <div key={i} style={{ position: "absolute", top: 0, left: `${8 + i * 9}%`, width: 9, height: 9, borderRadius: 2, background: c, animation: `confettiFall ${2.4 + (i % 4) * 0.5}s linear ${(i % 5) * 0.35}s infinite` }} />
-          ))}
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 24, padding: "32px 28px", maxWidth: 380, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)", cursor: "default" }}>
-            <div style={{ fontSize: 40, marginBottom: 4 }}>👑</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#b45309", marginBottom: 4 }}>昨日の称号発表！</div>
-            <div style={{ fontSize: 13, color: "#92400e", marginBottom: 20 }}>きみ、こんなにすごかったんだよ</div>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}><DotKun size={80} mood="cheer" /></div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
-              {myKings.map((k, i) => (
-                <div key={i} style={{ background: "rgba(255,255,255,0.7)", borderRadius: 14, padding: "14px 16px", textAlign: "left", display: "flex", alignItems: "flex-start", gap: 12 }}>
-                  <div style={{ fontSize: 32, flexShrink: 0 }}>{k.emoji}</div>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#b45309", marginBottom: 3 }}>{k.title}</div>
-                    <div style={{ fontSize: 12, color: "#78350f", lineHeight: 1.6 }}>{k.dotkun}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => { localStorage.setItem("kingPopupSeen", getTodayJST()); setShowKingPopup(false); }} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>ありがとう！</button>
-          </div>
-        </div>
-      )}
-    </div>
-    </>
-  );
-}
