@@ -1957,6 +1957,9 @@ const handleRoutineCheck = async (routineId: string) => {
                                             <div style={{ height: 6, borderRadius: 999, background: barBg }}>
                                                 <div style={{ height: "100%", width: `${exp}%`, background: `linear-gradient(90deg, ${themeColor}, ${themeColor}aa)`, borderRadius: 999 }} />
                                             </div>
+                                            <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: textMuted, fontWeight: 600 }}>
+                                                <span>🎁</span><span>レベルが上がると: 称号・バッジの獲得チャンス</span>
+                                            </div>
                                         </div>
                                     </div>
                                 )
