@@ -1897,6 +1897,24 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                 </div>
 
+                {/* ===== プロフィールヒーロー：ステータスバー ===== */}
+                <div style={{ marginBottom: 16, borderRadius: 20, padding: "18px 20px 16px", background: "linear-gradient(150deg, #fffdf6, #f5efe2 55%, #ece4f5)", border: "1.5px solid rgba(190,170,130,.35)", boxShadow: "0 8px 24px rgba(120,100,60,.14)" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                        {[
+                            { label: "レベル", value: `Lv.${level}` },
+                            { label: "総ポイント", value: `${totalEarned.toLocaleString()}pt` },
+                            { label: "ランキング", value: rank ? `${rank}位` : "-" },
+                        ].map((it, i) => (
+                            <div key={i} style={{ textAlign: "center", padding: "10px 4px", borderRadius: 14, background: "rgba(255,255,255,.75)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.9), 0 2px 8px rgba(120,100,60,.08)" }}>
+                                <div style={{ fontSize: 17, fontWeight: 900, color: "#4a3f66", lineHeight: 1.2 }}>{it.value}</div>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9a8fb0", marginTop: 3 }}>{it.label}</div>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12.5, fontWeight: 800, color: "#b0641f" }}>
+                        <span>🔥</span><span>連続記録 {streak}日</span>
+                    </div>
+                </div>
                 {announcements.filter(a => !closedAnnouncements.includes(a.id)).map((a) => (
                     <div key={a.id} style={{ marginBottom: 12, padding: "14px 20px", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
