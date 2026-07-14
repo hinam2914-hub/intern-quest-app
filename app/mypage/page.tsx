@@ -1979,7 +1979,7 @@ const handleRoutineCheck = async (routineId: string) => {
                                     </div>
                                 )
                             },
-                        ].filter((card) => card.title !== "TOTAL POINTS").map((card) => (
+                        ].filter((card) => !["TOTAL POINTS", "LEVEL", "EFFORT RANK"].includes(card.title)).map((card) => (
                             <div key={card.title} ref={card.ref} style={{ position: "relative" }}
                                 onMouseEnter={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "block"; }}
                                 onMouseLeave={() => { const t = document.getElementById(`tip-card-${card.title}`); if (t) t.style.display = "none"; }}
