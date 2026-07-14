@@ -528,6 +528,8 @@ export default function MyPage() {
     const [totalEarned, setTotalEarned] = useState(0);
     const [rank, setRank] = useState<number | null>(null);
     const [streak, setStreak] = useState(0);
+    const [monthPt, setMonthPt] = useState(0);
+    const [days30Pt, setDays30Pt] = useState(0);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showSadModal, setShowSadModal] = useState(false);
     const [anniversaryYears, setAnniversaryYears] = useState(0);
@@ -868,6 +870,16 @@ export default function MyPage() {
         const { data: submissionRows } = await supabase.from("submissions").select("created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(400);
         setIsSubmitted(submissionRows?.some((row) => isSameJSTDay(row.created_at, todayYmd)) || false);
         setStreak(computeReportStreak((submissionRows || []).map((r: any) => r.created_at)));
+        // 成長カード用: 今月＋過去30日の獲得pt
+        try {
+            const nowJst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+            const monthStart = new Date(Date.UTC(nowJst.getUTCFullYear(), nowJst.getUTCMonth(), 1) - 9 * 60 * 60 * 1000).toISOString();
+            const d30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            const { data: growRows } = await supabase.from("points_history").select("change, created_at").eq("user_id", user.id).gte("created_at", d30 < monthStart ? d30 : monthStart);
+            const rows = (growRows || []) as any[];
+            setMonthPt(rows.filter(r => r.created_at >= monthStart && r.change > 0).reduce((a, r) => a + r.change, 0));
+            setDays30Pt(rows.filter(r => r.created_at >= d30 && r.change > 0).reduce((a, r) => a + r.change, 0));
+        } catch {}
 
         if (!profileData?.name) setShowNameModal(true);
 
@@ -1930,6 +1942,20 @@ const handleRoutineCheck = async (routineId: string) => {
                                 <div style={{ fontSize: 9.5, fontWeight: 700, color: "#9a8fb0", marginTop: 2 }}>{it.label}</div>
                             </div>
                         ))}
+                    </div>
+                </div>
+                {/* ===== 成長カード ===== */}
+                <div style={{ order: -1, marginBottom: 16, borderRadius: 20, padding: "16px 20px", background: "rgba(255,255,255,.65)", border: "1.5px solid rgba(190,170,130,.3)", boxShadow: "0 4px 14px rgba(120,100,60,.1)" }}>
+                    <div style={{ fontSize: 11, color: "#9a8fb0", fontWeight: 800, letterSpacing: 2, marginBottom: 10 }}>📈 成長のきろく</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div style={{ textAlign: "center", padding: "12px 6px", borderRadius: 14, background: "linear-gradient(160deg, rgba(139,92,246,.1), rgba(139,92,246,.04))", border: "1px solid rgba(139,92,246,.25)" }}>
+                            <div style={{ fontSize: 22, fontWeight: 900, color: "#6d5aa8", lineHeight: 1.2 }}>+{monthPt.toLocaleString()}<span style={{ fontSize: 12 }}>pt</span></div>
+                            <div style={{ fontSize: 10.5, fontWeight: 700, color: "#9a8fb0", marginTop: 3 }}>今月の獲得</div>
+                        </div>
+                        <div style={{ textAlign: "center", padding: "12px 6px", borderRadius: 14, background: "linear-gradient(160deg, rgba(52,180,120,.1), rgba(52,180,120,.04))", border: "1px solid rgba(52,180,120,.3)" }}>
+                            <div style={{ fontSize: 22, fontWeight: 900, color: "#3a8a5f", lineHeight: 1.2 }}>+{days30Pt.toLocaleString()}<span style={{ fontSize: 12 }}>pt</span></div>
+                            <div style={{ fontSize: 10.5, fontWeight: 700, color: "#8aa595", marginTop: 3 }}>過去30日</div>
+                        </div>
                     </div>
                 </div>
                 {announcements.filter(a => !closedAnnouncements.includes(a.id)).map((a) => (
