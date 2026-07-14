@@ -11,6 +11,7 @@ const SHORTCUTS: MenuItem[] = [
     { icon: "☀️", label: "今日の予定", path: "/today-schedule" },
     { icon: "🧠", label: "思考クエスト", path: "/thinking" },
     { icon: "🎯", label: "ライフチャレンジ", path: "/challenge" },
+    { icon: "📚", label: "学習する", path: "/learn" },
 ];
 
 const CATEGORIES: Category[] = [
