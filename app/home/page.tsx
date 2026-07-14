@@ -402,8 +402,8 @@ export default function HomePage() {
           </div>
 
           {/* ドットくん（リングのすぐ下） */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "popIn 0.5s ease-out 0.45s both", ...dotRowStyle }}>
-            <div onClick={() => router.push("/dotkun")} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: "floaty 2.6s ease-in-out infinite" }}><div style={{ animation: "dotHop 7s ease-in-out infinite" }}>
+          <div onClick={() => { playPoko(); router.push(task.href); }} style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "popIn 0.5s ease-out 0.45s both", cursor: "pointer", ...dotRowStyle }}>
+            <div onClick={(e) => { e.stopPropagation(); router.push("/dotkun"); }} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: "floaty 2.6s ease-in-out infinite" }}><div style={{ animation: "dotHop 7s ease-in-out infinite" }}>
               <DotKun size={44} stage={dotStage(getLevel(totalEarned))} mood="cheer" /></div>
               {petHearts.map(h => (
                 <div key={h.id} style={{ position: "absolute", top: 4, left: 16, fontSize: 15, pointerEvents: "none", animation: "heartPop 0.9s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
