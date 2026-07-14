@@ -371,7 +371,6 @@ export default function HomePage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.9)", textShadow: "0 1px 3px rgba(150,90,20,.6)" }}>{doneCount >= 3 ? "コンプリート！" : "タップして確認"}</div>
             </button>
           </div>
-          <div style={{ fontSize: 11.5, color: otherColor }}>今日のクエスト <b style={{ color: isDark ? "#a78bfa" : "#e8590c" }}>{doneCount}/3</b> 達成</div>
 
           {/* ドットくんの家（累計ポイントで育つ） */}
           <div style={{ width: "100%", marginTop: 4, animation: "popIn 0.5s ease-out 0.3s both", position: "relative" }}>
