@@ -17,12 +17,22 @@ export function getHouseStage(totalEarned: number) {
   let idx = stages.findIndex(s => totalEarned < s.max);
   if (idx === -1) idx = stages.length - 1; // 上限超え
   const stage = stages[idx];
+  const UNLOCKS = [
+    ["木の壁", "ちゃんとした屋根"],
+    ["窓が増える", "玄関ができる"],
+    ["煙突がつく", "二階建てに"],
+    ["立派な門", "広い庭"],
+    ["王様の城", "旗がはためく"],
+    [],
+  ];
+  const nextName = idx < stages.length - 1 ? stages[idx + 1].name : null;
+  const unlocks = UNLOCKS[idx] || [];
   const spanStart = stage.min;
   const spanEnd = stage.max;
   const progress = Math.min(100, Math.max(0, ((totalEarned - spanStart) / (spanEnd - spanStart)) * 100));
   const toNext = Math.max(0, spanEnd - totalEarned);
   const isMax = idx === stages.length - 1 && totalEarned >= 10000;
-  return { idx, ...stage, progress, toNext, isMax };
+  return { idx, ...stage, progress, toNext, isMax, nextName, unlocks };
 }
 
 // ドットくんの顔（小）
@@ -150,12 +160,21 @@ export default function DotHouse({ totalEarned, accent = "#a78bfa", light = fals
         {light && <div style={{ fontSize: 24, flexShrink: 0, filter: "drop-shadow(0 1px 2px rgba(150,100,30,.35))" }}>⭐</div>}
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: light ? "#7a5a2b" : "#fff" }}>🏠 {h.name}</div>
-            <div style={{ fontSize: 11, fontWeight: light ? 800 : 400, color: light ? "#e8590c" : "#8a8898" }}>{h.isMax ? "MAX！" : `次まであと ${h.toNext.toLocaleString()}pt`}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: light ? "#7a5a2b" : "#fff" }}>{h.isMax ? "👑 GOAL達成！" : `${h.idx === 4 ? "🏰" : "🏠"} ${h.nextName}まで`}</div>
+            <div style={{ fontSize: 11, fontWeight: light ? 800 : 400, color: light ? "#e8590c" : "#8a8898" }}>{h.isMax ? "MAX！" : `あと ${h.toNext.toLocaleString()}pt`}</div>
           </div>
           <div style={{ height: light ? 10 : 6, background: light ? "rgba(150,110,50,.18)" : "rgba(255,255,255,0.08)", borderRadius: 6, overflow: "hidden", boxShadow: light ? "inset 0 1px 2px rgba(120,80,30,.25)" : "none" }}>
             <div style={{ width: `${h.progress}%`, height: "100%", background: light ? "linear-gradient(180deg, #8ee04a, #5cbf2a)" : `linear-gradient(90deg, ${accent}, #8b5cf6)`, borderRadius: 6, transition: "width 1.2s cubic-bezier(.4,1.2,.4,1)" }} />
           </div>
+          {light && !h.isMax && h.unlocks.length > 0 && (
+            <div style={{ marginTop: 7, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {h.unlocks.map((u: string, i: number) => (
+                <div key={i} style={{ fontSize: 10.5, fontWeight: 700, color: "#9a7a4a", display: "flex", alignItems: "center", gap: 3 }}>
+                  <span style={{ fontSize: 9, color: "#c0a070" }}>◆</span>{u}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
