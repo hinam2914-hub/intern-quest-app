@@ -80,7 +80,7 @@ export default function SurveysPage() {
 
                 {/* ヘッダー */}
                 <div style={{ marginBottom: 32 }}>
-                    <button onClick={() => router.push("/home")} style={{ background: "rgba(255,255,255,0.05)", color: "#9ca3af", padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontSize: 12, cursor: "pointer", fontWeight: 600, marginBottom: 16 }}>← マイページに戻る</button>
+                    <button onClick={() => router.push("/home")} style={{ background: "rgba(255,255,255,0.05)", color: "#9ca3af", padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontSize: 12, cursor: "pointer", fontWeight: 600, marginBottom: 16 }}>← ホームに戻る</button>
                     <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>SURVEYS</div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 8px" }}>📋 アンケート</h1>
                     <p style={{ fontSize: 14, color: "#9ca3af", lineHeight: 1.6 }}>回答するとポイントがもらえます。所要時間は約3〜5分です。</p>

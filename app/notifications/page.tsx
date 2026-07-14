@@ -60,7 +60,7 @@ export default function NotificationsPage() {
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", color: "#f9fafb" }}>
             <div style={{ maxWidth: 720, margin: "0 auto" }}>
-                <button onClick={() => router.push("/home")} style={{ background: "transparent", border: "1px solid #374151", color: "#9ca3af", padding: "6px 14px", borderRadius: 8, cursor: "pointer", fontSize: 13, marginBottom: 16 }}>← マイページに戻る</button>
+                <button onClick={() => router.push("/home")} style={{ background: "transparent", border: "1px solid #374151", color: "#9ca3af", padding: "6px 14px", borderRadius: 8, cursor: "pointer", fontSize: 13, marginBottom: 16 }}>← ホームに戻る</button>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
                     <h1 style={{ fontSize: 28, fontWeight: 900 }}>🔔 通知{unreadCount > 0 && <span style={{ fontSize: 14, color: "#ef4444", marginLeft: 12, fontWeight: 700 }}>({unreadCount}件未読)</span>}</h1>

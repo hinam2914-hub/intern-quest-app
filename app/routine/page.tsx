@@ -69,7 +69,7 @@ export default function RoutinePage() {
     return (
         <div style={{ minHeight: "100vh", background: "#0f0f1a", padding: "32px 20px", color: "#f9fafb" }}>
             <div style={{ maxWidth: 600, margin: "0 auto" }}>
-                <button onClick={() => router.push("/home")} style={{ background: "none", border: "none", color: "#818cf8", cursor: "pointer", fontSize: 14, marginBottom: 20 }}>← マイページに戻る</button>
+                <button onClick={() => router.push("/home")} style={{ background: "none", border: "none", color: "#818cf8", cursor: "pointer", fontSize: 14, marginBottom: 20 }}>← ホームに戻る</button>
 
                 <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>🔁 マイルーティン設定</h1>
                 <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 24 }}>毎日続けたいことを登録しましょう。登録した項目はマイページの「今日のミッション」に表示され、毎日チェックできます。</p>
