@@ -603,6 +603,7 @@ export default function MyPage() {
     const [showGachaModal, setShowGachaModal] = useState(false);
     const [showTrophies, setShowTrophies] = useState(false);
     const [showTagEdit, setShowTagEdit] = useState(false);
+    const [showAllCollection, setShowAllCollection] = useState(false);
     const [showBadges, setShowBadges] = useState(false);
     const [achieveBadges, setAchieveBadges] = useState<{ id: string; name: string; icon: string | null; description: string | null; category: string | null }[]>([]);
     const [myBadgeIds, setMyBadgeIds] = useState<string[]>([]);
@@ -2114,8 +2115,31 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>}
                 </div>
 
-                {/* ===== トロフィー ===== */}
+                {/* ===== コレクション（統合サマリー） ===== */}
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎁 コレクション</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedTrophies.length + badges.filter(b => b.unlocked).length + myBadgeIds.length} / {trophies.length + badges.length + achieveBadges.length} 獲得</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, WebkitOverflowScrolling: "touch" }}>
+                        {[
+                            ...unlockedTrophies.map(t => ({ icon: t.icon, name: t.name })),
+                            ...badges.filter(b => b.unlocked).map(b => ({ icon: b.icon, name: b.name })),
+                            ...achieveBadges.filter(b => myBadgeIds.includes(b.id)).map(b => ({ icon: b.icon || "🏅", name: b.name })),
+                        ].slice(0, 8).map((item, i) => (
+                            <div key={i} style={{ flexShrink: 0, width: 92, textAlign: "center", padding: "14px 6px 12px", borderRadius: 14, background: "linear-gradient(160deg, rgba(255,255,255,.85), rgba(245,238,255,.85))", border: "1.5px solid rgba(140,120,200,.25)", boxShadow: "0 3px 10px rgba(100,80,160,.12)" }}>
+                                <div style={{ fontSize: 30, marginBottom: 5 }}>{item.icon}</div>
+                                <div style={{ fontSize: 10.5, fontWeight: 700, color: "#4a3f66", lineHeight: 1.3 }}>{item.name}</div>
+                            </div>
+                        ))}
+                        {(unlockedTrophies.length + badges.filter(b => b.unlocked).length + myBadgeIds.length) === 0 && (
+                            <div style={{ fontSize: 12, color: textMuted, padding: "8px 0" }}>まだ獲得したものがありません。活動して集めよう！</div>
+                        )}
+                    </div>
+                    <button onClick={() => setShowAllCollection(!showAllCollection)} style={{ width: "100%", marginTop: 10, padding: "9px 0", borderRadius: 10, border: `1px solid ${cardBorder}`, background: "transparent", color: "#818cf8", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{showAllCollection ? "▲ 閉じる" : "▼ コレクションをすべて見る"}</button>
+                </div>
+                {/* ===== トロフィー ===== */}
+                <div style={{ display: showAllCollection ? undefined : "none", marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div onClick={() => setShowTrophies(!showTrophies)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showTrophies ? 16 : 0, cursor: "pointer", userSelect: "none" }}>
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🏆 TROPHIES & 称号 {showTrophies ? "▲" : "▼"}</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedTrophies.length} / {trophies.length} 獲得</div>
@@ -2140,7 +2164,7 @@ const handleRoutineCheck = async (routineId: string) => {
                 </div>
 
                 {/* ===== バッジ ===== */}
-                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                <div style={{ display: showAllCollection ? undefined : "none", marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div onClick={() => setShowBadges(!showBadges)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showBadges ? 16 : 0, cursor: "pointer", userSelect: "none" }}>
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎖️ BADGES {showBadges ? "▲" : "▼"}</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{badges.filter(b => b.unlocked).length} / {badges.length} 解除済み</div>
@@ -2159,7 +2183,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>}
                 </div>
                 {/* ===== 実績バッジ ===== */}
-                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                <div style={{ display: showAllCollection ? undefined : "none", marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div onClick={() => setShowAchieve(!showAchieve)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showAchieve ? 16 : 0, cursor: "pointer", userSelect: "none" }}>
                         <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🏅 実績バッジ {showAchieve ? "▲" : "▼"}</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{myBadgeIds.length} / {achieveBadges.length} 獲得</div>
