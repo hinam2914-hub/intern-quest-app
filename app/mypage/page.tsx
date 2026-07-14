@@ -1604,7 +1604,7 @@ const handleRoutineCheck = async (routineId: string) => {
                         <div
                             onClick={() => router.push("/report")}
                             style={{
-                                padding: "20px 24px",
+                                padding: "11px 18px",
                                 background: "linear-gradient(135deg, #fbbf24 0%, #ec4899 50%, #8b5cf6 100%)",
                                 borderRadius: 16,
                                 cursor: "pointer",
@@ -1616,9 +1616,8 @@ const handleRoutineCheck = async (routineId: string) => {
                             }}
                         >
                             <div>
-                                <div style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>📋 今日の日報を書いてガチャを回そう！</div>
-                                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 4, fontWeight: 600 }}>日報を提出するとガチャが1回引けます</div>
-                                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
+                                <div style={{ fontSize: 13.5, fontWeight: 800, color: "#fff" }}>📋 今日の日報がまだ！提出でガチャ1回</div>
+                                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 5 }}>
                                     <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 12, fontWeight: 800 }}>🎁 +2pt 獲得</span>
                                     {streak > 0 && (
                                         <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 12, fontWeight: 800 }}>🔥 連続{streak}日記録更新中</span>
@@ -1883,7 +1882,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     )}
                 </div>
                 
-                <div style={{ order: -3, display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 16 : 0, marginBottom: 20 }}>
+                <div style={{ order: -3, display: "none", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 16 : 0, marginBottom: 20 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                         {avatarUrl ? (
                             <img src={avatarUrl} alt={name} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", display: "block", border: "3px solid rgba(99,102,241,0.6)" }} />
@@ -1912,11 +1911,16 @@ const handleRoutineCheck = async (routineId: string) => {
                 </div>
 
                 {/* ===== プロフィールヒーロー（統合版） ===== */}
-                <div style={{ order: -2, marginBottom: 16, borderRadius: 24, padding: "22px 20px 18px", background: "linear-gradient(150deg, #fffdf6, #f5efe2 50%, #e9e0f5)", border: "1.5px solid rgba(190,170,130,.4)", boxShadow: "0 10px 30px rgba(120,100,60,.18)" }}>
+                <div style={{ order: -2, position: "relative", marginBottom: 16, borderRadius: 24, padding: "22px 20px 18px", background: "linear-gradient(150deg, #fffdf6, #f5efe2 50%, #e9e0f5)", border: "1.5px solid rgba(190,170,130,.4)", boxShadow: "0 10px 30px rgba(120,100,60,.18)" }}>
+                    <button onClick={() => setShowProfileModal(true)} style={{ position: "absolute", top: 14, right: 14, width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(190,170,130,.4)", background: "rgba(255,255,255,.8)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>⚙️</button>
                     <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-                        <div style={{ width: 84, height: 84, borderRadius: "50%", flexShrink: 0, background: "radial-gradient(circle at 35% 30%, #a78bfa, #6d28d9)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "0 0 26px rgba(139,92,246,.45), inset 0 2px 6px rgba(255,255,255,.35)" }}>
-                            <div style={{ fontSize: 11, color: "#ede9fe", fontWeight: 800, lineHeight: 1 }}>Lv.</div>
-                            <div style={{ fontSize: 34, color: "#fff", fontWeight: 900, lineHeight: 1 }}>{level}</div>
+                        <div style={{ position: "relative", flexShrink: 0 }}>
+                            {avatarUrl ? (
+                                <img src={avatarUrl} alt={name} style={{ width: 84, height: 84, borderRadius: "50%", objectFit: "cover", display: "block", border: "3px solid rgba(167,139,250,.7)", boxShadow: "0 0 22px rgba(139,92,246,.35)" }} />
+                            ) : (
+                                <div style={{ width: 84, height: 84, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #a78bfa, #6d28d9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 900, color: "#fff", boxShadow: "0 0 22px rgba(139,92,246,.4)" }}>{name ? name.charAt(0) : "?"}</div>
+                            )}
+                            <div style={{ position: "absolute", bottom: -4, right: -6, borderRadius: 999, padding: "3px 9px", background: "linear-gradient(135deg, #8b5cf6, #6d28d9)", color: "#fff", fontSize: 12, fontWeight: 900, boxShadow: "0 2px 8px rgba(109,40,217,.5)", border: "2px solid #fffdf6" }}>Lv.{level}</div>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 20, fontWeight: 900, color: "#3d3355", lineHeight: 1.2 }}>{name || "名前未設定"}</div>
@@ -1929,13 +1933,12 @@ const handleRoutineCheck = async (routineId: string) => {
                             </div>
                         </div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
                         {[
-                            { label: "レベル", value: `${level}` },
-                            { label: "順位", value: rank ? `${rank}位` : "-" },
-                            { label: "総pt", value: totalEarned >= 10000 ? `${(totalEarned/1000).toFixed(1)}k` : totalEarned.toLocaleString() },
-                            { label: "連続", value: `${streak}日` },
-                            { label: "努力", value: rank2 || "-" },
+                            { label: "レベル", value: `Lv.${level}` },
+                            { label: "総ポイント", value: `${totalEarned.toLocaleString()}pt` },
+                            { label: "ランキング", value: rank ? `${rank}位` : "-" },
+                            { label: "連続記録", value: `${streak}日` },
                         ].map((it, i) => (
                             <div key={i} style={{ textAlign: "center", padding: "9px 2px", borderRadius: 12, background: "rgba(255,255,255,.75)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.9), 0 2px 8px rgba(120,100,60,.08)" }}>
                                 <div style={{ fontSize: 15, fontWeight: 900, color: "#4a3f66", lineHeight: 1.2 }}>{it.value}</div>
