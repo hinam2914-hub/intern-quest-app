@@ -127,7 +127,7 @@ export default function MenuPage() {
 
             const [profileRes, pointsRes, histRes, weekRes, subRes, schedRes, thinkRes, thanksRes, badgeRes] = await Promise.all([
                 supabase.from("profiles").select("name, streak").eq("id", user.id).single(),
-                supabase.from("user_points").select("*").eq("user_id", user.id).maybeSingle(),
+                supabase.from("user_points").select("*").eq("id", user.id).maybeSingle(),
                 supabase.from("points_history").select("reason, change, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
                 supabase.from("points_history").select("change").eq("user_id", user.id).gte("created_at", weekAgo),
                 supabase.from("submissions").select("id").eq("user_id", user.id).gte("created_at", start).lt("created_at", end).limit(1),
