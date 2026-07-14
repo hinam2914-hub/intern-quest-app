@@ -2117,10 +2117,10 @@ const handleRoutineCheck = async (routineId: string) => {
                         <button onClick={() => setShowTagEdit(!showTagEdit)} style={{ padding: "4px 14px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: showTagEdit ? `${themeColor}22` : "transparent", color: showTagEdit ? themeColor : textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{showTagEdit ? "完了" : "編集"}</button>
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-                        {mbti && <div style={{ padding: "6px 14px", borderRadius: 20, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 13, color: "#818cf8", fontWeight: 700 }}>🧠 {mbti}</div>}
-                        {club && <div style={{ padding: "6px 14px", borderRadius: 20, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
+                        {mbti && <div style={{ padding: "4px 11px", borderRadius: 20, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 11.5, color: "#818cf8", fontWeight: 700 }}>🧠 {mbti}</div>}
+                        {club && <div style={{ padding: "4px 11px", borderRadius: 20, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 11.5, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
                         {userTags.map(tag => (
-                            <div key={tag.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 13, color: "#34d399", fontWeight: 700 }}>
+                            <div key={tag.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 11px", borderRadius: 20, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 11.5, color: "#34d399", fontWeight: 700 }}>
                                 {tag.tag}
                                 {showTagEdit && <button onClick={() => handleDeleteTag(tag.id)} style={{ background: "none", border: "none", color: "#34d399", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1, opacity: 0.7 }}>×</button>}
                             </div>
@@ -2136,14 +2136,14 @@ const handleRoutineCheck = async (routineId: string) => {
                 {/* ===== コレクション（統合サマリー） ===== */}
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎁 コレクション</div>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🎖️ バッジ & コレクション</div>
                         <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 600 }}>{unlockedTrophies.length + badges.filter(b => b.unlocked).length + myBadgeIds.length} / {trophies.length + badges.length + achieveBadges.length} 獲得</div>
                     </div>
                     <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6, WebkitOverflowScrolling: "touch" }}>
                         {[
-                            ...unlockedTrophies.map(t => ({ icon: t.icon, name: t.name })),
                             ...badges.filter(b => b.unlocked).map(b => ({ icon: b.icon, name: b.name })),
                             ...achieveBadges.filter(b => myBadgeIds.includes(b.id)).map(b => ({ icon: b.icon || "🏅", name: b.name })),
+                            ...unlockedTrophies.map(t => ({ icon: t.icon, name: t.name })),
                         ].slice(0, 8).map((item, i) => (
                             <div key={i} style={{ flexShrink: 0, width: 92, textAlign: "center", padding: "14px 6px 12px", borderRadius: 14, background: "linear-gradient(160deg, rgba(255,255,255,.85), rgba(245,238,255,.85))", border: "1.5px solid rgba(140,120,200,.25)", boxShadow: "0 3px 10px rgba(100,80,160,.12)" }}>
                                 <div style={{ fontSize: 30, marginBottom: 5 }}>{item.icon}</div>
