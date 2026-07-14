@@ -96,6 +96,7 @@ export default function HomePage() {
   const [ptGain, setPtGain] = useState(0);
   const [showPtFx, setShowPtFx] = useState(false);
   const [barFrom, setBarFrom] = useState<number | null>(null);
+  const [missions, setMissions] = useState({ schedule: false, report: false, thinking: false });
   const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
   const [petMsg, setPetMsg] = useState<string | null>(null);
   const [petKey, setPetKey] = useState(0);
@@ -160,6 +161,7 @@ export default function HomePage() {
 
       // リング: コアタスク3つ（スケジュール・日報・思考系）
       setDoneCount([scheduleDone, reportDone, thinkingDone].filter(Boolean).length);
+      setMissions({ schedule: scheduleDone, report: reportDone, thinking: thinkingDone });
 
       // 中央ボタンの決定
       const seed = todayYmd + user.id;
@@ -362,10 +364,11 @@ export default function HomePage() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, animation: "popIn 0.5s ease-out 0.15s both" }}>
           <div className="iq-ring" style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, ["--ringPct" as any]: `${pct}%`, filter: isDark ? undefined : undefined }}>
             <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
-            <button onPointerDown={() => setBtnPop(false)} onClick={() => { playPoko(); setBtnPop(true); setTimeout(() => router.push(task.href), 260); }} style={{ animation: btnPop ? "pushPop 0.4s ease-out" : "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2, transition: "transform 0.08s", transform: "scale(1)", WebkitTapHighlightColor: "transparent" }} onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.93)"; }} onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
+            <button onPointerDown={() => setBtnPop(false)} onClick={() => { playPoko(); setBtnPop(true); const next = !missions.schedule ? "/today-schedule" : !missions.report ? "/report" : !missions.thinking ? "/thinking" : "/mypage"; setTimeout(() => router.push(next), 260); }} style={{ animation: btnPop ? "pushPop 0.4s ease-out" : "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2, transition: "transform 0.08s", transform: "scale(1)", WebkitTapHighlightColor: "transparent" }} onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.93)"; }} onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
               {!isDark && <div style={{ position: "absolute", inset: "14% 12%", borderRadius: "50%", overflow: "hidden", pointerEvents: "none" }}><div style={{ position: "absolute", top: "-20%", left: 0, width: "36%", height: "140%", background: "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%)", animation: "btnShine 6.5s ease-in-out infinite" }} /></div>}
-              <div style={{ fontSize: 50, filter: isDark ? "none" : "drop-shadow(0 2px 3px rgba(120,72,20,.35))" }}>{task.icon}</div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: 1, textShadow: isDark ? "none" : "0 2px 4px rgba(150,90,20,.7)" }}>{task.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: 1, textShadow: "0 2px 4px rgba(150,90,20,.7)", marginBottom: -2 }}>今日のクエスト</div>
+              <div style={{ fontSize: 46, fontWeight: 900, color: "#fff", textShadow: "0 3px 6px rgba(150,90,20,.75)", lineHeight: 1.1 }}>{doneCount}<span style={{ fontSize: 26, opacity: .85 }}>/3</span></div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.9)", textShadow: "0 1px 3px rgba(150,90,20,.6)" }}>{doneCount >= 3 ? "コンプリート！" : "タップして確認"}</div>
             </button>
           </div>
           <div style={{ fontSize: 11.5, color: otherColor }}>今日のクエスト <b style={{ color: isDark ? "#a78bfa" : "#e8590c" }}>{doneCount}/3</b> 達成</div>
@@ -382,6 +385,21 @@ export default function HomePage() {
               </div>
             )}
             <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} />
+          </div>
+          <div style={{ width: "100%", marginTop: 12, borderRadius: 20, padding: "14px 16px 12px", background: "linear-gradient(180deg, rgba(255,252,242,.96), rgba(252,244,226,.96))", boxShadow: "0 6px 18px rgba(120,90,40,.16), inset 0 1px 0 rgba(255,255,255,.7)", border: "1.5px solid rgba(190,160,110,.35)", animation: "popIn 0.5s ease-out 0.38s both" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 900, color: "#8a6a3a", marginBottom: 8, letterSpacing: 1 }}>今日のミッション</div>
+            {[
+              { key: "schedule", icon: "☀️", label: "予定を立てる", pt: "", href: "/today-schedule", done: missions.schedule },
+              { key: "report", icon: "📝", label: "日報を書く", pt: "+2pt", href: "/report", done: missions.report },
+              { key: "thinking", icon: "🧠", label: "今日のお題", pt: "+5pt", href: "/thinking", done: missions.thinking },
+            ].map((m) => (
+              <div key={m.key} onClick={() => { if (!m.done) { playPoko(); router.push(m.href); } }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 4px", cursor: m.done ? "default" : "pointer", opacity: m.done ? 0.5 : 1, borderBottom: m.key !== "thinking" ? "1px solid rgba(180,150,100,.18)" : "none" }}>
+                <div style={{ fontSize: 19, flexShrink: 0 }}>{m.icon}</div>
+                <div style={{ flex: 1, fontSize: 13.5, fontWeight: 800, color: "#6b5232", textDecoration: m.done ? "line-through" : "none" }}>{m.label}</div>
+                {m.pt && <div style={{ fontSize: 11.5, fontWeight: 900, color: m.done ? "#a09070" : "#e8590c" }}>{m.pt}</div>}
+                <div style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, background: m.done ? "linear-gradient(180deg, #8ee04a, #5cbf2a)" : "transparent", border: m.done ? "none" : "2px solid rgba(160,130,80,.4)", color: "#fff" }}>{m.done ? "✓" : ""}</div>
+              </div>
+            ))}
           </div>
 
           {/* ドットくん（リングのすぐ下） */}
