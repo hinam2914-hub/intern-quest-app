@@ -1899,22 +1899,37 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                 </div>
 
-                {/* ===== プロフィールヒーロー：ステータスバー ===== */}
-                <div style={{ order: -2, marginBottom: 16, borderRadius: 20, padding: "18px 20px 16px", background: "linear-gradient(150deg, #fffdf6, #f5efe2 55%, #ece4f5)", border: "1.5px solid rgba(190,170,130,.35)", boxShadow: "0 8px 24px rgba(120,100,60,.14)" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                {/* ===== プロフィールヒーロー（統合版） ===== */}
+                <div style={{ order: -2, marginBottom: 16, borderRadius: 24, padding: "22px 20px 18px", background: "linear-gradient(150deg, #fffdf6, #f5efe2 50%, #e9e0f5)", border: "1.5px solid rgba(190,170,130,.4)", boxShadow: "0 10px 30px rgba(120,100,60,.18)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+                        <div style={{ width: 84, height: 84, borderRadius: "50%", flexShrink: 0, background: "radial-gradient(circle at 35% 30%, #a78bfa, #6d28d9)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "0 0 26px rgba(139,92,246,.45), inset 0 2px 6px rgba(255,255,255,.35)" }}>
+                            <div style={{ fontSize: 11, color: "#ede9fe", fontWeight: 800, lineHeight: 1 }}>Lv.</div>
+                            <div style={{ fontSize: 34, color: "#fff", fontWeight: 900, lineHeight: 1 }}>{level}</div>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 20, fontWeight: 900, color: "#3d3355", lineHeight: 1.2 }}>{name || "名前未設定"}</div>
+                            {topTrophy && <div style={{ fontSize: 12, fontWeight: 800, color: "#b0641f", marginTop: 2 }}>{topTrophy.icon} {topTrophy.name}</div>}
+                            <div style={{ marginTop: 8, height: 9, borderRadius: 999, background: "rgba(120,100,150,.16)" }}>
+                                <div style={{ height: "100%", width: `${exp}%`, borderRadius: 999, background: "linear-gradient(90deg, #8b5cf6, #c4b5fd)", boxShadow: "0 0 10px rgba(139,92,246,.5)", transition: "width 1s ease" }} />
+                            </div>
+                            <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: "#8a7fa5", display: "flex", justifyContent: "space-between" }}>
+                                <span>EXP {exp}/100</span><span>あと{100 - exp}ptでLv.{level + 1}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
                         {[
-                            { label: "レベル", value: `Lv.${level}` },
-                            { label: "総ポイント", value: `${totalEarned.toLocaleString()}pt` },
-                            { label: "ランキング", value: rank ? `${rank}位` : "-" },
+                            { label: "レベル", value: `${level}` },
+                            { label: "順位", value: rank ? `${rank}位` : "-" },
+                            { label: "総pt", value: totalEarned >= 10000 ? `${(totalEarned/1000).toFixed(1)}k` : totalEarned.toLocaleString() },
+                            { label: "連続", value: `${streak}日` },
+                            { label: "努力", value: rank2 || "-" },
                         ].map((it, i) => (
-                            <div key={i} style={{ textAlign: "center", padding: "10px 4px", borderRadius: 14, background: "rgba(255,255,255,.75)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.9), 0 2px 8px rgba(120,100,60,.08)" }}>
-                                <div style={{ fontSize: 17, fontWeight: 900, color: "#4a3f66", lineHeight: 1.2 }}>{it.value}</div>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: "#9a8fb0", marginTop: 3 }}>{it.label}</div>
+                            <div key={i} style={{ textAlign: "center", padding: "9px 2px", borderRadius: 12, background: "rgba(255,255,255,.75)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.9), 0 2px 8px rgba(120,100,60,.08)" }}>
+                                <div style={{ fontSize: 15, fontWeight: 900, color: "#4a3f66", lineHeight: 1.2 }}>{it.value}</div>
+                                <div style={{ fontSize: 9.5, fontWeight: 700, color: "#9a8fb0", marginTop: 2 }}>{it.label}</div>
                             </div>
                         ))}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12.5, fontWeight: 800, color: "#b0641f" }}>
-                        <span>🔥</span><span>連続記録 {streak}日</span>
                     </div>
                 </div>
                 {announcements.filter(a => !closedAnnouncements.includes(a.id)).map((a) => (
