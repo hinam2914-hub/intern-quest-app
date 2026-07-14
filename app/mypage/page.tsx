@@ -602,6 +602,7 @@ export default function MyPage() {
     const [goshugiSpinning, setGoshugiSpinning] = useState(false);
     const [showGachaModal, setShowGachaModal] = useState(false);
     const [showTrophies, setShowTrophies] = useState(false);
+    const [showTagEdit, setShowTagEdit] = useState(false);
     const [showBadges, setShowBadges] = useState(false);
     const [achieveBadges, setAchieveBadges] = useState<{ id: string; name: string; icon: string | null; description: string | null; category: string | null }[]>([]);
     const [myBadgeIds, setMyBadgeIds] = useState<string[]>([]);
@@ -2092,22 +2093,25 @@ const handleRoutineCheck = async (routineId: string) => {
 
                 {/* ===== タグ ===== */}
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
-                    <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>🏷️ MY TAGS</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>🏷️ MY TAGS</div>
+                        <button onClick={() => setShowTagEdit(!showTagEdit)} style={{ padding: "4px 14px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: showTagEdit ? `${themeColor}22` : "transparent", color: showTagEdit ? themeColor : textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{showTagEdit ? "完了" : "編集"}</button>
+                    </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
                         {mbti && <div style={{ padding: "6px 14px", borderRadius: 20, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", fontSize: 13, color: "#818cf8", fontWeight: 700 }}>🧠 {mbti}</div>}
                         {club && <div style={{ padding: "6px 14px", borderRadius: 20, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>⚽ {club}</div>}
                         {userTags.map(tag => (
                             <div key={tag.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", fontSize: 13, color: "#34d399", fontWeight: 700 }}>
                                 {tag.tag}
-                                <button onClick={() => handleDeleteTag(tag.id)} style={{ background: "none", border: "none", color: "#34d399", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1, opacity: 0.7 }}>×</button>
+                                {showTagEdit && <button onClick={() => handleDeleteTag(tag.id)} style={{ background: "none", border: "none", color: "#34d399", cursor: "pointer", fontSize: 14, padding: 0, lineHeight: 1, opacity: 0.7 }}>×</button>}
                             </div>
                         ))}
                         {userTags.length === 0 && !mbti && !club && <div style={{ fontSize: 13, color: textMuted }}>タグがありません。追加してみましょう！</div>}
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
+                    {showTagEdit && <div style={{ display: "flex", gap: 8 }}>
                         <input value={newTag} onChange={(e) => setNewTag(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddTag()} placeholder="例：🏢 新宿オフィス、💼 営業担当" style={{ flex: 1, padding: "8px 14px", borderRadius: 10, border: `1px solid ${cardBorder}`, background: inputBg, color: textPrimary, fontSize: 13, outline: "none" }} />
                         <button onClick={handleAddTag} disabled={tagSaving || !newTag.trim()} style={{ padding: "8px 20px", borderRadius: 10, border: "none", background: newTag.trim() ? `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)` : "rgba(255,255,255,0.1)", color: "#fff", fontWeight: 700, cursor: newTag.trim() ? "pointer" : "not-allowed", fontSize: 13 }}>追加</button>
-                    </div>
+                    </div>}
                 </div>
 
                 {/* ===== トロフィー ===== */}
