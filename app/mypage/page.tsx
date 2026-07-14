@@ -2195,6 +2195,7 @@ const handleRoutineCheck = async (routineId: string) => {
 
                 {/* ===== クイックタスク（超目立つ版） ===== */}
                 <div style={{
+                    display: "none",
                     marginBottom: 20,
                     background: "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(99,102,241,0.06))",
                     border: "2px solid rgba(139,92,246,0.4)",
