@@ -2505,7 +2505,7 @@ const handleRoutineCheck = async (routineId: string) => {
                             <button onClick={() => router.push("/history")} style={{ background: "none", border: "none", color: themeColor, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>履歴を見る →</button>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {history.slice(0, 8).map((item, i) => (
+                            {history.slice(0, 5).map((item, i) => (
                                 <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: `1px solid ${cardBorder}` }}>
                                     <div>
                                         <div style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{formatReason(item.reason)}</div>
