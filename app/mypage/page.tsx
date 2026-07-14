@@ -1840,7 +1840,7 @@ const handleRoutineCheck = async (routineId: string) => {
 
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(ellipse at 20% 50%, ${themeColor}08 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, ${themeColor}05 0%, transparent 60%)`, pointerEvents: "none", zIndex: 0 }} />
 
-           <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
+           <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: "column" }}>
                 <div style={{ marginBottom: 16, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1871,7 +1871,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     )}
                 </div>
                 
-                <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 16 : 0, marginBottom: 20 }}>
+                <div style={{ order: -3, display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 16 : 0, marginBottom: 20 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                         {avatarUrl ? (
                             <img src={avatarUrl} alt={name} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", display: "block", border: "3px solid rgba(99,102,241,0.6)" }} />
@@ -1900,7 +1900,7 @@ const handleRoutineCheck = async (routineId: string) => {
                 </div>
 
                 {/* ===== プロフィールヒーロー：ステータスバー ===== */}
-                <div style={{ marginBottom: 16, borderRadius: 20, padding: "18px 20px 16px", background: "linear-gradient(150deg, #fffdf6, #f5efe2 55%, #ece4f5)", border: "1.5px solid rgba(190,170,130,.35)", boxShadow: "0 8px 24px rgba(120,100,60,.14)" }}>
+                <div style={{ order: -2, marginBottom: 16, borderRadius: 20, padding: "18px 20px 16px", background: "linear-gradient(150deg, #fffdf6, #f5efe2 55%, #ece4f5)", border: "1.5px solid rgba(190,170,130,.35)", boxShadow: "0 8px 24px rgba(120,100,60,.14)" }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
                         {[
                             { label: "レベル", value: `Lv.${level}` },
