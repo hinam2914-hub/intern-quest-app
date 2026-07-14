@@ -1912,7 +1912,10 @@ const handleRoutineCheck = async (routineId: string) => {
 
                 {/* ===== プロフィールヒーロー（統合版） ===== */}
                 <div style={{ order: -2, position: "relative", marginBottom: 22, borderRadius: 28, padding: "72px 20px 18px", background: "linear-gradient(180deg, rgba(255,253,246,0) 0%, rgba(255,251,240,.5) 52%, rgba(255,251,240,.95) 100%), url(/island/room_bg.png) center top / cover no-repeat", border: "1.5px solid rgba(190,170,130,.35)", boxShadow: "0 10px 30px rgba(120,100,60,.16)", overflow: "hidden" }}>
-                    <button onClick={() => setShowProfileModal(true)} style={{ position: "absolute", top: 14, right: 14, width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(190,170,130,.4)", background: "rgba(255,255,255,.8)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>⚙️</button>
+                    <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 8, zIndex: 2 }}>
+                        <button onClick={() => router.push("/home")} style={{ width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(190,170,130,.4)", background: "rgba(255,255,255,.85)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>🏝️</button>
+                        <button onClick={() => setShowProfileModal(true)} style={{ width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(190,170,130,.4)", background: "rgba(255,255,255,.85)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>⚙️</button>
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
                         <div style={{ position: "relative", flexShrink: 0 }}>
                             {avatarUrl ? (
