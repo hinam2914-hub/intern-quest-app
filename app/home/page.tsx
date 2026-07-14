@@ -96,6 +96,7 @@ export default function HomePage() {
   const [ptGain, setPtGain] = useState(0);
   const [showPtFx, setShowPtFx] = useState(false);
   const [barFrom, setBarFrom] = useState<number | null>(null);
+  const [missions, setMissions] = useState({ schedule: false, report: false, thinking: false });
   const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
   const [petMsg, setPetMsg] = useState<string | null>(null);
   const [petKey, setPetKey] = useState(0);
@@ -160,6 +161,7 @@ export default function HomePage() {
 
       // リング: コアタスク3つ（スケジュール・日報・思考系）
       setDoneCount([scheduleDone, reportDone, thinkingDone].filter(Boolean).length);
+      setMissions({ schedule: scheduleDone, report: reportDone, thinking: thinkingDone });
 
       // 中央ボタンの決定
       const seed = todayYmd + user.id;
@@ -364,11 +366,11 @@ export default function HomePage() {
             <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
             <button onPointerDown={() => setBtnPop(false)} onClick={() => { playPoko(); setBtnPop(true); setTimeout(() => router.push(task.href), 260); }} style={{ animation: btnPop ? "pushPop 0.4s ease-out" : "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2, transition: "transform 0.08s", transform: "scale(1)", WebkitTapHighlightColor: "transparent" }} onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.93)"; }} onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
               {!isDark && <div style={{ position: "absolute", inset: "14% 12%", borderRadius: "50%", overflow: "hidden", pointerEvents: "none" }}><div style={{ position: "absolute", top: "-20%", left: 0, width: "36%", height: "140%", background: "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%)", animation: "btnShine 6.5s ease-in-out infinite" }} /></div>}
-              <div style={{ fontSize: 50, filter: isDark ? "none" : "drop-shadow(0 2px 3px rgba(120,72,20,.35))" }}>{task.icon}</div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: 1, textShadow: isDark ? "none" : "0 2px 4px rgba(150,90,20,.7)" }}>{task.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: 1, textShadow: "0 2px 4px rgba(150,90,20,.7)", marginBottom: -2 }}>今日のクエスト</div>
+              <div style={{ fontSize: 46, fontWeight: 900, color: "#fff", letterSpacing: 1, textShadow: "0 3px 6px rgba(150,90,20,.75)", lineHeight: 1.1 }}>{doneCount}<span style={{ fontSize: 26, opacity: .85 }}>/3</span></div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.9)", textShadow: "0 1px 3px rgba(150,90,20,.6)" }}>{doneCount >= 3 ? "コンプリート！" : "タップして確認"}</div>
             </button>
           </div>
-          <div style={{ fontSize: 11.5, color: otherColor }}>今日のクエスト <b style={{ color: isDark ? "#a78bfa" : "#e8590c" }}>{doneCount}/3</b> 達成</div>
 
           {/* ドットくんの家（累計ポイントで育つ） */}
           <div style={{ width: "100%", marginTop: 4, animation: "popIn 0.5s ease-out 0.3s both", position: "relative" }}>
