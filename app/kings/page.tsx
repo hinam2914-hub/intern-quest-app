@@ -135,7 +135,7 @@ export default function KingsPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#fff", padding: "32px 16px 80px" }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+        <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
         <h1 style={{ fontSize: 30, fontWeight: 900, margin: "12px 0 4px" }}>👑 昨日の○○王</h1>
         <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 28 }}>{today} の結果　毎朝0時に確定するよ</p>
 

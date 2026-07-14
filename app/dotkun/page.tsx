@@ -77,7 +77,7 @@ export default function DotKunPage() {
             <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 50% 20%, rgba(99,102,241,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.08) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
             <div style={{ position: "relative", zIndex: 1, maxWidth: 680, margin: "0 auto" }}>
 
-                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 4 }}>INTERN QUEST</div>
+                <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 4 }}>INTERN QUEST</div>
 
                 <div style={{ textAlign: "center", marginBottom: 40, padding: "32px 24px", borderRadius: 24, background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.04))", border: "1px solid rgba(99,102,241,0.2)" }}>
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>

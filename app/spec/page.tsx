@@ -289,7 +289,7 @@ export default function SpecPage() {
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", color: "#f9fafb" }}>
             <div style={{ maxWidth: 900, margin: "0 auto" }}>
                 {/* 戻るボタン */}
-                <button onClick={() => router.push("/mypage")} style={{ marginBottom: 24, padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
+                <button onClick={() => router.push("/home")} style={{ marginBottom: 24, padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>
                     🏠 ホームに戻る
                 </button>
 

@@ -165,7 +165,7 @@ export default function RoadmapPage() {
             <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-                    <div onClick={() => router.push("/mypage")} style={{ cursor: "pointer" }}>
+                    <div onClick={() => router.push("/home")} style={{ cursor: "pointer" }}>
                         <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>INTERN QUEST</div>
                         <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>🗺️ 人生のロードマップ</h1>
                     </div>

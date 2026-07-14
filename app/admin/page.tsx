@@ -392,7 +392,7 @@ export default function AdminPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
-            if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
+            if (!user.email || !adminEmails.includes(user.email)) { router.push("/home"); return; }
 
             const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, grade, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category, onboarding_done, created_at, position").eq("is_active", true);
             const users = (profileRows || []) as UserRow[];
@@ -1234,7 +1234,7 @@ export default function AdminPage() {
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
                     <div>
-                        <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}>INTERN QUEST</div>
+                        <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}>INTERN QUEST</div>
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>管理ダッシュボード</h1>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>

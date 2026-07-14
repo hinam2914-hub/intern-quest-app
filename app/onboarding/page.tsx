@@ -60,7 +60,7 @@ export default function OnboardingPage() {
             const { data: profile } = await supabase.from("profiles").select("name, onboarding_done").eq("id", user.id).single();
             // 既に完了済みならマイページへリダイレクト
             if (profile?.onboarding_done) {
-                router.push("/mypage");
+                router.push("/home");
                 return;
             }
             setName(profile?.name || "");
@@ -73,7 +73,7 @@ export default function OnboardingPage() {
         if (userId) {
             await supabase.from("profiles").update({ onboarding_done: true }).eq("id", userId);
         }
-        router.push("/mypage");
+        router.push("/home");
     };
 
     if (loading) {
@@ -95,7 +95,7 @@ export default function OnboardingPage() {
 
                 {/* ===== ヘッダー（統一） ===== */}
                 <div style={{ marginBottom: 32 }}>
-                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                    <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>
                         📖 {name ? `${name}さん、ようこそ！` : "ようこそ！"}
                     </h1>
@@ -157,7 +157,7 @@ export default function OnboardingPage() {
 
                 {/* ===== ホームへ戻るボタン（統一） ===== */}
                 <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
-                    <button onClick={() => router.push("/mypage")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
+                    <button onClick={() => router.push("/home")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
                         🏠 ホームへ戻る
                     </button>
                 </div>

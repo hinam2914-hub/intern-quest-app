@@ -232,7 +232,7 @@ export default function ProfilePage() {
             <div style={{ maxWidth: 800, margin: "0 auto" }}>
                 {/* ヘッダー */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                    <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                 </div>
 
                 {/* 基本情報カード */}

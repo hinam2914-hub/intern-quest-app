@@ -86,7 +86,7 @@ export default function MentorReportPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 20px" }}>
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 16 }}>INTERN QUEST</div>
+        <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 16 }}>INTERN QUEST</div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: "#f9fafb", margin: "0 0 4px" }}>🤝 ペイフォワード報告</h1>
         <p style={{ color: "#9ca3af", fontSize: 14, margin: "0 0 24px" }}>後輩を連れて行った・面倒を見たことを報告しよう。承認されるとリーダースコアが上がります。</p>
 

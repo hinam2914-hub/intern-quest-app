@@ -1879,7 +1879,7 @@ const handleRoutineCheck = async (routineId: string) => {
                             </div>
                         )}
                         <div>
-                            <div onClick={() => router.push("/mypage")} style={{ fontSize: 11, color: themeColor, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4, cursor: "pointer" }}>INTERN QUEST</div>
+                            <div onClick={() => router.push("/home")} style={{ fontSize: 11, color: themeColor, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4, cursor: "pointer" }}>INTERN QUEST</div>
                             <h1 style={{ fontSize: 26, fontWeight: 800, color: textPrimary, margin: 0, lineHeight: 1 }}>{name || "名前未設定"}</h1>
                             {topTrophy && (
                                 <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>

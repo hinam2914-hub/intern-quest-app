@@ -46,7 +46,7 @@ export default function CBStatsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
-            if (!user.email || !adminEmails.includes(user.email)) { router.push("/mypage"); return; }
+            if (!user.email || !adminEmails.includes(user.email)) { router.push("/home"); return; }
 
             const { data: deptRows } = await supabase.from("departments").select("id, name").ilike("name", "%CB%");
             const dept = deptRows?.[0];

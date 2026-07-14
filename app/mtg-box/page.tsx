@@ -50,7 +50,7 @@ export default function MtgBoxPage() {
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", color: "#f9fafb", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ maxWidth: 760, margin: "0 auto" }}>
-                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>← INTERN QUEST</div>
+                <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>← INTERN QUEST</div>
                 <h1 style={{ fontSize: 26, fontWeight: 900, margin: "4px 0 4px" }}>📋 議事録BOX</h1>
                 <p style={{ color: "#9ca3af", fontSize: 13, marginBottom: 16 }}>みんなのMTG議事録を見られるよ。タップで詳細を開く。</p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>

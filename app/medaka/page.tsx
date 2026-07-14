@@ -141,7 +141,7 @@ export default function MedakaPage() {
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", color: "#f9fafb", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ maxWidth: 640, margin: "0 auto" }}>
-                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                 <h1 style={{ fontSize: 28, fontWeight: 900, margin: "4px 0 6px" }}>🐟 メダカBOX</h1>
                 <p style={{ fontSize: 13, color: "#9ca3af", margin: "0 0 24px" }}>匿名で意見や課題を投稿できる掲示板です。みんなの「気づき」を共有しましょう。</p>
 

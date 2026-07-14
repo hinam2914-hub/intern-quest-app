@@ -165,7 +165,7 @@ export default function SurveyAnswerPage() {
                     {survey && <div style={{ color: "#fbbf24", fontSize: 18, fontWeight: 700, marginBottom: 24 }}>+{survey.reward_points}pt 獲得しました</div>}
                     <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                         <button onClick={() => router.push("/surveys")} style={{ padding: "10px 24px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#d1d5db", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>アンケート一覧</button>
-                        <button onClick={() => router.push("/mypage")} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>マイページへ</button>
+                        <button onClick={() => router.push("/home")} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>マイページへ</button>
                     </div>
                 </div>
             </main>

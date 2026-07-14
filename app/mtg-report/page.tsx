@@ -158,7 +158,7 @@ export default function MtgReportPage() {
     return (
         <div style={{ minHeight: "100vh", background: "#0f0f1a", padding: "32px 20px", color: "#f9fafb" }}>
             <div style={{ maxWidth: 600, margin: "0 auto" }}>
-                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 20 }}>INTERN QUEST</div>
+                <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", marginBottom: 20 }}>INTERN QUEST</div>
 
                 <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>📋 MTG報告書（議事録）</h1>
                 <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 8 }}>{editingId ? "差し戻された報告書を修正しています。" : "MTGの議事録をまとめて提出します。着地していない場合はFB付きで差し戻されます。"}</p>

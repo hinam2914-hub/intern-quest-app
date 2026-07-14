@@ -125,7 +125,7 @@ export default function TodaySchedulePage() {
       alert("保存に失敗しました: " + error.message);
       return;
     }
-    router.push("/mypage");
+    router.push("/home");
   };
 
   // ===== テーマ（マイページに合わせたダーク） =====
@@ -165,7 +165,7 @@ export default function TodaySchedulePage() {
       }}
     >
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
-        <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8, cursor: "pointer", display: "inline-block" }}>← INTERN QUEST</div>
+        <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8, cursor: "pointer", display: "inline-block" }}>← INTERN QUEST</div>
         <h1 style={{ fontSize: 26, fontWeight: "bold", marginBottom: 4 }}>
           ☀️ 今日のスケジュール
         </h1>
@@ -320,7 +320,7 @@ export default function TodaySchedulePage() {
             {saving ? "保存中..." : "保存してマイページへ"}
           </button>
           <button
-            onClick={() => router.push("/mypage")}
+            onClick={() => router.push("/home")}
             style={{
               padding: "14px 18px",
               borderRadius: 12,

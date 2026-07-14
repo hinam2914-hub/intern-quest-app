@@ -39,7 +39,7 @@ export default function WikiPage() {
 
                 {/* ===== ヘッダー（統一） ===== */}
                 <div style={{ marginBottom: 32 }}>
-                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 4 }}>INTERN QUEST</div>
+                    <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 4 }}>INTERN QUEST</div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: "#1a1a2e", margin: "4px 0 0" }}>📖 用語集</h1>
                     <p style={{ color: "#6b7280", fontSize: 14, margin: "8px 0 0" }}>社内・就活用語をまとめました</p>
                 </div>

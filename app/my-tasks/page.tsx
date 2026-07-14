@@ -264,7 +264,7 @@ export default function MyTasksPage() {
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
                 <div style={{ marginBottom: 32 }}>
-                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 4, cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                    <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, marginBottom: 4, cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                     <h1 style={{ fontSize: 32, fontWeight: 900, margin: "0 0 8px" }}>📋 タスク管理</h1>
                     <p style={{ color: "#9ca3af", fontSize: 14 }}>デイリー / 自分のタスク / adminからのタスクを管理</p>
                 </div>

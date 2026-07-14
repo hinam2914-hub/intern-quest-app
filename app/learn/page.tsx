@@ -112,7 +112,7 @@ export default function LearnPage() {
         <main style={{ minHeight: "100vh", background: "#0a0a0f", fontFamily: "'Inter', sans-serif" }}>
             {/* ===== ヘッダー（統一） ===== */}
             <div style={{ padding: "40px 32px 24px", background: "linear-gradient(180deg, rgba(99,102,241,0.15) 0%, transparent 100%)" }}>
-                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 4 }}>INTERN QUEST</div>
+                <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block", marginBottom: 4 }}>INTERN QUEST</div>
                 <h1 style={{ fontSize: 32, fontWeight: 900, color: "#f9fafb", margin: "4px 0 0" }}>📚 学習コンテンツ</h1>
                 <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>視聴・読了してレビューを提出すると <span style={{ color: "#818cf8", fontWeight: 700 }}>+2pt</span>！　{approvedIds.length} / {contents.length} 完了</p>
             </div>

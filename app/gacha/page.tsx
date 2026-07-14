@@ -116,7 +116,7 @@ export default function GachaPage() {
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 80px", color: "#f9fafb", fontFamily: "'Inter', sans-serif" }}>
             <div style={{ maxWidth: 560, margin: "0 auto" }}>
-                <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                 <h1 style={{ fontSize: 28, fontWeight: 900, margin: "4px 0 24px" }}>🎰 ポイントガチャ</h1>
 
                 {/* ポイント残高 */}

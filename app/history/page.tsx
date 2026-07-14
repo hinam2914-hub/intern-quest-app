@@ -251,7 +251,7 @@ export default function HistoryPage() {
             <div style={{ position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto" }}>
                 {/* ヘッダー */}
                 <div style={{ marginBottom: 24 }}>
-                    <div onClick={() => router.push("/mypage")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
+                    <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📜 履歴</h1>
                 </div>
 

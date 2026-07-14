@@ -117,7 +117,7 @@ export default function MenuPage() {
                     <div>
                         {/* ✅ ロゴクリックでホームへ */}
                         <div
-                            onClick={() => router.push("/mypage")}
+                            onClick={() => router.push("/home")}
                             style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}
                         >
                             INTERN QUEST
