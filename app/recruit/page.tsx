@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 
 const PT = { dm: 3, mentsuna: 15, interview: 30, hire: 100 };
 const DM_UNIT = 10;
-const CAMPAIGN = { start: "2026.07.01", end: "2026.08.31", host: "人事部 採用チーム" };
+const CAMPAIGN = { start: "", end: "", host: "人事部 採用チーム" };  // 日程が決まったら start/end に入れる
 const RECRUIT_INFO = {
     job: "長期インターン（営業・企画・マーケなど）",
     place: "新宿オフィス / リモート可",
@@ -154,8 +154,8 @@ export default function RecruitPage() {
                             <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", marginTop: 6 }}>採用で島を大きくしよう！</div>
                             <div style={{ fontSize: 13, color: "rgba(255,255,255,.85)", marginTop: 10, lineHeight: 1.7, maxWidth: 480 }}>最高の仲間との出会いが、未来のチームをつくります。<br />積極的に採用活動を進めましょう！</div>
                             <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
-                                <div style={{ background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.2)", borderRadius: 10, padding: "7px 14px", fontSize: 12.5, color: "#fff", fontWeight: 700, backdropFilter: "blur(8px)" }}>📅 {CAMPAIGN.start} 〜 {CAMPAIGN.end}</div>
-                                <div style={{ background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.2)", borderRadius: 10, padding: "7px 14px", fontSize: 12.5, color: "#fff", fontWeight: 700, backdropFilter: "blur(8px)" }}>🎯 達成で限定バッジ獲得！</div>
+                                <div style={{ background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.2)", borderRadius: 10, padding: "7px 14px", fontSize: 12.5, color: "#fff", fontWeight: 700, backdropFilter: "blur(8px)" }}>📅 {CAMPAIGN.start && CAMPAIGN.end ? `${CAMPAIGN.start} 〜 ${CAMPAIGN.end}` : "日程調整中"}</div>
+                                <div style={{ background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.2)", borderRadius: 10, padding: "7px 14px", fontSize: 12.5, color: "#fff", fontWeight: 700, backdropFilter: "blur(8px)" }}>🏆 採用ランキング開催中！</div>
                             </div>
                         </div>
                     </div>
