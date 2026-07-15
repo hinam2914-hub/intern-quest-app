@@ -45,7 +45,20 @@ export default function TodaySchedulePage() {
     const [inputs, setInputs] = useState<Record<Period, string>>({ morning: "", afternoon: "", night: "" });
     const [pickerFor, setPickerFor] = useState<Period | null>(null);
     const [toast, setToast] = useState("");
-    const date = getTodayJST();
+    const [date, setDate] = useState(getTodayJST());
+    const today = getTodayJST();
+    const shiftDate = (days: number) => {
+        const d = new Date(date + "T00:00:00+09:00");
+        d.setDate(d.getDate() + days);
+        const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+        setDate(`${jst.getUTCFullYear()}-${String(jst.getUTCMonth() + 1).padStart(2, "0")}-${String(jst.getUTCDate()).padStart(2, "0")}`);
+    };
+    const dateLabel = (() => {
+        const d = new Date(date + "T00:00:00+09:00");
+        const w = ["日","月","火","水","木","金","土"][d.getDay()];
+        const md = `${d.getMonth() + 1}/${d.getDate()}`;
+        return date === today ? `今日 ${md}(${w})` : `${md}(${w})`;
+    })();
 
     const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 2000); };
 
@@ -100,7 +113,12 @@ export default function TodaySchedulePage() {
                         <div style={{ animation: "floaty 2.6s ease-in-out infinite" }}><DotKun size={56} stage={5} mood="cheer" /></div>
                         <div>
                             <div style={{ fontSize: 24, fontWeight: 900, color: "#fff" }}>今日のQuestを設定しよう！</div>
-                            <div style={{ fontSize: 12.5, color: "#c4b5fd", marginTop: 3 }}>3つの時間帯に、今日やることをセットしよう！</div>
+                            <div style={{ fontSize: 12.5, color: "#c4b5fd", marginTop: 3 }}>3つの時間帯に、やることをセットしよう！</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+                                <button onClick={() => shiftDate(-1)} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.12)", color: "#c4b5fd", fontSize: 14, cursor: "pointer" }}>◀</button>
+                                <div style={{ fontSize: 14, fontWeight: 900, color: "#fff", minWidth: 110, textAlign: "center" }}>{dateLabel}</div>
+                                <button onClick={() => shiftDate(1)} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.12)", color: "#c4b5fd", fontSize: 14, cursor: "pointer" }}>▶</button>
+                            </div>
                         </div>
                     </div>
                     <button onClick={() => router.push("/home")} style={{ border: "1px solid rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.12)", borderRadius: 12, padding: "8px 14px", fontSize: 12.5, fontWeight: 700, color: "#c4b5fd", cursor: "pointer" }}>🏝️ 島へ</button>
