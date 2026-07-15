@@ -1283,7 +1283,7 @@ const handleRoutineCheck = async (routineId: string) => {
     }
 
     return (
-        <main style={{ minHeight: "100vh", background: bgColor || "#0a0a0f", padding: "40px 24px 64px", fontFamily: fontFamily, color: textPrimary }}>
+        <main style={{ minHeight: "100vh", background: bgColor || "#0a0a0f", padding: "40px 24px 110px", fontFamily: fontFamily, color: textPrimary }}>
 
             {/* ===== パーティクルキャンバス ===== */}
             <canvas
@@ -2617,6 +2617,21 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     </div>
                 </div>
+            </div>
+            {/* 下部固定ナビ（島の木製バー） */}
+            <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 88, display: "flex", zIndex: 50, paddingBottom: 6 }}>
+                <div style={{ position: "absolute", inset: "4px 6px 10px", background: "url(/island/nav_wood.png) center / 100% 100% no-repeat", zIndex: 0, pointerEvents: "none" }} />
+                {[
+                    { ic: "🏝️", label: "ホーム", href: "/home", active: false },
+                    { ic: "🏆", label: "ランキング", href: "/ranking", active: false },
+                    { ic: "🏠", label: "おうち", href: "/mypage", active: true },
+                    { ic: "☰", label: "メニュー", href: "/menu", active: false },
+                ].map((t) => (
+                    <button key={t.href} onClick={() => router.push(t.href)} style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, paddingBottom: 4, background: "transparent", border: "none", cursor: "pointer", color: t.active ? "#fff" : "rgba(255,255,255,.7)", textShadow: "0 1px 2px rgba(90,55,20,.6)" }}>
+                        <div style={{ fontSize: 20 }}>{t.ic}</div>
+                        <div style={{ fontSize: 10, fontWeight: t.active ? 900 : 700 }}>{t.label}</div>
+                    </button>
+                ))}
             </div>
         </main>
     );
