@@ -254,54 +254,12 @@ export default function RecruitPage() {
                         </div>
                     </div>
 
-                    {/* 面談官募集 */}
+                    {/* 面談官の案内 */}
                     <div style={CARD}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                            <div style={SEC_TITLE}>📋 面談官の募集</div>
-                            <button onClick={() => setShowReqForm(!showReqForm)} style={{ padding: "7px 14px", borderRadius: 9, border: "1.5px solid #c7cfe0", background: "#fff", color: "#4b5675", fontSize: 12.5, fontWeight: 800, cursor: "pointer" }}>{showReqForm ? "閉じる" : "+ 募集する"}</button>
-                        </div>
-                        <div style={{ fontSize: 12, color: "#8a93a8", marginBottom: 14 }}>候補者を繋いだら、面談してくれる人を募集しよう</div>
-                        {showReqForm && (
-                            <div style={{ marginBottom: 14, padding: 14, borderRadius: 12, background: "#f8fafc", border: "1px solid #eef1f7" }}>
-                                <textarea value={candNote} onChange={(e) => setCandNote(e.target.value)} placeholder="例：大学2年・営業志望・9月から動ける子です" rows={3} style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1px solid #d5dbe8", background: "#fff", color: "#1e2950", fontSize: 13, boxSizing: "border-box", resize: "vertical", fontFamily: "inherit" }} />
-                                <button onClick={postRequest} disabled={busy || !candNote.trim()} style={{ width: "100%", marginTop: 8, padding: "11px 0", borderRadius: 10, border: "none", background: candNote.trim() ? "#3b82f6" : "#cbd5e1", color: "#fff", fontWeight: 800, fontSize: 13, cursor: candNote.trim() ? "pointer" : "default" }}>募集を出す</button>
-                            </div>
-                        )}
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {openReqs.length === 0 && <div style={{ fontSize: 12.5, color: "#8a93a8", textAlign: "center", padding: "10px 0" }}>現在募集中の案件はありません</div>}
-                            {openReqs.map((r) => (
-                                <div key={r.id} style={{ padding: 14, borderRadius: 12, background: "#f8fafc", border: "1px solid #eef1f7" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#1e2950", lineHeight: 1.5 }}>{r.candidate_note}</div>
-                                            <div style={{ fontSize: 11, color: "#8a93a8", marginTop: 4 }}>依頼: {r.requester_name || "?"}{r.status === "assigned" && ` ・ 面談官: ${r.assignee_name || "?"}`}</div>
-                                        </div>
-                                        {r.status === "open" && r.requester_id !== userId && <button onClick={() => acceptRequest(r)} disabled={busy} style={{ padding: "8px 16px", borderRadius: 9, border: "none", background: "#10b981", color: "#fff", fontWeight: 800, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}>やります</button>}
-                                        {r.status === "open" && r.requester_id === userId && <span style={{ fontSize: 11.5, color: "#f59e0b", fontWeight: 800, whiteSpace: "nowrap" }}>募集中</span>}
-                                        {r.status === "assigned" && r.assignee_id === userId && <button onClick={() => completeRequest(r)} disabled={busy} style={{ padding: "8px 14px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>面談完了 +{PT.interview}</button>}
-                                        {r.status === "assigned" && r.assignee_id !== userId && <span style={{ fontSize: 11.5, color: "#8a93a8", fontWeight: 700, whiteSpace: "nowrap" }}>対応中</span>}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* 募集情報 */}
-                    <div style={CARD}>
-                        <div style={SEC_TITLE}>📄 募集情報</div>
-                        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-                            {[
-                                { icon: "💼", label: "職種", value: RECRUIT_INFO.job },
-                                { icon: "📍", label: "勤務地", value: RECRUIT_INFO.place },
-                                { icon: "📝", label: "雇用形態", value: RECRUIT_INFO.type },
-                                { icon: "🗺️", label: "選考フロー", value: RECRUIT_INFO.flow },
-                            ].map((r, i) => (
-                                <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                                    <div style={{ fontSize: 16, width: 24, flexShrink: 0 }}>{r.icon}</div>
-                                    <div style={{ fontSize: 12, color: "#8a93a8", fontWeight: 700, width: 72, flexShrink: 0, paddingTop: 1 }}>{r.label}</div>
-                                    <div style={{ fontSize: 13, color: "#1e2950", fontWeight: 600, lineHeight: 1.5 }}>{r.value}</div>
-                                </div>
-                            ))}
+                        <div style={SEC_TITLE}>🎤 面談官を募集中！</div>
+                        <div style={{ fontSize: 13.5, color: "#4b5675", lineHeight: 1.9, marginTop: 10 }}>
+                            採用面談をやってみたい人は、<span style={{ fontWeight: 800, color: "#1e2950" }}>人事まで連絡ください</span>。<br />
+                            面談を実施すると <span style={{ color: "#10b981", fontWeight: 900 }}>+30pt</span> もらえます！
                         </div>
                     </div>
                 </div>
