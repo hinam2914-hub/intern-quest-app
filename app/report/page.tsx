@@ -291,7 +291,11 @@ const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
                 <div style={{ marginBottom: 32 }}>
                     <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                     <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📝 日報提出</h1>
-                    <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14 }}>今日の活動を記録してポイントを獲得しましょう</p>
+                    <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14 }}>ä»æ¥ã®æ´»åãæ¯ãè¿ã£ã¦ãæé·ã«ã¤ãªãããï¼</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", borderRadius: 16, padding: "12px 16px", marginTop: 16 }}>
+                        <div style={{ flex: 1, fontSize: 12.5, color: "#e0d7ff", fontWeight: 600, lineHeight: 1.6 }}>ãã¤ãããã¾ï¼ä»æ¥ãããé å¼µã£ãã­✨ æ¯ãè¿ã£ã¦ãææ¥ãæé«ã®1æ¥ã«ãããï¼</div>
+                        <div style={{ flexShrink: 0, animation: "floaty 2.6s ease-in-out infinite" }}><DotKun size={52} stage={5} mood="cheer" /></div>
+                    </div>
                 </div>
 
                 <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
@@ -485,6 +489,7 @@ const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
                     </div>
                 )}
                 <style>{`@keyframes gachaSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        <style>{`@keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }`}</style>
         </main>
     );
 }
