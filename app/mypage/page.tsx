@@ -1598,8 +1598,8 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     </div>
                 )}
-                {/* ===== 日報ガチャ誘導バナー ===== */}
-                {!isSubmitted && (
+                {/* ===== 日報ガチャ誘導バナー（非表示） ===== */}
+                {false && !isSubmitted && (
                     <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
                         <div
                             onClick={() => router.push("/report")}
