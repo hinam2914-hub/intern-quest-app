@@ -125,7 +125,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box">("dashboard");
+    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box">("users");
     const [scheduleTargetUser, setScheduleTargetUser] = useState<string | null>(null);
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -1247,7 +1247,6 @@ export default function AdminPage() {
                         {
                             category: "🏠 メイン",
                             tabs: [
-                                { key: "dashboard", label: "ダッシュボード" },
                             ],
                         },
                         {
@@ -1264,8 +1263,6 @@ export default function AdminPage() {
                             tabs: [
                                 { key: "kpi", label: "KPI設定" },
                                 { key: "monthly_kpi", label: "月次KPI" },
-                                { key: "kpi_dashboard", label: "アナリティクス" },
-                                { key: "dept_stats", label: "部署別成績" },
                                 { key: "sales", label: "販売額管理" },
                             ],
                         },
@@ -1290,11 +1287,8 @@ export default function AdminPage() {
                                 { key: "es", label: "総合ES" },
                                 { key: "roadmap", label: "ロードマップ" },
                                 { key: "reports", label: "日報" },
-                                { key: "report_analytics", label: "日報分析" },
                                 { key: "schedule", label: "スケジュール" },
-                                { key: "urgent", label: "🚨 緊急通知" },
                                 { key: "thanks_history", label: "サンキュー履歴" },
-                                { key: "routine_check", label: "ルーティン" },
                                 { key: "mtg_report", label: `MTG報告書${pendingMtgCount > 0 ? `(${pendingMtgCount})` : ""}` },
                                 { key: "tests", label: `テスト結果${pendingTestCount > 0 ? `(${pendingTestCount})` : ""}` },
                                 { key: "challenges", label: "チャレンジ" },
