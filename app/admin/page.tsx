@@ -1256,6 +1256,11 @@ export default function AdminPage() {
                 </div>
 
                 {activeTab !== "home" && (
+                    <div style={{ marginBottom: 20 }}>
+                        <button onClick={() => setActiveTab("home")} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 12, border: "1px solid rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.12)", color: "#c4b5fd", fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>← ダッシュボードに戻る</button>
+                    </div>
+                )}
+                {false && (
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 12, marginBottom: 24 }}>
                     {[
                         {
