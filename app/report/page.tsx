@@ -69,8 +69,8 @@ export default function ReportPage() {
         try {
             const combinedText = `【今日のGood】うまくいったこと\n${factText.trim()}\n\n【明日のQuest】明日がんばること\n${actionText.trim()}`;
             const totalLength = factText.trim().length + actionText.trim().length;
-            if (totalLength === 0) { setMessage("今日の振り返りを書いてください"); return; }
-            if (totalLength < 20) { setMessage(`もう少しだけ書いてみよう（現在${totalLength}文字 / 20文字以上）`); return; }
+            if (totalLength === 0) { setMessage("今日の振り返りを書いてください"); setSubmitting(false); return; }
+            if (totalLength < 100) { setMessage(`合計100文字以上で提出できます（現在${totalLength}文字）`); setSubmitting(false); return; }
             setMessage("");
 
             const { data: { user } } = await supabase.auth.getUser();
@@ -273,14 +273,14 @@ export default function ReportPage() {
                     <div style={{ marginBottom: 16 }}>
                         <div style={{ fontSize: 14, fontWeight: 800, color: "#34d399", marginBottom: 8 }}>😊 今日のGood！</div>
                         <div style={{ fontSize: 11.5, color: "#9ca3af", marginBottom: 8 }}>今日やったことは？うまくいったことは？</div>
-                        <textarea value={factText} onChange={(e) => setFactText(e.target.value)} maxLength={100} placeholder="例）朝の課題を早めに終わらせられた！アポが2件取れた！" style={bigInput} />
-                        <div style={{ textAlign: "right", fontSize: 11, color: "#6b7280", marginTop: 3 }}>{factText.length} / 100</div>
+                        <textarea value={factText} onChange={(e) => setFactText(e.target.value)} placeholder="例）朝の課題を早めに終わらせられた！アポが2件取れた！" style={bigInput} />
+                        <div style={{ textAlign: "right", fontSize: 11, color: "#6b7280", marginTop: 3 }}>{factText.length}文字</div>
                     </div>
                     <div>
                         <div style={{ fontSize: 14, fontWeight: 800, color: "#a78bfa", marginBottom: 8 }}>🔥 Tomorrow Quest！</div>
                         <div style={{ fontSize: 11.5, color: "#9ca3af", marginBottom: 8 }}>明日は何を頑張る？</div>
-                        <textarea value={actionText} onChange={(e) => setActionText(e.target.value)} maxLength={100} placeholder="例）朝イチで資料作成を終わらせる。アポ3件を目指す。" style={bigInput} />
-                        <div style={{ textAlign: "right", fontSize: 11, color: "#6b7280", marginTop: 3 }}>{actionText.length} / 100</div>
+                        <textarea value={actionText} onChange={(e) => setActionText(e.target.value)} placeholder="例）朝イチで資料作成を終わらせる。アポ3件を目指す。" style={bigInput} />
+                        <div style={{ textAlign: "right", fontSize: 11, marginTop: 3, fontWeight: 700, color: (factText.trim().length + actionText.trim().length) >= 100 ? "#34d399" : "#6b7280" }}>{(factText.trim().length + actionText.trim().length) >= 100 ? "✅ " : ""}合計 {factText.trim().length + actionText.trim().length} / 100文字以上</div>
                     </div>
                 </div>
 
