@@ -17,7 +17,7 @@ type Stats = {
     pendingRecruit?: number;
 };
 
-type Card = { key: string; icon: string; title: string; desc: string; badge?: number };
+type Card = { key: string; icon: string; title: string; desc: string; badgeKey?: string };
 
 const CATEGORIES: { label: string; icon: string; cards: Card[] }[] = [
     {
@@ -34,12 +34,12 @@ const CATEGORIES: { label: string; icon: string; cards: Card[] }[] = [
         cards: [
             { key: "reports", icon: "📝", title: "日報", desc: "日報の確認と管理" },
             { key: "schedule", icon: "🗓️", title: "スケジュール", desc: "Questの確認" },
-            { key: "mtg_report", icon: "📄", title: "MTG報告書", desc: "会議の記録", badgeKey: "pendingMtg" as any },
-            { key: "task_management", icon: "✅", title: "タスク管理", desc: "タスクの進捗", badgeKey: "pendingTask" as any },
+            { key: "mtg_report", icon: "📄", title: "MTG報告書", desc: "会議の記録", badgeKey: "pendingMtg" },
+            { key: "task_management", icon: "✅", title: "タスク管理", desc: "タスクの進捗", badgeKey: "pendingTask" },
             { key: "es", icon: "📑", title: "総合ES", desc: "総合ESの管理" },
             { key: "roadmap", icon: "🛤️", title: "ロードマップ", desc: "進捗管理" },
-            { key: "challenges", icon: "🎯", title: "チャレンジ", desc: "チャレンジ承認", badgeKey: "pendingChallenge" as any },
-            { key: "tests", icon: "📊", title: "テスト結果", desc: "テストの確認", badgeKey: "pendingTest" as any },
+            { key: "challenges", icon: "🎯", title: "チャレンジ", desc: "チャレンジ承認", badgeKey: "pendingChallenge" },
+            { key: "tests", icon: "📊", title: "テスト結果", desc: "テストの確認", badgeKey: "pendingTest" },
             { key: "thanks_history", icon: "💌", title: "サンキュー履歴", desc: "感謝の記録" },
         ],
     },
@@ -48,12 +48,12 @@ const CATEGORIES: { label: string; icon: string; cards: Card[] }[] = [
         cards: [
             { key: "announce", icon: "📢", title: "お知らせ", desc: "お知らせの配信" },
             { key: "survey", icon: "📋", title: "アンケート", desc: "作成と集計" },
-            { key: "kkc", icon: "✨", title: "KKC", desc: "称賛と表彰", badgeKey: "pendingKkc" as any },
-            { key: "advice", icon: "🚀", title: "アドバイス", desc: "アドバイス管理", badgeKey: "pendingAdvice" as any },
+            { key: "kkc", icon: "✨", title: "KKC", desc: "称賛と表彰", badgeKey: "pendingKkc" },
+            { key: "advice", icon: "🚀", title: "アドバイス", desc: "アドバイス管理", badgeKey: "pendingAdvice" },
             { key: "questions_box", icon: "❓", title: "質問クエスト", desc: "Q&Aの管理" },
-            { key: "mentor_report", icon: "🤝", title: "ペイフォワード", desc: "循環管理", badgeKey: "pendingMentor" as any },
+            { key: "mentor_report", icon: "🤝", title: "ペイフォワード", desc: "循環管理", badgeKey: "pendingMentor" },
             { key: "badge", icon: "🏅", title: "バッジ", desc: "バッジの設定" },
-            { key: "medaka_manage", icon: "🐟", title: "メダカBOX", desc: "匿名意見箱", badgeKey: "pendingMedaka" as any },
+            { key: "medaka_manage", icon: "🐟", title: "メダカBOX", desc: "匿名意見箱", badgeKey: "pendingMedaka" },
             { key: "thinking_manage", icon: "🧠", title: "思考・大喜利", desc: "思考クエスト" },
         ],
     },
@@ -79,8 +79,8 @@ const CATEGORIES: { label: string; icon: string; cards: Card[] }[] = [
     {
         label: "申請・承認", icon: "📮",
         cards: [
-            { key: "requests", icon: "📥", title: "申請", desc: "各種申請の承認", badgeKey: "pendingCount" as any },
-            { key: "recruit", icon: "🔥", title: "HRキャンペーン承認", desc: "採用アクションの承認", badgeKey: "pendingRecruit" as any },
+            { key: "requests", icon: "📥", title: "申請", desc: "各種申請の承認", badgeKey: "pendingCount" },
+            { key: "recruit", icon: "🔥", title: "HRキャンペーン承認", desc: "採用アクションの承認", badgeKey: "pendingRecruit" },
         ],
     },
 ];
