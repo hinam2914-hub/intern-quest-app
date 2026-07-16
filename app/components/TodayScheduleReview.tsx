@@ -7,10 +7,11 @@ type Slots = { morning: Quest[]; afternoon: Quest[]; night: Quest[] };
 type Period = "morning" | "afternoon" | "night";
 
 const PERIODS: { key: Period; icon: string; title: string; sub: string }[] = [
-    { key: "morning", icon: "🌅", title: "MORNING", sub: "朝の時間" },
-    { key: "afternoon", icon: "☁️", title: "AFTERNOON", sub: "昼の時間" },
-    { key: "night", icon: "🌙", title: "NIGHT", sub: "夜の時間" },
+    { key: "morning", icon: "🌅", title: "MORNING QUEST", sub: "朝の時間" },
+    { key: "afternoon", icon: "☁️", title: "AFTERNOON QUEST", sub: "昼の時間" },
+    { key: "night", icon: "🌙", title: "NIGHT QUEST", sub: "夜の時間" },
 ];
+const PT_PER_QUEST = 5;
 
 function getTodayJST(): string {
     const now = new Date();
@@ -41,8 +42,7 @@ const TodayScheduleReview = forwardRef<TodayScheduleReviewHandle, { onProgressCh
             const { data } = await supabase.from("daily_schedules").select("slots").eq("user_id", user.id).eq("date", today).maybeSingle();
             const s = normalizeSlots((data as any)?.slots);
             setSlots(s);
-            const total = s.morning.length + s.afternoon.length + s.night.length;
-            setHasSchedule(total > 0);
+            setHasSchedule(s.morning.length + s.afternoon.length + s.night.length > 0);
             setLoading(false);
         };
         load();
@@ -62,9 +62,7 @@ const TodayScheduleReview = forwardRef<TodayScheduleReviewHandle, { onProgressCh
         saveReview: async (userId: string) => {
             const total = slots.morning.length + slots.afternoon.length + slots.night.length;
             if (total === 0) return { isAllMaru: false, hasSchedule: false };
-            // 保存
             await supabase.from("daily_schedules").update({ slots, updated_at: new Date().toISOString() }).eq("user_id", userId).eq("date", today);
-            // 全Quest done なら全丸
             const allDone = [...slots.morning, ...slots.afternoon, ...slots.night].every(q => q.done);
             return { isAllMaru: allDone, hasSchedule: true };
         },
@@ -72,40 +70,50 @@ const TodayScheduleReview = forwardRef<TodayScheduleReviewHandle, { onProgressCh
 
     if (loading) return null;
     if (!hasSchedule) return (
-        <div style={{ padding: "20px", textAlign: "center", color: "#9ca3af", fontSize: 13, background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+        <div style={{ padding: "18px", textAlign: "center", color: "#9ca3af", fontSize: 12.5, background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
             今日のQuestが未設定です。次回は予定を立ててから振り返ろう！
         </div>
     );
 
-    const doneCount = [...slots.morning, ...slots.afternoon, ...slots.night].filter(q => q.done).length;
-    const totalCount = slots.morning.length + slots.afternoon.length + slots.night.length;
-
     return (
-        <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 700 }}>タップして達成したQuestにチェック</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "#34d399" }}>{doneCount} / {totalCount} 達成</div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
-                {PERIODS.map((P) => (
-                    slots[P.key].length > 0 && (
-                        <div key={P.key} style={{ borderRadius: 14, padding: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(139,92,246,0.2)" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {PERIODS.map((P) => {
+                const quests = slots[P.key];
+                if (quests.length === 0) return null;
+                const done = quests.filter(q => q.done);
+                const rate = Math.round((done.length / quests.length) * 100);
+                const pt = done.length * PT_PER_QUEST;
+                const barColor = rate === 100 ? "#34d399" : rate >= 50 ? "#a78bfa" : "#818cf8";
+                return (
+                    <div key={P.key} style={{ borderRadius: 16, padding: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(139,92,246,0.2)" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <span style={{ fontSize: 18 }}>{P.icon}</span>
-                                <div style={{ fontSize: 12, fontWeight: 800, color: "#c4b5fd" }}>{P.title}</div>
+                                <div>
+                                    <div style={{ fontSize: 12.5, fontWeight: 800, color: "#c4b5fd" }}>{P.title}</div>
+                                    <div style={{ fontSize: 10, color: "#8b8ba7" }}>{P.sub}</div>
+                                </div>
                             </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                {slots[P.key].map((q) => (
-                                    <div key={q.id} onClick={() => toggle(P.key, q.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", borderRadius: 10, cursor: "pointer", background: q.done ? "rgba(52,211,153,0.1)" : "rgba(255,255,255,0.03)", border: `1px solid ${q.done ? "rgba(52,211,153,0.35)" : "rgba(255,255,255,0.07)"}` }}>
-                                        <div style={{ width: 20, height: 20, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: q.done ? "linear-gradient(135deg,#34d399,#10b981)" : "transparent", border: q.done ? "none" : "2px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 12, fontWeight: 900 }}>{q.done ? "✓" : ""}</div>
-                                        <div style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: q.done ? "#6ee7b7" : "#d1d5db", textDecoration: q.done ? "line-through" : "none" }}>{q.label}</div>
-                                    </div>
-                                ))}
+                            <div style={{ textAlign: "right" }}>
+                                <div style={{ fontSize: 18, fontWeight: 900, color: barColor, lineHeight: 1 }}>{rate}%</div>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: "#fcd34d" }}>+{pt}pt</div>
                             </div>
                         </div>
-                    )
-                ))}
-            </div>
+                        <div style={{ height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: 12 }}>
+                            <div style={{ height: "100%", width: `${rate}%`, borderRadius: 999, background: barColor, transition: "width .4s ease" }} />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {quests.map((q) => (
+                                <div key={q.id} onClick={() => toggle(P.key, q.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", borderRadius: 10, cursor: "pointer", background: q.done ? "rgba(52,211,153,0.1)" : "rgba(255,255,255,0.02)", border: q.done ? "1px solid rgba(52,211,153,0.3)" : "1px solid rgba(255,255,255,0.06)" }}>
+                                    <div style={{ width: 20, height: 20, borderRadius: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: q.done ? "linear-gradient(135deg,#34d399,#10b981)" : "transparent", border: q.done ? "none" : "2px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 12, fontWeight: 900 }}>{q.done ? "✓" : ""}</div>
+                                    <div style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: q.done ? "#6ee7b7" : "#d1d5db" }}>{q.label}</div>
+                                    <div style={{ fontSize: 10.5, fontWeight: 700, color: q.done ? "#34d399" : "#6b7280" }}>{q.done ? "達成" : "未達成"}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 });
