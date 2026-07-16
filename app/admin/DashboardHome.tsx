@@ -33,7 +33,6 @@ const CATEGORIES: { label: string; icon: string; cards: Card[] }[] = [
         label: "業務管理", icon: "📋",
         cards: [
             { key: "reports", icon: "📝", title: "日報", desc: "日報の確認と管理" },
-            { key: "schedule", icon: "🗓️", title: "スケジュール", desc: "Questの確認" },
             { key: "mtg_report", icon: "📄", title: "MTG報告書", desc: "会議の記録", badgeKey: "pendingMtg" },
             { key: "task_management", icon: "✅", title: "タスク管理", desc: "タスクの進捗", badgeKey: "pendingTask" },
             { key: "es", icon: "📑", title: "総合ES", desc: "総合ESの管理" },
