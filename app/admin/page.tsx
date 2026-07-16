@@ -114,6 +114,7 @@ export default function AdminPage() {
     const [userCount, setUserCount] = useState(0);
     const [reportCount, setReportCount] = useState(0);
     const [submitRate, setSubmitRate] = useState(0);
+    const [yesterdaySubmitRate, setYesterdaySubmitRate] = useState(0);
     const [topUsers, setTopUsers] = useState<TopUser[]>([]);
     const [topSubmitters, setTopSubmitters] = useState<TopSubmitter[]>([]);
     const [notSubmittedUsers, setNotSubmittedUsers] = useState<UserRow[]>([]);
@@ -487,6 +488,17 @@ export default function AdminPage() {
                 .gte("created_at", threeDaysAgo.toISOString());
             const submitted3DayIds = [...new Set((recent3Rows || []).map((row: any) => row.user_id))];
             setNotSubmittedUsers(users.filter((u) => !submitted3DayIds.includes(u.id)));
+            // 昨日(JST)の提出率を計算（DashboardHome用）
+            {
+                const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+                const y = new Date(jstNow); y.setUTCDate(y.getUTCDate() - 1);
+                const yYmd = `${y.getUTCFullYear()}-${String(y.getUTCMonth() + 1).padStart(2, "0")}-${String(y.getUTCDate()).padStart(2, "0")}`;
+                const startUtc = new Date(`${yYmd}T00:00:00+09:00`).toISOString();
+                const endUtc = new Date(`${yYmd}T23:59:59+09:00`).toISOString();
+                const { data: yRows } = await supabase.from("submissions").select("user_id").gte("created_at", startUtc).lte("created_at", endUtc);
+                const yIds = [...new Set((yRows || []).map((r: any) => r.user_id))];
+                setYesterdaySubmitRate(users.length === 0 ? 0 : Math.round((yIds.length / users.length) * 100));
+            }
             setReports(submissions.map((row) => ({ ...row, userName: users.find((u) => u.id === row.user_id)?.name || "名前未設定" })));
 
             const submitDayMap: Record<string, number> = {};
@@ -2023,7 +2035,7 @@ export default function AdminPage() {
                     <DashboardHome
                         stats={{
                             notSubmitted: notSubmittedUsers.length,
-                            submitRate: submitRate,
+                            submitRate: yesterdaySubmitRate,
                             pendingCount: pendingCount,
                             userCount: userCount,
                             pendingTask: pendingTaskReportCount,

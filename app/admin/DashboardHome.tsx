@@ -88,7 +88,7 @@ const CATEGORIES: { label: string; icon: string; cards: Card[] }[] = [
 export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onNavigate: (key: string) => void }) {
     const summary = [
         { label: "未提出日報", value: stats.notSubmitted, unit: "人", color: "#f87171" },
-        { label: "日報提出率", value: stats.submitRate, unit: "%", color: stats.submitRate >= 80 ? "#34d399" : stats.submitRate >= 50 ? "#f59e0b" : "#f87171" },
+        { label: "昨日の提出率", value: stats.submitRate, unit: "%", color: stats.submitRate >= 80 ? "#34d399" : stats.submitRate >= 50 ? "#f59e0b" : "#f87171" },
         { label: "承認待ち申請", value: stats.pendingCount, unit: "件", color: "#a78bfa" },
         { label: "全メンバー", value: stats.userCount, unit: "人", color: "#818cf8" },
     ];
