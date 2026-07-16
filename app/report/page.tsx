@@ -85,6 +85,8 @@ export default function ReportPage() {
     const [gachaResult, setGachaResult] = useState<number | null>(null);
     const [showGachaModal, setShowGachaModal] = useState(false);
     const [reportDone, setReportDone] = useState(false);
+    const [questDone, setQuestDone] = useState(0);
+    const [questTotal, setQuestTotal] = useState(0);
     const [aiFeedback, setAiFeedback] = useState("");
 const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
 
@@ -298,6 +300,33 @@ const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
                     </div>
                 </div>
 
+                {questTotal > 0 && (() => {
+                    const rate = Math.round((questDone / questTotal) * 100);
+                    const rank = rate >= 90 ? "S" : rate >= 80 ? "A" : rate >= 60 ? "B" : rate >= 40 ? "C" : "D";
+                    const rankColor = rate >= 80 ? "#fbbf24" : rate >= 60 ? "#34d399" : rate >= 40 ? "#818cf8" : "#9ca3af";
+                    return (
+                        <div style={{ background: "linear-gradient(150deg, rgba(139,92,246,0.14), rgba(99,102,241,0.05))", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 20, padding: 22, marginBottom: 16 }}>
+                            <div style={{ fontSize: 13, fontWeight: 900, color: "#c4b5fd", letterSpacing: 1, marginBottom: 16 }}>今日のQuest結果</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                                <div style={{ textAlign: "center" }}>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>達成したQuest</div>
+                                    <div style={{ fontSize: 28, fontWeight: 900, color: "#f9fafb", lineHeight: 1 }}>{questDone}<span style={{ fontSize: 16, color: "#6b7280" }}> / {questTotal}</span></div>
+                                </div>
+                                <div style={{ textAlign: "center" }}>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>達成率</div>
+                                    <div style={{ fontSize: 28, fontWeight: 900, color: rankColor, lineHeight: 1 }}>{rate}<span style={{ fontSize: 16 }}>%</span></div>
+                                </div>
+                                <div style={{ textAlign: "center" }}>
+                                    <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700, marginBottom: 4 }}>評価</div>
+                                    <div style={{ fontSize: 28, fontWeight: 900, color: rankColor, lineHeight: 1 }}>{rank}<span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 700 }}> RANK</span></div>
+                                </div>
+                            </div>
+                            <div style={{ marginTop: 14, height: 8, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                                <div style={{ height: "100%", width: `${rate}%`, borderRadius: 999, background: `linear-gradient(90deg, ${rankColor}, ${rankColor}cc)`, transition: "width .5s ease" }} />
+                            </div>
+                        </div>
+                    );
+                })()}
                 <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
                     {[{ label: "日報提出", pt: "+2pt", color: "#818cf8" }, { label: "3日連続", pt: "+5pt", color: "#34d399" }, { label: "7日連続", pt: "+10pt", color: "#f59e0b" }].map((item, i) => (
                         <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -384,7 +413,7 @@ const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
                         </div>
                     </div>
                     <div style={{ marginTop: 24 }}>
-                        <TodayScheduleReview ref={reviewRef} />
+                        <TodayScheduleReview ref={reviewRef} onProgressChange={(d, t) => { setQuestDone(d); setQuestTotal(t); }} />
                     </div>
                     <div style={{ marginTop: 20 }}>
                         <button onClick={handleSubmit} disabled={loading} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: loading ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontSize: 15 }}>

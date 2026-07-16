@@ -28,7 +28,7 @@ export type TodayScheduleReviewHandle = {
     saveReview: (userId: string) => Promise<{ isAllMaru: boolean; hasSchedule: boolean }>;
 };
 
-const TodayScheduleReview = forwardRef<TodayScheduleReviewHandle>((_props, ref) => {
+const TodayScheduleReview = forwardRef<TodayScheduleReviewHandle, { onProgressChange?: (done: number, total: number) => void }>((props, ref) => {
     const [slots, setSlots] = useState<Slots>({ morning: [], afternoon: [], night: [] });
     const [loading, setLoading] = useState(true);
     const [hasSchedule, setHasSchedule] = useState(false);
@@ -47,6 +47,12 @@ const TodayScheduleReview = forwardRef<TodayScheduleReviewHandle>((_props, ref) 
         };
         load();
     }, [today]);
+
+    useEffect(() => {
+        const done = [...slots.morning, ...slots.afternoon, ...slots.night].filter(q => q.done).length;
+        const total = slots.morning.length + slots.afternoon.length + slots.night.length;
+        props.onProgressChange?.(done, total);
+    }, [slots, props]);
 
     const toggle = (p: Period, id: string) => {
         setSlots(prev => ({ ...prev, [p]: prev[p].map(q => q.id === id ? { ...q, done: !q.done } : q) }));
