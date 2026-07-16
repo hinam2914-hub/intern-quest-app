@@ -186,7 +186,6 @@ export default function ReportPage() {
     const rate = questTotal > 0 ? Math.round((questDone / questTotal) * 100) : 0;
     const rank = rate >= 90 ? "S" : rate >= 80 ? "A" : rate >= 60 ? "B" : rate >= 40 ? "C" : "D";
     const rankColor = rate >= 90 ? "#fbbf24" : rate >= 80 ? "#fbbf24" : rate >= 60 ? "#34d399" : rate >= 40 ? "#818cf8" : "#9ca3af";
-    const questPt = questDone * 5;
 
     const bigInput: React.CSSProperties = {
         width: "100%", minHeight: 70, padding: 14, borderRadius: 12,
@@ -211,18 +210,14 @@ export default function ReportPage() {
                 <div style={{ borderRadius: 24, padding: "24px 22px", marginBottom: 16, background: "linear-gradient(160deg, rgba(139,92,246,0.25), rgba(76,29,149,0.1))", border: "1.5px solid rgba(167,139,250,0.4)", boxShadow: "0 12px 40px rgba(76,29,149,0.3)", textAlign: "center", position: "relative", overflow: "hidden" }}>
                     <div style={{ fontSize: 11, fontWeight: 900, color: "#c4b5fd", letterSpacing: 3, marginBottom: 4 }}>TODAY'S QUEST RESULT</div>
                     <div style={{ fontSize: 60, fontWeight: 900, color: rankColor, lineHeight: 1.1, textShadow: `0 0 30px ${rankColor}88` }}>{rank}<span style={{ fontSize: 20, color: "#c4b5fd" }}> RANK</span></div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 18 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginTop: 18 }}>
                         <div style={{ padding: "12px 6px", borderRadius: 14, background: "rgba(255,255,255,0.06)" }}>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{questDone}<span style={{ fontSize: 13, color: "#9ca3af" }}>/{questTotal}</span></div>
-                            <div style={{ fontSize: 10, color: "#c4b5fd", fontWeight: 700, marginTop: 4 }}>達成Quest</div>
+                            <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{questDone}<span style={{ fontSize: 14, color: "#9ca3af" }}>/{questTotal}</span></div>
+                            <div style={{ fontSize: 10.5, color: "#c4b5fd", fontWeight: 700, marginTop: 4 }}>達成Quest</div>
                         </div>
                         <div style={{ padding: "12px 6px", borderRadius: 14, background: "rgba(255,255,255,0.06)" }}>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: "#fcd34d", lineHeight: 1 }}>{questPt}<span style={{ fontSize: 12 }}>pt</span></div>
-                            <div style={{ fontSize: 10, color: "#c4b5fd", fontWeight: 700, marginTop: 4 }}>Questポイント</div>
-                        </div>
-                        <div style={{ padding: "12px 6px", borderRadius: 14, background: "rgba(255,255,255,0.06)" }}>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: rankColor, lineHeight: 1 }}>{rate}<span style={{ fontSize: 12 }}>%</span></div>
-                            <div style={{ fontSize: 10, color: "#c4b5fd", fontWeight: 700, marginTop: 4 }}>達成率</div>
+                            <div style={{ fontSize: 24, fontWeight: 900, color: rankColor, lineHeight: 1 }}>{rate}<span style={{ fontSize: 14 }}>%</span></div>
+                            <div style={{ fontSize: 10.5, color: "#c4b5fd", fontWeight: 700, marginTop: 4 }}>達成率</div>
                         </div>
                     </div>
                     <div style={{ marginTop: 14, height: 8, borderRadius: 999, background: "rgba(0,0,0,0.2)", overflow: "hidden" }}>
