@@ -311,19 +311,29 @@ const [aiFeedbackLoading, setAiFeedbackLoading] = useState(false);
                     <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 24, marginBottom: 16 }}>
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>📊 KPI入力</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            {kpiItems.map((item) => (
-                                <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                    <div>
-                                        <div style={{ fontSize: 14, fontWeight: 600, color: "#f9fafb" }}>{item.title}</div>
-                                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>目標: {item.target_value}{item.unit}</div>
+                            {kpiItems.map((item) => {
+                                const val = kpiValues[item.id] || 0;
+                                const pct = item.target_value > 0 ? Math.min(Math.round((val / item.target_value) * 100), 100) : 0;
+                                const done = val > 0 && val >= item.target_value;
+                                return (
+                                <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                                        <div>
+                                            <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{item.title}</div>
+                                            <div style={{ fontSize: 11.5, color: "#6b7280", marginTop: 2 }}>目標: {item.target_value}{item.unit}</div>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <input type="number" min={0} value={kpiValues[item.id] ?? ""} onChange={(e) => setKpiValues(prev => ({ ...prev, [item.id]: Number(e.target.value) }))} placeholder="0" style={{ width: 80, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none", textAlign: "right" }} />
+                                            <span style={{ fontSize: 13, color: "#6b7280" }}>{item.unit}</span>
+                                        </div>
                                     </div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <input type="number" min={0} value={kpiValues[item.id] ?? ""} onChange={(e) => setKpiValues(prev => ({ ...prev, [item.id]: Number(e.target.value) }))} placeholder="0" style={{ width: 80, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#f9fafb", fontSize: 14, outline: "none", textAlign: "right" }} />
-                                        <span style={{ fontSize: 13, color: "#6b7280" }}>{item.unit}</span>
-                                        {kpiValues[item.id] > 0 && kpiValues[item.id] >= item.target_value && <span style={{ fontSize: 12, color: "#34d399", fontWeight: 700 }}>✅ 達成！</span>}
+                                    <div style={{ height: 7, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                                        <div style={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: done ? "linear-gradient(90deg,#34d399,#10b981)" : "linear-gradient(90deg,#8b5cf6,#a78bfa)", transition: "width .5s ease" }} />
                                     </div>
+                                    <div style={{ fontSize: 11.5, fontWeight: 700, marginTop: 5, color: done ? "#34d399" : "#9ca3af" }}>{done ? "達成！ 100%" : `達成率 ${pct}%`}</div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
