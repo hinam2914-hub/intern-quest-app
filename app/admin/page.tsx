@@ -1243,6 +1243,7 @@ export default function AdminPage() {
                     </div>
                 </div>
 
+                {activeTab !== "home" && (
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 12, marginBottom: 24 }}>
                     {[
                         {
@@ -1327,6 +1328,7 @@ export default function AdminPage() {
                         </div>
                     ))}
                 </div>
+                )}
 
                 {activeTab === "users" && (
                     <div>
