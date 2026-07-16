@@ -272,7 +272,7 @@ export default function ReportPage() {
                 <div style={{ borderRadius: 18, padding: 20, marginBottom: 20, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     <div style={{ marginBottom: 16 }}>
                         <div style={{ fontSize: 14, fontWeight: 800, color: "#34d399", marginBottom: 8 }}>😊 今日のGood！</div>
-                        <div style={{ fontSize: 11.5, color: "#9ca3af", marginBottom: 8 }}>今日うまくいったことは？</div>
+                        <div style={{ fontSize: 11.5, color: "#9ca3af", marginBottom: 8 }}>今日やったことは？うまくいったことは？</div>
                         <textarea value={factText} onChange={(e) => setFactText(e.target.value)} maxLength={100} placeholder="例）朝の課題を早めに終わらせられた！アポが2件取れた！" style={bigInput} />
                         <div style={{ textAlign: "right", fontSize: 11, color: "#6b7280", marginTop: 3 }}>{factText.length} / 100</div>
                     </div>
