@@ -2011,6 +2011,18 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     </div>
                 </div>
+                {/* ===== 開催中イベント ===== */}
+                {[
+                    { key: "hr_campaign", icon: "🔥", title: "HRキャンペーン開催中！", desc: "DM +3pt ／ メンツナ +15pt ／ 面談 +30pt ／ 入社 +100pt", path: "/recruit", from: "#f97316", to: "#ec4899" },
+                ].map((ev) => (
+                    <div key={ev.key} onClick={() => router.push(ev.path)} style={{ marginBottom: 12, borderRadius: 18, padding: "14px 18px", cursor: "pointer", position: "relative", overflow: "hidden", background: `linear-gradient(120deg, ${ev.from}, ${ev.to})`, boxShadow: "0 6px 18px rgba(236,72,153,.3)", border: "1.5px solid rgba(255,255,255,.35)" }}>
+                        <div style={{ position: "absolute", top: -18, right: -12, fontSize: 72, opacity: .2, transform: "rotate(-12deg)" }}>{ev.icon}</div>
+                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2.5, color: "rgba(255,255,255,.85)", marginBottom: 4 }}>🎪 EVENT</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,.15)" }}>{ev.icon} {ev.title}</div>
+                        <div style={{ fontSize: 11.5, fontWeight: 700, color: "rgba(255,255,255,.9)", marginTop: 4 }}>{ev.desc}</div>
+                        <div style={{ marginTop: 8, display: "inline-block", padding: "5px 14px", borderRadius: 999, background: "rgba(255,255,255,.25)", border: "1px solid rgba(255,255,255,.4)", fontSize: 11.5, fontWeight: 800, color: "#fff" }}>参加する →</div>
+                    </div>
+                ))}
                 {announcements.filter(a => !closedAnnouncements.includes(a.id)).map((a) => (
                     <div key={a.id} style={{ marginBottom: 12, padding: "14px 20px", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
