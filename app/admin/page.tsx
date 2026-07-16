@@ -23,6 +23,7 @@ import { computeReportStreak } from "../lib/date";
 import ThinkingAdminTab from "./ThinkingAdminTab";
 import QuestionsAdminTab from "./QuestionsAdminTab";
 import ScheduleManagementTab from "./ScheduleManagementTab";
+import DashboardHome from "./DashboardHome";
 
 type UserRow = { id: string; name: string | null };
 type TopUser = { name: string; points: number };
@@ -125,7 +126,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box">("users");
+    const [activeTab, setActiveTab] = useState<"home" | "dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box">("home");
     const [scheduleTargetUser, setScheduleTargetUser] = useState<string | null>(null);
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -2016,6 +2017,24 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {activeTab === "home" && (
+                    <DashboardHome
+                        stats={{
+                            notSubmitted: notSubmittedUsers.length,
+                            submitRate: submitRate,
+                            pendingCount: pendingCount,
+                            userCount: userCount,
+                            pendingTask: pendingTaskReportCount,
+                            pendingKkc: pendingKkcCount,
+                            pendingAdvice: pendingAdviceCount,
+                            pendingMedaka: pendingMedakaCount,
+                            pendingMentor: pendingMentorCount,
+                            pendingMtg: pendingMtgCount,
+                            pendingTest: pendingTestCount,
+                        }}
+                        onNavigate={(key) => setActiveTab(key as any)}
+                    />
+                )}
                 {activeTab === "dashboard" && (
                     <>
                         {/* ========== 📊 今週のサマリー ========== */}
