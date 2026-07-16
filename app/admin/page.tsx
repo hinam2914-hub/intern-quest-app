@@ -331,6 +331,7 @@ export default function AdminPage() {
     const [pendingKkcCount, setPendingKkcCount] = useState(0);
     const [pendingTestCount, setPendingTestCount] = useState(0);
     const [pendingTaskReportCount, setPendingTaskReportCount] = useState(0);
+    const [pendingRecruitCount, setPendingRecruitCount] = useState(0);
     // ===== 人材アーカイブ =====
     const [archiveSubTab, setArchiveSubTab] = useState<"resignations" | "rejected">("resignations");
     const [resignations, setResignations] = useState<any[]>([]);
@@ -687,6 +688,8 @@ export default function AdminPage() {
             setPendingTestCount((mgrPendingC || 0) + (normalPendingC || 0));
             const { count: taskRepC } = await supabase.from("task_reports").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingTaskReportCount(taskRepC || 0);
+            const { count: recruitC } = await supabase.from("recruit_progress").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingRecruitCount(recruitC || 0);
             // 人材アーカイブ取得
             const { data: resignRows } = await supabase
                 .from("resignations")
@@ -2052,6 +2055,7 @@ export default function AdminPage() {
                             pendingMentor: pendingMentorCount,
                             pendingMtg: pendingMtgCount,
                             pendingTest: pendingTestCount,
+                            pendingRecruit: pendingRecruitCount,
                         }}
                         onNavigate={(key) => setActiveTab(key as any)}
                     />
