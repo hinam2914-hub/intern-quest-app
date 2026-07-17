@@ -10,8 +10,8 @@ const TH = {
   riskGrit: 7,
   mismatchScore: 70,
 };
-const JOB_TO_DEPT: Record<string, string> = { "IP": "IP", "クローザー": "CB", "テレアポ": "CB", "人事": "HR", "マーケ": "MK", "コンサル": "SP" };
-const JOB_LABEL: Record<string, string> = { "IP": "IP", "クローザー": "CB(クローザー)", "テレアポ": "CB(テレアポ)", "人事": "HR", "マーケ": "MK", "コンサル": "SP(コンサル)", "マネージャー": "マネージャー" };
+const JOB_TO_DEPT: Record<string, string> = { "訪販": "IP", "テレアポ": "CB", "クローザー": "CB", "人事": "HR" };
+const JOB_LABEL: Record<string, string> = { "訪販": "訪販(IP)", "テレアポ": "テレアポ(CB)", "クローザー": "クローザー(CB)", "人事": "人事(HR)", "管理マネージャー": "管理マネージャー" };
 const DEPT_ORDER = ["IP", "CB", "SP", "HR", "MK"];
 
 type Stats = {
@@ -112,7 +112,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
           // 育成優先・離職リスクはフルデータ入力者のみ判定（未入力による誤検知を防ぐ）
           if (hasFull && (total <= TH.hardTotal || axes.some((a) => a <= TH.hardAxis))) { hard++; hardNames.push(u.name); }
           if (hasFull && s.grit <= TH.riskGrit && !submitted7.has(u.id)) risk++;
-          const top = calculateDepartmentMatch(s)[0];
+          const top = calculateDepartmentMatch(s, { mbti: u.mbti || "", education: u.education || "" })[0];
           const cur = deptCode[u.department_id] || "";
           const mapped = JOB_TO_DEPT[top?.dept || ""] || "";
           if (top && top.score >= TH.mismatchScore && mapped && cur && mapped !== cur) { mismatch++; mismatchNames.push({ name: u.name, to: JOB_LABEL[top.dept] || top.dept }); }
