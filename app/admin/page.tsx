@@ -332,6 +332,8 @@ export default function AdminPage() {
     const [pendingTestCount, setPendingTestCount] = useState(0);
     const [pendingTaskReportCount, setPendingTaskReportCount] = useState(0);
     const [pendingRecruitCount, setPendingRecruitCount] = useState(0);
+    const [pendingQuestionCount, setPendingQuestionCount] = useState(0);
+    const [pendingMgrTestCount, setPendingMgrTestCount] = useState(0);
     // ===== 人材アーカイブ =====
     const [archiveSubTab, setArchiveSubTab] = useState<"resignations" | "rejected">("resignations");
     const [resignations, setResignations] = useState<any[]>([]);
@@ -686,10 +688,13 @@ export default function AdminPage() {
             const { count: mgrPendingC } = await supabase.from("manager_tests").select("*", { count: "exact", head: true }).eq("status", "submitted").or("written_status.is.null,written_status.eq.pending");
             const { count: normalPendingC } = await supabase.from("test_attempts").select("*", { count: "exact", head: true }).eq("passed", true).not("written_answers", "is", null).is("written_evaluation", null);
             setPendingTestCount((mgrPendingC || 0) + (normalPendingC || 0));
+            setPendingMgrTestCount(mgrPendingC || 0);
             const { count: taskRepC } = await supabase.from("task_reports").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingTaskReportCount(taskRepC || 0);
             const { count: recruitC } = await supabase.from("recruit_progress").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingRecruitCount(recruitC || 0);
+            const { count: questionC } = await supabase.from("questions_box").select("*", { count: "exact", head: true }).is("answered_at", null);
+            setPendingQuestionCount(questionC || 0);
             // 人材アーカイブ取得
             const { data: resignRows } = await supabase
                 .from("resignations")
@@ -2057,6 +2062,9 @@ export default function AdminPage() {
                             pendingTest: pendingTestCount,
                             pendingRecruit: pendingRecruitCount,
                             pendingChallenge: challengeSubmissions.filter((c: any) => c.status === "pending").length,
+                            pendingRequest: pendingCount,
+                            pendingQuestion: pendingQuestionCount,
+                            pendingMgrTest: pendingMgrTestCount,
                         }}
                         onNavigate={(key) => setActiveTab(key as any)}
                     />
