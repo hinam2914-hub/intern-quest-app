@@ -5184,17 +5184,17 @@ export default function AdminPage() {
                             const hasData = u.mbti || u.education || u.club_category || u.hobby_category;
 
                             return (
-                                <div key={u.id} style={{ padding: 20, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-                                        <div style={{ fontSize: 16, fontWeight: 700, color: "#f9fafb" }}>👤 {u.name}</div>
+                                <div key={u.id} style={{ padding: "12px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                                        <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>👤 {u.name}</div>
                                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                                             {!hasData && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, fontWeight: 700 }}>データ未入力</span>}
-                                            <button onClick={() => router.push(`/admin/sibyl/${u.id}`)} style={{ padding: "7px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #8b5cf6, #6366f1)", boxShadow: "0 2px 10px rgba(139,92,246,.35)" }}>🔮 個人分析を開く</button>
+                                            <button onClick={() => router.push(`/admin/sibyl/${u.id}`)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #8b5cf6, #6366f1)", boxShadow: "0 2px 10px rgba(139,92,246,.35)" }}>🔮 個人分析</button>
                                         </div>
                                     </div>
                                     {/* 入力データ編集フォーム */}
-                                    <details style={{ marginTop: 12 }}>
-                                        <summary style={{ fontSize: 12, color: "#9ca3af", cursor: "pointer", fontWeight: 600, padding: "6px 0" }}>📝 データを編集（{[u.mbti, u.education, u.club_category, u.hobby_category].filter(Boolean).length}/4項目入力済み）</summary>
+                                    <details style={{ marginTop: 4 }}>
+                                        <summary style={{ fontSize: 11, color: "#9ca3af", cursor: "pointer", fontWeight: 600, padding: "2px 0" }}>📝 データを編集（{[u.mbti, u.education, u.club_category, u.hobby_category].filter(Boolean).length}/4項目入力済み）</summary>
                                         <div style={{ marginTop: 10, padding: 12, borderRadius: 8, background: "rgba(0,0,0,0.2)" }}>
                                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                                                 <div>
