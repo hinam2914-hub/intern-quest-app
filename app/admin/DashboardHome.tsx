@@ -136,8 +136,8 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
         if (props.length === 0) props.push("組織状態は安定しています。現在の運用を継続してください");
         setProposals(props.slice(0, 4));
 
-        const thanksC = (ph7 || []).filter((p: any) => (p.reason || "").includes("サンキュー")).length;
-        const chalC = (ph7 || []).filter((p: any) => (p.reason || "").includes("チャレンジ")).length;
+        const thanksC = (ph7 || []).filter((p: any) => { const r = p.reason || ""; return r.includes("thanks") || r.includes("サンキュー"); }).length;
+        const chalC = (ph7 || []).filter((p: any) => { const r = p.reason || ""; return r.includes("challenge") || r.includes("チャレンジ"); }).length;
         const hiresC = (rec7 || []).filter((r: any) => r.action_type === "hire" && r.status === "approved").length;
         const mentsunaC = (rec7 || []).filter((r: any) => r.action_type === "mentsuna" && r.status === "approved").length;
         setWeek({ submitRate: submitRate7, activeRate, thanks: thanksC, challenges: chalC, hires: hiresC, mentsuna: mentsunaC });
