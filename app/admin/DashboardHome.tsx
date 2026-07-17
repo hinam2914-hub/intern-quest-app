@@ -171,9 +171,6 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
     { label: "日報提出率", value: week.submitRate, unit: "%", max: 100, color: rateColor(week.submitRate) },
     { label: "アクティブ率", value: week.activeRate, unit: "%", max: 100, color: rateColor(week.activeRate) },
     { label: "サンキュー", value: week.thanks, unit: "件", max: Math.max(week.thanks, 50), color: "#ec4899" },
-    { label: "チャレンジ達成", value: week.challenges, unit: "件", max: Math.max(week.challenges, 20), color: "#a855f7" },
-    { label: "採用数", value: week.hires, unit: "人", max: Math.max(week.hires, 5), color: "#f59e0b" },
-    { label: "面談設定数", value: week.mentsuna, unit: "件", max: Math.max(week.mentsuna, 10), color: "#38bdf8" },
   ];
 
   const healthColor = sibyl.health >= 80 ? "#34d399" : sibyl.health >= 60 ? "#fbbf24" : "#f87171";
