@@ -86,7 +86,7 @@ export default function ProfileUploadPage() {
                 setName(profile.name || "");
                 setAvatarUrl(profile.avatar_url || null);
                 setMbti(profile.mbti || "");
-                setClub(profile.club_category || profile.club || "");
+                setClub((profile as any)?.club_category || profile.club || "");
                 setGrade((profile as any)?.grade || "");
                 setThemeColor((profile as any)?.theme_color || "#6366f1");
                 setBgColor((profile as any)?.bg_color || "#0a0a0f");
