@@ -2056,6 +2056,7 @@ export default function AdminPage() {
                             pendingMtg: pendingMtgCount,
                             pendingTest: pendingTestCount,
                             pendingRecruit: pendingRecruitCount,
+                            pendingChallenge: challengeSubmissions.filter((c: any) => c.status === "pending").length,
                         }}
                         onNavigate={(key) => setActiveTab(key as any)}
                     />

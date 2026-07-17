@@ -17,7 +17,7 @@ const DEPT_ORDER = ["IP", "CB", "SP", "HR", "MK"];
 type Stats = {
   notSubmitted: number; submitRate: number; pendingCount: number; userCount: number;
   pendingTask?: number; pendingKkc?: number; pendingAdvice?: number; pendingMedaka?: number;
-  pendingMentor?: number; pendingMtg?: number; pendingTest?: number; pendingRecruit?: number;
+  pendingMentor?: number; pendingMtg?: number; pendingTest?: number; pendingRecruit?: number; pendingChallenge?: number;
 };
 type Card = { key: string; icon: string; title: string; desc?: string; badgeKey?: keyof Stats };
 
@@ -61,7 +61,7 @@ const OTHERS: { label: string; cards: Card[] }[] = [
     { key: "companies", icon: "🏢", title: "企業管理" },
     { key: "es", icon: "🧾", title: "総合ES" },
     { key: "roadmap", icon: "🗺️", title: "ロードマップ" },
-    { key: "challenges", icon: "🏔️", title: "チャレンジ" },
+    { key: "challenges", icon: "🏔️", title: "チャレンジ", badgeKey: "pendingChallenge" },
     { key: "talent_archive", icon: "📇", title: "人材アーカイブ" },
     { key: "sales", icon: "💰", title: "売上管理" },
   ]},
