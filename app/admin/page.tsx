@@ -158,6 +158,9 @@ export default function AdminPage() {
     const [contentType, setContentType] = useState<"video" | "article">("video");
     const [contentUrl, setContentUrl] = useState("");
     const [contentBody, setContentBody] = useState("");
+    const [contentCategory, setContentCategory] = useState("");
+    const [contentRequired, setContentRequired] = useState(false);
+    const [contentDeadline, setContentDeadline] = useState("");
     const [contentSaving, setContentSaving] = useState(false);
     const [contentMessage, setContentMessage] = useState("");
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
@@ -1735,6 +1738,25 @@ export default function AdminPage() {
                                 <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>説明</div>
                                 <input value={contentDesc} onChange={(e) => setContentDesc(e.target.value)} placeholder="簡単な説明" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
                             </div>
+                            <div style={{ marginBottom: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>カテゴリ</div>
+                                    <input value={contentCategory} onChange={(e) => setContentCategory(e.target.value)} placeholder="例：配属前必修 / 営業基礎 / 応用" list="content-cat-list" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                                    <datalist id="content-cat-list">
+                                        <option value="配属前必修" /><option value="営業基礎" /><option value="応用" /><option value="マインド" />
+                                    </datalist>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>締め切り（必修時のみ）</div>
+                                    <input type="date" value={contentDeadline} onChange={(e) => setContentDeadline(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "10px 14px", borderRadius: 8, background: contentRequired ? "rgba(248,113,113,0.1)" : "rgba(255,255,255,0.03)", border: "1px solid " + (contentRequired ? "rgba(248,113,113,0.35)" : "rgba(255,255,255,0.08)") }}>
+                                    <input type="checkbox" checked={contentRequired} onChange={(e) => setContentRequired(e.target.checked)} style={{ width: 16, height: 16, accentColor: "#ef4444" }} />
+                                    <span style={{ fontSize: 13, fontWeight: 800, color: contentRequired ? "#f87171" : "#9ca3af" }}>📌 必修に指定する（learnページ最上部に表示）</span>
+                                </label>
+                            </div>
                             {contentType === "video" && (
                                 <div style={{ marginBottom: 12 }}>
                                     <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>YouTube URL</div>
@@ -1751,10 +1773,10 @@ export default function AdminPage() {
                                 if (!contentTitle.trim()) { setContentMessage("タイトルを入力してください"); return; }
                                 setContentSaving(true);
                                 const { data: { user } } = await supabase.auth.getUser();
-                                await supabase.from("contents").insert({ title: contentTitle.trim(), description: contentDesc.trim(), content_type: contentType, url: contentUrl.trim() || null, body: contentBody.trim() || null, is_active: true, created_by: user?.id });
+                                await supabase.from("contents").insert({ title: contentTitle.trim(), description: contentDesc.trim(), content_type: contentType, url: contentUrl.trim() || null, body: contentBody.trim() || null, category: contentCategory.trim() || null, is_required: contentRequired, deadline: contentRequired && contentDeadline ? contentDeadline : null, is_active: true, created_by: user?.id });
                                 const { data: rows } = await supabase.from("contents").select("*").order("created_at", { ascending: false });
                                 setContentsList(rows || []);
-                                setContentTitle(""); setContentDesc(""); setContentUrl(""); setContentBody("");
+                                setContentTitle(""); setContentDesc(""); setContentUrl(""); setContentBody(""); setContentCategory(""); setContentRequired(false); setContentDeadline("");
                                 setContentMessage("✅ コンテンツを追加しました！");
                                 setContentSaving(false);
                             }} disabled={contentSaving} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
