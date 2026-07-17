@@ -161,6 +161,9 @@ export default function AdminPage() {
     const [contentCategory, setContentCategory] = useState("");
     const [contentRequired, setContentRequired] = useState(false);
     const [contentDeadline, setContentDeadline] = useState("");
+    const [hwCategory, setHwCategory] = useState("");
+    const [hwDeadline, setHwDeadline] = useState("");
+    const [hwMessage, setHwMessage] = useState("");
     const [contentSaving, setContentSaving] = useState(false);
     const [contentMessage, setContentMessage] = useState("");
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
@@ -1721,6 +1724,39 @@ export default function AdminPage() {
 
                 {activeTab === "contents" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ background: "rgba(248,113,113,0.05)", border: "1.5px solid rgba(248,113,113,0.3)", borderRadius: 16, padding: 24 }}>
+                            <div style={{ fontSize: 11, color: "#fca5a5", fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>📌 カテゴリを宿題にする</div>
+                            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+                                <div style={{ flex: 1, minWidth: 180 }}>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>カテゴリ</div>
+                                    <select value={hwCategory} onChange={(e) => setHwCategory(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
+                                        <option value="">選択してください</option>
+                                        {[...new Set(contentsList.map((c: any) => c.category).filter(Boolean))].map((cat: any) => (
+                                            <option key={cat} value={cat}>{cat}（{contentsList.filter((c: any) => c.category === cat && c.is_active).length}件）</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6, fontWeight: 600 }}>締め切り</div>
+                                    <input type="date" value={hwDeadline} onChange={(e) => setHwDeadline(e.target.value)} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", colorScheme: "dark" }} />
+                                </div>
+                                <button onClick={async () => {
+                                    if (!hwCategory) { setHwMessage("カテゴリを選択してください"); return; }
+                                    await supabase.from("contents").update({ is_required: true, deadline: hwDeadline || null }).eq("category", hwCategory).eq("is_active", true);
+                                    const { data: rows } = await supabase.from("contents").select("*").order("created_at", { ascending: false });
+                                    setContentsList(rows || []);
+                                    setHwMessage(`✅ 「${hwCategory}」を宿題に設定しました`);
+                                }} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #ef4444, #f97316)", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>宿題にする</button>
+                                <button onClick={async () => {
+                                    if (!hwCategory) { setHwMessage("カテゴリを選択してください"); return; }
+                                    await supabase.from("contents").update({ is_required: false, deadline: null }).eq("category", hwCategory);
+                                    const { data: rows } = await supabase.from("contents").select("*").order("created_at", { ascending: false });
+                                    setContentsList(rows || []);
+                                    setHwMessage(`「${hwCategory}」の宿題を解除しました`);
+                                }} style={{ padding: "10px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 800, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>解除</button>
+                            </div>
+                            {hwMessage && <div style={{ marginTop: 10, fontSize: 12.5, fontWeight: 700, color: "#fca5a5" }}>{hwMessage}</div>}
+                        </div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>NEW CONTENT</div>
                             <div style={{ marginBottom: 12 }}>

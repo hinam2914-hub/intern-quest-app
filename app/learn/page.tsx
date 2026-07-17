@@ -100,8 +100,11 @@ export default function LearnPage() {
     };
 
     const approvedIds = completions.filter(c => c.status === "approved").map(c => c.content_id);
-    const videos = contents.filter(c => c.content_type === "video");
-    const articles = contents.filter(c => c.content_type !== "video");
+    const [catFilter, setCatFilter] = useState<string>("all");
+    const categories = [...new Set(contents.map(c => c.category).filter(Boolean))] as string[];
+    const filtered = catFilter === "all" ? contents : contents.filter(c => c.category === catFilter);
+    const videos = filtered.filter(c => c.content_type === "video");
+    const articles = filtered.filter(c => c.content_type !== "video");
 
     if (loading) {
         return (
@@ -120,6 +123,14 @@ export default function LearnPage() {
                 <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>視聴・読了してレビューを提出すると <span style={{ color: "#818cf8", fontWeight: 700 }}>+2pt</span>！　{approvedIds.length} / {contents.length} 完了</p>
             </div>
 
+            {categories.length > 0 && (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "0 32px", marginBottom: 20 }}>
+                    <button onClick={() => setCatFilter("all")} style={{ padding: "8px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 800, background: catFilter === "all" ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.06)", color: catFilter === "all" ? "#fff" : "#9ca3af" }}>すべて</button>
+                    {categories.map(cat => (
+                        <button key={cat} onClick={() => setCatFilter(cat)} style={{ padding: "8px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 800, background: catFilter === cat ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "rgba(255,255,255,0.06)", color: catFilter === cat ? "#fff" : "#9ca3af" }}>{cat}</button>
+                    ))}
+                </div>
+            )}
             {message && (
                 <div style={{ margin: "0 32px 16px", padding: "12px 20px", background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.3)", borderRadius: 10, color: "#34d399", fontSize: 14, fontWeight: 600 }}>
                     {message}
