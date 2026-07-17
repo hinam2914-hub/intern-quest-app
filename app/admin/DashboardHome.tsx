@@ -37,7 +37,7 @@ const OTHERS: { label: string; cards: Card[] }[] = [
   { label: "承認・申請", cards: [
     { key: "requests", icon: "📮", title: "各種申請", badgeKey: "pendingRequest" },
     { key: "mtg_report", icon: "📝", title: "MTG報告書", badgeKey: "pendingMtg" },
-    { key: "mentor_report", icon: "🧑‍🏫", title: "メンター報告", badgeKey: "pendingMentor" },
+    { key: "mentor_report", icon: "🧑‍🏫", title: "ペイフォワード", badgeKey: "pendingMentor" },
     { key: "advice", icon: "💡", title: "アドバイス", badgeKey: "pendingAdvice" },
     { key: "kkc", icon: "🧩", title: "KKC", badgeKey: "pendingKkc" },
     { key: "tests", icon: "🧪", title: "テスト結果", badgeKey: "pendingTest" },
@@ -48,7 +48,7 @@ const OTHERS: { label: string; cards: Card[] }[] = [
     { key: "survey", icon: "📊", title: "アンケート" },
     { key: "questions_box", icon: "❓", title: "質問Quest", badgeKey: "pendingQuestion" },
     { key: "medaka_manage", icon: "🐟", title: "メダカBOX", badgeKey: "pendingMedaka" },
-    { key: "thanks_history", icon: "💌", title: "ペイフォワード" },
+    { key: "thanks_history", icon: "💌", title: "サンキュー" },
     { key: "badge", icon: "🎖️", title: "バッジ" },
   ]},
   { label: "コンテンツ・データ", cards: [
