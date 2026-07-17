@@ -6,6 +6,7 @@ const ACTION_LABEL: Record<string, string> = {
   dm: "DM",
   mentsuna: "メンツナ",
   interview: "面談",
+  saiyo_interview: "採用面談",
   hire: "入社",
 };
 

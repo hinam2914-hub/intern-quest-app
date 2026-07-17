@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
-const PT = { dm: 3, mentsuna: 15, interview: 30, hire: 100 };
+const PT = { dm: 3, mentsuna: 15, interview: 30, saiyo_interview: 50, hire: 100 };
 const DM_UNIT = 10;
 const CAMPAIGN = { start: "", end: "", host: "人事部 採用チーム" };  // 日程が決まったら start/end に入れる
 const RECRUIT_INFO = {
@@ -193,7 +193,7 @@ export default function RecruitPage() {
                             <div style={{ width: 44, height: 44, borderRadius: 12, background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>📩</div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: 15, fontWeight: 800, color: "#1e2950" }}>DM送信</div>
-                                <div style={{ fontSize: 11.5, color: "#8a93a8", marginTop: 2 }}>{DM_UNIT}通ごとに +{PT.dm}pt（LINE報告済み前提）</div>
+                                <div style={{ fontSize: 11.5, color: "#8a93a8", marginTop: 2 }}>通常ノルマ20通＋追加{DM_UNIT}通ごとに +{PT.dm}pt（LINE報告済み前提）</div>
                             </div>
                             <input type="number" value={dmInput} min={DM_UNIT} step={DM_UNIT} onChange={(e) => setDmInput(parseInt(e.target.value) || 0)} style={{ width: 70, padding: "9px", borderRadius: 10, border: "1px solid #d5dbe8", background: "#fff", color: "#1e2950", fontSize: 15, textAlign: "center", fontWeight: 700 }} />
                             <button onClick={recordDM} disabled={busy} style={{ padding: "10px 18px", borderRadius: 10, border: "none", background: "#3b82f6", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>記録する</button>
@@ -202,6 +202,7 @@ export default function RecruitPage() {
                         {[
                             { key: "mentsuna", icon: "🤝", bg: "#ede9fe", label: "メンツナ（面談設定）", pt: PT.mentsuna },
                             { key: "interview", icon: "🎤", bg: "#fce7f3", label: "面談を実施した", pt: PT.interview },
+                            { key: "saiyo_interview", icon: "🎯", bg: "#dcfce7", label: "採用面談を行った", pt: PT.saiyo_interview },
                             { key: "hire", icon: "🎉", bg: "#fef3c7", label: "入社が決まった！", pt: PT.hire, gold: true },
                         ].map((a) => (
                             <div key={a.key} style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px", borderRadius: 14, background: a.gold ? "linear-gradient(120deg,#fffbeb,#fef3c7)" : "#f8fafc", border: `1px solid ${a.gold ? "#fde68a" : "#eef1f7"}` }}>
@@ -228,6 +229,7 @@ export default function RecruitPage() {
                                 { icon: "📩", label: `DMを${DM_UNIT}通送る`, pt: PT.dm },
                                 { icon: "🤝", label: "メンツナを設定する", pt: PT.mentsuna },
                                 { icon: "🎤", label: "面談を実施する", pt: PT.interview },
+                                { icon: "🎯", label: "採用面談を行う", pt: PT.saiyo_interview },
                             ].map((a, i) => (
                                 <div key={i} style={{ padding: "14px", borderRadius: 14, background: "#f8fafc", border: "1px solid #eef1f7", textAlign: "center" }}>
                                     <div style={{ fontSize: 22, marginBottom: 6 }}>{a.icon}</div>
