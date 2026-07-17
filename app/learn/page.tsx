@@ -182,7 +182,7 @@ export default function LearnPage() {
                                     const badge = getStatusBadge(completion);
                                     const thumb = getThumbnail(content);
                                     return (
-                                        <div key={content.id} onClick={() => { setSelected(content); setReview(completion?.review || ""); }}
+                                        <div key={content.id} id={"learn-" + content.id} onClick={() => { setSelected(content); setReview(completion?.review || ""); }}
                                             style={{ flexShrink: 0, width: 260, cursor: "pointer", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.04)", border: `1px solid ${completion?.status === "approved" ? "rgba(52,211,153,0.4)" : completion?.status === "pending" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.08)"}`, transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", position: "relative", boxShadow: "0 0 0 rgba(99,102,241,0)" }}
                                             onMouseEnter={e => {
                                                 const el = e.currentTarget as HTMLDivElement;
@@ -228,7 +228,7 @@ export default function LearnPage() {
                                     const completion = getCompletion(content.id);
                                     const badge = getStatusBadge(completion);
                                     return (
-                                        <div key={content.id} onClick={() => { setSelected(content); setReview(completion?.review || ""); }}
+                                        <div key={content.id} id={"learn-" + content.id} onClick={() => { setSelected(content); setReview(completion?.review || ""); }}
                                             style={{ flexShrink: 0, width: 220, cursor: "pointer", borderRadius: 12, overflow: "hidden", background: "rgba(255,255,255,0.04)", border: `1px solid ${completion?.status === "approved" ? "rgba(52,211,153,0.4)" : completion?.status === "pending" ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.08)"}`, transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", position: "relative", boxShadow: "0 0 0 rgba(99,102,241,0)" }}
                                             onMouseEnter={e => {
                                                 const el = e.currentTarget as HTMLDivElement;
