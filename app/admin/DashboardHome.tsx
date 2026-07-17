@@ -100,14 +100,18 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
         const mismatchNames: { name: string; to: string }[] = [];
         const hardNames: string[] = [];
         const leaderNames: string[] = [];
+        let fullData = 0;
         for (const u of active) {
           if (!u.mbti) continue;
+          const hasFull = !!(u.mbti && u.club_category && u.hobby_category);
+          if (hasFull) fullData++;
           const s = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
           const total = s.cog + s.grit + s.social + s.drive + s.create;
           const axes = [s.cog, s.grit, s.social, s.drive, s.create];
           if (total >= TH.leaderTotal && s.grit >= TH.leaderGrit && s.social >= TH.leaderSocial) { leader++; leaderNames.push(u.name); }
-          if (total <= TH.hardTotal || axes.some((a) => a <= TH.hardAxis)) { hard++; hardNames.push(u.name); }
-          if (s.grit <= TH.riskGrit && !submitted7.has(u.id)) risk++;
+          // 育成優先・離職リスクはフルデータ入力者のみ判定（未入力による誤検知を防ぐ）
+          if (hasFull && (total <= TH.hardTotal || axes.some((a) => a <= TH.hardAxis))) { hard++; hardNames.push(u.name); }
+          if (hasFull && s.grit <= TH.riskGrit && !submitted7.has(u.id)) risk++;
           const top = calculateDepartmentMatch(s)[0];
           const cur = deptCode[u.department_id] || "";
           const mapped = JOB_TO_DEPT[top?.dept || ""] || "";
@@ -127,6 +131,8 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
         if (risk > 0) props.push(`離職リスクの高いメンバーが${risk}名います。早めの面談を推奨`);
         if (leader > 0) props.push(`次世代リーダー候補${leader}名。権限委譲のチャンスです`);
         if (submitRate7 < 50) props.push(`日報提出率が${submitRate7}%に低下しています`);
+        const fullRate = active.length ? Math.round((fullData / active.length) * 100) : 0;
+        if (fullRate < 50) props.push(`分析データ入力率が${fullRate}%です。部活・趣味の入力を促してください`);
         if (props.length === 0) props.push("組織状態は安定しています。現在の運用を継続してください");
         setProposals(props.slice(0, 4));
 
