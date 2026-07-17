@@ -207,6 +207,10 @@ export default function LearnPage() {
                                                 {badge && <div style={{ position: "absolute", top: 8, right: 8, background: badge.bg, border: `1px solid ${badge.border}`, color: badge.color, fontSize: 11, fontWeight: 800, padding: "3px 8px", borderRadius: 6 }}>{badge.label}</div>}
                                             </div>
                                             <div style={{ padding: "12px 14px" }}>
+                                                <div style={{ display: "flex", gap: 5, marginBottom: 5, flexWrap: "wrap" }}>
+                                                    {content.is_required && <span style={{ fontSize: 9.5, fontWeight: 900, color: "#fca5a5", background: "rgba(248,113,113,0.15)", border: "1px solid rgba(248,113,113,0.35)", borderRadius: 5, padding: "2px 7px" }}>📌 必修</span>}
+                                                    {content.category && <span style={{ fontSize: 9.5, fontWeight: 800, color: "#a5b4fc", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 5, padding: "2px 7px" }}>{content.category}</span>}
+                                                </div>
                                                 <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4, lineHeight: 1.4 }}>{content.title}</div>
                                                 {content.description && <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>{content.description}</div>}
                                                 <div style={{ marginTop: 8, fontSize: 12, color: completion?.status === "approved" ? "#34d399" : "#818cf8", fontWeight: 700 }}>
@@ -250,6 +254,10 @@ export default function LearnPage() {
                                                 {badge && <div style={{ position: "absolute", top: 8, right: 8, background: badge.bg, border: `1px solid ${badge.border}`, color: badge.color, fontSize: 11, fontWeight: 800, padding: "3px 8px", borderRadius: 6 }}>{badge.label}</div>}
                                             </div>
                                             <div style={{ padding: "12px 14px" }}>
+                                                <div style={{ display: "flex", gap: 5, marginBottom: 5, flexWrap: "wrap" }}>
+                                                    {content.is_required && <span style={{ fontSize: 9.5, fontWeight: 900, color: "#fca5a5", background: "rgba(248,113,113,0.15)", border: "1px solid rgba(248,113,113,0.35)", borderRadius: 5, padding: "2px 7px" }}>📌 必修</span>}
+                                                    {content.category && <span style={{ fontSize: 9.5, fontWeight: 800, color: "#a5b4fc", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 5, padding: "2px 7px" }}>{content.category}</span>}
+                                                </div>
                                                 <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4, lineHeight: 1.4 }}>{content.title}</div>
                                                 {content.description && <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>{content.description}</div>}
                                                 <div style={{ marginTop: 8, fontSize: 12, color: completion?.status === "approved" ? "#34d399" : "#818cf8", fontWeight: 700 }}>
