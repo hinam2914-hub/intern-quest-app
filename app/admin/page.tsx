@@ -5178,6 +5178,7 @@ export default function AdminPage() {
                                 <button key={dept.id} onClick={() => setSibylDept(dept.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: sibylDept === dept.id ? "linear-gradient(135deg, #8b5cf6, #6366f1)" : "rgba(255,255,255,0.05)", color: sibylDept === dept.id ? "#fff" : "#9ca3af" }}>{dept.name}</button>
                             ))}
                         </div>
+                        <div style={{ maxHeight: "65vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 6 }}>
                         {userDetails.filter((u: any) => sibylDept === "all" || u.department_id === sibylDept).map((u: any) => {
                             const sibyl = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
                             const matches = calculateDepartmentMatch(sibyl, { mbti: u.mbti || "", education: u.education || "" });
