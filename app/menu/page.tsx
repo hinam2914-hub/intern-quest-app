@@ -103,7 +103,7 @@ export default function MenuPage() {
                         <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#a78bfa", fontWeight: 900, letterSpacing: 3, cursor: "pointer" }}>✦ INTERN QUEST</div>
                         <div style={{ fontSize: 20, fontWeight: 900, color: "#e5e5f2", marginTop: 2 }}>☰ メニュー</div>
                     </div>
-                    <button onClick={() => router.push("/home")} style={{ border: "1px solid rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.12)", borderRadius: 12, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: "#c4b5fd", cursor: "pointer" }}>🏝️ 島へ戻る</button>
+                    <button onClick={() => router.push("/mypage")} style={{ border: "1px solid rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.12)", borderRadius: 12, padding: "8px 14px", fontSize: 12, fontWeight: 700, color: "#c4b5fd", cursor: "pointer" }}>🏠 おうちへ戻る</button>
                 </div>
 
                 {/* よく使う */}
