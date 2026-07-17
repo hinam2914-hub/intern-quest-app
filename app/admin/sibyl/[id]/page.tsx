@@ -11,7 +11,7 @@ const MBTI_NAME: Record<string, string> = {
   ISTP: "巨匠", ISFP: "冒険家", ESTP: "起業家", ESFP: "エンターテイナー",
 };
 const COLOR_TYPE: Record<string, string> = { "緑": "外交官タイプ", "紫": "分析家タイプ", "青": "番人タイプ", "黄": "探検家タイプ" };
-const JOB_LABEL: Record<string, string> = { "IP": "IP事業部", "クローザー": "クローザー事業部", "テレアポ": "テレアポ事業部", "人事": "人事部", "マーケ": "マーケティング事業部", "コンサル": "コンサル事業部", "マネージャー": "マネージャー" };
+const JOB_LABEL: Record<string, string> = { "訪販": "訪販(IP)", "テレアポ": "テレアポ(CB)", "クローザー": "クローザー(CB)", "人事": "人事(HR)", "管理マネージャー": "管理マネージャー" };
 
 export default function SibylPersonalPage() {
   const params = useParams();
@@ -58,7 +58,7 @@ export default function SibylPersonalPage() {
   const typeName = color ? COLOR_TYPE[color] : "未分析";
   const course = p.mbti ? calculateGrowthCourse({ mbti: p.mbti, education: p.education || "", sibyl: s }) : null;
   const guide = getIkuseiGuide(p.mbti || "");
-  const matches = calculateDepartmentMatch(s);
+  const matches = calculateDepartmentMatch(s, { mbti: p.mbti || "", education: p.education || "" });
   const topMatch = matches[0];
   const maxMatchScore = topMatch?.score || 1;
   const deployRank = topMatch && topMatch.score >= 80 ? "S" : topMatch && topMatch.score >= 65 ? "A" : "B";
@@ -86,7 +86,7 @@ export default function SibylPersonalPage() {
   // キャリア予測（マッチ上位から生成）
   const careerSteps = [
     { lv: "Lv.1", when: "現在", role: `${JOB_LABEL[topMatch?.dept] || "配属先"} インターン`, fit: Math.min(99, Math.round(orgScore * 0.85)) },
-    { lv: "Lv.2", when: "6ヶ月後", role: `${topMatch?.dept || ""}リーダー`, fit: Math.min(99, Math.round(orgScore * 0.95)) },
+    { lv: "Lv.2", when: "6ヶ月後", role: course?.process ? course.process.split("。")[0].slice(0, 16) : `${topMatch?.dept || ""}リーダー`, fit: Math.min(99, Math.round(orgScore * 0.95)) },
     { lv: "Lv.3", when: "1年後", role: course?.goal.split("。")[0].slice(0, 14) || "中核メンバー", fit: Math.min(99, orgScore) },
     { lv: "Lv.4", when: "2-3年後", role: matches[1] ? `${JOB_LABEL[matches[1].dept] || matches[1].dept}兼務` : "マネージャー候補", fit: Math.min(99, Math.round(orgScore * 0.92)) },
     { lv: "Lv.5", when: "5年後", role: "起業 / 新規事業責任者", fit: Math.min(99, Math.round((s.create + s.drive) / 40 * 100)) },

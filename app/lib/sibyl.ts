@@ -92,27 +92,44 @@ export function calculateSibyl(params: { mbti: string; education: string; club: 
     };
 }
 
-export function calculateDepartmentMatch(s: { cog: number; grit: number; social: number; drive: number; create: number }): { dept: string; score: number }[] {
-    // 各職種「その職種らしい軸」を主軸×2・準軸×2・補助×1（係数合計5で統一）
+export function calculateDepartmentMatch(s: { cog: number; grit: number; social: number; drive: number; create: number }, opts?: { mbti?: string; education?: string }): { dept: string; score: number }[] {
     const results = [
-        { dept: "IP", score: s.drive * 2 + s.grit * 2 + s.social * 1 },
-        { dept: "クローザー", score: s.social * 2 + s.drive * 2 + s.grit * 1 },
-        { dept: "マネージャー", score: s.social * 2 + s.grit * 2 + s.cog * 1 },
-        { dept: "コンサル", score: s.cog * 2 + s.create * 2 + s.social * 1 },
+        { dept: "訪販", score: s.drive * 2 + s.grit * 2 + s.social * 1 },
         { dept: "テレアポ", score: s.social * 2 + s.drive * 2 + s.grit * 1 },
+        { dept: "クローザー", score: s.social * 2 + s.drive * 2 + s.create * 1 },
         { dept: "人事", score: s.social * 2 + s.cog * 2 + s.create * 1 },
+        { dept: "管理マネージャー", score: s.grit * 2 + s.cog * 2 + s.social * 1 },
     ];
-    results.sort((a, b) => b.score - a.score);
-    const maxScore = results[0]?.score || 0;
-    if (maxScore < 60) {
-        results.push({ dept: "マーケ", score: Math.round((s.cog + s.create) * 2) });
+    const color = opts?.mbti ? getMbtiColor(opts.mbti) : null;
+    const high = opts?.education ? isHighEducation(opts.education) : false;
+    const isE = opts?.mbti ? opts.mbti[0] === "E" : false;
+    const boost = (dept: string, mult: number) => {
+        const r = results.find(x => x.dept === dept);
+        if (r) r.score = Math.round(r.score * mult);
+    };
+    if (color === "緑") {
+        if (high) boost("テレアポ", 1.3); else boost("訪販", 1.3);
+        boost("人事", 1.15);
+    } else if (color === "紫") {
+        boost("テレアポ", 1.3);
+        boost("管理マネージャー", 1.15);
+        if (isE) boost("クローザー", 1.2); else boost("クローザー", 0.85);
+    } else if (color === "青") {
+        boost("クローザー", 0.5);
+        if (high) boost("管理マネージャー", 1.3); else boost("訪販", 1.3);
+    } else if (color === "黄") {
+        boost("訪販", 1.25);
+        boost("クローザー", 1.25);
+        boost("管理マネージャー", 0.85);
     }
+    results.sort((a, b) => b.score - a.score);
     return results;
 }
+
 // ============ シビュラシステムここまで ============
 
 // ============ 育成コース診断 ============
-export type GrowthCourse = { color: string; colorCode: string; courseName: string; entry: string; goal: string; roleModel: string; level: string; };
+export type GrowthCourse = { color: string; colorCode: string; courseName: string; entry: string; process: string; goal: string; ngJobs: string[]; roleModel: string; level: string; };
 export function getMbtiColor(mbti: string): "緑" | "紫" | "青" | "黄" | null {
     if (!mbti || mbti.length < 4) return null;
     if (mbti[1] === "N" && mbti[2] === "F") return "緑";
@@ -130,10 +147,10 @@ export function calculateGrowthCourse(params: { mbti: string; education: string;
     const isE = params.mbti[0] === "E";
     const total = s.cog + s.grit + s.social + s.drive + s.create;
     const level = total >= 70 ? "トップ" : total >= 50 ? "ミドル" : "スタンダード";
-    if (color === "緑") return { color, colorCode: "#2E7D5B", courseName: "外交官タイプ｜人を導き、支える", entry: high ? "テレアポ" : "訪問営業", goal: "Aランク企業内定を経て、キャリアアドバイザーまたは人事へ。卒業後も組織に残り中核を担う", roleModel: "学生＝向井／社会人＝寺内", level };
-    if (color === "紫") return { color, colorCode: "#6A4C9C", courseName: "分析家タイプ｜戦略と仕組みで価値を生む", entry: high ? "テレアポ" : "テレアポまたはインフラ業務", goal: "AIチーム・戦略管理マネージャー" + (isE ? "（外向型はクローザーも適性あり）" : ""), roleModel: "中島・高崎・前田・小守谷", level };
-    if (color === "青") return { color, colorCode: "#2B6CB0", courseName: "番人タイプ｜地道に、確実にやり切る", entry: high ? "管理・マネジメント" : "訪問営業", goal: high ? "管理マネージャーとして運用を統括する" : "鉄人型。訪問営業で安定した成果を上げ続ける", roleModel: high ? "（現在不在）" : "牧田", level };
-    return { color, colorCode: "#C99A00", courseName: "探検家タイプ｜瞬発力と華で勝負する", entry: "訪問営業またはクローザー", goal: "トップクローザー、またはコミュニティプレジデント", roleModel: "クローザー＝小林／ディレクター＝清原", level };
+    if (color === "緑") return { color, colorCode: "#2E7D5B", courseName: "外交官タイプ｜人を導き、支える", entry: high ? "テレアポ" : "訪販", process: "メンターとして新人と伴走。共感力を活かし、遊びにも誘いながら同属性メンバーの離職を防止する", goal: "Aランク企業内定→就活アドバイザーまたは人事へ。愛社精神を軸に卒業後もDot.Aに残留し中核を担う", ngJobs: [], roleModel: "学生＝向井／社会人＝寺内", level };
+    if (color === "紫") return { color, colorCode: "#6A4C9C", courseName: "分析家タイプ｜戦略と仕組みで価値を生む", entry: high ? "テレアポ" : "テレアポまたはインフラ業務", process: "テレアポで対人の型を習得しつつ、仕組み化・データ分析で組織に貢献する", goal: "AIチーム・戦略管理マネージャー" + (isE ? "（外向型はクローザーも適性あり）" : ""), ngJobs: [], roleModel: "中島・高崎・前田・小守谷", level };
+    if (color === "青") return { color, colorCode: "#2B6CB0", courseName: "番人タイプ｜地道に、確実にやり切る", entry: high ? "管理・マネジメント" : "訪販", process: "型を身につけ、継続力で安定成果を積み上げる。瞬発勝負より確実な運用で信頼を得る", goal: high ? "管理マネージャーとして運用を統括する" : "鉄人・牧田コース。訪販で圧倒的な件数を取り続ける", ngJobs: ["クローザー"], roleModel: high ? "（現在不在）" : "牧田", level };
+    return { color, colorCode: "#C99A00", courseName: "探検家タイプ｜瞬発力と華で勝負する", entry: "訪販またはクローザー", process: "現場で瞬発力と華を発揮し、短期の達成を積み上げてトップセールスの型を作る", goal: "トップクローザーとして売りまくる、またはコミュニティプレジデント", ngJobs: [], roleModel: "クローザー＝小林／ディレクター＝清原", level };
 }
 // ============ 育成コース診断ここまで ============
 
