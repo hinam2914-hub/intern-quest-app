@@ -38,16 +38,32 @@ export const CLUB_LEGACY_MAP: Record<string, string> = {
 
 export const HOBBY_SCORES: Record<string, { cog: number; social: number; drive: number; create: number }> = {
     "読書・勉強": { cog: 9, social: 2, drive: 2, create: 5 },
-    "ゲーム（戦略）": { cog: 8, social: 4, drive: 5, create: 5 },
-    "ゲーム（アクション）": { cog: 4, social: 4, drive: 9, create: 3 },
-    "スポーツ・運動": { cog: 3, social: 7, drive: 9, create: 3 },
-    "音楽・楽器": { cog: 5, social: 6, drive: 5, create: 9 },
-    "アート・創作": { cog: 5, social: 3, drive: 3, create: 10 },
-    "旅行": { cog: 4, social: 7, drive: 5, create: 6 },
-    "グルメ・食べ歩き": { cog: 3, social: 8, drive: 5, create: 5 },
-    "映画・ドラマ鑑賞": { cog: 5, social: 4, drive: 2, create: 6 },
-    "アウトドア": { cog: 3, social: 7, drive: 8, create: 4 },
-    "SNS・配信": { cog: 5, social: 9, drive: 6, create: 7 },
+    "ゲーム": { cog: 6, social: 4, drive: 7, create: 4 },
+    "スポーツ": { cog: 3, social: 7, drive: 9, create: 3 },
+    "音楽": { cog: 4, social: 5, drive: 3, create: 6 },
+    "アート・ものづくり": { cog: 5, social: 3, drive: 3, create: 10 },
+    "旅行・アウトドア": { cog: 4, social: 7, drive: 7, create: 5 },
+    "グルメ": { cog: 3, social: 7, drive: 4, create: 4 },
+    "映画・ドラマ": { cog: 5, social: 4, drive: 2, create: 6 },
+    "推し活": { cog: 2, social: 5, drive: 3, create: 3 },
+    "SNS・配信": { cog: 3, social: 6, drive: 3, create: 4 },
+    "買い物・ファッション": { cog: 3, social: 7, drive: 5, create: 7 },
+    "ペット・動物": { cog: 3, social: 6, drive: 3, create: 4 },
+    "サウナ": { cog: 3, social: 4, drive: 3, create: 2 },
+    "寝ること・休む": { cog: 2, social: 1, drive: 1, create: 1 },
+};
+
+// 旧分類→新分類の互換マッピング
+export const HOBBY_LEGACY_MAP: Record<string, string> = {
+    "ゲーム（戦略）": "ゲーム",
+    "ゲーム（アクション）": "ゲーム",
+    "スポーツ・運動": "スポーツ",
+    "音楽・楽器": "音楽",
+    "アート・創作": "アート・ものづくり",
+    "旅行": "旅行・アウトドア",
+    "アウトドア": "旅行・アウトドア",
+    "グルメ・食べ歩き": "グルメ",
+    "映画・ドラマ鑑賞": "映画・ドラマ",
 };
 
 export function getEducationSibyl(education: string): { cog: number; grit: number } {
@@ -65,7 +81,7 @@ export function calculateSibyl(params: { mbti: string; education: string; club: 
     const m = MBTI_SCORES[params.mbti] || { cog: 0, grit: 0, social: 0, drive: 0, create: 0 };
     const e = getEducationSibyl(params.education);
     const c = CLUB_SCORES[CLUB_LEGACY_MAP[params.club] || params.club] || { grit: 0, drive: 0, social: 0 };
-    const h = HOBBY_SCORES[params.hobby] || { cog: 0, social: 0, drive: 0, create: 0 };
+    const h = HOBBY_SCORES[HOBBY_LEGACY_MAP[params.hobby] || params.hobby] || { cog: 0, social: 0, drive: 0, create: 0 };
 
     return {
         cog: Math.min(Math.round(m.cog * 0.5 + e.cog * 0.5 + h.cog * 0.3), 20),

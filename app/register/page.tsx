@@ -174,16 +174,19 @@ export default function RegisterPage() {
                         <select value={hobby} onChange={(e) => setHobby(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
                             <option value="">選択してください</option>
                             <option value="読書・勉強">📚 読書・勉強</option>
-                            <option value="ゲーム（戦略）">🎮 ゲーム（戦略・RPG）</option>
-                            <option value="ゲーム（アクション）">🎮 ゲーム（アクション・FPS）</option>
-                            <option value="スポーツ・運動">🏃 スポーツ・運動</option>
-                            <option value="音楽・楽器">🎸 音楽・楽器</option>
-                            <option value="アート・創作">🎨 アート・創作</option>
-                            <option value="旅行">✈️ 旅行</option>
-                            <option value="グルメ・食べ歩き">🍜 グルメ・食べ歩き</option>
-                            <option value="映画・ドラマ鑑賞">🎬 映画・ドラマ鑑賞</option>
-                            <option value="アウトドア">⛺ アウトドア</option>
+                            <option value="ゲーム">🎮 ゲーム</option>
+                            <option value="スポーツ">🏃 スポーツ</option>
+                            <option value="音楽">🎵 音楽</option>
+                            <option value="アート・ものづくり">🎨 アート・ものづくり</option>
+                            <option value="旅行・アウトドア">✈️ 旅行・アウトドア</option>
+                            <option value="グルメ">🍜 グルメ</option>
+                            <option value="映画・ドラマ">🎬 映画・ドラマ</option>
+                            <option value="推し活">💖 推し活</option>
                             <option value="SNS・配信">📱 SNS・配信</option>
+                            <option value="買い物・ファッション">🛍️ 買い物・ファッション</option>
+                            <option value="ペット・動物">🐶 ペット・動物</option>
+                            <option value="サウナ">🧖 サウナ</option>
+                            <option value="寝ること・休む">😴 寝ること・休む</option>
                         </select>
                     </div>
 
