@@ -162,14 +162,9 @@ export default function RegisterPage() {
                         <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>高校の部活</div>
                         <select value={club} onChange={(e) => setClub(e.target.value)} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
                             <option value="">選択してください</option>
-                            <option value="野球部">⚾ 野球部</option>
-                            <option value="体育会系（全国レベル）">体育会系（全国レベル）</option>
-                            <option value="体育会系（一般）">体育会系（一般）</option>
-                            <option value="チームスポーツ系">チームスポーツ系（サッカー・バスケ等）</option>
-                            <option value="個人競技系">個人競技系（テニス・陸上・水泳等）</option>
-                            <option value="文化部（発表系）">文化部（吹奏楽・演劇等）</option>
-                            <option value="文化部（創作系）">文化部（美術・文芸等）</option>
-                            <option value="帰宅部">帰宅部</option>
+                            <option value="運動部">🏃 運動部</option>
+                            <option value="文化部">🎨 文化部</option>
+                            <option value="帰宅部">🏠 帰宅部</option>
                         </select>
                     </div>
 
