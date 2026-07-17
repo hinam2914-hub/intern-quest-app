@@ -84,7 +84,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
         const d7 = new Date(now.getTime() - 7 * 86400000).toISOString();
 
         const [{ data: profs }, { data: depts }, { data: subs7 }, { data: ph7 }, { data: rec7 }, { count: ivC }] = await Promise.all([
-          supabase.from("profiles").select("id,name,mbti,education,club_category,hobby_category,department_id,status"),
+          supabase.from("profiles").select("id,name,mbti,education,club_category,hobby_category,department_id"),
           supabase.from("departments").select("id,code"),
           supabase.from("submissions").select("user_id").gte("created_at", d7),
           supabase.from("points_history").select("user_id,reason").gte("created_at", d7),
@@ -92,7 +92,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
           supabase.from("interview_requests").select("*", { count: "exact", head: true }).eq("status", "open"),
         ]);
 
-        const active = (profs || []).filter((p: any) => p.status !== "retired" && p.status !== "退職");
+        const active = profs || [];
         const deptCode: Record<string, string> = {};
         (depts || []).forEach((d: any) => { deptCode[d.id] = d.code; });
         const submitted7 = new Set((subs7 || []).map((s: any) => s.user_id));
