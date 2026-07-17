@@ -86,7 +86,7 @@ export default function ProfileUploadPage() {
                 setName(profile.name || "");
                 setAvatarUrl(profile.avatar_url || null);
                 setMbti(profile.mbti || "");
-                setClub(profile.club || "");
+                setClub(profile.club_category || profile.club || "");
                 setGrade((profile as any)?.grade || "");
                 setThemeColor((profile as any)?.theme_color || "#6366f1");
                 setBgColor((profile as any)?.bg_color || "#0a0a0f");
@@ -142,7 +142,7 @@ export default function ProfileUploadPage() {
         if (!userId) return;
         setSavingProfile(true);
         setProfileMessage("");
-        await supabase.from("profiles").update({ mbti: mbti || null, club: club.trim() || null, grade: grade || null }).eq("id", userId);
+        await supabase.from("profiles").update({ mbti: mbti || null, club: club.trim() || null, club_category: club.trim() || null, grade: grade || null }).eq("id", userId);
         setProfileMessage("✅ 保存しました！");
         setSavingProfile(false);
     };
@@ -307,7 +307,12 @@ export default function ProfileUploadPage() {
                             ))}
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#d1d5db", marginBottom: 8 }}>高校の部活</div>
-                        <input type="text" value={club} onChange={(e) => setClub(e.target.value)} placeholder="例：野球部・吹奏楽部・帰宅部など" style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                        <select value={club} onChange={(e) => setClub(e.target.value)} style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
+                            <option value="">選択してください</option>
+                            <option value="運動部">🏃 運動部</option>
+                            <option value="文化部">🎨 文化部</option>
+                            <option value="帰宅部">🏠 帰宅部</option>
+                        </select>
                     </div>
                     <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: savingProfile ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: savingProfile ? "not-allowed" : "pointer", fontSize: 14 }}>
                         {savingProfile ? "保存中..." : "💾 保存する"}

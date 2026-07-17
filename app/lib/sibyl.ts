@@ -20,14 +20,20 @@ export const MBTI_SCORES: Record<string, { cog: number; grit: number; social: nu
 };
 
 export const CLUB_SCORES: Record<string, { grit: number; drive: number; social: number }> = {
-    "野球部": { grit: 10, drive: 10, social: 9 },
-    "体育会系（全国レベル）": { grit: 9, drive: 9, social: 7 },
-    "体育会系（一般）": { grit: 8, drive: 7, social: 6 },
-    "チームスポーツ系": { grit: 7, drive: 7, social: 8 },
-    "個人競技系": { grit: 8, drive: 8, social: 3 },
-    "文化部（発表系）": { grit: 6, drive: 5, social: 7 },
-    "文化部（創作系）": { grit: 4, drive: 3, social: 3 },
+    "運動部": { grit: 8, drive: 8, social: 6 },
+    "文化部": { grit: 5, drive: 4, social: 5 },
     "帰宅部": { grit: 2, drive: 2, social: 2 },
+};
+
+// 旧分類→新3分類の互換マッピング（未移行データ対策）
+export const CLUB_LEGACY_MAP: Record<string, string> = {
+    "野球部": "運動部",
+    "体育会系（全国レベル）": "運動部",
+    "体育会系（一般）": "運動部",
+    "チームスポーツ系": "運動部",
+    "個人競技系": "運動部",
+    "文化部（発表系）": "文化部",
+    "文化部（創作系）": "文化部",
 };
 
 export const HOBBY_SCORES: Record<string, { cog: number; social: number; drive: number; create: number }> = {
@@ -58,7 +64,7 @@ export function getEducationSibyl(education: string): { cog: number; grit: numbe
 export function calculateSibyl(params: { mbti: string; education: string; club: string; hobby: string }): { cog: number; grit: number; social: number; drive: number; create: number } {
     const m = MBTI_SCORES[params.mbti] || { cog: 0, grit: 0, social: 0, drive: 0, create: 0 };
     const e = getEducationSibyl(params.education);
-    const c = CLUB_SCORES[params.club] || { grit: 0, drive: 0, social: 0 };
+    const c = CLUB_SCORES[CLUB_LEGACY_MAP[params.club] || params.club] || { grit: 0, drive: 0, social: 0 };
     const h = HOBBY_SCORES[params.hobby] || { cog: 0, social: 0, drive: 0, create: 0 };
 
     return {
