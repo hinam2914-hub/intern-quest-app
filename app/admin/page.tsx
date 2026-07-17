@@ -5243,6 +5243,7 @@ export default function AdminPage() {
                             );
                         })}
                     </div>
+                    </div>
                 )}
 
                 {activeTab === "kpi_dashboard" && <KpiDashboardTab />}
