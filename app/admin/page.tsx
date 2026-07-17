@@ -1255,7 +1255,9 @@ export default function AdminPage() {
                         <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>管理ダッシュボード</h1>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => router.push("/ranking")} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", padding: "8px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>ランキング</button>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <span style={{ padding: "8px 14px", borderRadius: 8, background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24", fontWeight: 800, fontSize: 12 }}>⏳ 承認待ち {pendingAdviceCount + pendingMtgCount + pendingMedakaCount + pendingMentorCount + pendingKkcCount + pendingTestCount + pendingTaskReportCount + pendingRecruitCount}件</span>
+                        </div>
                     </div>
                 </div>
 
