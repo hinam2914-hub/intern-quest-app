@@ -159,8 +159,6 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
 
   const alerts = [
     { label: "未提出日報", value: stats.notSubmitted, unit: "人", icon: "📋", color: stats.notSubmitted > 0 ? "#f87171" : "#34d399", key: "reports" },
-    { label: "本日の面談予定", value: interviews, unit: "件", icon: "🤝", color: "#a78bfa", key: "recruit" },
-    { label: "承認待ち申請", value: pendingTotal, unit: "件", icon: "⏳", color: pendingTotal > 0 ? "#fbbf24" : "#34d399", key: "requests" },
     { label: "昨日の提出率", value: stats.submitRate, unit: "%", icon: "📈", color: rateColor(stats.submitRate), key: "reports" },
   ];
 
@@ -194,7 +192,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
             <div key={a.label} className="dh-card" onClick={() => onNavigate(a.key)} style={{ cursor: "pointer", padding: "18px 20px", borderRadius: 16, background: "linear-gradient(160deg, rgba(30,30,52,.92), rgba(14,14,28,.92))", border: `1px solid ${a.color}33`, borderLeft: `3px solid ${a.color}` }}>
               <div style={{ fontSize: 12, color: "#8b8fa8", fontWeight: 700, marginBottom: 8 }}>{a.icon} {a.label}</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontSize: 40, fontWeight: 900, color: a.color, lineHeight: 1 }}>{loading && a.label === "本日の面談予定" ? "…" : a.value}</span>
+                <span style={{ fontSize: 40, fontWeight: 900, color: a.color, lineHeight: 1 }}>{a.value}</span>
                 <span style={{ fontSize: 13, color: "#8b8fa8", fontWeight: 700 }}>{a.unit}</span>
               </div>
             </div>
