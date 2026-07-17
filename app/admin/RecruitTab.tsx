@@ -79,38 +79,38 @@ export default function RecruitTab() {
   const shown = tab === "pending" ? pending : history;
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-white">🎯 HRキャンペーン承認</h2>
-      <div className="flex gap-2">
-        <button onClick={() => setTab("pending")} className={"px-4 py-2 rounded-lg text-sm font-bold " + (tab === "pending" ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-400")}>
-          承認待ち {pending.length > 0 && <span className="ml-1 px-2 py-0.5 bg-red-500 rounded-full text-xs">{pending.length}</span>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: "#fff", margin: 0 }}>🎯 HRキャンペーン承認</h2>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={() => setTab("pending")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: tab === "pending" ? "linear-gradient(135deg, #8b5cf6, #6366f1)" : "rgba(255,255,255,0.06)", color: tab === "pending" ? "#fff" : "#9ca3af" }}>
+          承認待ち{pending.length > 0 ? ` (${pending.length})` : ""}
         </button>
-        <button onClick={() => setTab("history")} className={"px-4 py-2 rounded-lg text-sm font-bold " + (tab === "history" ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-400")}>
+        <button onClick={() => setTab("history")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: tab === "history" ? "linear-gradient(135deg, #8b5cf6, #6366f1)" : "rgba(255,255,255,0.06)", color: tab === "history" ? "#fff" : "#9ca3af" }}>
           履歴
         </button>
       </div>
       {loading ? (
-        <p className="text-gray-400 text-sm">読み込み中...</p>
+        <p style={{ color: "#9ca3af", fontSize: 13 }}>読み込み中...</p>
       ) : shown.length === 0 ? (
-        <p className="text-gray-500 text-sm">{tab === "pending" ? "承認待ちの申請はありません" : "履歴はありません"}</p>
+        <p style={{ color: "#6b7280", fontSize: 13 }}>{tab === "pending" ? "承認待ちの申請はありません" : "履歴はありません"}</p>
       ) : (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {shown.map((r) => (
-            <div key={r.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-white font-bold text-sm">
-                  {r.name} <span className="text-indigo-400">／ {ACTION_LABEL[r.action_type] || r.action_type} ×{r.count}</span> <span className="text-yellow-400">+{r.points}pt</span>
-                </p>
-                {r.note && <p className="text-gray-400 text-xs mt-1">📝 {r.note}</p>}
-                <p className="text-gray-600 text-xs mt-1">{new Date(r.created_at).toLocaleString("ja-JP")}</p>
+            <div key={r.id} style={{ background: "rgba(30,30,50,0.8)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "16px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>
+                  {r.name} <span style={{ color: "#a78bfa" }}>／ {ACTION_LABEL[r.action_type] || r.action_type} ×{r.count}</span> <span style={{ color: "#fbbf24" }}>+{r.points}pt</span>
+                </div>
+                {r.note && <div style={{ color: "#9ca3af", fontSize: 12, marginTop: 4 }}>📝 {r.note}</div>}
+                <div style={{ color: "#6b7280", fontSize: 11, marginTop: 4 }}>{new Date(r.created_at).toLocaleString("ja-JP")}</div>
               </div>
               {tab === "pending" ? (
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => approve(r)} disabled={busy === r.id} className="px-3 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-lg disabled:opacity-50">✅ 承認</button>
-                  <button onClick={() => reject(r)} disabled={busy === r.id} className="px-3 py-2 bg-gray-700 hover:bg-red-600 text-white text-sm font-bold rounded-lg disabled:opacity-50">却下</button>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <button onClick={() => approve(r)} disabled={busy === r.id} style={{ padding: "9px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", opacity: busy === r.id ? 0.5 : 1 }}>✅ 承認</button>
+                  <button onClick={() => reject(r)} disabled={busy === r.id} style={{ padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.05)", color: "#f87171", opacity: busy === r.id ? 0.5 : 1 }}>却下</button>
                 </div>
               ) : (
-                <span className={"text-xs font-bold shrink-0 " + (r.status === "approved" ? "text-green-400" : "text-red-400")}>
+                <span style={{ fontSize: 12, fontWeight: 800, flexShrink: 0, color: r.status === "approved" ? "#34d399" : "#f87171" }}>
                   {r.status === "approved" ? "承認済み" : "却下"}
                 </span>
               )}
