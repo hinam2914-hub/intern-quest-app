@@ -38,7 +38,6 @@ const OTHERS: { label: string; cards: Card[] }[] = [
     { key: "requests", icon: "📮", title: "各種申請", badgeKey: "pendingRequest" },
     { key: "mtg_report", icon: "📝", title: "MTG報告書", badgeKey: "pendingMtg" },
     { key: "mentor_report", icon: "🧑‍🏫", title: "メンター報告", badgeKey: "pendingMentor" },
-    { key: "manager_test", icon: "👔", title: "マネージャーテスト", badgeKey: "pendingMgrTest" },
     { key: "advice", icon: "💡", title: "アドバイス", badgeKey: "pendingAdvice" },
     { key: "kkc", icon: "🧩", title: "KKC", badgeKey: "pendingKkc" },
     { key: "tests", icon: "🧪", title: "テスト結果", badgeKey: "pendingTest" },
