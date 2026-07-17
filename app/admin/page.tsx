@@ -5129,7 +5129,10 @@ export default function AdminPage() {
                                 <div key={u.id} style={{ padding: 20, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                                         <div style={{ fontSize: 16, fontWeight: 700, color: "#f9fafb" }}>👤 {u.name}</div>
-                                        {!hasData && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, fontWeight: 700 }}>データ未入力</span>}
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                            {!hasData && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, fontWeight: 700 }}>データ未入力</span>}
+                                            <button onClick={() => router.push(`/admin/sibyl/${u.id}`)} style={{ padding: "7px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #8b5cf6, #6366f1)", boxShadow: "0 2px 10px rgba(139,92,246,.35)" }}>🔮 個人分析を開く</button>
+                                        </div>
                                     </div>
                                     {/* 診断書タブ */}
                                     {(() => {
