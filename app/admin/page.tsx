@@ -5166,7 +5166,7 @@ export default function AdminPage() {
                     </div>
                 )}
                 {activeTab === "sibyl" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         <div style={{ padding: "20px 24px", borderRadius: 14, background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.2)" }}>
                             <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", marginBottom: 4 }}>👁️ シビュラシステム</div>
                             <div style={{ fontSize: 12, color: "#9ca3af" }}>学歴・MBTI・部活・趣味をもとに5軸評価（地頭・胆力・対人・瞬発・創造）を算出し、事業部適性を診断します。</div>
