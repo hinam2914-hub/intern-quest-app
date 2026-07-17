@@ -13,6 +13,9 @@ type Content = {
     url: string | null;
     body: string | null;
     is_active: boolean;
+    category?: string | null;
+    is_required?: boolean;
+    deadline?: string | null;
 };
 
 type Completion = {
@@ -123,6 +126,46 @@ export default function LearnPage() {
                 </div>
             )}
 
+            {(() => {
+                const required = contents.filter(c => c.is_required);
+                if (required.length === 0) return null;
+                const doneIds = new Set(completions.filter(cp => cp.status === "approved" || cp.status === "pending").map(cp => cp.content_id));
+                const sorted = [...required].sort((a, b) => {
+                    const ad = doneIds.has(a.id) ? 1 : 0, bd = doneIds.has(b.id) ? 1 : 0;
+                    if (ad !== bd) return ad - bd;
+                    return (a.deadline || "9999") < (b.deadline || "9999") ? -1 : 1;
+                });
+                const doneCount = required.filter(c => doneIds.has(c.id)).length;
+                return (
+                    <div style={{ margin: "0 32px 28px", padding: "20px 22px", borderRadius: 16, background: "rgba(248,113,113,0.06)", border: "1.5px solid rgba(248,113,113,0.3)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 6 }}>
+                            <span style={{ fontSize: 16, fontWeight: 900, color: "#fca5a5" }}>📌 あなたの必修コンテンツ</span>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: doneCount === required.length ? "#34d399" : "#fca5a5" }}>{doneCount} / {required.length} 完了</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            {sorted.map(c => {
+                                const done = doneIds.has(c.id);
+                                const days = c.deadline ? Math.ceil((new Date(c.deadline + "T23:59:59").getTime() - Date.now()) / 86400000) : null;
+                                const urgent = !done && days !== null && days <= 3;
+                                return (
+                                    <div key={c.id} onClick={() => { const el = document.getElementById("learn-" + c.id); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 10, cursor: "pointer", background: done ? "rgba(52,211,153,0.06)" : "rgba(255,255,255,0.04)", border: "1px solid " + (done ? "rgba(52,211,153,0.25)" : urgent ? "rgba(248,113,113,0.5)" : "rgba(255,255,255,0.08)"), opacity: done ? 0.65 : 1 }}>
+                                        <span style={{ fontSize: 16 }}>{done ? "✅" : c.content_type === "video" ? "▶️" : "📄"}</span>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: 13.5, fontWeight: 800, color: done ? "#86efac" : "#f9fafb", textDecoration: done ? "line-through" : "none" }}>{c.title}</div>
+                                            {c.category && <span style={{ fontSize: 10, fontWeight: 700, color: "#a5b4fc" }}>{c.category}</span>}
+                                        </div>
+                                        {c.deadline && !done && (
+                                            <span style={{ fontSize: 11.5, fontWeight: 900, whiteSpace: "nowrap", color: urgent ? "#f87171" : "#9ca3af" }}>
+                                                {days !== null && days < 0 ? "期限切れ" : days === 0 ? "今日まで！" : `あと${days}日`}
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            })()}
             {contents.length === 0 ? (
                 <div style={{ textAlign: "center", padding: 80, color: "#6b7280" }}>
                     <div style={{ fontSize: 48, marginBottom: 16 }}>📚</div>
