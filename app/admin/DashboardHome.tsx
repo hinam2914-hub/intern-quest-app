@@ -45,8 +45,8 @@ const OTHERS: { label: string; cards: Card[] }[] = [
   ]},
   { label: "コミュニティ", cards: [
     { key: "announce", icon: "📢", title: "お知らせ" },
+    { key: "thinking_manage", icon: "🧠", title: "思考クエスト" },
     { key: "survey", icon: "📊", title: "アンケート" },
-    { key: "questions_box", icon: "❓", title: "質問Quest", badgeKey: "pendingQuestion" },
     { key: "medaka_manage", icon: "🐟", title: "メダカBOX", badgeKey: "pendingMedaka" },
     { key: "thanks_history", icon: "💌", title: "サンキュー" },
     { key: "badge", icon: "🎖️", title: "バッジ" },
@@ -153,7 +153,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
     })();
   }, []);
 
-  const pendingTotal = (stats.pendingTask || 0) + (stats.pendingKkc || 0) + (stats.pendingAdvice || 0) + (stats.pendingMedaka || 0) + (stats.pendingMentor || 0) + (stats.pendingMtg || 0) + (stats.pendingTest || 0) + (stats.pendingRecruit || 0) + (stats.pendingChallenge || 0) + (stats.pendingRequest || 0) + (stats.pendingQuestion || 0);
+  const pendingTotal = (stats.pendingTask || 0) + (stats.pendingKkc || 0) + (stats.pendingAdvice || 0) + (stats.pendingMedaka || 0) + (stats.pendingMentor || 0) + (stats.pendingMtg || 0) + (stats.pendingTest || 0) + (stats.pendingRecruit || 0) + (stats.pendingChallenge || 0) + (stats.pendingRequest || 0);
   const rateColor = (v: number) => (v >= 70 ? "#34d399" : v >= 40 ? "#fbbf24" : "#f87171");
 
   const alerts = [
