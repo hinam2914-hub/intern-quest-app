@@ -580,6 +580,7 @@ export default function MyPage() {
     const [routineSaving, setRoutineSaving] = useState(false);
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
+    const [hobby, setHobby] = useState("");
     const [growthRank, setGrowthRank] = useState("");
     const [growthGrade, setGrowthGrade] = useState("");
     const [themeColor, setThemeColor] = useState("#6366f1");
@@ -807,7 +808,8 @@ export default function MyPage() {
             setGrowthRank((profileData as any)?.growth_rank || "");
             setGrowthGrade((profileData as any)?.growth_grade || "");
             setMbti((profileData as any)?.mbti || "");
-            setClub((profileData as any)?.club || "");
+            setClub((profileData as any)?.club_category || (profileData as any)?.club || "");
+            setHobby((profileData as any)?.hobby_category || "");
             setProfileFlags({
                 quiz_passed: !!(profileData as any)?.quiz_passed,
                 mentor_passed: !!(profileData as any)?.mentor_passed,
@@ -1138,6 +1140,10 @@ export default function MyPage() {
             department_id: departmentId || null,
             started_at: startedAt || null,
             birthday: birthday || null,
+            mbti: mbti || null,
+            club: club || null,
+            club_category: club || null,
+            hobby_category: hobby || null,
         }).eq("id", userId);
         // activeDaysを再計算
         if (startedAt) {
@@ -2589,6 +2595,57 @@ const handleRoutineCheck = async (routineId: string) => {
                             )}
                             <input value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="名前を入力" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
                             <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="学歴を入力（例：〇〇大学）" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 8 }} />
+                            <div style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>🧠 MBTI（シビュラ診断に使われるよ）</div>
+                                <select value={mbti} onChange={(e) => setMbti(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }}>
+                                    <option value="">未設定</option>
+                                    <option value="INTJ">INTJ</option>
+                                    <option value="INTP">INTP</option>
+                                    <option value="ENTJ">ENTJ</option>
+                                    <option value="ENTP">ENTP</option>
+                                    <option value="INFJ">INFJ</option>
+                                    <option value="INFP">INFP</option>
+                                    <option value="ENFJ">ENFJ</option>
+                                    <option value="ENFP">ENFP</option>
+                                    <option value="ISTJ">ISTJ</option>
+                                    <option value="ISFJ">ISFJ</option>
+                                    <option value="ESTJ">ESTJ</option>
+                                    <option value="ESFJ">ESFJ</option>
+                                    <option value="ISTP">ISTP</option>
+                                    <option value="ISFP">ISFP</option>
+                                    <option value="ESTP">ESTP</option>
+                                    <option value="ESFP">ESFP</option>
+                                </select>
+                            </div>
+                            <div style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>⚽ 高校の部活</div>
+                                <select value={club} onChange={(e) => setClub(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }}>
+                                    <option value="">未設定</option>
+                                    <option value="運動部">🏃 運動部</option>
+                                    <option value="文化部">🎨 文化部</option>
+                                    <option value="帰宅部">🏠 帰宅部</option>
+                                </select>
+                            </div>
+                            <div style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>🎯 趣味</div>
+                                <select value={hobby} onChange={(e) => setHobby(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: isLightBg ? "rgba(240,240,240,0.8)" : "#1a1a2e", color: textPrimary, fontSize: 14, outline: "none", boxSizing: "border-box" }}>
+                                    <option value="">未設定</option>
+                                    <option value="読書・勉強">読書・勉強</option>
+                                    <option value="ゲーム">ゲーム</option>
+                                    <option value="スポーツ">スポーツ</option>
+                                    <option value="音楽">音楽</option>
+                                    <option value="アート・ものづくり">アート・ものづくり</option>
+                                    <option value="旅行・アウトドア">旅行・アウトドア</option>
+                                    <option value="グルメ">グルメ</option>
+                                    <option value="映画・ドラマ">映画・ドラマ</option>
+                                    <option value="推し活">推し活</option>
+                                    <option value="SNS・配信">SNS・配信</option>
+                                    <option value="買い物・ファッション">買い物・ファッション</option>
+                                    <option value="ペット・動物">ペット・動物</option>
+                                    <option value="サウナ">サウナ</option>
+                                    <option value="寝ること・休む">寝ること・休む</option>
+                                </select>
+                            </div>
                             <div style={{ marginBottom: 8 }}>
                                 <div style={{ fontSize: 11, color: textMuted, marginBottom: 4 }}>📅 入社日</div>
                                 <input type="date" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
