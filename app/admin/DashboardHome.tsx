@@ -92,8 +92,10 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
           supabase.from("recruit_progress").select("action_type,status").gte("created_at", d7),
           supabase.from("interview_requests").select("*", { count: "exact", head: true }).eq("status", "open"),
         ]);
+        const { data: resigned } = await supabase.from("resignations").select("user_id");
+        const resignedIds = new Set((resigned || []).map((r: any) => r.user_id));
 
-        const active = (profs || []).filter((p: any) => !isExcluded(p.id));
+        const active = (profs || []).filter((p: any) => !isExcluded(p.id) && !resignedIds.has(p.id));
         const deptCode: Record<string, string> = {};
         (depts || []).forEach((d: any) => { deptCode[d.id] = d.code; });
         const submitted7 = new Set((subs7 || []).map((s: any) => s.user_id));

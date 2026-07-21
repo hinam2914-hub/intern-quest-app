@@ -170,7 +170,7 @@ export function getMbtiColor(mbti: string): "緑" | "紫" | "青" | "黄" | null
     if (mbti[1] === "S" && mbti[3] === "P") return "黄";
     return null;
 }
-export function isHighEducation(education: string): boolean { return getEducationSibyl(education).cog >= 7; }
+export function isHighEducation(education: string): boolean { return getEducationSibyl(education).cog >= 12; }
 export function calculateGrowthCourse(params: { mbti: string; education: string; sibyl: { cog: number; grit: number; social: number; drive: number; create: number }; }): GrowthCourse | null {
     const color = getMbtiColor(params.mbti);
     if (!color) return null;
