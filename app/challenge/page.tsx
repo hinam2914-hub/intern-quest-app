@@ -82,7 +82,10 @@ export default function ChallengePage() {
         load();
     }, []);
 
-    const getSubmission = (challengeId: string) => submissions.find(s => s.challenge_id === challengeId);
+    const getSubmission = (challengeId: string) => {
+        const subs = submissions.filter(s => s.challenge_id === challengeId);
+        return subs.find(s => s.status === "approved") || subs.find(s => s.status === "pending") || subs[0];
+    };
 
     const handleFileSelect = (file: File) => {
         if (!file.type.startsWith("image/")) return;
