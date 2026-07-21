@@ -110,6 +110,7 @@ export default function SibylPersonalPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <span style={{ fontSize: 11, color: "#8b8fa8", fontWeight: 700 }}>最終更新：{scanTime}</span>
+          <button onClick={() => router.push("/admin/sibyl/guide")} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(139,92,246,.4)", background: "rgba(139,92,246,.1)", color: "#c4b5fd", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>📖 見方ガイド</button>
           <button onClick={() => window.print()} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(139,92,246,.4)", background: "rgba(139,92,246,.1)", color: "#c4b5fd", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>📄 PDFレポート出力</button>
           <button onClick={() => router.push("/admin")} style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid rgba(255,255,255,.15)", background: "rgba(255,255,255,.05)", color: "#9ca3af", fontWeight: 800, cursor: "pointer" }}>✕</button>
         </div>

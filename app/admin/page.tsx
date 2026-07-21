@@ -2126,7 +2126,7 @@ export default function AdminPage() {
                             pendingQuestion: pendingQuestionCount,
                             pendingMgrTest: pendingMgrTestCount,
                         }}
-                        onNavigate={(key) => setActiveTab(key as any)}
+                        onNavigate={(key) => { if (key === "sibyl_guide") { router.push("/admin/sibyl/guide"); return; } setActiveTab(key as any); }}
                     />
                 )}
                 {activeTab === "dashboard" && (

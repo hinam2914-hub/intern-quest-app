@@ -32,6 +32,7 @@ const QUICK: Card[] = [
   { key: "monthly_kpi", icon: "📈", title: "月次KPI", desc: "月次の進捗" },
   { key: "sibyl", icon: "🔮", title: "シビュラ", desc: "AI適性分析" },
   { key: "course", icon: "🎓", title: "講座スタンプ", desc: "受講・講師の承認" },
+  { key: "sibyl_guide", icon: "📖", title: "シビュラの見方", desc: "5軸・ランク・配属ルール" },
 ];
 
 const OTHERS: { label: string; cards: Card[] }[] = [
