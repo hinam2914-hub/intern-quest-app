@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
-import { calculateSibyl, calculateDepartmentMatch, calculateGrowthCourse, getIkuseiGuide, getMbtiColor, mentorCompat, calculateActionScore, getPotentialRank, isExcluded } from "../../../lib/sibyl";
+import { calculateSibyl, calculateDepartmentMatch, calculateGrowthCourse, getIkuseiGuide, getMbtiColor, mentorCompat, calculateActionScore, getPotentialRank, isExcluded, isHighEducation } from "../../../lib/sibyl";
 
 const MBTI_NAME: Record<string, string> = {
   INTJ: "建築家", INTP: "論理学者", ENTJ: "指揮官", ENTP: "討論者",
@@ -22,11 +22,12 @@ export default function SibylPersonalPage() {
   const [mentors, setMentors] = useState<{ good: any[]; bad: any[] }>({ good: [], bad: [] });
   const [scanTime, setScanTime] = useState("");
   const [action, setAction] = useState<{ total: number; breakdown: { label: string; score: number; max: number }[] }>({ total: 0, breakdown: [] });
+  const [userLevel, setUserLevel] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const { data: prof } = await supabase.from("profiles").select("id,name,mbti,education,club_category,hobby_category,department_id,grade,avatar_config,created_at").eq("id", uid).single();
+      const { data: prof } = await supabase.from("profiles").select("id,name,mbti,education,club_category,hobby_category,department_id,grade,avatar_config,created_at,started_at").eq("id", uid).single();
       if (!prof) { setLoading(false); return; }
       setP(prof);
       if (prof.department_id) {
@@ -56,6 +57,8 @@ export default function SibylPersonalPage() {
           supabase.from("thanks").select("*", { count: "exact", head: true }).eq("to_user_id", uid),
           supabase.from("challenge_submissions").select("*", { count: "exact", head: true }).eq("user_id", uid).eq("status", "approved"),
         ]);
+        const { data: ptRow } = await supabase.from("user_points").select("total_earned").eq("id", uid).maybeSingle();
+        setUserLevel(Math.floor(((ptRow as any)?.total_earned || 0) / 100));
         const submitDays = new Set((subs || []).map((r: any) => (r.created_at || "").slice(0, 10))).size;
         setAction(calculateActionScore({
           streak: submitDays,
@@ -113,14 +116,25 @@ export default function SibylPersonalPage() {
     const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
     return `${100 + Math.cos(angle) * 80 * ratio},${100 + Math.sin(angle) * 80 * ratio}`;
   }).join(" ");
-  // キャリア予測（マッチ上位から生成）
-  const careerSteps = [
-    { lv: "Lv.1", when: "現在", role: `${JOB_LABEL[topMatch?.dept] || "配属先"} インターン`, fit: Math.min(99, Math.round(orgScore * 0.85)) },
-    { lv: "Lv.2", when: "6ヶ月後", role: course?.process ? course.process.split("。")[0].slice(0, 16) : `${topMatch?.dept || ""}リーダー`, fit: Math.min(99, Math.round(orgScore * 0.95)) },
-    { lv: "Lv.3", when: "1年後", role: course?.goal.split("。")[0].slice(0, 14) || "中核メンバー", fit: Math.min(99, orgScore) },
-    { lv: "Lv.4", when: "2-3年後", role: matches[1] ? `${JOB_LABEL[matches[1].dept] || matches[1].dept}兼務` : "マネージャー候補", fit: Math.min(99, Math.round(orgScore * 0.92)) },
-    { lv: "Lv.5", when: "5年後", role: "起業 / 新規事業責任者", fit: Math.min(99, Math.round((s.create + s.drive) / 40 * 100)) },
+  const isHigh = isHighEducation(p?.education || "");
+  // キャリア予測（在籍月数×レベルで現在地を判定）
+  const monthsIn = p?.started_at ? Math.floor((Date.now() - new Date(p.started_at).getTime()) / (1000 * 60 * 60 * 24 * 30)) : 0;
+  const stageIdx = (monthsIn >= 12 && userLevel >= 60) ? 3 : (monthsIn >= 6 && userLevel >= 40) ? 2 : (monthsIn >= 3 && userLevel >= 20) ? 1 : 0;
+  const colorNow = getMbtiColor(p?.mbti || "");
+  const finalRole = colorNow === "緑" ? "人事責任者 / 就活アドバイザー"
+    : colorNow === "紫" ? "AIチーム責任者 / 戦略管理ディレクター"
+    : colorNow === "青" ? (isHigh ? "事業部マネージャー" : "トップ訪販（鉄人）")
+    : colorNow === "黄" ? "トップクローザー / コミュニティプレジデント"
+    : "組織の中核メンバー";
+  const allSteps = [
+    { lv: "Lv.1", when: "入社直後", role: `${JOB_LABEL[topMatch?.dept] || "配属先"} インターン`, fit: Math.min(99, Math.round(orgScore * 0.85)) },
+    { lv: "Lv.2", when: "3〜6ヶ月", role: `${JOB_LABEL[topMatch?.dept] || ""}で一人前・メンター候補`, fit: Math.min(99, Math.round(orgScore * 0.95)) },
+    { lv: "Lv.3", when: "6ヶ月〜1年", role: course?.goal.split("。")[0].slice(0, 16) || "チームリーダー", fit: Math.min(99, orgScore) },
+    { lv: "Lv.4", when: "1〜2年", role: matches[1] ? `マネージャー（${JOB_LABEL[matches[1].dept] || matches[1].dept}兼務）` : "マネージャー", fit: Math.min(99, Math.round(orgScore * 0.92)) },
+    { lv: "Lv.5", when: "3〜5年", role: finalRole, fit: Math.min(99, Math.round(orgScore * 0.88)) },
   ];
+  const careerSteps = allSteps.map((st, i) => i === stageIdx ? { ...st, when: "現在" } : st).slice(stageIdx);
+
   const CARD: React.CSSProperties = { background: "rgba(18,16,40,.85)", border: "1px solid rgba(139,92,246,.25)", borderRadius: 18, padding: "22px 24px" };
   const SEC: React.CSSProperties = { fontSize: 12, fontWeight: 900, letterSpacing: 2, color: "#a78bfa", marginBottom: 16 };
 
