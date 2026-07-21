@@ -135,15 +135,15 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
         const health = Math.max(0, Math.min(100, Math.round(submitRate7 * 0.4 + activeRate * 0.4 + (1 - riskRatio) * 100 * 0.2)));
         setSibyl({ health, hard, risk, mismatch, leader, total: active.length });
 
-        const props: string[] = [];
-        mismatchNames.slice(0, 2).forEach((m) => props.push(`${m.name}さんは ${m.to} への配属を推奨`));
-        if (hard > 0) props.push(`${hardNames.slice(0, 2).join("さん・")}さん${hard > 2 ? `ほか計${hard}名` : ""}の育成を優先してください`);
-        if (risk > 0) props.push(`離職リスクの高いメンバーが${risk}名います。早めの面談を推奨`);
-        if (leader > 0) props.push(`次世代リーダー候補${leader}名。権限委譲のチャンスです`);
-        if (submitRate7 < 50) props.push(`日報提出率が${submitRate7}%に低下しています`);
+        const props: { icon: string; text: string; uid?: string }[] = [];
+        mismatchNames.slice(0, 2).forEach((m: any) => props.push({ icon: "🔄", text: `${m.name}（${m.cur || "所属なし"}）→ ${m.to} が適性1位。異動を検討`, uid: m.uid }));
+        if (leaderNames.length > 0) props.push({ icon: "👑", text: `次世代リーダー候補: ${leaderNames.slice(0, 3).join("・")}さん${leaderNames.length > 3 ? `ほか${leaderNames.length - 3}名` : ""}。権限委譲のチャンス` });
+        if (hardNames.length > 0) props.push({ icon: "🌱", text: `育成優先: ${hardNames.slice(0, 3).join("・")}さん${hardNames.length > 3 ? `ほか${hardNames.length - 3}名` : ""}。個別フォローを推奨` });
+        if (risk > 0) props.push({ icon: "⚠️", text: `離職リスクの高いメンバーが${risk}名。早めの面談を推奨（氏名はシビュラで確認）` });
+        if (submitRate7 < 60) props.push({ icon: "📉", text: `日報提出率${submitRate7}%。部署別の内訳を確認してください` });
         const fullRate = active.length ? Math.round((fullData / active.length) * 100) : 0;
-        if (fullRate < 50) props.push(`分析データ入力率が${fullRate}%です。部活・趣味の入力を促してください`);
-        if (props.length === 0) props.push("組織状態は安定しています。現在の運用を継続してください");
+        if (fullRate < 50) props.push({ icon: "📝", text: `分析データ入力率${fullRate}%。マイページから部活・趣味の入力を促してください` });
+        if (props.length === 0) props.push({ icon: "✅", text: "組織状態は安定しています。現在の運用を継続してください" });
         setProposals(props.slice(0, 4));
 
         const thanksC = (ph7 || []).filter((p: any) => { const r = p.reason || ""; return r.includes("thanks") || r.includes("サンキュー"); }).length;
