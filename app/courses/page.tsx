@@ -60,7 +60,7 @@ export default function CoursesPage() {
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #0c0a1e, #0a0a0f 60%)", color: "#e5e7eb", padding: "0 0 60px" }}>
       <div style={{ maxWidth: 780, margin: "0 auto", padding: "28px 20px" }}>
-        <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 800, letterSpacing: 3 }}>INTERN QUEST</div>
+        <div onClick={() => router.push("/mypage")} style={{ fontSize: 11, color: "#818cf8", fontWeight: 800, letterSpacing: 3, cursor: "pointer" }}>INTERN QUEST</div>
         <h1 style={{ fontSize: 26, fontWeight: 900, color: "#fff", margin: "6px 0 20px" }}>🎓 講座スタンプラリー</h1>
 
         {/* 講座タブ */}
