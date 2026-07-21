@@ -162,7 +162,7 @@ export default function DotHouse({ totalEarned, accent = "#a78bfa", light = fals
         {light && <div style={{ fontSize: 24, flexShrink: 0, filter: "drop-shadow(0 1px 2px rgba(150,100,30,.35))" }}>⭐</div>}
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: light ? "#7a5a2b" : "#fff" }}>{h.isMax ? "👑 GOAL達成！" : h.nextName ? `${h.idx === 4 ? "🏰" : "🏠"} ${h.nextName}まで` : "🏰 ドットくん城 完成まで"}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: light ? "#7a5a2b" : "#fff" }}>{h.isMax ? "👑 GOAL達成！" : h.nextName ? `${h.idx === 4 ? "🏰" : "🏠"} ${h.nextName}まで` : "👑 GOAL達成まで"}</div>
             <div style={{ fontSize: 11, fontWeight: light ? 800 : 400, color: light ? "#e8590c" : "#8a8898" }}>{h.isMax ? "MAX！" : `あと ${h.toNext.toLocaleString()}pt`}</div>
           </div>
           <div style={{ height: light ? 10 : 6, background: light ? "rgba(150,110,50,.18)" : "rgba(255,255,255,0.08)", borderRadius: 6, overflow: "hidden", boxShadow: light ? "inset 0 1px 2px rgba(120,80,30,.25)" : "none" }}>
