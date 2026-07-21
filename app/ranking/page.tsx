@@ -598,7 +598,6 @@ export default function RankingPage() {
                         { key: "job_rank", label: "🎓 就活ランク" },
                         { key: "pay_forward", label: "🤝 ペイフォワード" },
                         { key: "thinking", label: "🧠 思考クエスト" },
-                        { key: "question", label: "❓ 質問" },
                         { key: "ippon", label: "🎤 IPPON" },
                     ].map((tab) => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} style={{ flexShrink: 0, padding: "10px 16px", borderRadius: 8, border: "none", fontWeight: 700, cursor: "pointer", fontSize: 13, whiteSpace: "nowrap", background: activeTab === tab.key ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent", color: activeTab === tab.key ? "#fff" : "#6b7280", transition: "all 0.2s" }}>
