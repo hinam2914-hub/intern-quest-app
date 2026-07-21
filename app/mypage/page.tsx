@@ -2582,7 +2582,7 @@ const handleRoutineCheck = async (routineId: string) => {
 
                 {/* プロフィール編集モーダル */}
                 {showProfileModal && (
-                    <div onClick={() => setShowProfileModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+                    <div onClick={() => setShowProfileModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 20001, padding: 20 }}>
                         <div onClick={(e) => e.stopPropagation()} style={{ background: "#1a1a2e", border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24, maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto", position: "relative", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
                             <button onClick={() => setShowProfileModal(false)} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", color: textMuted, cursor: "pointer", fontSize: 24 }}>×</button>
                             <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", marginBottom: 20 }}>✏️ プロフィール編集</div>
@@ -2658,7 +2658,7 @@ const handleRoutineCheck = async (routineId: string) => {
                                 <option value="">事業部を選択</option>
                                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                             </select>
-                            <button onClick={handleSaveProfile} disabled={savingProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: saveSuccess ? "linear-gradient(135deg, #10b981, #34d399)" : `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.3s" }}>{savingProfile ? "保存中..." : saveSuccess ? "✅ 保存しました！" : "保存"}</button>
+                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSaveProfile(); }} disabled={savingProfile} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: saveSuccess ? "linear-gradient(135deg, #10b981, #34d399)" : `linear-gradient(135deg, ${themeColor}, ${themeColor}aa)`, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, transition: "all 0.3s" }}>{savingProfile ? "保存中..." : saveSuccess ? "✅ 保存しました！" : "保存"}</button>
                         </div>
                     </div>
                 )}
