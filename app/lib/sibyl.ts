@@ -103,7 +103,7 @@ export function calculateSibyl(params: { mbti: string; education: string; club: 
     if (color === "紫") mult = 1.10;
     else if (color === "黄") mult = 1.08;
     else if (color === "青") mult = 1.00;
-    else if (color === "緑") mult = 0.85;
+    else if (color === "緑") mult = 0.72;
     // ニッコマ以下の紫は頭脳型として不足
     if (color === "紫" && e.cog <= 7) mult *= 0.85;
     // 実データに基づく個別補正
@@ -276,10 +276,10 @@ export function calculateActionScore(a: ActionStats): { total: number; breakdown
 // 資質(最大100) + 行動(最大50) = ポテンシャル(最大150)
 export function getPotentialRank(sibylTotal: number, actionTotal: number): { rank: string; score: number; color: string; label: string } {
     const score = sibylTotal + actionTotal;
-    if (score >= 110) return { rank: "S", score, color: "#a78bfa", label: "圧倒的ポテンシャル" };
-    if (score >= 90) return { rank: "A", score, color: "#34d399", label: "高いポテンシャル" };
-    if (score >= 70) return { rank: "B", score, color: "#38bdf8", label: "着実に伸びている" };
-    if (score >= 50) return { rank: "C", score, color: "#fbbf24", label: "これから伸びる" };
+    if (score >= 125) return { rank: "S", score, color: "#a78bfa", label: "圧倒的ポテンシャル" };
+    if (score >= 105) return { rank: "A", score, color: "#34d399", label: "高いポテンシャル" };
+    if (score >= 85) return { rank: "B", score, color: "#38bdf8", label: "着実に伸びている" };
+    if (score >= 65) return { rank: "C", score, color: "#fbbf24", label: "これから伸びる" };
     return { rank: "D", score, color: "#f87171", label: "まずは行動から" };
 }
 
