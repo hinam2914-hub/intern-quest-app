@@ -527,6 +527,27 @@ export default function HomePage() {
           </div>
         </div>
       )}
+      {showGoalModal && (
+        <div onClick={() => setShowGoalModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 20001, padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#15132b", border: "1px solid rgba(139,92,246,0.35)", borderRadius: 18, padding: 24, width: "100%", maxWidth: 440, maxHeight: "80vh", overflowY: "auto", paddingBottom: 90 }}>
+            <div style={{ fontSize: 17, fontWeight: 900, color: "#fff", marginBottom: 4 }}>🎯 目標を設定</div>
+            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 18 }}>ホーム画面に常に表示されます</div>
+            {[
+              { key: "monthly_target", label: "📊 今月の目標（数字）", ph: "例：アポ30件 / 売上50万" },
+              { key: "monthly_theme", label: "💡 今月のテーマ", ph: "例：即レス徹底" },
+              { key: "quarter_goal", label: "📈 3ヶ月目標", ph: "例：四半期で80件" },
+              { key: "career_goal", label: "🏁 就活ゴール", ph: "例：Aランク企業内定" },
+            ].map((f) => (
+              <div key={f.key} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: "#c4b5fd", marginBottom: 5 }}>{f.label}</div>
+                <input value={(goals as any)[f.key]} onChange={(e) => setGoals({ ...goals, [f.key]: e.target.value })} placeholder={f.ph} style={{ width: "100%", padding: "11px 13px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(0,0,0,0.3)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+              </div>
+            ))}
+            <button onClick={saveGoals} disabled={savingGoal} style={{ width: "100%", marginTop: 6, padding: 13, borderRadius: 12, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", opacity: savingGoal ? 0.6 : 1 }}>{savingGoal ? "保存中..." : "保存する"}</button>
+          </div>
+        </div>
+      )}
+
     </div>
     </>
   );
