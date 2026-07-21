@@ -103,27 +103,6 @@ export default function HomePage() {
     setSavingGoal(false);
     setShowGoalModal(false);
   };
-  const [goals, setGoals] = useState<{ monthly_target: string; monthly_theme: string; quarter_goal: string; career_goal: string }>({ monthly_target: "", monthly_theme: "", quarter_goal: "", career_goal: "" });
-  const [showGoalModal, setShowGoalModal] = useState(false);
-  const [savingGoal, setSavingGoal] = useState(false);
-
-  const saveGoals = async () => {
-    if (savingGoal) return;
-    setSavingGoal(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from("user_goals").upsert({
-        user_id: user.id,
-        monthly_target: goals.monthly_target || null,
-        monthly_theme: goals.monthly_theme || null,
-        quarter_goal: goals.quarter_goal || null,
-        career_goal: goals.career_goal || null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
-    }
-    setSavingGoal(false);
-    setShowGoalModal(false);
-  };
   const [totalEarned, setTotalEarned] = useState(0);
   const [theme, setTheme] = useState<Theme>("light");
   const [task, setTask] = useState<Task>({ key: "report", icon: "📝", label: "日報を書く", href: "/report" });
