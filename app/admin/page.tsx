@@ -5181,7 +5181,7 @@ export default function AdminPage() {
                             ))}
                         </div>
                         <div style={{ maxHeight: "65vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 6 }}>
-                        {userDetails.filter((u: any) => !isExcluded(u.id) && (sibylDept === "all" || u.department_id === sibylDept)).map((u: any) => {
+                        {userDetails.filter((u: any) => sibylDept === "all" || u.department_id === sibylDept).map((u: any) => {
                             const sibyl = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
                             const matches = calculateDepartmentMatch(sibyl, { mbti: u.mbti || "", education: u.education || "" });
                             const hasData = u.mbti || u.education || u.club_category || u.hobby_category;
