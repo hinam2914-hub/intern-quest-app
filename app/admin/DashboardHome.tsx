@@ -99,7 +99,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
         const submitted7 = new Set((subs7 || []).map((s: any) => s.user_id));
 
         let hard = 0, risk = 0, mismatch = 0, leader = 0;
-        const mismatchNames: { name: string; to: string }[] = [];
+        const mismatchNames: { name: string; to: string; cur: string; uid: string }[] = [];
         const hardNames: string[] = [];
         const leaderNames: string[] = [];
         let fullData = 0;
@@ -117,9 +117,17 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
           const top = calculateDepartmentMatch(s, { mbti: u.mbti || "", education: u.education || "" })[0];
           const cur = deptCode[u.department_id] || "";
           const mapped = JOB_TO_DEPT[top?.dept || ""] || "";
-          if (top && top.score >= TH.mismatchScore && mapped && cur && mapped !== cur) { mismatch++; mismatchNames.push({ name: u.name, to: JOB_LABEL[top.dept] || top.dept }); }
+          if (top && top.score >= TH.mismatchScore && mapped && cur && mapped !== cur) { mismatch++; mismatchNames.push({ name: u.name, to: JOB_LABEL[top.dept] || top.dept, cur: cur, uid: u.id }); }
         }
 
+        const byDeptTmp: Record<string, { total: number; sub: number }> = {};
+        for (const u of active) {
+          const code = deptCode[u.department_id];
+          if (!code) continue;
+          byDeptTmp[code] = byDeptTmp[code] || { total: 0, sub: 0 };
+          byDeptTmp[code].total++;
+          if (submitted7.has(u.id)) byDeptTmp[code].sub++;
+        }
         const submitRate7 = active.length ? Math.round((submitted7.size / active.length) * 100) : 0;
         const active7 = new Set((ph7 || []).map((p: any) => p.user_id));
         const activeRate = active.length ? Math.round((active7.size / active.length) * 100) : 0;
@@ -251,8 +259,12 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, color: "#8b8fa8", marginBottom: 10 }}>💬 AI PROPOSAL</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {(loading ? ["組織をスキャンしています..."] : proposals).map((p, i) => (
-              <div key={i} style={{ padding: "11px 16px", borderRadius: 10, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", fontSize: 13.5, fontWeight: 600, color: "#e0d9ff" }}>▸ {p}</div>
+            {loading ? (
+              <div style={{ padding: "11px 16px", borderRadius: 10, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", fontSize: 13.5, fontWeight: 600, color: "#e0d9ff" }}>▸ 組織をスキャンしています...</div>
+            ) : proposals.map((p, i) => (
+              <div key={i} onClick={() => { if (p.uid) window.location.href = `/admin/sibyl/${p.uid}`; }} style={{ padding: "11px 16px", borderRadius: 10, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", fontSize: 13.5, fontWeight: 600, color: "#e0d9ff", cursor: p.uid ? "pointer" : "default", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <span>{p.icon}</span><span style={{ flex: 1 }}>{p.text}</span>{p.uid && <span style={{ fontSize: 11, color: "#a78bfa" }}>詳細 →</span>}
+              </div>
             ))}
           </div>
         </div>
