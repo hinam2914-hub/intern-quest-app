@@ -39,10 +39,10 @@ export default function SibylPersonalPage() {
       if (prof.mbti && others) {
         const seniors = others.filter((o: any) => o.created_at && prof.created_at && o.created_at < prof.created_at && !isExcluded(o.id) && !resignedSet.has(o.id));
         const scored = seniors.map((o: any) => { const c = mentorCompat(prof.mbti, o.mbti); return c ? { ...o, ...c } : null; }).filter(Boolean) as any[];
-        setMentors({
-          good: [...scored].sort((a, b) => b.rank - a.rank).slice(0, 3),
-          bad: [...scored].sort((a, b) => a.rank - b.rank).slice(0, 2),
-        });
+        const goodList = [...scored].sort((a, b) => b.rank - a.rank).slice(0, 3);
+        const goodIds = new Set(goodList.map((g: any) => g.id));
+        const badList = scored.length > 3 ? [...scored].sort((a, b) => a.rank - b.rank).filter((m: any) => !goodIds.has(m.id)).slice(0, 2) : [];
+        setMentors({ good: goodList, bad: badList });
       }
       // 行動データ取得
       try {
@@ -310,7 +310,7 @@ export default function SibylPersonalPage() {
             <div style={SEC}>事業部マッチング</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
               {matches.map((m) => {
-                const pct = Math.round((m.score / maxMatchScore) * 100);
+                const pct = Math.min(100, Math.round((m.score / 100) * 100));
                 const r = m.score >= 80 ? "S" : m.score >= 65 ? "A" : m.score >= 50 ? "B" : "C";
                 const rc = r === "S" ? "#a78bfa" : r === "A" ? "#34d399" : r === "B" ? "#fbbf24" : "#8b8fa8";
                 return (
