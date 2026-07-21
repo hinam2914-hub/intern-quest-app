@@ -282,3 +282,17 @@ export function getPotentialRank(sibylTotal: number, actionTotal: number): { ran
     if (score >= 50) return { rank: "C", score, color: "#fbbf24", label: "これから伸びる" };
     return { rank: "D", score, color: "#f87171", label: "まずは行動から" };
 }
+
+
+// ============ 分析対象外（経営側メンバー） ============
+export const EXCLUDED_IDS: string[] = [
+    "dd8dc6b9-9ead-4ff1-8c36-b948a575ba07", // 中島萌梨
+    "78ea0ef2-4478-49f2-9aa9-df570ff0116a", // 小林篤央
+    "989e845f-55bc-4bde-be08-b52b88bb5f6d", // 山崎亮
+    "055fe655-28e8-4a1a-9a4f-cd1385fa31a2", // 川田瑞貴
+    "f39e0ae1-56ae-496e-8730-6e9269e4870d", // 村上凌太
+    "571a5e82-c8f2-4a23-873f-3f5800dd274b", // 柴崎航貴
+    "7cb0f3ec-310d-4455-8a6a-935fc5dac1e1", // 湊敦
+    "d6c76a09-c105-48ac-9621-f3d0d1b8fd21", // 田中賢
+];
+export const isExcluded = (id: string) => EXCLUDED_IDS.includes(id);

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
-import { calculateSibyl, calculateDepartmentMatch, calculateGrowthCourse, getIkuseiGuide, getMbtiColor, mentorCompat, calculateActionScore, getPotentialRank } from "../../../lib/sibyl";
+import { calculateSibyl, calculateDepartmentMatch, calculateGrowthCourse, getIkuseiGuide, getMbtiColor, mentorCompat, calculateActionScore, getPotentialRank, isExcluded } from "../../../lib/sibyl";
 
 const MBTI_NAME: Record<string, string> = {
   INTJ: "建築家", INTP: "論理学者", ENTJ: "指揮官", ENTP: "討論者",
@@ -35,7 +35,7 @@ export default function SibylPersonalPage() {
       }
       const { data: others } = await supabase.from("profiles").select("id,name,mbti,created_at,avatar_config").not("mbti", "is", null).neq("id", uid);
       if (prof.mbti && others) {
-        const seniors = others.filter((o: any) => o.created_at && prof.created_at && o.created_at < prof.created_at);
+        const seniors = others.filter((o: any) => o.created_at && prof.created_at && o.created_at < prof.created_at && !isExcluded(o.id));
         const scored = seniors.map((o: any) => { const c = mentorCompat(prof.mbti, o.mbti); return c ? { ...o, ...c } : null; }).filter(Boolean) as any[];
         setMentors({
           good: [...scored].sort((a, b) => b.rank - a.rank).slice(0, 3),

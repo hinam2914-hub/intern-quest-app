@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { calculateSibyl, calculateDepartmentMatch } from "../lib/sibyl";
+import { calculateSibyl, calculateDepartmentMatch, isExcluded } from "../lib/sibyl";
 
 /* ===== 判定しきい値（調整はここ） ===== */
 const TH = {
@@ -93,7 +93,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
           supabase.from("interview_requests").select("*", { count: "exact", head: true }).eq("status", "open"),
         ]);
 
-        const active = profs || [];
+        const active = (profs || []).filter((p: any) => !isExcluded(p.id));
         const deptCode: Record<string, string> = {};
         (depts || []).forEach((d: any) => { deptCode[d.id] = d.code; });
         const submitted7 = new Set((subs7 || []).map((s: any) => s.user_id));
