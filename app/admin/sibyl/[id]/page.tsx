@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
-import { calculateSibyl, calculateDepartmentMatch, calculateGrowthCourse, getIkuseiGuide, getMbtiColor, mentorCompat } from "../../../lib/sibyl";
+import { calculateSibyl, calculateDepartmentMatch, calculateGrowthCourse, getIkuseiGuide, getMbtiColor, mentorCompat, calculateActionScore, getPotentialRank } from "../../../lib/sibyl";
 
 const MBTI_NAME: Record<string, string> = {
   INTJ: "建築家", INTP: "論理学者", ENTJ: "指揮官", ENTP: "討論者",
@@ -21,6 +21,7 @@ export default function SibylPersonalPage() {
   const [deptName, setDeptName] = useState("");
   const [mentors, setMentors] = useState<{ good: any[]; bad: any[] }>({ good: [], bad: [] });
   const [scanTime, setScanTime] = useState("");
+  const [action, setAction] = useState<{ total: number; breakdown: { label: string; score: number; max: number }[] }>({ total: 0, breakdown: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +42,32 @@ export default function SibylPersonalPage() {
           bad: [...scored].sort((a, b) => a.rank - b.rank).slice(0, 2),
         });
       }
+      // 行動データ取得
+      try {
+        const d30 = new Date(Date.now() - 30 * 86400000).toISOString();
+        const [{ data: subs }, { count: testC }, { count: contentC }, { count: courseC }, { count: thxSent }, { count: thxRecv }, { count: chalC }] = await Promise.all([
+          supabase.from("submissions").select("created_at").eq("user_id", uid).gte("created_at", d30),
+          supabase.from("test_attempts").select("*", { count: "exact", head: true }).eq("user_id", uid).eq("passed", true),
+          supabase.from("content_completions").select("*", { count: "exact", head: true }).eq("user_id", uid).eq("status", "approved"),
+          supabase.from("course_stamps").select("*", { count: "exact", head: true }).eq("user_id", uid).eq("status", "approved"),
+          supabase.from("thanks").select("*", { count: "exact", head: true }).eq("from_user_id", uid),
+          supabase.from("thanks").select("*", { count: "exact", head: true }).eq("to_user_id", uid),
+          supabase.from("challenge_submissions").select("*", { count: "exact", head: true }).eq("user_id", uid).eq("status", "approved"),
+        ]);
+        const submitDays = new Set((subs || []).map((r: any) => (r.created_at || "").slice(0, 10))).size;
+        setAction(calculateActionScore({
+          streak: submitDays,
+          submitRate: Math.round((submitDays / 30) * 100),
+          testPassed: testC || 0,
+          contentDone: contentC || 0,
+          courseStamps: courseC || 0,
+          thanksSent: thxSent || 0,
+          thanksReceived: thxRecv || 0,
+          challengeDone: chalC || 0,
+          kpiAchieved: 0,
+          level: 0,
+        }));
+      } catch (e) { console.error("action score error", e); }
       setScanTime(new Date().toLocaleString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }));
       setLoading(false);
     })();
@@ -65,6 +92,7 @@ export default function SibylPersonalPage() {
   const ikuseiRank = total >= 60 ? "A" : total >= 40 ? "B" : "S";
   const riskLevel = s.grit <= 7 ? "HIGH" : s.grit <= 11 ? "MID" : "LOW";
   const riskColor = riskLevel === "HIGH" ? "#f87171" : riskLevel === "MID" ? "#fbbf24" : "#34d399";
+  const potential = getPotentialRank(total, action.total);
   const circ = 2 * Math.PI * 44;
   const axes = [
     { label: "地頭", v: s.cog, color: "#6366f1" },
@@ -130,9 +158,13 @@ export default function SibylPersonalPage() {
           </div>
 
           <div style={{ textAlign: "center", flexShrink: 0, padding: "0 10px" }}>
-            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 2, color: "#8b8fa8", marginBottom: 6 }}>総合適性ランク</div>
-            <div style={{ fontSize: 64, fontWeight: 900, color: rankColor, lineHeight: 1, textShadow: `0 0 30px ${rankColor}88` }}>{rank}</div>
-            <div style={{ fontSize: 10.5, fontWeight: 800, color: rankColor, marginTop: 8 }}>{rank === "S" ? "非常に高いポテンシャル" : rank === "A" ? "高いポテンシャル" : rank === "B" ? "標準的なポテンシャル" : "育成でカバー可能"}</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 2, color: "#8b8fa8", marginBottom: 6 }}>ポテンシャルランク</div>
+            <div style={{ fontSize: 64, fontWeight: 900, color: potential.color, lineHeight: 1, textShadow: `0 0 30px ${potential.color}88` }}>{potential.rank}</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: potential.color, marginTop: 8 }}>{potential.label}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#8b8fa8", marginTop: 8, lineHeight: 1.6 }}>
+              資質 {total} + 行動 {action.total}<br />= {potential.score} / 150
+            </div>
+            <div style={{ fontSize: 9.5, fontWeight: 700, color: "#6b7280", marginTop: 6 }}>（資質のみ: {rank}ランク）</div>
           </div>
 
           <div style={{ flex: 1, minWidth: 300 }}>
@@ -171,6 +203,30 @@ export default function SibylPersonalPage() {
               <span style={{ fontSize: 26 }}>👁️</span>
             </div>
             <div style={{ fontSize: 9.5, fontWeight: 700, color: "#8b8fa8", marginTop: 12 }}>AI分析完了<br />{scanTime}</div>
+          </div>
+        </div>
+
+        {/* 行動スコア */}
+        <div style={CARD}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            <span style={SEC}>⚡ 行動スコア（実績ベース）</span>
+            <span style={{ fontSize: 13, fontWeight: 900, color: "#34d399" }}>{action.total} / 50</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+            {action.breakdown.map(b => (
+              <div key={b.label}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 800, marginBottom: 5 }}>
+                  <span style={{ color: "#c7c9dd" }}>{b.label}</span>
+                  <span style={{ color: b.score >= b.max * 0.7 ? "#34d399" : b.score >= b.max * 0.4 ? "#fbbf24" : "#8b8fa8" }}>{b.score} / {b.max}</span>
+                </div>
+                <div style={{ height: 7, borderRadius: 999, background: "rgba(255,255,255,.06)" }}>
+                  <div style={{ height: "100%", width: `${(b.score / b.max) * 100}%`, borderRadius: 999, background: "linear-gradient(90deg,#10b981,#34d399)", transition: "width .8s ease" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 14, fontSize: 11.5, color: "#8b8fa8", lineHeight: 1.7 }}>
+            継続力=直近30日の提出日数・提出率／学習量=テスト合格・学習完了・講座スタンプ／貢献=サンキュー送受信／挑戦=チャレンジ達成
           </div>
         </div>
 

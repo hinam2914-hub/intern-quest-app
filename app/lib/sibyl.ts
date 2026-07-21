@@ -69,13 +69,18 @@ export const HOBBY_LEGACY_MAP: Record<string, string> = {
 export function getEducationSibyl(education: string): { cog: number; grit: number } {
     if (!education) return { cog: 0, grit: 0 };
     const e = education;
-    if (/東京大学|^東大|京都大学|^京大|大阪大学|^阪大|名古屋大学|^名大|東北大学|九州大学|^九大|北海道大学|^北大/.test(e)) return { cog: 10, grit: 6 };
-    if (/早稲田|慶應|慶応|上智/.test(e)) return { cog: 9, grit: 5 };
-    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政|東京理科大学|理科大/.test(e)) return { cog: 7, grit: 5 };
-    if (/成城|成蹊|明治学院|獨協|國學院|国学院|武蔵大学|武蔵大/.test(e)) return { cog: 6, grit: 4 };
-    if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修/.test(e)) return { cog: 5, grit: 4 };
+    if (/東京大学|^東大|京都大学|^京大/.test(e)) return { cog: 18, grit: 9 };
+    if (/大阪大学|^阪大|名古屋大学|^名大|東北大学|九州大学|^九大|北海道大学|^北大|一橋|東京工業|東工大|神戸大学|筑波大学/.test(e)) return { cog: 16, grit: 8 };
+    if (/早稲田|慶應|慶応/.test(e)) return { cog: 15, grit: 8 };
+    if (/上智|東京理科大学|理科大|ICU|国際基督教/.test(e)) return { cog: 13, grit: 7 };
+    if (/学習院|明治大学|^明大|青山学院|立教|中央大学|^中大|法政|関西大学|関西学院|同志社|立命館/.test(e)) return { cog: 12, grit: 6 };
+    if (/成城|成蹊|明治学院|獨協|國學院|国学院|武蔵大学|武蔵大|芝浦工業|東京都立|埼玉大学|千葉大学|横浜国立|静岡大学|新潟大学|信州大学|岡山大学|広島大学|熊本大学/.test(e)) return { cog: 10, grit: 6 };
+    if (/日本大学|^日大|東洋大学|^東洋|駒澤|駒沢|専修|京都産業|近畿大学|甲南|龍谷/.test(e)) return { cog: 7, grit: 5 };
+    if (/大東文化|東海大学|亜細亜|帝京|国士舘|神奈川大学|工学院|東京電機|拓殖|玉川|文化学園|大妻|実践女子|共立女子/.test(e)) return { cog: 5, grit: 4 };
+    if (/専門学校|高等学校|高校卒|高卒/.test(e)) return { cog: 2, grit: 3 };
     return { cog: 3, grit: 3 };
 }
+
 
 export function calculateSibyl(params: { mbti: string; education: string; club: string; hobby: string }): { cog: number; grit: number; social: number; drive: number; create: number } {
     const m = MBTI_SCORES[params.mbti] || { cog: 0, grit: 0, social: 0, drive: 0, create: 0 };
@@ -202,3 +207,51 @@ export function peerCompat(a: string, b: string): { match: number; ns: boolean }
     return { match, ns };
 }
 // ============ 同僚相性ここまで ============
+
+
+// ============ 行動スコア（実績ベース・最大50点） ============
+export type ActionStats = {
+    streak: number;            // 連続提出日数
+    submitRate: number;        // 直近30日の日報提出率(0-100)
+    testPassed: number;        // 合格テスト数
+    contentDone: number;       // 学習コンテンツ完了数
+    courseStamps: number;      // 講座スタンプ数
+    thanksSent: number;        // サンキュー送信数
+    thanksReceived: number;    // サンキュー受信数
+    challengeDone: number;     // チャレンジ達成数
+    kpiAchieved: number;       // KPI達成回数
+    level: number;             // 現在のレベル
+};
+
+export function calculateActionScore(a: ActionStats): { total: number; breakdown: { label: string; score: number; max: number }[] } {
+    // 継続力 20点
+    const streakPt = Math.min(10, Math.round(a.streak / 6));
+    const ratePt = Math.min(10, Math.round(a.submitRate / 10));
+    const keep = streakPt + ratePt;
+    // 学習量 10点
+    const learn = Math.min(10, Math.round(a.testPassed * 1.2 + a.contentDone * 0.3 + a.courseStamps * 1.5));
+    // 貢献 10点
+    const contrib = Math.min(10, Math.round(a.thanksSent * 0.4 + a.thanksReceived * 0.5));
+    // 挑戦 10点
+    const challenge = Math.min(10, Math.round(a.challengeDone * 0.8 + a.kpiAchieved * 1.5));
+    const total = Math.min(50, keep + learn + contrib + challenge);
+    return {
+        total,
+        breakdown: [
+            { label: "継続力", score: keep, max: 20 },
+            { label: "学習量", score: learn, max: 10 },
+            { label: "貢献", score: contrib, max: 10 },
+            { label: "挑戦", score: challenge, max: 10 },
+        ],
+    };
+}
+
+// 資質(最大100) + 行動(最大50) = ポテンシャル(最大150)
+export function getPotentialRank(sibylTotal: number, actionTotal: number): { rank: string; score: number; color: string; label: string } {
+    const score = sibylTotal + actionTotal;
+    if (score >= 110) return { rank: "S", score, color: "#a78bfa", label: "圧倒的ポテンシャル" };
+    if (score >= 90) return { rank: "A", score, color: "#34d399", label: "高いポテンシャル" };
+    if (score >= 70) return { rank: "B", score, color: "#38bdf8", label: "着実に伸びている" };
+    if (score >= 50) return { rank: "C", score, color: "#fbbf24", label: "これから伸びる" };
+    return { rank: "D", score, color: "#f87171", label: "まずは行動から" };
+}
