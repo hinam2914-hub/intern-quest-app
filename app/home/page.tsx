@@ -83,6 +83,27 @@ export default function HomePage() {
   const [name, setName] = useState("");
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
+  const [goals, setGoals] = useState<{ monthly_target: string; monthly_theme: string; quarter_goal: string; career_goal: string }>({ monthly_target: "", monthly_theme: "", quarter_goal: "", career_goal: "" });
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [savingGoal, setSavingGoal] = useState(false);
+
+  const saveGoals = async () => {
+    if (savingGoal) return;
+    setSavingGoal(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("user_goals").upsert({
+        user_id: user.id,
+        monthly_target: goals.monthly_target || null,
+        monthly_theme: goals.monthly_theme || null,
+        quarter_goal: goals.quarter_goal || null,
+        career_goal: goals.career_goal || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+    }
+    setSavingGoal(false);
+    setShowGoalModal(false);
+  };
   const [totalEarned, setTotalEarned] = useState(0);
   const [theme, setTheme] = useState<Theme>("light");
   const [task, setTask] = useState<Task>({ key: "report", icon: "📝", label: "日報を書く", href: "/report" });
@@ -147,6 +168,8 @@ export default function HomePage() {
         setName((profile as any).name || "");
         setAvatarId((profile as any).avatar_config?.id || null);
         setStreak((profile as any).streak || 0);
+        const { data: goalRow } = await supabase.from("user_goals").select("*").eq("user_id", user.id).maybeSingle();
+        if (goalRow) setGoals({ monthly_target: (goalRow as any).monthly_target || "", monthly_theme: (goalRow as any).monthly_theme || "", quarter_goal: (goalRow as any).quarter_goal || "", career_goal: (goalRow as any).career_goal || "" });
       }
       const todayYmd = getTodayJST();
       const range = todayRangeUTC();
@@ -384,6 +407,34 @@ export default function HomePage() {
               </div>
             )}
             <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} onHouseClick={() => { playPoko(); router.push("/mypage"); }} />
+
+            {/* MY GOALS */}
+            <div style={{ marginTop: 16, padding: "16px 18px", borderRadius: 16, background: isDark ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.75)", border: `1px solid ${isDark ? "rgba(139,92,246,0.25)" : "rgba(255,138,61,0.3)"}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <span style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: 2, color: isDark ? "#a78bfa" : "#e07a2f" }}>🎯 MY GOALS</span>
+                <button onClick={() => setShowGoalModal(true)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 800, background: isDark ? "rgba(139,92,246,0.2)" : "rgba(255,138,61,0.15)", color: isDark ? "#c4b5fd" : "#e07a2f" }}>✏️ 編集</button>
+              </div>
+              {(goals.monthly_target || goals.monthly_theme || goals.quarter_goal || goals.career_goal) ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {[
+                    { label: "今月の目標", value: goals.monthly_target, icon: "📊" },
+                    { label: "今月のテーマ", value: goals.monthly_theme, icon: "💡" },
+                    { label: "3ヶ月目標", value: goals.quarter_goal, icon: "📈" },
+                    { label: "就活ゴール", value: goals.career_goal, icon: "🏁" },
+                  ].map((g) => (
+                    <div key={g.label} style={{ padding: "10px 12px", borderRadius: 10, background: isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.6)" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: isDark ? "#8b8fa8" : "#a08060", marginBottom: 3 }}>{g.icon} {g.label}</div>
+                      <div style={{ fontSize: 13.5, fontWeight: 800, color: isDark ? "#f9fafb" : "#5c4a3a", lineHeight: 1.4 }}>{g.value || "—"}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div onClick={() => setShowGoalModal(true)} style={{ padding: "18px 12px", textAlign: "center", cursor: "pointer", borderRadius: 10, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.5)" }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: isDark ? "#c4b5fd" : "#e07a2f", marginBottom: 4 }}>目標を設定しよう</div>
+                  <div style={{ fontSize: 11.5, color: isDark ? "#8b8fa8" : "#a08060" }}>今月の数字・テーマ・3ヶ月目標・就活ゴール</div>
+                </div>
+              )}
+            </div>
           </div>
           <div style={{ width: "100%", marginTop: 12, borderRadius: 20, padding: "14px 16px 12px", background: "linear-gradient(180deg, rgba(255,252,242,.96), rgba(252,244,226,.96))", boxShadow: "0 6px 18px rgba(120,90,40,.16), inset 0 1px 0 rgba(255,255,255,.7)", border: "1.5px solid rgba(190,160,110,.35)", animation: "popIn 0.5s ease-out 0.38s both" }}>
             <div style={{ fontSize: 12.5, fontWeight: 900, color: "#8a6a3a", marginBottom: 8, letterSpacing: 1 }}>今日のミッション</div>
