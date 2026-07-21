@@ -33,9 +33,11 @@ export default function SibylPersonalPage() {
         const { data: d } = await supabase.from("departments").select("name").eq("id", prof.department_id).single();
         setDeptName(d?.name || "");
       }
+      const { data: resignedRows } = await supabase.from("resignations").select("user_id");
+      const resignedSet = new Set((resignedRows || []).map((r: any) => r.user_id));
       const { data: others } = await supabase.from("profiles").select("id,name,mbti,created_at,avatar_config").not("mbti", "is", null).neq("id", uid);
       if (prof.mbti && others) {
-        const seniors = others.filter((o: any) => o.created_at && prof.created_at && o.created_at < prof.created_at && !isExcluded(o.id));
+        const seniors = others.filter((o: any) => o.created_at && prof.created_at && o.created_at < prof.created_at && !isExcluded(o.id) && !resignedSet.has(o.id));
         const scored = seniors.map((o: any) => { const c = mentorCompat(prof.mbti, o.mbti); return c ? { ...o, ...c } : null; }).filter(Boolean) as any[];
         setMentors({
           good: [...scored].sort((a, b) => b.rank - a.rank).slice(0, 3),
