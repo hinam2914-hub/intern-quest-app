@@ -78,7 +78,7 @@ export default function SibylPersonalPage() {
 
   const s = calculateSibyl({ mbti: p.mbti || "", education: p.education || "", club: p.club_category || "", hobby: p.hobby_category || "" });
   const total = s.cog + s.grit + s.social + s.drive + s.create;
-  const rank = total >= 75 ? "S" : total >= 60 ? "A" : total >= 45 ? "B" : total >= 30 ? "C" : "D";
+  const rank = total >= 68 ? "S" : total >= 56 ? "A" : total >= 44 ? "B" : total >= 32 ? "C" : "D";
   const rankColor = rank === "S" ? "#a78bfa" : rank === "A" ? "#34d399" : rank === "B" ? "#38bdf8" : rank === "C" ? "#fbbf24" : "#f87171";
   const orgScore = Math.min(100, Math.round((total / 90) * 100));
   const color = getMbtiColor(p.mbti || "");

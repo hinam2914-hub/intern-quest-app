@@ -88,14 +88,41 @@ export function calculateSibyl(params: { mbti: string; education: string; club: 
     const c = CLUB_SCORES[CLUB_LEGACY_MAP[params.club] || params.club] || { grit: 0, drive: 0, social: 0 };
     const h = HOBBY_SCORES[HOBBY_LEGACY_MAP[params.hobby] || params.hobby] || { cog: 0, social: 0, drive: 0, create: 0 };
 
+    // 学歴を全軸のベースにする（学歴 > 性格の原則）
+    const base = {
+        cog: Math.round(e.cog * 1.2 + m.cog * 0.4 + h.cog * 0.2),
+        grit: Math.round(e.cog * 0.5 + m.grit * 0.4 + c.grit * 0.7 + e.grit * 0.3),
+        social: Math.round(e.cog * 0.3 + m.social * 0.7 + c.social * 0.4 + h.social * 0.3),
+        drive: Math.round(e.cog * 0.3 + m.drive * 0.7 + c.drive * 0.5 + h.drive * 0.3),
+        create: Math.round(e.cog * 0.4 + m.create * 0.6 + h.create * 0.5),
+    };
+
+    // 気質×学歴×部活の組織適性補正
+    const color = getMbtiColor(params.mbti);
+    let mult = 1.0;
+    if (color === "紫") mult = 1.10;
+    else if (color === "黄") mult = 1.08;
+    else if (color === "青") mult = 1.00;
+    else if (color === "緑") mult = 0.85;
+    // ニッコマ以下の紫は頭脳型として不足
+    if (color === "紫" && e.cog <= 7) mult *= 0.85;
+    // 実データに基づく個別補正
+    if (params.mbti === "ISFP") mult *= 0.82;
+    if (params.mbti === "INFP") mult *= 0.85;
+    // 部活による継続力の証明
+    const clubKey = CLUB_LEGACY_MAP[params.club] || params.club;
+    if (clubKey === "運動部") mult *= 1.08;
+    else if (clubKey === "帰宅部") mult *= 0.95;
+
     return {
-        cog: Math.min(Math.round(m.cog * 0.5 + e.cog * 0.5 + h.cog * 0.3), 20),
-        grit: Math.min(Math.round(m.grit * 0.5 + e.grit * 0.3 + c.grit * 0.8), 20),
-        social: Math.min(Math.round(m.social * 0.8 + c.social * 0.4 + h.social * 0.4), 20),
-        drive: Math.min(Math.round(m.drive * 0.8 + c.drive * 0.6 + h.drive * 0.4), 20),
-        create: Math.min(Math.round(m.create * 1.0 + h.create * 0.8), 20),
+        cog: Math.min(Math.round(base.cog * mult), 20),
+        grit: Math.min(Math.round(base.grit * mult), 20),
+        social: Math.min(Math.round(base.social * mult), 20),
+        drive: Math.min(Math.round(base.drive * mult), 20),
+        create: Math.min(Math.round(base.create * mult), 20),
     };
 }
+
 
 export function calculateDepartmentMatch(s: { cog: number; grit: number; social: number; drive: number; create: number }, opts?: { mbti?: string; education?: string }): { dept: string; score: number }[] {
     const results = [
