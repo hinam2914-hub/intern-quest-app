@@ -327,6 +327,7 @@ export default function SibylPersonalPage() {
             </div>
           </div>
 
+          {!isExcluded(uid) && (
           <div style={CARD}>
             <div style={SEC}>メンターマッチング</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -363,6 +364,7 @@ export default function SibylPersonalPage() {
             </div>
             <div style={{ fontSize: 10, color: "#6b7280", marginTop: 8 }}>※ 入社が先のメンバーの中から気質相性で算出</div>
           </div>
+          )}
         </div>
 
       </div>
