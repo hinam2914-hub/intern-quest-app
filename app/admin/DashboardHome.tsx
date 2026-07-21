@@ -70,7 +70,7 @@ const OTHERS: { label: string; cards: Card[] }[] = [
 
 export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onNavigate: (key: string) => void }) {
   const [sibyl, setSibyl] = useState({ health: 0, hard: 0, risk: 0, mismatch: 0, leader: 0, total: 0 });
-  const [proposals, setProposals] = useState<string[]>([]);
+  const [proposals, setProposals] = useState<{ icon: string; text: string; uid?: string }[]>([]);
   const [week, setWeek] = useState({ submitRate: 0, activeRate: 0, thanks: 0, challenges: 0, hires: 0, mentsuna: 0 });
   const [deptRates, setDeptRates] = useState<{ code: string; rate: number }[]>([]);
   const [interviews, setInterviews] = useState(0);
