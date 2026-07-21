@@ -163,7 +163,7 @@ export default function MenuPage() {
                     <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 12, color: "#8b8ba7", fontWeight: 700, letterSpacing: 1 }}>ポイントショップ</div>
                         <div style={{ fontSize: 24, fontWeight: 900, color: "#fcd34d", lineHeight: 1.2 }}>{balance !== null ? `${balance.toLocaleString()} pt` : "ショップへ"}</div>
-                        <div style={{ fontSize: 11, color: "#8b8ba7", marginTop: 2 }}>{balance !== null ? "交換可能なアイテムがあります" : "貯めたptでアイテムと交換"}</div>
+                        <div style={{ fontSize: 11, color: "#8b8ba7", marginTop: 2 }}>{balance !== null ? "現在の所持pt（累計獲得ptとは別です）" : "貯めたptでアイテムと交換"}</div>
                     </div>
                     <div style={{ fontSize: 14, color: "#fcd34d", fontWeight: 800 }}>→</div>
                 </div>

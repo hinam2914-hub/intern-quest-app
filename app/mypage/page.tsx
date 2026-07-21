@@ -1940,7 +1940,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0, borderRadius: 18, background: "rgba(255,255,255,.9)", boxShadow: "0 6px 18px rgba(120,100,60,.14)", overflow: "hidden" }}>
                         {[
                             { label: "レベル", value: `Lv.${level}` },
-                            { label: "総ポイント", value: `${totalEarned.toLocaleString()}pt` },
+                            { label: "累計獲得pt", value: `${totalEarned.toLocaleString()}pt` },
                             { label: "ランキング", value: rank ? `${rank}位` : "-" },
                             { label: "連続記録", value: `${streak}日` },
                         ].map((it, i) => (
