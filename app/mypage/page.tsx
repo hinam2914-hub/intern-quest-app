@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { computeReportStreak } from "../lib/date";
+import { calculateSibyl, getMbtiColor, calculateGrowthCourse } from "../lib/sibyl";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
 import { AnimatePresence, motion } from "framer-motion";
 import DotKun from "../components/DotKun";
@@ -2003,6 +2004,31 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     );
                 })()}
+
+                {/* ===== 成長マップ要約カード ===== */}
+                {mbti && (() => {
+                    const gs = calculateSibyl({ mbti, education, club, hobby });
+                    const gc = calculateGrowthCourse({ mbti, education, sibyl: gs });
+                    if (!gc) return null;
+                    const parts = gc.courseName.split("｜");
+                    const tName = parts[0] || "";
+                    const tCatch = parts[1] || "";
+                    return (
+                        <div onClick={() => router.push("/growth")} style={{ marginTop: 16, cursor: "pointer", padding: "18px 20px", borderRadius: 16, background: isLightBg ? "rgba(139,92,246,0.06)" : "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(18,16,40,0.6))", border: `1px solid ${gc.colorCode}55` }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                <span style={{ fontSize: 13, fontWeight: 900, color: gc.colorCode }}>🔮 あなたの成長マップ</span>
+                                <span style={{ fontSize: 12, fontWeight: 800, color: gc.colorCode }}>詳しく見る →</span>
+                            </div>
+                            <div style={{ fontSize: 16, fontWeight: 900, color: textPrimary }}>{tName}</div>
+                            <div style={{ fontSize: 12.5, color: isLightBg ? "#6f7a86" : "#c7c9dd", marginBottom: 12 }}>{tCatch}</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <div style={{ fontSize: 12.5, color: isLightBg ? "#4b5563" : "#e5e7eb" }}>📍 <span style={{ fontWeight: 700 }}>6ヶ月:</span> {gc.process.split("。")[0]}</div>
+                                <div style={{ fontSize: 12.5, color: isLightBg ? "#4b5563" : "#e5e7eb" }}>🎯 <span style={{ fontWeight: 700 }}>最終:</span> {gc.goal.split("。")[0]}</div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 {/* ===== 成長カード ===== */}
                 <div style={{ order: -1, marginBottom: 16, borderRadius: 20, padding: "16px 20px", background: "rgba(255,255,255,.65)", border: "1.5px solid rgba(190,170,130,.3)", boxShadow: "0 4px 14px rgba(120,100,60,.1)" }}>
                     <div style={{ fontSize: 11, color: "#9a8fb0", fontWeight: 800, letterSpacing: 2, marginBottom: 10 }}>📈 成長のきろく</div>
