@@ -2014,7 +2014,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     const tName = parts[0] || "";
                     const tCatch = parts[1] || "";
                     return (
-                        <div onClick={() => router.push("/growth")} style={{ marginTop: 16, cursor: "pointer", padding: "18px 20px", borderRadius: 16, background: isLightBg ? "rgba(139,92,246,0.06)" : "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(18,16,40,0.6))", border: `1px solid ${gc.colorCode}55` }}>
+                        <div onClick={() => router.push("/growth")} style={{ marginTop: 16, marginBottom: 16, cursor: "pointer", padding: "18px 20px", borderRadius: 16, background: isLightBg ? "rgba(139,92,246,0.06)" : "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(18,16,40,0.6))", border: `1px solid ${gc.colorCode}55` }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                                 <span style={{ fontSize: 13, fontWeight: 900, color: gc.colorCode }}>🔮 あなたの成長マップ</span>
                                 <span style={{ fontSize: 12, fontWeight: 800, color: gc.colorCode }}>詳しく見る →</span>
