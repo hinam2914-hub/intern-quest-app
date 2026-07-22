@@ -96,7 +96,7 @@ export default function GrowthPage() {
         <button onClick={() => router.push("/mypage")} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,.15)", background: "rgba(255,255,255,.05)", color: "#9ca3af", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>← 戻る</button>
       </div>
 
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ maxWidth: 1160, width: "calc(100% - 32px)", margin: "0 auto", padding: "20px 0", display: "flex", flexDirection: "column", gap: 16 }}>
         {/* 今のあなた */}
         <div style={{ ...CARD, background: `linear-gradient(135deg, ${typeColor}22, rgba(16,14,42,.85))`, textAlign: "center" }}>
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, color: "#c7c9dd", marginBottom: 6 }}>今のあなた</div>
@@ -105,20 +105,21 @@ export default function GrowthPage() {
         </div>
 
         {/* レーダー + 強み */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, alignItems: "start" }}>
           <div style={CARD}>
             <div style={SEC}>📊 5つの成長軸</div>
             <div style={{ display: "flex", justifyContent: "center" }}>
-              <svg viewBox="0 0 260 260" style={{ width: "100%", maxWidth: 300 }}>
+              <svg viewBox="-40 -20 340 300" style={{ width: "100%", maxWidth: 360 }}>
                 {[0.25, 0.5, 0.75, 1].map((r, i) => <polygon key={i} points={gridPoly(r)} fill="none" stroke="rgba(139,92,246,.15)" strokeWidth="1" />)}
                 {AXIS_META.map((_, i) => { const [x, y] = pt(i, 1).split(",").map(Number); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(139,92,246,.15)" strokeWidth="1" />; })}
                 <polygon points={dataPoly} fill="rgba(139,92,246,.35)" stroke="#a78bfa" strokeWidth="2" />
-                {vals.map((v, i) => { const [x, y] = pt(i, v / 20).split(",").map(Number); return <circle key={i} cx={x} cy={y} r="3.5" fill="#c4b5fd" />; })}
-                {AXIS_META.map((a, i) => { const [x, y] = pt(i, 1.28).split(",").map(Number); return <text key={i} x={x} y={y} fill="#c7c9dd" fontSize="12" fontWeight="700" textAnchor="middle" dominantBaseline="middle">{a.icon}{a.name} {(sibyl as any)[a.key]}</text>; })}
+                {vals.map((v, i) => { const [x, y] = pt(i, v / 20).split(",").map(Number); const glow = v >= 16; return <circle key={i} cx={x} cy={y} r={glow ? 4.5 : 3.5} fill="#c4b5fd" style={{ filter: glow ? "drop-shadow(0 0 4px #a78bfa)" : "none" }} />; })}
+                {AXIS_META.map((a, i) => { const [x, y] = pt(i, 1.32).split(",").map(Number); const anchor = Math.abs(x - cx) < 5 ? "middle" : x > cx ? "start" : "end"; return <text key={i} x={x} y={y} fill="#c7c9dd" fontSize="13" fontWeight="700" textAnchor={anchor} dominantBaseline="middle">{a.icon}{a.name} {(sibyl as any)[a.key]}</text>; })}
               </svg>
             </div>
           </div>
 
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={CARD}>
             <div style={SEC}>✨ あなたの強み</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 12 }}><span style={{ color: typeColor }}>{strength.title}</span>の高さが武器！</div>
@@ -132,6 +133,7 @@ export default function GrowthPage() {
               <div style={{ height: "100%", width: `${(action / 50) * 100}%`, background: "linear-gradient(90deg,#10b981,#34d399)", borderRadius: 999, transition: "width 1s ease" }} />
             </div>
             <div style={{ fontSize: 13, color: "#6ee7b7", fontWeight: 700 }}>努力が形になってきています！この調子で、さらに高みへ！</div>
+          </div>
           </div>
         </div>
 
