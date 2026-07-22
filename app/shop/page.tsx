@@ -239,6 +239,8 @@ export default function ShopPage() {
                         </div>
                     )}
                 </div>
+                </>
+                )}
 
                 {/* ===== メニューへ戻るボタン（統一） ===== */}
                 <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
