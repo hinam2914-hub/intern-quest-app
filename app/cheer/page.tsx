@@ -225,7 +225,7 @@ export default function CheerPage() {
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: "58vh", overflowY: "auto", paddingRight: 6 }}>
             {filtered.length === 0 ? (
               <div style={{ textAlign: "center", color: "#6b7280", fontSize: 13, padding: 30 }}>まだ投稿がありません</div>
             ) : filtered.map((a) => {
