@@ -582,6 +582,7 @@ export default function MyPage() {
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
     const [hobby, setHobby] = useState("");
+    const [achievements, setAchievements] = useState<{ name: string; text: string; icon: string; when: string }[]>([]);
     const [growthRank, setGrowthRank] = useState("");
     const [growthGrade, setGrowthGrade] = useState("");
     const [themeColor, setThemeColor] = useState("#6366f1");
@@ -846,6 +847,44 @@ export default function MyPage() {
         const newTotalEarned = (pointRow as any)?.total_earned || newPoints;
         setPoints(newPoints);
         setTotalEarned(newTotalEarned);
+        // みんなの最近の達成
+        try {
+          const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
+          const { data: phRows } = await supabase.from("points_history").select("user_id,reason,created_at").gt("change", 0).gte("created_at", d7).order("created_at", { ascending: false }).limit(200);
+          const LABEL = (r: string): { text: string; icon: string } | null => {
+            if (r.includes("challenge_complete")) return { text: "ライフチャレンジを達成", icon: "🎯" };
+            if (r.includes("es_first_completed")) return { text: "ESを完成させた", icon: "📝" };
+            if (r.includes("thinking_ippon_received")) return { text: "IPPONを獲得", icon: "🎤" };
+            if (r.startsWith("course_受講")) return { text: "講座を受講", icon: "🎓" };
+            if (r.startsWith("course_講師")) return { text: "講師デビュー", icon: "🧑‍🏫" };
+            if (r.includes("recruit_入社")) return { text: "新メンバーを入社に導いた", icon: "🎉" };
+            if (r.includes("recruit_採用面談")) return { text: "採用面談を実施", icon: "🤝" };
+            if (r.includes("avatar_")) return { text: "新しいアバターを手に入れた", icon: "👗" };
+            if (r.includes("kpi")) return { text: "月間KPIを達成", icon: "🏆" };
+            return null;
+          };
+          const picked = (phRows || []).map((p: any) => ({ uid: p.user_id, created_at: p.created_at, ...LABEL(p.reason || "") })).filter((p: any) => p.text);
+          const uniqA: any[] = [];
+          const seenA = new Set<string>();
+          for (const p of picked) {
+            const key = p.uid + p.text;
+            if (seenA.has(key)) continue;
+            seenA.add(key);
+            uniqA.push(p);
+            if (uniqA.length >= 6) break;
+          }
+          if (uniqA.length > 0) {
+            const ids = [...new Set(uniqA.map((u: any) => u.uid))];
+            const { data: profsA } = await supabase.from("profiles").select("id,name").in("id", ids);
+            const nameMapA: Record<string, string> = {};
+            (profsA || []).forEach((pr: any) => { nameMapA[pr.id] = pr.name; });
+            setAchievements(uniqA.map((u: any) => {
+              const diff = Math.floor((Date.now() - new Date(u.created_at).getTime()) / 3600000);
+              const when = diff < 1 ? "さっき" : diff < 24 ? `${diff}時間前` : `${Math.floor(diff / 24)}日前`;
+              return { name: nameMapA[u.uid] || "メンバー", text: u.text, icon: u.icon, when };
+            }));
+          }
+        } catch (e) { console.error("achievements", e); }
 
         // ページを開いたら必ずエフェクト発火（0pt以上なら）
         if (newPoints > 0) {
@@ -2004,6 +2043,24 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     );
                 })()}
+
+                {/* ===== みんなの最近の達成 ===== */}
+                {achievements.length > 0 && (
+                    <div style={{ marginTop: 16, padding: "18px 20px", borderRadius: 16, background: isLightBg ? "rgba(52,211,153,0.06)" : "rgba(52,211,153,0.07)", border: `1px solid ${isLightBg ? "rgba(52,211,153,0.25)" : "rgba(52,211,153,0.22)"}` }}>
+                        <div style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: 2, color: isLightBg ? "#0f9d69" : "#6ee7b7", marginBottom: 12 }}>🎉 みんなの最近の達成</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                            {achievements.map((a, i) => (
+                                <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", borderRadius: 10, background: isLightBg ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.18)" }}>
+                                    <span style={{ fontSize: 17 }}>{a.icon}</span>
+                                    <span style={{ flex: 1, fontSize: 12.5, color: textPrimary, lineHeight: 1.4 }}>
+                                        <strong style={{ fontWeight: 800 }}>{a.name}</strong>さんが{a.text}
+                                    </span>
+                                    <span style={{ fontSize: 10.5, color: textMuted, flexShrink: 0 }}>{a.when}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* ===== 成長マップ要約カード ===== */}
                 {mbti && (() => {
