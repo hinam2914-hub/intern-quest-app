@@ -854,7 +854,7 @@ export default function MyPage() {
         setTotalEarned(newTotalEarned);
         // みんなの最近の達成
         try {
-          const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
+          const d7 = new Date(Date.now() - 3 * 86400000).toISOString();
           const { data: phRows } = await supabase.from("points_history").select("user_id,reason,created_at").gt("change", 0).gte("created_at", d7).order("created_at", { ascending: false }).limit(200);
           const LABEL = (r: string): { text: string; icon: string } | null => {
             if (r.includes("challenge_complete")) return { text: "ライフチャレンジを達成", icon: "🎯" };
@@ -2107,7 +2107,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     <div style={{ marginTop: 16, padding: "18px 20px", borderRadius: 16, background: isLightBg ? "rgba(52,211,153,0.06)" : "rgba(52,211,153,0.07)", border: `1px solid ${isLightBg ? "rgba(52,211,153,0.25)" : "rgba(52,211,153,0.22)"}` }}>
                         <div style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: 2, color: isLightBg ? "#0f9d69" : "#6ee7b7", marginBottom: 12 }}>🎉 みんなの最近の達成</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            {(showAllAch ? achievements : achievements.slice(0, 3)).map((a, i) => {
+                            {achievements.slice(0, 3).map((a, i) => {
                                 const mapKey = a.uid + "|" + a.key;
                                 const reacts = achReactions[mapKey] || [];
                                 const cmts = achComments[mapKey] || [];
@@ -2153,11 +2153,9 @@ const handleRoutineCheck = async (routineId: string) => {
                                 );
                             })}
                         </div>
-                        {achievements.length > 3 && (
-                            <button onClick={() => setShowAllAch(!showAllAch)} style={{ width: "100%", marginTop: 12, padding: "9px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 800, background: isLightBg ? "rgba(52,211,153,0.12)" : "rgba(52,211,153,0.15)", color: isLightBg ? "#0f9d69" : "#6ee7b7" }}>
-                                {showAllAch ? "閉じる ▲" : `もっと見る（あと${achievements.length - 3}件）▼`}
-                            </button>
-                        )}
+                        <button onClick={() => router.push("/cheer")} style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 800, background: isLightBg ? "rgba(52,211,153,0.12)" : "rgba(52,211,153,0.15)", color: isLightBg ? "#0f9d69" : "#6ee7b7" }}>
+                            📣 みんなの活躍をもっと見る →
+                        </button>
                     </div>
                 )}
 
