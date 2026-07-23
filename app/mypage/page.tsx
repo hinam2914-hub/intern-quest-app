@@ -582,7 +582,12 @@ export default function MyPage() {
     const [mbti, setMbti] = useState("");
     const [club, setClub] = useState("");
     const [hobby, setHobby] = useState("");
-    const [achievements, setAchievements] = useState<{ name: string; text: string; icon: string; when: string }[]>([]);
+    const [achievements, setAchievements] = useState<{ name: string; text: string; icon: string; when: string; key: string; uid: string }[]>([]);
+    const [showAllAch, setShowAllAch] = useState(false);
+    const [achReactions, setAchReactions] = useState<Record<string, { emoji: string; count: number; mine: boolean }[]>>({});
+    const [achComments, setAchComments] = useState<Record<string, { name: string; body: string }[]>>({});
+    const [commentInput, setCommentInput] = useState<Record<string, string>>({});
+    const [openComment, setOpenComment] = useState<string | null>(null);
     const [growthRank, setGrowthRank] = useState("");
     const [growthGrade, setGrowthGrade] = useState("");
     const [themeColor, setThemeColor] = useState("#6366f1");
@@ -878,11 +883,40 @@ export default function MyPage() {
             const { data: profsA } = await supabase.from("profiles").select("id,name").in("id", ids);
             const nameMapA: Record<string, string> = {};
             (profsA || []).forEach((pr: any) => { nameMapA[pr.id] = pr.name; });
-            setAchievements(uniqA.map((u: any) => {
+            const achList = uniqA.map((u: any) => {
               const diff = Math.floor((Date.now() - new Date(u.created_at).getTime()) / 3600000);
               const when = diff < 1 ? "さっき" : diff < 24 ? `${diff}時間前` : `${Math.floor(diff / 24)}日前`;
-              return { name: nameMapA[u.uid] || "メンバー", text: u.text, icon: u.icon, when };
-            }));
+              return { name: nameMapA[u.uid] || "メンバー", text: u.text, icon: u.icon, when, key: u.text + "_" + (u.created_at || "").slice(0, 10), uid: u.uid };
+            });
+            setAchievements(achList);
+            // リアクションとコメント取得
+            const keys = achList.map((a: any) => a.key);
+            const [{ data: reacts }, { data: cmts }] = await Promise.all([
+              supabase.from("achievement_reactions").select("*").in("target_key", keys),
+              supabase.from("achievement_comments").select("*").in("target_key", keys).order("created_at"),
+            ]);
+            const rMap: Record<string, { emoji: string; count: number; mine: boolean }[]> = {};
+            (reacts || []).forEach((r: any) => {
+              const k = r.target_user_id + "|" + r.target_key;
+              rMap[k] = rMap[k] || [];
+              const found = rMap[k].find(x => x.emoji === r.emoji);
+              if (found) { found.count++; if (r.user_id === user.id) found.mine = true; }
+              else rMap[k].push({ emoji: r.emoji, count: 1, mine: r.user_id === user.id });
+            });
+            setAchReactions(rMap);
+            const cIds = [...new Set((cmts || []).map((c: any) => c.user_id))];
+            const cNames: Record<string, string> = {};
+            if (cIds.length) {
+              const { data: cp } = await supabase.from("profiles").select("id,name").in("id", cIds);
+              (cp || []).forEach((p: any) => { cNames[p.id] = p.name; });
+            }
+            const cMap: Record<string, { name: string; body: string }[]> = {};
+            (cmts || []).forEach((c: any) => {
+              const k = c.target_user_id + "|" + c.target_key;
+              cMap[k] = cMap[k] || [];
+              cMap[k].push({ name: cNames[c.user_id] || "メンバー", body: c.body });
+            });
+            setAchComments(cMap);
           }
         } catch (e) { console.error("achievements", e); }
 
@@ -1170,6 +1204,30 @@ export default function MyPage() {
     };
 
     useEffect(() => { loadPage(); }, []);
+
+    const toggleReaction = async (targetUid: string, key: string, emoji: string) => {
+        if (!userId) return;
+        const mapKey = targetUid + "|" + key;
+        const list = achReactions[mapKey] || [];
+        const found = list.find(r => r.emoji === emoji);
+        if (found?.mine) {
+            await supabase.from("achievement_reactions").delete().eq("target_user_id", targetUid).eq("target_key", key).eq("user_id", userId).eq("emoji", emoji);
+            const next = list.map(r => r.emoji === emoji ? { ...r, count: Math.max(0, r.count - 1), mine: false } : r).filter(r => r.count > 0);
+            setAchReactions({ ...achReactions, [mapKey]: next });
+        } else {
+            await supabase.from("achievement_reactions").insert({ target_user_id: targetUid, target_key: key, user_id: userId, emoji });
+            const next = found ? list.map(r => r.emoji === emoji ? { ...r, count: r.count + 1, mine: true } : r) : [...list, { emoji, count: 1, mine: true }];
+            setAchReactions({ ...achReactions, [mapKey]: next });
+        }
+    };
+    const sendAchComment = async (targetUid: string, key: string) => {
+        const mapKey = targetUid + "|" + key;
+        const body = (commentInput[mapKey] || "").trim();
+        if (!body || !userId) return;
+        await supabase.from("achievement_comments").insert({ target_user_id: targetUid, target_key: key, user_id: userId, body });
+        setAchComments({ ...achComments, [mapKey]: [...(achComments[mapKey] || []), { name: name || "あなた", body }] });
+        setCommentInput({ ...commentInput, [mapKey]: "" });
+    };
 
     const handleSaveProfile = async () => {
         if (!userId) return;
@@ -2048,17 +2106,58 @@ const handleRoutineCheck = async (routineId: string) => {
                 {achievements.length > 0 && (
                     <div style={{ marginTop: 16, padding: "18px 20px", borderRadius: 16, background: isLightBg ? "rgba(52,211,153,0.06)" : "rgba(52,211,153,0.07)", border: `1px solid ${isLightBg ? "rgba(52,211,153,0.25)" : "rgba(52,211,153,0.22)"}` }}>
                         <div style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: 2, color: isLightBg ? "#0f9d69" : "#6ee7b7", marginBottom: 12 }}>🎉 みんなの最近の達成</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                            {achievements.map((a, i) => (
-                                <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", borderRadius: 10, background: isLightBg ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.18)" }}>
-                                    <span style={{ fontSize: 17 }}>{a.icon}</span>
-                                    <span style={{ flex: 1, fontSize: 12.5, color: textPrimary, lineHeight: 1.4 }}>
-                                        <strong style={{ fontWeight: 800 }}>{a.name}</strong>さんが{a.text}
-                                    </span>
-                                    <span style={{ fontSize: 10.5, color: textMuted, flexShrink: 0 }}>{a.when}</span>
-                                </div>
-                            ))}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {(showAllAch ? achievements : achievements.slice(0, 3)).map((a, i) => {
+                                const mapKey = a.uid + "|" + a.key;
+                                const reacts = achReactions[mapKey] || [];
+                                const cmts = achComments[mapKey] || [];
+                                const isOpen = openComment === mapKey;
+                                return (
+                                    <div key={i} style={{ padding: "11px 13px", borderRadius: 12, background: isLightBg ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.18)" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                                            <span style={{ fontSize: 17 }}>{a.icon}</span>
+                                            <span style={{ flex: 1, fontSize: 12.5, color: textPrimary, lineHeight: 1.4 }}>
+                                                <strong style={{ fontWeight: 800 }}>{a.name}</strong>さんが{a.text}
+                                            </span>
+                                            <span style={{ fontSize: 10.5, color: textMuted, flexShrink: 0 }}>{a.when}</span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
+                                            {["👏", "🔥", "🎉"].map(em => {
+                                                const r = reacts.find(x => x.emoji === em);
+                                                return (
+                                                    <button key={em} onClick={() => toggleReaction(a.uid, a.key, em)} style={{ padding: "4px 9px", borderRadius: 20, cursor: "pointer", fontSize: 12.5, fontWeight: 700, border: `1px solid ${r?.mine ? "rgba(52,211,153,0.5)" : isLightBg ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.12)"}`, background: r?.mine ? "rgba(52,211,153,0.15)" : "transparent", color: textPrimary }}>
+                                                        {em}{r && r.count > 0 ? ` ${r.count}` : ""}
+                                                    </button>
+                                                );
+                                            })}
+                                            <button onClick={() => setOpenComment(isOpen ? null : mapKey)} style={{ padding: "4px 9px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontWeight: 700, border: `1px solid ${isLightBg ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.12)"}`, background: "transparent", color: textMuted }}>
+                                                💬{cmts.length > 0 ? ` ${cmts.length}` : ""}
+                                            </button>
+                                        </div>
+                                        {(isOpen || cmts.length > 0) && (
+                                            <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 6 }}>
+                                                {cmts.map((c, ci) => (
+                                                    <div key={ci} style={{ fontSize: 12, color: textPrimary, padding: "6px 10px", borderRadius: 8, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.05)" }}>
+                                                        <strong style={{ fontWeight: 800 }}>{c.name}</strong>: {c.body}
+                                                    </div>
+                                                ))}
+                                                {isOpen && (
+                                                    <div style={{ display: "flex", gap: 6 }}>
+                                                        <input value={commentInput[mapKey] || ""} onChange={(e) => setCommentInput({ ...commentInput, [mapKey]: e.target.value })} onKeyDown={(e) => e.key === "Enter" && sendAchComment(a.uid, a.key)} placeholder="コメントする" style={{ flex: 1, padding: "7px 11px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "#fff" : "rgba(0,0,0,0.3)", color: textPrimary, fontSize: 12.5, outline: "none" }} />
+                                                        <button onClick={() => sendAchComment(a.uid, a.key)} style={{ padding: "7px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 800, background: "linear-gradient(135deg,#10b981,#34d399)", color: "#fff" }}>送信</button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
+                        {achievements.length > 3 && (
+                            <button onClick={() => setShowAllAch(!showAllAch)} style={{ width: "100%", marginTop: 12, padding: "9px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 800, background: isLightBg ? "rgba(52,211,153,0.12)" : "rgba(52,211,153,0.15)", color: isLightBg ? "#0f9d69" : "#6ee7b7" }}>
+                                {showAllAch ? "閉じる ▲" : `もっと見る（あと${achievements.length - 3}件）▼`}
+                            </button>
+                        )}
                     </div>
                 )}
 
