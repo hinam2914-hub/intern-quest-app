@@ -2109,7 +2109,7 @@ const handleRoutineCheck = async (routineId: string) => {
                             <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: isLightBg ? "#8b5cf6" : "#6ee7b7" }}>🎉 最近の活躍</span>
                             <span onClick={() => router.push("/cheer")} style={{ fontSize: 11.5, fontWeight: 800, color: "#8b5cf6", cursor: "pointer" }}>みんなの活躍をもっと見る →</span>
                         </div>
-                        <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingRight: 18, paddingBottom: 4 }}>
+                        <div style={{ display: "flex", gap: 10, overflowX: "auto", overflowY: "visible", paddingRight: 18, paddingTop: 10, paddingBottom: 4 }}>
                             {achievements.slice(0, 3).map((a, i) => {
                                 const mapKey = a.uid + "|" + a.key;
                                 const reacts = achReactions[mapKey] || [];
@@ -2117,7 +2117,7 @@ const handleRoutineCheck = async (routineId: string) => {
                                 const isHot = i === 0 && total > 0;
                                 return (
                                     <div key={i} onClick={() => router.push("/cheer")} style={{ minWidth: 200, maxWidth: 220, flexShrink: 0, cursor: "pointer", padding: "12px 14px", borderRadius: 14, position: "relative", background: isLightBg ? "#fff" : "rgba(0,0,0,0.22)", border: `1.5px solid ${isHot ? "rgba(249,115,22,.45)" : isLightBg ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.1)"}`, boxShadow: isHot ? "0 0 14px rgba(249,115,22,.18)" : "none" }}>
-                                        {isHot && <span style={{ position: "absolute", top: -8, left: 10, padding: "2px 9px", borderRadius: 10, background: "linear-gradient(135deg,#f97316,#ec4899)", fontSize: 9.5, fontWeight: 900, color: "#fff" }}>🔥 HOT</span>}
+                                        {isHot && <span style={{ position: "absolute", top: -9, left: 10, zIndex: 2, whiteSpace: "nowrap", padding: "2px 9px", borderRadius: 10, background: "linear-gradient(135deg,#f97316,#ec4899)", fontSize: 9.5, fontWeight: 900, color: "#fff" }}>🔥 HOT</span>}
                                         <div style={{ fontSize: 10.5, color: textMuted, marginBottom: 5, textAlign: "right" }}>{a.when}</div>
                                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
                                             <span style={{ fontSize: 20 }}>{a.icon}</span>
