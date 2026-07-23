@@ -169,14 +169,14 @@ export default function CheerPage() {
         {mvp && (
           <div style={{ ...CARD, background: "linear-gradient(135deg, rgba(139,92,246,.2), rgba(18,16,40,.9))", border: "1px solid rgba(167,139,250,.45)", padding: "22px 24px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: "#c4b5fd", marginBottom: 8 }}>TODAY'S MVP</div>
+              <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 3, color: "#e9d5ff", marginBottom: 8, textShadow: "0 0 10px rgba(139,92,246,.8)" }}>👑 TODAY'S MVP</div>
               {AV(mvp, 72)}
               <div style={{ marginTop: 8, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#8b5cf6,#6366f1)", fontSize: 10.5, fontWeight: 900, color: "#fff" }}>本日のMVP</div>
             </div>
             <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ fontSize: 21, fontWeight: 900, color: "#fff", marginBottom: 4 }}>🏆 {mvp.text}</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#c4b5fd", marginBottom: 8 }}>{mvp.name} さん</div>
-              <div style={{ fontSize: 13, color: "#8b8fa8" }}>応援数 <span style={{ fontSize: 20, fontWeight: 900, color: "#34d399" }}>{rTotal(mvp)}</span></div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", marginBottom: 5, textShadow: "0 0 18px rgba(167,139,250,.6)" }}>🏆 {mvp.text}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#c4b5fd", marginBottom: 10 }}>🌿 {mvp.name} さん 🌿</div>
+              <div style={{ fontSize: 13, color: "#8b8fa8" }}>応援数 <span style={{ fontSize: 26, fontWeight: 900, color: "#34d399", textShadow: "0 0 12px rgba(52,211,153,.5)" }}>{rTotal(mvp)}</span></div>
             </div>
           </div>
         )}
