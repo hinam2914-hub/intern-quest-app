@@ -18,6 +18,12 @@ const LABEL = (r: string): { text: string; icon: string; cat: string } | null =>
   return null;
 };
 const EMOJIS = ["👏", "🔥", "🎉", "💪"];
+const CAT_STYLE: Record<string, { color: string; label: string }> = {
+  sales: { color: "#f59e0b", label: "営業成果" },
+  learn: { color: "#22d3ee", label: "学習" },
+  other: { color: "#a78bfa", label: "達成" },
+};
+const PLACEHOLDERS = ["例：初受注を達成しました！", "例：テレアポで5件アポ獲得！", "例：学習コンテンツを完了しました！", "例：日報を7日連続達成！"];
 
 export default function CheerPage() {
   const router = useRouter();
