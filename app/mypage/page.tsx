@@ -2104,58 +2104,38 @@ const handleRoutineCheck = async (routineId: string) => {
 
                 {/* ===== みんなの最近の達成 ===== */}
                 {achievements.length > 0 && (
-                    <div style={{ marginTop: 16, padding: "18px 20px", borderRadius: 16, background: isLightBg ? "rgba(52,211,153,0.06)" : "rgba(52,211,153,0.07)", border: `1px solid ${isLightBg ? "rgba(52,211,153,0.25)" : "rgba(52,211,153,0.22)"}` }}>
-                        <div style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: 2, color: isLightBg ? "#0f9d69" : "#6ee7b7", marginBottom: 12 }}>🎉 みんなの最近の達成</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ marginTop: 16, padding: "16px 0 14px 18px", borderRadius: 16, background: isLightBg ? "rgba(255,255,255,0.8)" : "rgba(52,211,153,0.07)", border: `1px solid ${isLightBg ? "rgba(0,0,0,0.06)" : "rgba(52,211,153,0.22)"}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingRight: 18 }}>
+                            <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: isLightBg ? "#8b5cf6" : "#6ee7b7" }}>🎉 最近の活躍</span>
+                            <span onClick={() => router.push("/cheer")} style={{ fontSize: 11.5, fontWeight: 800, color: "#8b5cf6", cursor: "pointer" }}>みんなの活躍をもっと見る →</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingRight: 18, paddingBottom: 4 }}>
                             {achievements.slice(0, 3).map((a, i) => {
                                 const mapKey = a.uid + "|" + a.key;
                                 const reacts = achReactions[mapKey] || [];
-                                const cmts = achComments[mapKey] || [];
-                                const isOpen = openComment === mapKey;
+                                const total = reacts.reduce((sum, r) => sum + r.count, 0);
+                                const isHot = i === 0 && total > 0;
                                 return (
-                                    <div key={i} style={{ padding: "11px 13px", borderRadius: 12, background: isLightBg ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.18)" }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                                            <span style={{ fontSize: 17 }}>{a.icon}</span>
-                                            <span style={{ flex: 1, fontSize: 12.5, color: textPrimary, lineHeight: 1.4 }}>
-                                                <strong style={{ fontWeight: 800 }}>{a.name}</strong>さんが{a.text}
-                                            </span>
-                                            <span style={{ fontSize: 10.5, color: textMuted, flexShrink: 0 }}>{a.when}</span>
+                                    <div key={i} onClick={() => router.push("/cheer")} style={{ minWidth: 200, maxWidth: 220, flexShrink: 0, cursor: "pointer", padding: "12px 14px", borderRadius: 14, position: "relative", background: isLightBg ? "#fff" : "rgba(0,0,0,0.22)", border: `1.5px solid ${isHot ? "rgba(249,115,22,.45)" : isLightBg ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.1)"}`, boxShadow: isHot ? "0 0 14px rgba(249,115,22,.18)" : "none" }}>
+                                        {isHot && <span style={{ position: "absolute", top: -8, left: 10, padding: "2px 9px", borderRadius: 10, background: "linear-gradient(135deg,#f97316,#ec4899)", fontSize: 9.5, fontWeight: 900, color: "#fff" }}>🔥 HOT</span>}
+                                        <div style={{ fontSize: 10.5, color: textMuted, marginBottom: 5, textAlign: "right" }}>{a.when}</div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                                            <span style={{ fontSize: 20 }}>{a.icon}</span>
+                                            <div style={{ minWidth: 0 }}>
+                                                <div style={{ fontSize: 11, color: textMuted }}>{a.name}さんが</div>
+                                                <div style={{ fontSize: 12.5, fontWeight: 900, color: textPrimary, lineHeight: 1.35 }}>{a.text}</div>
+                                            </div>
                                         </div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
+                                        <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                                             {["👏", "🔥", "🎉"].map(em => {
                                                 const r = reacts.find(x => x.emoji === em);
-                                                return (
-                                                    <button key={em} onClick={() => toggleReaction(a.uid, a.key, em)} style={{ padding: "4px 9px", borderRadius: 20, cursor: "pointer", fontSize: 12.5, fontWeight: 700, border: `1px solid ${r?.mine ? "rgba(52,211,153,0.5)" : isLightBg ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.12)"}`, background: r?.mine ? "rgba(52,211,153,0.15)" : "transparent", color: textPrimary }}>
-                                                        {em}{r && r.count > 0 ? ` ${r.count}` : ""}
-                                                    </button>
-                                                );
+                                                return <span key={em} style={{ fontSize: 11, fontWeight: 800, color: textMuted }}>{em}{r ? r.count : 0}</span>;
                                             })}
-                                            <button onClick={() => setOpenComment(isOpen ? null : mapKey)} style={{ padding: "4px 9px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontWeight: 700, border: `1px solid ${isLightBg ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.12)"}`, background: "transparent", color: textMuted }}>
-                                                💬{cmts.length > 0 ? ` ${cmts.length}` : ""}
-                                            </button>
                                         </div>
-                                        {(isOpen || cmts.length > 0) && (
-                                            <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 6 }}>
-                                                {cmts.map((c, ci) => (
-                                                    <div key={ci} style={{ fontSize: 12, color: textPrimary, padding: "6px 10px", borderRadius: 8, background: isLightBg ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.05)" }}>
-                                                        <strong style={{ fontWeight: 800 }}>{c.name}</strong>: {c.body}
-                                                    </div>
-                                                ))}
-                                                {isOpen && (
-                                                    <div style={{ display: "flex", gap: 6 }}>
-                                                        <input value={commentInput[mapKey] || ""} onChange={(e) => setCommentInput({ ...commentInput, [mapKey]: e.target.value })} onKeyDown={(e) => e.key === "Enter" && sendAchComment(a.uid, a.key)} placeholder="コメントする" style={{ flex: 1, padding: "7px 11px", borderRadius: 8, border: `1px solid ${cardBorder}`, background: isLightBg ? "#fff" : "rgba(0,0,0,0.3)", color: textPrimary, fontSize: 12.5, outline: "none" }} />
-                                                        <button onClick={() => sendAchComment(a.uid, a.key)} style={{ padding: "7px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 800, background: "linear-gradient(135deg,#10b981,#34d399)", color: "#fff" }}>送信</button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
                                     </div>
                                 );
                             })}
                         </div>
-                        <button onClick={() => router.push("/cheer")} style={{ width: "100%", marginTop: 12, padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 800, background: isLightBg ? "rgba(52,211,153,0.12)" : "rgba(52,211,153,0.15)", color: isLightBg ? "#0f9d69" : "#6ee7b7" }}>
-                            📣 みんなの活躍をもっと見る →
-                        </button>
                     </div>
                 )}
 
@@ -2167,48 +2147,65 @@ const handleRoutineCheck = async (routineId: string) => {
                     const parts = gc.courseName.split("｜");
                     const tName = parts[0] || "";
                     const tCatch = parts[1] || "";
+                    const nextMilestone = Math.ceil((totalEarned + 1) / 500) * 500;
+                    const toNext = nextMilestone - totalEarned;
+                    const steps = [
+                        { badge: "NOW", color: gc.colorCode, title: tName, desc: tCatch },
+                        { badge: "6ヶ月後", color: "#8b5cf6", title: gc.process.split("。")[0], desc: gc.process.split("。")[1] || "" },
+                        { badge: "最終目標", color: "#6d28d9", title: gc.goal.split("。")[0], desc: "組織全体の戦略を設計し、未来を創る" },
+                    ];
                     return (
-                        <div onClick={() => router.push("/growth")} style={{ marginTop: 16, marginBottom: 16, cursor: "pointer", padding: "18px 20px", borderRadius: 16, background: isLightBg ? "rgba(139,92,246,0.06)" : "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(18,16,40,0.6))", border: `1px solid ${gc.colorCode}55` }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                                <span style={{ fontSize: 13, fontWeight: 900, color: gc.colorCode }}>🔮 あなたの成長マップ</span>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: gc.colorCode }}>詳しく見る →</span>
+                        <div style={{ marginTop: 16, marginBottom: 16, padding: "18px 20px", borderRadius: 16, background: isLightBg ? "rgba(139,92,246,0.05)" : "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(18,16,40,0.6))", border: `1px solid ${gc.colorCode}44` }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <span style={{ fontSize: 12.5, fontWeight: 900, color: gc.colorCode }}>🔮 あなたの成長マップ</span>
+                                <span onClick={() => router.push("/growth")} style={{ fontSize: 11.5, fontWeight: 800, color: gc.colorCode, cursor: "pointer" }}>詳しく見る →</span>
                             </div>
-                            <div style={{ fontSize: 16, fontWeight: 900, color: textPrimary }}>{tName}</div>
-                            <div style={{ fontSize: 12.5, color: isLightBg ? "#6f7a86" : "#c7c9dd", marginBottom: 12 }}>{tCatch}</div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                <div style={{ fontSize: 12.5, color: isLightBg ? "#4b5563" : "#e5e7eb" }}>📍 <span style={{ fontWeight: 700 }}>6ヶ月:</span> {gc.process.split("。")[0]}</div>
-                                <div style={{ fontSize: 12.5, color: isLightBg ? "#4b5563" : "#e5e7eb" }}>🎯 <span style={{ fontWeight: 700 }}>最終:</span> {gc.goal.split("。")[0]}</div>
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                                {steps.map((st, i) => (
+                                    <div key={i} style={{ display: "flex", gap: 12 }}>
+                                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 14, flexShrink: 0 }}>
+                                            <div style={{ width: 13, height: 13, borderRadius: "50%", background: i === 2 ? "transparent" : st.color, border: `3px solid ${st.color}`, flexShrink: 0, marginTop: 3 }} />
+                                            {i < steps.length - 1 && <div style={{ width: 2.5, flex: 1, background: `linear-gradient(180deg, ${st.color}, ${steps[i + 1].color})`, minHeight: 26 }} />}
+                                        </div>
+                                        <div style={{ paddingBottom: i < steps.length - 1 ? 16 : 0, minWidth: 0 }}>
+                                            <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 10, background: st.color, fontSize: 10, fontWeight: 900, color: "#fff", marginBottom: 4 }}>{st.badge}</span>
+                                            <div style={{ fontSize: 14.5, fontWeight: 900, color: textPrimary, lineHeight: 1.4 }}>{st.title}</div>
+                                            {st.desc && <div style={{ fontSize: 11.5, color: textMuted, marginTop: 2, lineHeight: 1.5 }}>{st.desc}</div>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div style={{ marginTop: 14, padding: "9px 14px", borderRadius: 10, textAlign: "center", background: isLightBg ? "rgba(139,92,246,0.09)" : "rgba(139,92,246,0.15)", fontSize: 12, fontWeight: 800, color: textPrimary }}>
+                                ⭐ あと<span style={{ color: "#8b5cf6", fontWeight: 900 }}>{toNext}pt</span>で次のマイルストーン到達！
                             </div>
                         </div>
                     );
                 })()}
 
-                {/* ===== 成長カード ===== */}
-                <div style={{ order: -1, marginBottom: 16, borderRadius: 20, padding: "16px 20px", background: "rgba(255,255,255,.65)", border: "1.5px solid rgba(190,170,130,.3)", boxShadow: "0 4px 14px rgba(120,100,60,.1)" }}>
-                    <div style={{ fontSize: 11, color: "#9a8fb0", fontWeight: 800, letterSpacing: 2, marginBottom: 10 }}>📈 成長のきろく</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div style={{ textAlign: "center", padding: "12px 6px", borderRadius: 14, background: "linear-gradient(160deg, rgba(139,92,246,.1), rgba(139,92,246,.04))", border: "1px solid rgba(139,92,246,.25)" }}>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: "#6d5aa8", lineHeight: 1.2 }}>+{monthPt.toLocaleString()}<span style={{ fontSize: 12 }}>pt</span></div>
-                            <div style={{ fontSize: 10.5, fontWeight: 700, color: "#9a8fb0", marginTop: 3 }}>今月の獲得</div>
+                {(() => {
+                    const eom = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+                    const daysLeft = Math.max(0, Math.ceil((eom.getTime() - Date.now()) / 86400000));
+                    const rewards = [{ l: "DM", p: "+3pt" }, { l: "メンツナ", p: "+15pt" }, { l: "面談", p: "+30pt" }, { l: "入社", p: "+100pt" }];
+                    return (
+                        <div style={{ marginBottom: 12, borderRadius: 20, padding: "18px 20px 16px", position: "relative", overflow: "hidden", background: "linear-gradient(120deg, #f97316, #ec4899)", boxShadow: "0 8px 24px rgba(236,72,153,.32)", border: "1.5px solid rgba(255,255,255,.35)" }}>
+                            <div style={{ position: "absolute", top: 10, right: -8, fontSize: 92, opacity: .22, transform: "rotate(-10deg)", pointerEvents: "none" }}>🎁</div>
+                            <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 3, color: "rgba(255,255,255,.9)", marginBottom: 5 }}>🎪 LIMITED EVENT</div>
+                            <div style={{ fontSize: 19, fontWeight: 900, color: "#fff", textShadow: "0 1px 5px rgba(0,0,0,.2)" }}>🔥 HRキャンペーン開催中！</div>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, padding: "4px 12px", borderRadius: 999, background: "rgba(0,0,0,.22)", fontSize: 11.5, fontWeight: 900, color: "#fff" }}>⏱ 残り{daysLeft}日</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7, marginTop: 12, position: "relative" }}>
+                                {rewards.map(r => (
+                                    <div key={r.l} style={{ padding: "8px 4px", borderRadius: 10, textAlign: "center", background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.3)" }}>
+                                        <div style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>{r.l}</div>
+                                        <div style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>{r.p}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={() => router.push("/recruit")} style={{ width: "100%", marginTop: 13, padding: "13px", borderRadius: 999, border: "none", cursor: "pointer", background: "#fff", color: "#ec4899", fontSize: 15, fontWeight: 900, boxShadow: "0 3px 10px rgba(0,0,0,.12)" }}>
+                                イベントに参加する →
+                            </button>
                         </div>
-                        <div style={{ textAlign: "center", padding: "12px 6px", borderRadius: 14, background: "linear-gradient(160deg, rgba(52,180,120,.1), rgba(52,180,120,.04))", border: "1px solid rgba(52,180,120,.3)" }}>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: "#3a8a5f", lineHeight: 1.2 }}>+{days30Pt.toLocaleString()}<span style={{ fontSize: 12 }}>pt</span></div>
-                            <div style={{ fontSize: 10.5, fontWeight: 700, color: "#8aa595", marginTop: 3 }}>過去30日</div>
-                        </div>
-                    </div>
-                </div>
-                {/* ===== 開催中イベント ===== */}
-                {[
-                    { key: "hr_campaign", icon: "🔥", title: "HRキャンペーン開催中！", desc: "DM +3pt ／ メンツナ +15pt ／ 面談 +30pt ／ 入社 +100pt", path: "/recruit", from: "#f97316", to: "#ec4899" },
-                ].map((ev) => (
-                    <div key={ev.key} onClick={() => router.push(ev.path)} style={{ marginBottom: 12, borderRadius: 18, padding: "14px 18px", cursor: "pointer", position: "relative", overflow: "hidden", background: `linear-gradient(120deg, ${ev.from}, ${ev.to})`, boxShadow: "0 6px 18px rgba(236,72,153,.3)", border: "1.5px solid rgba(255,255,255,.35)" }}>
-                        <div style={{ position: "absolute", top: -18, right: -12, fontSize: 72, opacity: .2, transform: "rotate(-12deg)" }}>{ev.icon}</div>
-                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2.5, color: "rgba(255,255,255,.85)", marginBottom: 4 }}>🎪 EVENT</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,.15)" }}>{ev.icon} {ev.title}</div>
-                        <div style={{ fontSize: 11.5, fontWeight: 700, color: "rgba(255,255,255,.9)", marginTop: 4 }}>{ev.desc}</div>
-                        <div style={{ marginTop: 8, display: "inline-block", padding: "5px 14px", borderRadius: 999, background: "rgba(255,255,255,.25)", border: "1px solid rgba(255,255,255,.4)", fontSize: 11.5, fontWeight: 800, color: "#fff" }}>参加する →</div>
-                    </div>
-                ))}
+                    );
+                })()}
                 {announcements.filter(a => !closedAnnouncements.includes(a.id)).map((a) => (
                     <div key={a.id} style={{ marginBottom: 12, padding: "14px 20px", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
