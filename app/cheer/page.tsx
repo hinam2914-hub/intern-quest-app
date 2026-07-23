@@ -203,15 +203,15 @@ export default function CheerPage() {
 
         {/* 投稿フォーム */}
         <div style={{ ...CARD, padding: "16px 18px" }}>
-          <div style={{ fontSize: 13, fontWeight: 900, color: "#a78bfa", marginBottom: 10 }}>✍️ 今日の成果を報告しよう</div>
+          <div style={{ fontSize: 14, fontWeight: 900, color: "#a78bfa", marginBottom: 10, textShadow: "0 0 8px rgba(139,92,246,.4)" }}>⚔️ クエスト達成報告</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
             {[{ k: "sales", l: "💼 営業成果" }, { k: "learn", l: "📖 学習" }, { k: "other", l: "✨ その他" }].map(c => (
               <button key={c.k} onClick={() => setPostCat(c.k)} style={{ padding: "6px 13px", borderRadius: 16, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 800, background: postCat === c.k ? "linear-gradient(135deg,#8b5cf6,#6366f1)" : "rgba(255,255,255,.06)", color: postCat === c.k ? "#fff" : "#9ca3af" }}>{c.l}</button>
             ))}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <input value={postBody} onChange={(e) => setPostBody(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitPost()} placeholder="例：テレアポで5件アポ獲得しました！" style={{ flex: 1, padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,.12)", background: "rgba(0,0,0,.3)", color: "#f9fafb", fontSize: 13.5, outline: "none" }} />
-            <button onClick={submitPost} disabled={posting} style={{ padding: "11px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 900, background: "linear-gradient(135deg,#8b5cf6,#6366f1)", color: "#fff", opacity: posting ? 0.6 : 1 }}>{posting ? "投稿中..." : "投稿"}</button>
+            <input value={postBody} onChange={(e) => setPostBody(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitPost()} placeholder={PLACEHOLDERS[Math.floor(Date.now() / 60000) % PLACEHOLDERS.length]} style={{ flex: 1, padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,.12)", background: "rgba(0,0,0,.3)", color: "#f9fafb", fontSize: 13.5, outline: "none" }} />
+            <button onClick={submitPost} disabled={posting} style={{ padding: "11px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 900, background: "linear-gradient(135deg,#8b5cf6,#6366f1)", color: "#fff", opacity: posting ? 0.6 : 1 }}>{posting ? "送信中..." : "成果をシェアする 🚀"}</button>
           </div>
         </div>
 
@@ -233,10 +233,17 @@ export default function CheerPage() {
               const rs = reactions[mk] || [];
               const cs = comments[mk] || [];
               const isOpen = open === mk;
+              const catSt = CAT_STYLE[a.cat] || CAT_STYLE.other;
+              const total = rs.reduce((sum, r) => sum + r.count, 0);
+              const isHotCard = total >= 3;
               return (
-                <div key={mk} style={{ ...CARD, padding: "13px 15px" }}>
+                <div key={mk} style={{ ...CARD, padding: "13px 15px", position: "relative", border: `1px solid ${isHotCard ? catSt.color + "88" : "rgba(139,92,246,.25)"}`, boxShadow: isHotCard ? `0 0 14px ${catSt.color}33` : "none" }}>
+                  {isHotCard && <span style={{ position: "absolute", top: -9, right: 12, padding: "2px 10px", borderRadius: 10, background: "linear-gradient(135deg,#f97316,#ec4899)", fontSize: 9.5, fontWeight: 900, color: "#fff" }}>🔥 HOT</span>}
                   <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                    <span style={{ fontSize: 19, flexShrink: 0 }}>{a.icon}</span>
+                    <div style={{ width: 40, height: 40, borderRadius: 11, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: catSt.color + "22", border: `1px solid ${catSt.color}55` }}>
+                      <span style={{ fontSize: 16, lineHeight: 1 }}>{a.icon}</span>
+                      <span style={{ fontSize: 7.5, fontWeight: 900, color: catSt.color, marginTop: 1 }}>{catSt.label}</span>
+                    </div>
                     {AV(a, 38)}
                     <span style={{ flex: 1, fontSize: 13, color: "#e5e7eb", lineHeight: 1.5, minWidth: 0 }}>
                       <strong style={{ fontWeight: 800, color: "#c4b5fd" }}>{a.name}</strong> さんが <strong style={{ fontWeight: 800 }}>{a.text}</strong>
@@ -247,7 +254,7 @@ export default function CheerPage() {
                     {EMOJIS.map(em => {
                       const r = rs.find(x => x.emoji === em);
                       return (
-                        <button key={em} onClick={() => toggle(a.uid, a.key, em)} style={{ padding: "4px 10px", borderRadius: 18, cursor: "pointer", fontSize: 12.5, fontWeight: 700, border: `1px solid ${r?.mine ? "rgba(167,139,250,.6)" : "rgba(255,255,255,.1)"}`, background: r?.mine ? "rgba(139,92,246,.25)" : "transparent", color: "#e5e7eb" }}>
+                        <button key={em} onClick={() => toggle(a.uid, a.key, em)} onMouseEnter={(e) => { (e.target as HTMLElement).style.transform = "scale(1.12)"; }} onMouseLeave={(e) => { (e.target as HTMLElement).style.transform = "scale(1)"; }} style={{ padding: "5px 12px", borderRadius: 20, cursor: "pointer", fontSize: 13, fontWeight: 800, transition: "transform .12s ease, box-shadow .12s ease", border: `1.5px solid ${r?.mine ? "rgba(167,139,250,.7)" : "rgba(255,255,255,.12)"}`, background: r?.mine ? "rgba(139,92,246,.3)" : "rgba(255,255,255,.03)", color: "#e5e7eb", boxShadow: r?.mine ? "0 0 8px rgba(139,92,246,.35)" : "none" }}>
                           {em}{r && r.count > 0 ? ` ${r.count}` : ""}
                         </button>
                       );
