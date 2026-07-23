@@ -85,6 +85,7 @@ export default function HomePage() {
   const [streak, setStreak] = useState(0);
   const [goals, setGoals] = useState<{ monthly_target: string; monthly_theme: string; quarter_goal: string; career_goal: string }>({ monthly_target: "", monthly_theme: "", quarter_goal: "", career_goal: "" });
   const [showGoalModal, setShowGoalModal] = useState(false);
+  const [achievements, setAchievements] = useState<{ name: string; text: string; icon: string; when: string }[]>([]);
   const [savingGoal, setSavingGoal] = useState(false);
   const saveGoals = async () => {
     if (savingGoal) return;
@@ -169,6 +170,44 @@ export default function HomePage() {
         setStreak((profile as any).streak || 0);
         const { data: goalRow } = await supabase.from("user_goals").select("*").eq("user_id", user.id).maybeSingle();
         if (goalRow) setGoals({ monthly_target: (goalRow as any).monthly_target || "", monthly_theme: (goalRow as any).monthly_theme || "", quarter_goal: (goalRow as any).quarter_goal || "", career_goal: (goalRow as any).career_goal || "" });
+        // みんなの最近の達成
+        try {
+          const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
+          const { data: phRows } = await supabase.from("points_history").select("user_id,reason,created_at").gt("change", 0).gte("created_at", d7).order("created_at", { ascending: false }).limit(200);
+          const LABEL = (r: string): { text: string; icon: string } | null => {
+            if (r.includes("challenge_complete")) return { text: "ライフチャレンジを達成", icon: "🎯" };
+            if (r.includes("es_first_completed")) return { text: "ESを完成させた", icon: "📝" };
+            if (r.includes("thinking_ippon_received")) return { text: "IPPONを獲得", icon: "🎤" };
+            if (r.startsWith("course_受講")) return { text: "講座を受講", icon: "🎓" };
+            if (r.startsWith("course_講師")) return { text: "講師デビュー", icon: "🧑‍🏫" };
+            if (r.includes("recruit_入社")) return { text: "新メンバーを入社に導いた", icon: "🎉" };
+            if (r.includes("recruit_採用面談")) return { text: "採用面談を実施", icon: "🤝" };
+            if (r.includes("avatar_")) return { text: "新しいアバターを手に入れた", icon: "👗" };
+            if (r.includes("kpi")) return { text: "月間KPIを達成", icon: "🏆" };
+            return null;
+          };
+          const picked = (phRows || []).map((p: any) => ({ uid: p.user_id, created_at: p.created_at, ...LABEL(p.reason || "") })).filter((p: any) => p.text);
+          const uniq: any[] = [];
+          const seen = new Set<string>();
+          for (const p of picked) {
+            const key = p.uid + p.text;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            uniq.push(p);
+            if (uniq.length >= 6) break;
+          }
+          if (uniq.length > 0) {
+            const ids = [...new Set(uniq.map((u: any) => u.uid))];
+            const { data: profs } = await supabase.from("profiles").select("id,name").in("id", ids);
+            const nameMap: Record<string, string> = {};
+            (profs || []).forEach((pr: any) => { nameMap[pr.id] = pr.name; });
+            setAchievements(uniq.map((u: any) => {
+              const diff = Math.floor((Date.now() - new Date(u.created_at).getTime()) / 3600000);
+              const when = diff < 1 ? "さっき" : diff < 24 ? `${diff}時間前` : `${Math.floor(diff / 24)}日前`;
+              return { name: nameMap[u.uid] || "メンバー", text: u.text, icon: u.icon, when };
+            }));
+          }
+        } catch (e) { console.error("achievements", e); }
       }
       const todayYmd = getTodayJST();
       const range = todayRangeUTC();
@@ -406,6 +445,24 @@ export default function HomePage() {
               </div>
             )}
             <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} onHouseClick={() => { playPoko(); router.push("/mypage"); }} />
+
+            {/* みんなの最近の達成 */}
+            {achievements.length > 0 && (
+              <div style={{ marginTop: 16, padding: "16px 18px", borderRadius: 16, background: isDark ? "rgba(52,211,153,0.07)" : "rgba(255,255,255,0.75)", border: `1px solid ${isDark ? "rgba(52,211,153,0.22)" : "rgba(255,138,61,0.25)"}` }}>
+                <div style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: 2, color: isDark ? "#6ee7b7" : "#e07a2f", marginBottom: 12 }}>🎉 みんなの最近の達成</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                  {achievements.map((a, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", borderRadius: 10, background: isDark ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.6)" }}>
+                      <span style={{ fontSize: 17 }}>{a.icon}</span>
+                      <span style={{ flex: 1, fontSize: 12.5, color: isDark ? "#e5e7eb" : "#5c4a3a", lineHeight: 1.4 }}>
+                        <strong style={{ fontWeight: 800 }}>{a.name}</strong>さんが{a.text}
+                      </span>
+                      <span style={{ fontSize: 10.5, color: isDark ? "#8b8fa8" : "#a08060", flexShrink: 0 }}>{a.when}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* MY GOALS */}
             <div style={{ marginTop: 16, padding: "16px 18px", borderRadius: 16, background: isDark ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.75)", border: `1px solid ${isDark ? "rgba(139,92,246,0.25)" : "rgba(255,138,61,0.3)"}` }}>
