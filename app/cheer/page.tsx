@@ -151,7 +151,7 @@ export default function CheerPage() {
   const CARD: React.CSSProperties = { background: "rgba(18,16,40,.8)", border: "1px solid rgba(139,92,246,.25)", borderRadius: 16 };
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(165deg, #0c0a1e, #08081a 60%)", color: "#e5e7eb", padding: "0 0 80px" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(165deg, #0c0a1e, #08081a 60%)", backgroundAttachment: "fixed", color: "#e5e7eb", padding: "0 0 80px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 20px", position: "sticky", top: 0, background: "rgba(8,8,26,.92)", backdropFilter: "blur(10px)", borderBottom: "1px solid rgba(139,92,246,.2)", zIndex: 10 }}>
         <span style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>📣 応援掲示板 <span style={{ fontSize: 11.5, fontWeight: 700, color: "#a78bfa", marginLeft: 6 }}>みんなの活躍を応援しよう！</span></span>
         <button onClick={() => router.push("/mypage")} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,.15)", background: "rgba(255,255,255,.05)", color: "#9ca3af", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>← 戻る</button>
