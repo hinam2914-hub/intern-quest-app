@@ -854,7 +854,7 @@ export default function MyPage() {
         setTotalEarned(newTotalEarned);
         // みんなの最近の達成
         try {
-          const d7 = new Date(Date.now() - 3 * 86400000).toISOString();
+          const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
           const { data: phRows } = await supabase.from("points_history").select("user_id,reason,created_at").gt("change", 0).gte("created_at", d7).order("created_at", { ascending: false }).limit(200);
           const LABEL = (r: string): { text: string; icon: string } | null => {
             if (r.includes("challenge_complete")) return { text: "ライフチャレンジを達成", icon: "🎯" };

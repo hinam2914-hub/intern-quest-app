@@ -37,7 +37,7 @@ export default function CheerPage() {
       setUserId(user.id);
       const { data: me } = await supabase.from("profiles").select("name").eq("id", user.id).maybeSingle();
       setMyName((me as any)?.name || "");
-      const d3 = new Date(Date.now() - 3 * 86400000).toISOString();
+      const d3 = new Date(Date.now() - 7 * 86400000).toISOString();
       const { data: ph } = await supabase.from("points_history").select("user_id,reason,created_at").gt("change", 0).gte("created_at", d3).order("created_at", { ascending: false }).limit(400);
       const picked = (ph || []).map((p: any) => ({ uid: p.user_id, created_at: p.created_at, ...LABEL(p.reason || "") })).filter((p: any) => p.text);
       const uniq: any[] = [];
@@ -124,7 +124,7 @@ export default function CheerPage() {
         <button onClick={() => router.push("/mypage")} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,.08)", background: "#fff", color: "#6f7a86", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>← 戻る</button>
       </div>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "8px 16px" }}>
-        <div style={{ fontSize: 12.5, color: "#6f7a86", marginBottom: 16 }}>ここ3日間のみんなの達成です。スタンプやコメントで応援しよう！</div>
+        <div style={{ fontSize: 12.5, color: "#6f7a86", marginBottom: 16 }}>ここ1週間のみんなの達成です。スタンプやコメントで応援しよう！</div>
         {items.length === 0 ? (
           <div style={{ textAlign: "center", color: "#9ca3af", fontSize: 13, padding: 40 }}>まだ達成がありません</div>
         ) : (
