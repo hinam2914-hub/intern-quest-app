@@ -45,6 +45,7 @@ const CATEGORIES: Category[] = [
     },
     {
         key: "commu", icon: "💬", title: "コミュニケーション", desc: "サンキュー・報告・共有", items: [
+            { icon: "📣", label: "応援掲示板", path: "/cheer" },
             { icon: "🙏", label: "サンキュー", path: "/thanks" },
             { icon: "🐟", label: "メダカBOX", path: "/medaka" },
             { icon: "📄", label: "MTGレポート", path: "/mtg-report" },
