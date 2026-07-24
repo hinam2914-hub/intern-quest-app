@@ -855,7 +855,7 @@ export default function MyPage() {
         // みんなの最近の達成
         try {
           const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
-          const { data: phRows } = await supabase.from("points_history").select("user_id,reason,created_at").gt("change", 0).gte("created_at", d7).order("created_at", { ascending: false }).limit(200);
+          const { data: phRows } = await supabase.from("points_history").select("user_id,reason,created_at").gt("change", 0).gte("created_at", d7).order("created_at", { ascending: false }).limit(1000);
           const LABEL = (r: string): { text: string; icon: string } | null => {
             if (r.includes("challenge_complete")) return { text: "ライフチャレンジを達成", icon: "🎯" };
             if (r.includes("es_first_completed")) return { text: "ESを完成させた", icon: "📝" };
@@ -866,6 +866,20 @@ export default function MyPage() {
             if (r.includes("recruit_採用面談")) return { text: "採用面談を実施", icon: "🤝" };
             if (r.includes("avatar_")) return { text: "新しいアバターを手に入れた", icon: "👗" };
             if (r.includes("kpi")) return { text: "月間KPIを達成", icon: "🏆" };
+            if (r === "thanks_received") return { text: "サンキューをもらった", icon: "💌" };
+            if (r === "content_complete") return { text: "学習コンテンツを完了", icon: "📚" };
+            if (r.startsWith("thinking_post")) return { text: "思考クエストに挑戦", icon: "🧠" };
+            if (r === "recruit_dm") return { text: "採用DMを送った", icon: "📨" };
+            if (r.includes("入社")) return { text: "新メンバーを入社に導いた", icon: "🎉" };
+            if (r.includes("メンツナ")) return { text: "メンツナを実施", icon: "🤝" };
+            if (r.includes("面談")) return { text: "面談を実施", icon: "🗣️" };
+            if (r.includes("タスク報告書")) return { text: "タスクをやり切った", icon: "✅" };
+            if (r.startsWith("written_evaluation")) return { text: "記述テストで評価された", icon: "✍️" };
+            if (r === "anniversary_gacha") return { text: "記念ガチャを回した", icon: "🎰" };
+            if (r.includes("badge")) return { text: "バッジを獲得", icon: "🎖️" };
+            if (r.includes("mtg")) return { text: "MTG報告を提出", icon: "📄" };
+            if (r.includes("medaka")) return { text: "メダカBOXに投稿", icon: "🐟" };
+            if (r.includes("sales")) return { text: "売上を記録", icon: "💰" };
             return null;
           };
           const picked = (phRows || []).map((p: any) => ({ uid: p.user_id, created_at: p.created_at, ...LABEL(p.reason || "") })).filter((p: any) => p.text);
@@ -876,7 +890,7 @@ export default function MyPage() {
             if (seenA.has(key)) continue;
             seenA.add(key);
             uniqA.push(p);
-            if (uniqA.length >= 6) break;
+            if (uniqA.length >= 12) break;
           }
           if (uniqA.length > 0) {
             const ids = [...new Set(uniqA.map((u: any) => u.uid))];
