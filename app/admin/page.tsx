@@ -167,6 +167,26 @@ export default function AdminPage() {
     const [hwCategory, setHwCategory] = useState("");
     const [hwDeadline, setHwDeadline] = useState("");
     const [hwMessage, setHwMessage] = useState("");
+    const [hwTargets, setHwTargets] = useState<Set<string>>(new Set());
+    const [hwSearch, setHwSearch] = useState("");
+    const [hwPickerOpen, setHwPickerOpen] = useState(false);
+    const [hwProfiles, setHwProfiles] = useState<{ id: string; name: string }[]>([]);
+    useEffect(() => {
+        (async () => {
+            const { data } = await supabase.from("profiles").select("id, name").eq("is_active", true).order("name");
+            setHwProfiles((data || []) as { id: string; name: string }[]);
+        })();
+    }, []);
+    useEffect(() => {
+        (async () => {
+            if (!hwCategory) { setHwTargets(new Set()); return; }
+            const { data: cr } = await supabase.from("contents").select("id").eq("category", hwCategory).eq("is_active", true);
+            const ids = (cr || []).map((r: any) => r.id);
+            if (ids.length === 0) { setHwTargets(new Set()); return; }
+            const { data: tr } = await supabase.from("content_targets").select("user_id").in("content_id", ids);
+            setHwTargets(new Set((tr || []).map((r: any) => r.user_id)));
+        })();
+    }, [hwCategory]);
     const [contentSaving, setContentSaving] = useState(false);
     const [contentMessage, setContentMessage] = useState("");
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
@@ -1746,17 +1766,62 @@ export default function AdminPage() {
                                 <button onClick={async () => {
                                     if (!hwCategory) { setHwMessage("カテゴリを選択してください"); return; }
                                     await supabase.from("contents").update({ is_required: true, deadline: hwDeadline || null }).eq("category", hwCategory).eq("is_active", true);
+                                    const { data: catRows } = await supabase.from("contents").select("id").eq("category", hwCategory).eq("is_active", true);
+                                    const catIds = (catRows || []).map((r: any) => r.id);
+                                    if (catIds.length > 0) {
+                                        await supabase.from("content_targets").delete().in("content_id", catIds);
+                                        const picks = Array.from(hwTargets);
+                                        if (picks.length > 0) {
+                                            const ins: any[] = [];
+                                            catIds.forEach((cid: string) => picks.forEach((uid) => ins.push({ content_id: cid, user_id: uid })));
+                                            await supabase.from("content_targets").insert(ins);
+                                        }
+                                    }
                                     const { data: rows } = await supabase.from("contents").select("*").order("created_at", { ascending: false });
                                     setContentsList(rows || []);
-                                    setHwMessage(`✅ 「${hwCategory}」を宿題に設定しました`);
+                                    setHwMessage(`✅ 「${hwCategory}」を宿題に設定しました（対象：${hwTargets.size === 0 ? "全員" : hwTargets.size + "名"}）`);
                                 }} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #ef4444, #f97316)", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>宿題にする</button>
                                 <button onClick={async () => {
                                     if (!hwCategory) { setHwMessage("カテゴリを選択してください"); return; }
                                     await supabase.from("contents").update({ is_required: false, deadline: null }).eq("category", hwCategory);
+                                    const { data: delRows } = await supabase.from("contents").select("id").eq("category", hwCategory);
+                                    const delIds = (delRows || []).map((r: any) => r.id);
+                                    if (delIds.length > 0) await supabase.from("content_targets").delete().in("content_id", delIds);
+                                    setHwTargets(new Set());
                                     const { data: rows } = await supabase.from("contents").select("*").order("created_at", { ascending: false });
                                     setContentsList(rows || []);
                                     setHwMessage(`「${hwCategory}」の宿題を解除しました`);
                                 }} style={{ padding: "10px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#9ca3af", fontWeight: 800, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>解除</button>
+                            </div>
+                            <div style={{ marginTop: 14 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                                    <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>対象メンバー</span>
+                                    <span style={{ fontSize: 11.5, fontWeight: 800, padding: "3px 10px", borderRadius: 6, color: hwTargets.size === 0 ? "#9ca3af" : "#34d399", background: hwTargets.size === 0 ? "rgba(255,255,255,0.05)" : "rgba(52,211,153,0.12)", border: `1px solid ${hwTargets.size === 0 ? "rgba(255,255,255,0.12)" : "rgba(52,211,153,0.35)"}` }}>
+                                        {hwTargets.size === 0 ? "👥 全員に出す" : `🎯 ${hwTargets.size}名に出す`}
+                                    </span>
+                                    <button onClick={() => setHwPickerOpen(!hwPickerOpen)} style={{ padding: "5px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11.5, fontWeight: 700, color: "#a5b4fc", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.35)" }}>
+                                        {hwPickerOpen ? "▲ 閉じる" : "✏️ 対象を選ぶ"}
+                                    </button>
+                                    {hwTargets.size > 0 && (
+                                        <button onClick={() => setHwTargets(new Set())} style={{ padding: "5px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11.5, fontWeight: 700, color: "#9ca3af", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)" }}>全員に戻す</button>
+                                    )}
+                                </div>
+                                {hwPickerOpen && (
+                                    <div style={{ marginTop: 10, padding: 12, borderRadius: 10, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                        <input value={hwSearch} onChange={(e) => setHwSearch(e.target.value)} placeholder="名前で検索" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10, maxHeight: 220, overflowY: "auto" }}>
+                                            {hwProfiles.filter((p) => !hwSearch.trim() || p.name.includes(hwSearch.trim())).map((p) => {
+                                                const on = hwTargets.has(p.id);
+                                                return (
+                                                    <button key={p.id} onClick={() => { const n = new Set(hwTargets); if (on) n.delete(p.id); else n.add(p.id); setHwTargets(n); }} style={{ padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700, color: on ? "#fff" : "#9ca3af", background: on ? "#6366f1" : "rgba(255,255,255,0.05)", border: `1px solid ${on ? "#6366f1" : "rgba(255,255,255,0.12)"}` }}>
+                                                        {on ? "✓ " : ""}{p.name}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <div style={{ fontSize: 10.5, color: "#6b7280", marginTop: 10 }}>誰も選ばなければ全員が対象になります</div>
+                                    </div>
+                                )}
                             </div>
                             {hwMessage && <div style={{ marginTop: 10, fontSize: 12.5, fontWeight: 700, color: "#fca5a5" }}>{hwMessage}</div>}
                         </div>
