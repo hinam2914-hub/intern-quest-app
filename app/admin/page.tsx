@@ -2125,6 +2125,7 @@ export default function AdminPage() {
                             pendingMtg: pendingMtgCount,
                             pendingTest: pendingTestCount,
                             pendingRecruit: pendingRecruitCount,
+                            pendingLearn: contentCompletions.filter((c: any) => c.status === "pending").length,
                             pendingChallenge: challengeSubmissions.filter((c: any) => c.status === "pending").length,
                             pendingRequest: pendingCount,
                             pendingQuestion: pendingQuestionCount,

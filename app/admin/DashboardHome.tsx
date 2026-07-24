@@ -17,7 +17,7 @@ const DEPT_ORDER = ["IP", "CB", "SP", "HR", "MK"];
 type Stats = {
   notSubmitted: number; submitRate: number; pendingCount: number; userCount: number;
   pendingTask?: number; pendingKkc?: number; pendingAdvice?: number; pendingMedaka?: number;
-  pendingMentor?: number; pendingMtg?: number; pendingTest?: number; pendingRecruit?: number; pendingChallenge?: number; pendingRequest?: number; pendingQuestion?: number; pendingMgrTest?: number;
+  pendingMentor?: number; pendingMtg?: number; pendingTest?: number; pendingRecruit?: number; pendingChallenge?: number; pendingRequest?: number; pendingQuestion?: number; pendingMgrTest?: number; pendingLearn?: number;
 };
 type Card = { key: string; icon: string; title: string; desc?: string; badgeKey?: keyof Stats };
 
@@ -56,7 +56,7 @@ const OTHERS: { label: string; cards: Card[] }[] = [
     { key: "badge", icon: "🎖️", title: "バッジ" },
   ]},
   { label: "コンテンツ・データ", cards: [
-    { key: "contents", icon: "🎓", title: "学習コンテンツ" },
+    { key: "contents", icon: "🎓", title: "学習コンテンツ", badgeKey: "pendingLearn" },
     { key: "resources", icon: "🗂️", title: "資料管理" },
     { key: "wiki", icon: "📖", title: "用語集" },
     { key: "shop", icon: "🛍️", title: "ショップ" },
@@ -173,7 +173,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
     })();
   }, []);
 
-  const pendingTotal = (stats.pendingTask || 0) + (stats.pendingKkc || 0) + (stats.pendingAdvice || 0) + (stats.pendingMedaka || 0) + (stats.pendingMentor || 0) + (stats.pendingMtg || 0) + (stats.pendingTest || 0) + (stats.pendingRecruit || 0) + (stats.pendingChallenge || 0) + (stats.pendingRequest || 0);
+  const pendingTotal = (stats.pendingTask || 0) + (stats.pendingKkc || 0) + (stats.pendingAdvice || 0) + (stats.pendingMedaka || 0) + (stats.pendingMentor || 0) + (stats.pendingMtg || 0) + (stats.pendingTest || 0) + (stats.pendingRecruit || 0) + (stats.pendingChallenge || 0) + (stats.pendingRequest || 0) + (stats.pendingLearn || 0);
   const rateColor = (v: number) => (v >= 70 ? "#34d399" : v >= 40 ? "#fbbf24" : "#f87171");
 
   const alerts = [
