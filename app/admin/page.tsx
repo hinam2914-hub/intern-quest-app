@@ -25,6 +25,7 @@ import QuestionsAdminTab from "./QuestionsAdminTab";
 import ScheduleManagementTab from "./ScheduleManagementTab";
 import DashboardHome from "./DashboardHome";
 import RecruitTab from "./RecruitTab";
+import RequiredCheckTab from "./RequiredCheckTab";
 import CourseManageTab from "./CourseManageTab";
 import AvatarShopTab from "./AvatarShopTab";
 
@@ -2106,6 +2107,7 @@ export default function AdminPage() {
                 )}
 
                 {activeTab === "recruit" && <RecruitTab />}
+                {activeTab === "required_check" && <RequiredCheckTab />}
                 {activeTab === "course" && <CourseManageTab />}
                 {activeTab === "avatar_shop" && <AvatarShopTab />}
                 {activeTab === "home" && (
