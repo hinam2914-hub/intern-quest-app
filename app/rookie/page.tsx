@@ -75,8 +75,10 @@ export default function RookiePage() {
 
     const handleSubmit = async () => {
         if (!selected) return;
-        // 写真は「必要な項目」のみ必須。それ以外はチェックのみでOK
-        if (selected.requires_photo && !image) { setMessage("この項目は写真が必要です"); return; }
+        // エピソード（コメント）は全項目必須
+        if (!comment.trim()) { setMessage("エピソードを入力してください（いつ・どんな場面で）"); return; }
+        // 写真対象の項目は写真も必須
+        if (selected.requires_photo && !image) { setMessage("この項目は写真の提出が必要です"); return; }
         setSending(true);
         setMessage("");
 
@@ -95,7 +97,7 @@ export default function RookiePage() {
         await supabase.from("rookie_submissions").insert({
             user_id: userId,
             challenge_id: selected.id,
-            comment: comment.trim() || null,
+            comment: comment.trim(),
             image_url: imageUrl,
             status: "approved",
         });
@@ -211,8 +213,8 @@ export default function RookiePage() {
                                 {item.description && <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5, marginBottom: 8 }}>{item.description}</div>}
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
                                     {item.requires_photo
-                                        ? <span style={{ fontSize: 11, color: color, fontWeight: 600 }}>📸 写真あり</span>
-                                        : <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>チェックのみ</span>}
+                                        ? <span style={{ fontSize: 11, color: color, fontWeight: 600 }}>📸 写真＋エピソード</span>
+                                        : <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600 }}>📝 エピソード</span>}
                                     {isDone && (
                                         <button onClick={(e) => { e.stopPropagation(); handleUndo(item.id); }}
                                             style={{ fontSize: 11, color: "#6b7280", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
@@ -231,13 +233,13 @@ export default function RookiePage() {
                         <div style={{ background: "#0f0f1a", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 20, padding: 40, width: "100%", maxWidth: 500 }}>
                             <h2 style={{ fontSize: 20, fontWeight: 800, color: "#f9fafb", margin: "0 0 8px", textAlign: "center" }}>{selected.title}</h2>
                             <p style={{ fontSize: 13, color: "#9ca3af", textAlign: "center", margin: "0 0 24px" }}>
-                                {selected.requires_photo ? "写真を添えて達成を記録しよう" : "できたらチェックしよう！"}
+                                {selected.requires_photo ? "写真とエピソードで達成を記録しよう" : "エピソードを書いて達成を記録しよう"}
                             </p>
 
                             {/* コメント（任意） */}
                             <div style={{ marginBottom: 16 }}>
-                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>ひとことメモ（任意）</div>
-                                <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="意識したこと・気づきなど" style={{ width: "100%", height: 80, padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>エピソード（必須）<span style={{ color: "#f87171", marginLeft: 4 }}>*</span></div>
+                                <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="いつ・どんな場面でやったか具体的に（例：8/1の朝、グループに挨拶を投稿した）" style={{ width: "100%", height: 80, padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
                             </div>
 
                             {/* 写真（requires_photoのときだけ表示） */}
