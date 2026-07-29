@@ -112,7 +112,6 @@ export default function TestsPage() {
     const [profile, setProfile] = useState<any>(null);
     const [attemptsByKey, setAttemptsByKey] = useState<Record<string, Attempt[]>>({});
     const [selectedTest, setSelectedTest] = useState<TestItem | null>(null);
-    const [activeCat, setActiveCat] = useState<string>("mind");
 
     useEffect(() => {
         const load = async () => {
@@ -180,36 +179,20 @@ export default function TestsPage() {
                     <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>あなたの価値観・適性・覚悟を測るテスト</p>
                 </div>
 
-                {/* ===== カテゴリ切り替えタブ ===== */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-                  {CATEGORY_ORDER.map(cat => {
-                    const count = TESTS.filter(t => t.category === cat.key).length;
-                    const active = activeCat === cat.key;
-                    return (
-                      <button key={cat.key} onClick={() => setActiveCat(cat.key)}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12,
-                          background: active ? `${cat.color}22` : "rgba(255,255,255,0.03)",
-                          border: `1px solid ${active ? cat.color : "rgba(255,255,255,0.08)"}`,
-                          color: active ? "#f9fafb" : "#9ca3af", cursor: "pointer", transition: "all 0.15s",
-                          fontWeight: active ? 800 : 600, fontSize: 14,
-                        }}>
-                        <span style={{ fontSize: 18 }}>{cat.icon}</span>
-                        <span>{cat.label}</span>
-                        <span style={{ fontSize: 11, color: active ? cat.color : "#6b7280", fontWeight: 700 }}>{count}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {CATEGORY_ORDER.filter(cat => cat.key === activeCat).map(cat => {
+                {CATEGORY_ORDER.map(cat => {
                   const catTests = TESTS
                     .filter(t => t.category === cat.key)
                     .sort((a, b) => (TEST_ORDER[a.key] ?? 99) - (TEST_ORDER[b.key] ?? 99));
+                  if (catTests.length === 0) return null;
                   return (
                     <div key={cat.key} style={{ marginBottom: 36 }}>
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 13, color: "#9ca3af" }}>{cat.desc}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${cat.color}30` }}>
+                        <span style={{ fontSize: 22 }}>{cat.icon}</span>
+                        <div>
+                          <div style={{ fontSize: 17, fontWeight: 800, color: "#f9fafb" }}>{cat.label}</div>
+                          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{cat.desc}</div>
+                        </div>
+                        <span style={{ marginLeft: "auto", fontSize: 12, color: cat.color, fontWeight: 700 }}>{catTests.length}件</span>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {catTests.map(t => {
