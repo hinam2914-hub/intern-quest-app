@@ -2196,7 +2196,30 @@ const handleRoutineCheck = async (routineId: string) => {
                     );
                 })()}
 
+                {(() => {
+                    const eom = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+                    const daysLeft = Math.max(0, Math.ceil((eom.getTime() - Date.now()) / 86400000));
+                    const rewards = [{ l: "DM", p: "+3pt" }, { l: "メンツナ", p: "+15pt" }, { l: "面談", p: "+30pt" }, { l: "入社", p: "+100pt" }];
+                    return (
+                        <div style={{ marginBottom: 12, borderRadius: 20, padding: "18px 20px 16px", position: "relative", overflow: "hidden", background: "linear-gradient(120deg, #f97316, #ec4899)", boxShadow: "0 8px 24px rgba(236,72,153,.32)", border: "1.5px solid rgba(255,255,255,.35)" }}>
+                            <div style={{ position: "absolute", top: 10, right: -8, fontSize: 92, opacity: .22, transform: "rotate(-10deg)", pointerEvents: "none" }}>🎁</div>
+                            <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 3, color: "rgba(255,255,255,.9)", marginBottom: 5 }}>🎪 LIMITED EVENT</div>
+                            <div style={{ fontSize: 19, fontWeight: 900, color: "#fff", textShadow: "0 1px 5px rgba(0,0,0,.2)" }}>🔥 HRキャンペーン開催中！</div>
 
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7, marginTop: 12, position: "relative" }}>
+                                {rewards.map(r => (
+                                    <div key={r.l} style={{ padding: "8px 4px", borderRadius: 10, textAlign: "center", background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.3)" }}>
+                                        <div style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>{r.l}</div>
+                                        <div style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>{r.p}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={() => router.push("/recruit")} style={{ width: "100%", marginTop: 13, padding: "13px", borderRadius: 999, border: "none", cursor: "pointer", background: "#fff", color: "#ec4899", fontSize: 15, fontWeight: 900, boxShadow: "0 3px 10px rgba(0,0,0,.12)" }}>
+                                イベントに参加する →
+                            </button>
+                        </div>
+                    );
+                })()}
                 {announcements.filter(a => !closedAnnouncements.includes(a.id)).map((a) => (
                     <div key={a.id} style={{ marginBottom: 12, padding: "14px 20px", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
