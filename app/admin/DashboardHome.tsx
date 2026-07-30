@@ -12,7 +12,7 @@ const TH = {
 };
 const JOB_TO_DEPT: Record<string, string> = { "訪販": "IP", "テレアポ": "CB", "クローザー": "CB", "人事": "HR" };
 const JOB_LABEL: Record<string, string> = { "訪販": "訪販(IP)", "テレアポ": "テレアポ(CB)", "クローザー": "クローザー(CB)", "人事": "人事(HR)", "管理マネージャー": "管理マネージャー" };
-const DEPT_ORDER = ["IP", "CB", "SP", "HR", "MK"];
+const DEPT_ORDER = ["IP", "CB", "SP", "HR", "MK", "EXAM"];
 
 type Stats = {
   notSubmitted: number; submitRate: number; pendingCount: number; userCount: number;
