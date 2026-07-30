@@ -97,7 +97,7 @@ export default function RookieTab() {
                     const pct = totalItems ? Math.round((st.total / totalItems) * 100) : 0;
                     const isOpen = openUser === u.id;
                     return (
-                        <div key={u.id} style={{ borderRadius: 12, background: "rgba(18,18,36,.7)", border: `1px solid ${st.gateOk ? "rgba(52,211,153,.4)" : "rgba(255,255,255,.08)"}`, overflow: "hidden" }}>
+                        <div key={u.id} style={{ borderRadius: 12, background: "rgba(18,18,36,.7)", border: `1px solid ${st.gateOk ? "rgba(52,211,153,.4)" : "rgba(255,255,255,.08)"}`, overflow: "hidden", flexShrink: 0 }}>
                             <div onClick={() => setOpenUser(isOpen ? null : u.id)} style={{ cursor: "pointer", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
