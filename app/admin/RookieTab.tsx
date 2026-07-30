@@ -76,7 +76,7 @@ export default function RookieTab() {
             </div>
 
             {/* 部署フィルタ */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", position: "sticky", top: 0, zIndex: 2, background: "#0a0a0f", paddingBottom: 8 }}>
                 {["all", ...departments.map(d => d.code), "none"].map(code => (
                     <button key={code} onClick={() => setDeptFilter(code)}
                         style={{
@@ -90,8 +90,8 @@ export default function RookieTab() {
                 ))}
             </div>
 
-            {/* メンバー一覧 */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* メンバー一覧（ここだけスクロール） */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "calc(100vh - 240px)", overflowY: "auto", paddingRight: 6 }}>
                 {sorted.map(u => {
                     const st = userStats(u.id);
                     const pct = totalItems ? Math.round((st.total / totalItems) * 100) : 0;
