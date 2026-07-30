@@ -98,6 +98,8 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
         const resignedIds = new Set((resigned || []).map((r: any) => r.user_id));
 
         const active = (profs || []).filter((p: any) => !isExcluded(p.id) && !resignedIds.has(p.id));
+        // 運用指標（提出率・アクティブ率・部署別）は経営側も含めた全在籍者を母数にする（離職者のみ除外）
+        const activeAll = (profs || []).filter((p: any) => !resignedIds.has(p.id));
         const deptCode: Record<string, string> = {};
         (depts || []).forEach((d: any) => { deptCode[d.id] = d.code; });
         const submitted7 = new Set((subs7 || []).map((s: any) => s.user_id));
@@ -132,9 +134,12 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
           byDeptTmp[code].total++;
           if (submitted7.has(u.id)) byDeptTmp[code].sub++;
         }
-        const submitRate7 = active.length ? Math.round((submitted7.size / active.length) * 100) : 0;
+        const activeAllIds = new Set(activeAll.map((u: any) => u.id));
+        const submitted7All = new Set([...submitted7].filter((id: any) => activeAllIds.has(id)));
+        const submitRate7 = activeAll.length ? Math.round((submitted7All.size / activeAll.length) * 100) : 0;
         const active7 = new Set((ph7 || []).map((p: any) => p.user_id));
-        const activeRate = active.length ? Math.round((active7.size / active.length) * 100) : 0;
+        const active7All = new Set([...active7].filter((id: any) => activeAllIds.has(id)));
+        const activeRate = activeAll.length ? Math.round((active7All.size / activeAll.length) * 100) : 0;
         const riskRatio = active.length ? risk / active.length : 0;
         const health = Math.max(0, Math.min(100, Math.round(submitRate7 * 0.4 + activeRate * 0.4 + (1 - riskRatio) * 100 * 0.2)));
         setSibyl({ health, hard, risk, mismatch, leader, total: active.length });
@@ -157,7 +162,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
         setWeek({ submitRate: submitRate7, activeRate, thanks: thanksC, challenges: chalC, hires: hiresC, mentsuna: mentsunaC });
 
         const byDept: Record<string, { total: number; sub: number }> = {};
-        for (const u of active) {
+        for (const u of activeAll) {
           const code = deptCode[u.department_id];
           if (!code) continue;
           byDept[code] = byDept[code] || { total: 0, sub: 0 };
