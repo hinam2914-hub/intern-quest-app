@@ -11,7 +11,9 @@ const BLOCK_ORDER = ["①コミュ基礎", "②研修・同行", "③初稼働�
 // 営業研修に進む条件：①②が完了していること
 const GATE_BLOCKS = ["①コミュ基礎", "②研修・同行"];
 
-export default function RookieTab({ users, departments }: { users: User[]; departments: Dept[] }) {
+export default function RookieTab() {
+    const [users, setUsers] = useState<User[]>([]);
+    const [departments, setDepartments] = useState<Dept[]>([]);
     const [items, setItems] = useState<RookieItem[]>([]);
     const [subs, setSubs] = useState<Sub[]>([]);
     const [loading, setLoading] = useState(true);
@@ -20,6 +22,10 @@ export default function RookieTab({ users, departments }: { users: User[]; depar
 
     useEffect(() => {
         const load = async () => {
+            const { data: userRows } = await supabase.from("profiles").select("id, name, department_id").eq("is_active", true).order("name");
+            const { data: deptRows } = await supabase.from("departments").select("id, code");
+            setUsers((userRows || []) as User[]);
+            setDepartments((deptRows || []) as Dept[]);
             const { data: itemRows } = await supabase.from("rookie_challenges").select("id, block, title, order_no").eq("is_active", true).order("order_no");
             const { data: subRows } = await supabase.from("rookie_submissions").select("*").eq("status", "approved");
             setItems((itemRows || []) as RookieItem[]);
