@@ -71,7 +71,7 @@ const OTHERS: { label: string; cards: Card[] }[] = [
   ]},
 ];
 
-export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onNavigate: (key: string) => void }) {
+export default function DashboardHome({ stats, onNavigate, notSubmittedList = [] }: { stats: Stats; onNavigate: (key: string) => void; notSubmittedList?: { name: string; department_id: string | null }[] }) {
   const [sibyl, setSibyl] = useState({ health: 0, hard: 0, risk: 0, mismatch: 0, leader: 0, total: 0 });
   const [proposals, setProposals] = useState<{ icon: string; text: string; uid?: string }[]>([]);
   const [week, setWeek] = useState({ submitRate: 0, activeRate: 0, thanks: 0, challenges: 0, hires: 0, mentsuna: 0 });
@@ -179,6 +179,7 @@ export default function DashboardHome({ stats, onNavigate }: { stats: Stats; onN
     })();
   }, []);
 
+  const [showNotSubmitted, setShowNotSubmitted] = useState(false);
   const pendingTotal = (stats.pendingTask || 0) + (stats.pendingKkc || 0) + (stats.pendingAdvice || 0) + (stats.pendingMedaka || 0) + (stats.pendingMentor || 0) + (stats.pendingMtg || 0) + (stats.pendingTest || 0) + (stats.pendingRecruit || 0) + (stats.pendingChallenge || 0) + (stats.pendingRequest || 0) + (stats.pendingLearn || 0);
   const rateColor = (v: number) => (v >= 70 ? "#34d399" : v >= 40 ? "#fbbf24" : "#f87171");
 

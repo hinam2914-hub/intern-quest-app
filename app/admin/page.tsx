@@ -2199,6 +2199,7 @@ export default function AdminPage() {
                             pendingMgrTest: pendingMgrTestCount,
                         }}
                         onNavigate={(key) => { if (key === "sibyl_guide") { router.push("/admin/sibyl/guide"); return; } setActiveTab(key as any); }}
+                        notSubmittedList={notSubmittedUsers.map((u) => ({ name: u.name || "名前未設定", department_id: (u as any).department_id || null }))}
                     />
                 )}
                 {activeTab === "dashboard" && (
