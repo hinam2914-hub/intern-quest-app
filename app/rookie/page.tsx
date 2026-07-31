@@ -62,7 +62,7 @@ export default function RookiePage() {
 
     const getSubmission = (itemId: string) => {
         const subs = submissions.filter(s => s.challenge_id === itemId);
-        return subs.find(s => s.status === "approved") || subs[0];
+        return subs.find(s => s.status === "approved") || subs.find(s => s.status === "pending") || subs[0];
     };
 
     const handleFileSelect = (file: File) => {
@@ -99,13 +99,13 @@ export default function RookiePage() {
             challenge_id: selected.id,
             comment: comment.trim(),
             image_url: imageUrl,
-            status: "approved",
+            status: "pending",
         });
 
         const { data: subRows } = await supabase.from("rookie_submissions").select("*").eq("user_id", userId);
         setSubmissions((subRows || []) as Submission[]);
 
-        setMessage("✅ 達成しました！");
+        setMessage("📨 提出しました！承認をお待ちください");
         setComment("");
         setImage(null);
         setPreview(null);
@@ -196,20 +196,25 @@ export default function RookiePage() {
                     {blockItems.map(item => {
                         const submission = getSubmission(item.id);
                         const isDone = submission?.status === "approved";
+                        const isPending = submission?.status === "pending";
+                        const locked = isDone || isPending;
                         const color = activeBlockDef.color;
                         return (
                             <div key={item.id}
-                                onClick={() => !isDone && setSelected(item)}
+                                onClick={() => !locked && setSelected(item)}
                                 style={{
-                                    background: isDone ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.03)",
-                                    border: `1px solid ${isDone ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.08)"}`,
-                                    borderRadius: 16, padding: 18, cursor: isDone ? "default" : "pointer",
+                                    background: isDone ? "rgba(52,211,153,0.08)" : isPending ? "rgba(251,191,36,0.08)" : "rgba(255,255,255,0.03)",
+                                    border: `1px solid ${isDone ? "rgba(52,211,153,0.3)" : isPending ? "rgba(251,191,36,0.3)" : "rgba(255,255,255,0.08)"}`,
+                                    borderRadius: 16, padding: 18, cursor: locked ? "default" : "pointer",
                                     position: "relative", transition: "all 0.2s",
                                 }}>
                                 {isDone && (
                                     <div style={{ position: "absolute", top: 12, right: 12, width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #34d399, #10b981)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>✓</div>
                                 )}
-                                <div style={{ fontSize: 14, fontWeight: 700, color: isDone ? "#34d399" : "#f9fafb", marginBottom: 6, paddingRight: 28 }}>{item.title}</div>
+                                {isPending && (
+                                    <div style={{ position: "absolute", top: 12, right: 12, fontSize: 11, fontWeight: 800, color: "#fbbf24", background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", borderRadius: 8, padding: "3px 8px" }}>⏳審査中</div>
+                                )}
+                                <div style={{ fontSize: 14, fontWeight: 700, color: isDone ? "#34d399" : isPending ? "#fbbf24" : "#f9fafb", marginBottom: 6, paddingRight: 28 }}>{item.title}</div>
                                 {item.description && <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5, marginBottom: 8 }}>{item.description}</div>}
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
                                     {item.requires_photo

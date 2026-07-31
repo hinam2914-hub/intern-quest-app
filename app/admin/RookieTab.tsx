@@ -27,13 +27,22 @@ export default function RookieTab() {
             setUsers((userRows || []) as User[]);
             setDepartments((deptRows || []) as Dept[]);
             const { data: itemRows } = await supabase.from("rookie_challenges").select("id, block, title, order_no").eq("is_active", true).order("order_no");
-            const { data: subRows } = await supabase.from("rookie_submissions").select("*").eq("status", "approved");
+            const { data: subRows } = await supabase.from("rookie_submissions").select("*").in("status", ["approved", "pending"]);
             setItems((itemRows || []) as RookieItem[]);
             setSubs((subRows || []) as Sub[]);
             setLoading(false);
         };
         load();
     }, []);
+
+    const approve = async (subId: string) => {
+        await supabase.from("rookie_submissions").update({ status: "approved" }).eq("id", subId);
+        setSubs(prev => prev.map(x => x.id === subId ? { ...x, status: "approved" } : x));
+    };
+    const reject = async (subId: string) => {
+        await supabase.from("rookie_submissions").delete().eq("id", subId);
+        setSubs(prev => prev.filter(x => x.id !== subId));
+    };
 
     const deptCode: Record<string, string> = {};
     departments.forEach(d => { deptCode[d.id] = d.code; });
@@ -45,7 +54,8 @@ export default function RookieTab() {
 
     // ユーザーごとの達成数・ブロック別達成数
     const userStats = (uid: string) => {
-        const mySubs = subs.filter(s => s.user_id === uid);
+        const mySubs = subs.filter(s => s.user_id === uid && s.status === "approved");
+        const pendingCount = subs.filter(s => s.user_id === uid && s.status === "pending").length;
         const doneIds = new Set(mySubs.map(s => s.challenge_id));
         const byBlock: Record<string, number> = {};
         items.forEach(i => {
@@ -54,7 +64,7 @@ export default function RookieTab() {
         const total = mySubs.length;
         // ゲート判定：①②が全項目完了しているか
         const gateOk = GATE_BLOCKS.every(b => (byBlock[b] || 0) >= (blockTotals[b] || 0) && (blockTotals[b] || 0) > 0);
-        return { total, byBlock, gateOk, doneIds };
+        return { total, byBlock, gateOk, doneIds, pendingCount };
     };
 
     const filtered = users.filter(u => {
@@ -104,6 +114,7 @@ export default function RookieTab() {
                                         <span style={{ fontSize: 14, fontWeight: 800, color: "#f9fafb" }}>{u.name}</span>
                                         <span style={{ fontSize: 10, fontWeight: 700, color: "#8b8fa8" }}>{deptCode[u.department_id || ""] || "未配属"}</span>
                                         {st.gateOk && <span style={{ fontSize: 10, fontWeight: 900, color: "#34d399", background: "rgba(52,211,153,.15)", border: "1px solid rgba(52,211,153,.4)", borderRadius: 6, padding: "2px 8px" }}>✅ 営業研修OK</span>}
+                                        {st.pendingCount > 0 && <span style={{ fontSize: 10, fontWeight: 900, color: "#fbbf24", background: "rgba(251,191,36,.15)", border: "1px solid rgba(251,191,36,.4)", borderRadius: 6, padding: "2px 8px" }}>⏳ 承認待ち{st.pendingCount}件</span>}
                                     </div>
                                     {/* ブロック別ミニ進捗 */}
                                     <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
@@ -138,14 +149,21 @@ export default function RookieTab() {
                                                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                                                     {blockItems.map(it => {
                                                         const sub = subs.find(s => s.user_id === u.id && s.challenge_id === it.id);
-                                                        const done = !!sub;
+                                                        const isApproved = sub?.status === "approved";
+                                                        const isPending = sub?.status === "pending";
                                                         return (
-                                                            <div key={it.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, padding: "4px 0" }}>
-                                                                <span style={{ color: done ? "#34d399" : "#4b5563", flexShrink: 0 }}>{done ? "✓" : "○"}</span>
+                                                            <div key={it.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, padding: "6px 0", borderTop: isPending ? "1px solid rgba(251,191,36,.15)" : "none" }}>
+                                                                <span style={{ color: isApproved ? "#34d399" : isPending ? "#fbbf24" : "#4b5563", flexShrink: 0 }}>{isApproved ? "✓" : isPending ? "⏳" : "○"}</span>
                                                                 <div style={{ flex: 1 }}>
-                                                                    <span style={{ color: done ? "#e5e7eb" : "#6b7280" }}>{it.title}</span>
+                                                                    <span style={{ color: isApproved ? "#e5e7eb" : isPending ? "#fbbf24" : "#6b7280" }}>{it.title}</span>
                                                                     {sub?.comment && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>💬 {sub.comment}</div>}
                                                                     {sub?.image_url && <a href={sub.image_url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#60a5fa", textDecoration: "underline", marginTop: 2, display: "inline-block" }}>📸 写真を見る</a>}
+                                                                    {isPending && (
+                                                                        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                                                                            <button onClick={() => approve(sub!.id)} style={{ fontSize: 11, fontWeight: 800, color: "#0a0a0f", background: "#34d399", border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>✓ 承認</button>
+                                                                            <button onClick={() => reject(sub!.id)} style={{ fontSize: 11, fontWeight: 800, color: "#f87171", background: "rgba(248,113,113,.1)", border: "1px solid rgba(248,113,113,.4)", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>✗ 却下</button>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         );
