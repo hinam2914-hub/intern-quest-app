@@ -362,6 +362,7 @@ export default function AdminPage() {
     const [pendingTestCount, setPendingTestCount] = useState(0);
     const [pendingTaskReportCount, setPendingTaskReportCount] = useState(0);
     const [pendingRecruitCount, setPendingRecruitCount] = useState(0);
+    const [pendingAvatarCount, setPendingAvatarCount] = useState(0);
     const [pendingQuestionCount, setPendingQuestionCount] = useState(0);
     const [pendingMgrTestCount, setPendingMgrTestCount] = useState(0);
     // ===== 人材アーカイブ =====
@@ -723,6 +724,8 @@ export default function AdminPage() {
             setPendingTaskReportCount(taskRepC || 0);
             const { count: recruitC } = await supabase.from("recruit_progress").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingRecruitCount(recruitC || 0);
+            const { count: avatarC } = await supabase.from("avatar_purchases").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingAvatarCount(avatarC || 0);
             const { count: questionC } = await supabase.from("questions_box").select("*", { count: "exact", head: true }).is("answered_at", null);
             setPendingQuestionCount(questionC || 0);
             // 人材アーカイブ取得
@@ -2192,6 +2195,7 @@ export default function AdminPage() {
                             pendingMtg: pendingMtgCount,
                             pendingTest: pendingTestCount,
                             pendingRecruit: pendingRecruitCount,
+                            pendingAvatar: pendingAvatarCount,
                             pendingLearn: contentCompletions.filter((c: any) => c.status === "pending").length,
                             pendingChallenge: challengeSubmissions.filter((c: any) => c.status === "pending").length,
                             pendingRequest: pendingCount,
