@@ -212,7 +212,7 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
         <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, color: "#8b8fa8", marginBottom: 12 }}>⚡ TODAY'S ALERT</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14 }}>
           {alerts.map((a) => (
-            <div key={a.label} className="dh-card" onClick={() => onNavigate(a.key)} style={{ cursor: "pointer", padding: "18px 20px", borderRadius: 16, background: "linear-gradient(160deg, rgba(30,30,52,.92), rgba(14,14,28,.92))", border: `1px solid ${a.color}33`, borderLeft: `3px solid ${a.color}` }}>
+            <div key={a.label} className="dh-card" onClick={() => { if (a.label === "未提出日報") { setShowNotSubmitted(true); } else { onNavigate(a.key); } }} style={{ cursor: "pointer", padding: "18px 20px", borderRadius: 16, background: "linear-gradient(160deg, rgba(30,30,52,.92), rgba(14,14,28,.92))", border: `1px solid ${a.color}33`, borderLeft: `3px solid ${a.color}` }}>
               <div style={{ fontSize: 12, color: "#8b8fa8", fontWeight: 700, marginBottom: 8 }}>{a.icon} {a.label}</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
                 <span style={{ fontSize: 40, fontWeight: 900, color: a.color, lineHeight: 1 }}>{a.value}</span>
@@ -222,6 +222,34 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
           ))}
         </div>
       </div>
+
+      {/* 未提出者モーダル */}
+      {showNotSubmitted && (
+        <div onClick={() => setShowNotSubmitted(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#12121f", border: "1px solid rgba(248,113,113,.35)", borderRadius: 18, padding: 28, width: "100%", maxWidth: 440, maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <div style={{ fontSize: 17, fontWeight: 900, color: "#f9fafb" }}>📋 日報 未提出者</div>
+              <button onClick={() => setShowNotSubmitted(false)} style={{ background: "none", border: "none", color: "#8b8fa8", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ fontSize: 12, color: "#8b8fa8", marginBottom: 14 }}>直近3日間（今日・昨日・一昨日）に1回も提出がない {notSubmittedList.length}名</div>
+            <div style={{ overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+              {notSubmittedList.length === 0 ? (
+                <div style={{ fontSize: 13, color: "#34d399", padding: "12px 0" }}>✅ 全員提出済みです</div>
+              ) : notSubmittedList.map((u, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,.03)" }}>
+                  <span style={{ fontSize: 11, color: "#6b7280", width: 20 }}>{i + 1}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", flex: 1 }}>{u.name}</span>
+                </div>
+              ))}
+            </div>
+            {notSubmittedList.length > 0 && (
+              <button onClick={() => { navigator.clipboard.writeText(notSubmittedList.map((u) => `・${u.name}`).join("\n")); }} style={{ marginTop: 14, padding: "10px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#8b5cf6,#6366f1)", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
+                📋 名前リストをコピー
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ② SIBYL SYSTEM */}
       <div style={{ position: "relative", overflow: "hidden", borderRadius: 24, padding: "28px 30px", background: "linear-gradient(135deg, rgba(49,32,95,.95), rgba(16,14,42,.98) 55%, rgba(8,8,22,1))", border: "1.5px solid rgba(139,92,246,.4)", boxShadow: "0 0 50px rgba(99,102,241,.15)" }}>
