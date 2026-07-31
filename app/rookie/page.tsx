@@ -214,7 +214,7 @@ export default function RookiePage() {
                                 {isPending && (
                                     <div style={{ position: "absolute", top: 12, right: 12, fontSize: 11, fontWeight: 800, color: "#fbbf24", background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", borderRadius: 8, padding: "3px 8px" }}>⏳審査中</div>
                                 )}
-                                <div style={{ fontSize: 14, fontWeight: 700, color: isDone ? "#34d399" : isPending ? "#fbbf24" : "#f9fafb", marginBottom: 6, paddingRight: 28 }}>{item.title}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: isDone ? "#34d399" : isPending ? "#fbbf24" : "#f9fafb", marginBottom: 6, paddingRight: isPending ? 72 : 28 }}>{item.title}</div>
                                 {item.description && <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5, marginBottom: 8 }}>{item.description}</div>}
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
                                     {item.requires_photo
