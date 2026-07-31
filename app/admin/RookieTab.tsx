@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 type User = { id: string; name: string; department_id: string | null };
 type Dept = { id: string; code: string };
 type RookieItem = { id: string; block: string; title: string; order_no: number };
-type Sub = { id: string; user_id: string; challenge_id: string; comment: string | null; image_url: string | null; created_at: string };
+type Sub = { id: string; user_id: string; challenge_id: string; comment: string | null; image_url: string | null; status: string; created_at: string };
 
 const BLOCK_ORDER = ["①コミュ基礎", "②研修・同行", "③初稼働まで", "④人間力"];
 // 営業研修に進む条件：①②が完了していること
