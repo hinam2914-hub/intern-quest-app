@@ -16,9 +16,9 @@ type Report = {
 
 const TYPE_LABEL: Record<string, string> = { self: "🗣️ セルフ", phone: "📞 電話", mock: "🎭 模擬", test: "🏆 テスト" };
 const TESTS = [
-    { key: "test1_passed", atKey: "test1_passed_at", label: "① 3分" },
-    { key: "test2_passed", atKey: "test2_passed_at", label: "② 5分" },
-    { key: "test3_passed", atKey: "test3_passed_at", label: "③ 対面" },
+    { key: "test1_passed", atKey: "test1_passed_at", label: "① 3分", fullLabel: "テスト① 3分スクリプト" },
+    { key: "test2_passed", atKey: "test2_passed_at", label: "② 5分", fullLabel: "テスト② 5分スクリプト" },
+    { key: "test3_passed", atKey: "test3_passed_at", label: "③ 対面", fullLabel: "テスト③ バインダー対面" },
 ];
 
 export default function ScriptPracticeTab() {
@@ -75,7 +75,7 @@ export default function ScriptPracticeTab() {
         <div style={{ padding: "8px 0" }}>
             <div style={{ marginBottom: 16 }}>
                 <h2 style={{ fontSize: 20, fontWeight: 900, color: "#f9fafb", margin: "0 0 4px" }}>🎤 スクリプト練習 進捗</h2>
-                <p style={{ fontSize: 13, color: "#8b8fa8", margin: 0 }}>練習中 {practicing.length}名 ｜ テスト①②③の合格チェックはここで行います</p>
+                <p style={{ fontSize: 13, color: "#8b8fa8", margin: 0 }}>練習中 {practicing.length}名 ｜ 新人が対面テストに合格したら、右のボタンで承認してください</p>
             </div>
 
             {alertCount > 0 && (
@@ -108,20 +108,23 @@ export default function ScriptPracticeTab() {
                                         {lastReport && ` ｜ 最終: ${new Date(lastReport.created_at).toLocaleDateString("ja-JP")}`}
                                     </div>
                                 </div>
-                                {/* テスト合格チェック */}
-                                <div style={{ display: "flex", gap: 6 }}>
+                                {/* テスト合格の承認ボタン */}
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 220 }}>
                                     {TESTS.map(t => {
                                         const passed = (pr as any)[t.key] as boolean;
-                                        return (
+                                        return passed ? (
+                                            <div key={t.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 8, background: "rgba(52,211,153,.12)", border: "1px solid #34d399" }}>
+                                                <span style={{ fontSize: 13 }}>✅</span>
+                                                <span style={{ fontSize: 12, fontWeight: 800, color: "#34d399", flex: 1 }}>{t.fullLabel} 合格済み</span>
+                                                <button onClick={(e) => { e.stopPropagation(); if (confirm(`${t.fullLabel}の合格を取り消しますか？`)) toggleTest(pr, t.key, t.atKey, passed); }}
+                                                    style={{ fontSize: 10.5, color: "#8b8fa8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>取り消す</button>
+                                            </div>
+                                        ) : (
                                             <button key={t.key}
-                                                onClick={(e) => { e.stopPropagation(); toggleTest(pr, t.key, t.atKey, passed); }}
-                                                style={{
-                                                    padding: "6px 12px", borderRadius: 8, fontSize: 11.5, fontWeight: 800, cursor: "pointer",
-                                                    background: passed ? "rgba(52,211,153,.18)" : "rgba(255,255,255,.04)",
-                                                    border: `1px solid ${passed ? "#34d399" : "rgba(255,255,255,.12)"}`,
-                                                    color: passed ? "#34d399" : "#9ca3af",
-                                                }}>
-                                                {passed ? "✅" : "○"} {t.label}
+                                                onClick={(e) => { e.stopPropagation(); if (confirm(`${t.fullLabel}に合格したとして承認しますか？`)) toggleTest(pr, t.key, t.atKey, passed); }}
+                                                style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, cursor: "pointer", background: "rgba(139,92,246,.12)", border: "1px solid rgba(139,92,246,.4)", width: "100%", textAlign: "left" }}>
+                                                <span style={{ fontSize: 12, fontWeight: 700, color: "#c7c9dd", flex: 1 }}>{t.fullLabel}</span>
+                                                <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#8b5cf6,#6366f1)", borderRadius: 6, padding: "3px 10px" }}>合格を承認</span>
                                             </button>
                                         );
                                     })}
