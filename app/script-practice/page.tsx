@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 type Progress = {
     id: string; user_id: string;
     test1_passed: boolean; test2_passed: boolean; test3_passed: boolean;
+    test1_passed_at?: string | null; test2_passed_at?: string | null; test3_passed_at?: string | null;
 };
 type Report = {
     id: string; user_id: string; day_no: number; practice_type: string;
@@ -16,15 +17,28 @@ type PeerProgress = {
     lastReportAt: string | null; lastSnippet: string | null;
 };
 
-// 7日間の練習プラン
-const DAY_PLAN = [
-    { day: 1, type: "self", icon: "🗣️", label: "セルフ練習", desc: "スクリプトを音読して体に入れる" },
-    { day: 2, type: "self", icon: "🗣️", label: "セルフ練習", desc: "つまらず最後まで言えるように" },
-    { day: 3, type: "self", icon: "🗣️", label: "セルフ練習", desc: "感情を乗せて自然に話す" },
-    { day: 4, type: "phone", icon: "📞", label: "電話練習", desc: "先輩と電話でロープレ" },
-    { day: 5, type: "self", icon: "🗣️", label: "セルフ練習", desc: "電話練習の指摘を反映" },
-    { day: 6, type: "mock", icon: "🎭", label: "模擬練習", desc: "本番想定の通しロープレ" },
-    { day: 7, type: "test", icon: "🏆", label: "テスト挑戦", desc: "テスト①②③に挑戦！" },
+// テスト①②のスケジュール（7日間）
+const PLAN_7 = [
+    { day: 1, type: "self", icon: "🗣️", label: "セルフ練習", desc: "セルフ練習＋報告（同期グループ）" },
+    { day: 2, type: "self", icon: "🗣️", label: "セルフ練習", desc: "セルフ練習＋報告（同期グループ）" },
+    { day: 3, type: "self", icon: "🗣️", label: "セルフ練習", desc: "セルフ練習＋報告（同期グループ）" },
+    { day: 4, type: "phone", icon: "📞", label: "電話練習", desc: "電話で進捗確認・FB内容もとに個人練習＋報告（メンター）" },
+    { day: 5, type: "self", icon: "🗣️", label: "セルフ練習", desc: "FB内容もとにセルフ練習・タイマー使用＋報告" },
+    { day: 6, type: "mock", icon: "⏱️", label: "模擬テスト", desc: "確実に受かるため模擬テスト（タイマー使用）" },
+    { day: 7, type: "test", icon: "🏆", label: "テスト", desc: "ビデオ通話でテスト本番！" },
+];
+// テスト③のスケジュール（10日間）
+const PLAN_10 = [
+    { day: 1, type: "self", icon: "🗣️", label: "セルフ練習", desc: "セルフ練習＋報告（同期グループ）" },
+    { day: 2, type: "self", icon: "🗣️", label: "セルフ練習", desc: "セルフ練習＋報告（同期グループ）" },
+    { day: 3, type: "self", icon: "🗣️", label: "セルフ練習", desc: "セルフ練習＋報告（同期グループ）" },
+    { day: 4, type: "phone", icon: "📞", label: "電話練習", desc: "電話で3回目テスト内容の暗記進捗確認（メンター）" },
+    { day: 5, type: "self", icon: "🗣️", label: "セルフ練習", desc: "FB内容もとにセルフ練習＋報告・タイマー・バインダー練習" },
+    { day: 6, type: "self", icon: "🗣️", label: "セルフ練習", desc: "FB内容もとにセルフ練習＋報告・タイマー・バインダー練習" },
+    { day: 7, type: "self", icon: "🗣️", label: "セルフ練習", desc: "FB内容もとにセルフ練習＋報告・タイマー・バインダー練習" },
+    { day: 8, type: "self", icon: "🗣️", label: "セルフ練習", desc: "FB内容もとにセルフ練習＋報告・タイマー・バインダー練習" },
+    { day: 9, type: "mock", icon: "🎭", label: "模擬テスト", desc: "バインダー使用してビデオ通話で模擬テスト" },
+    { day: 10, type: "test", icon: "🏆", label: "テスト", desc: "対面でテスト本番！" },
 ];
 const TYPE_LABEL: Record<string, string> = { self: "🗣️ セルフ練習", phone: "📞 電話練習", mock: "🎭 模擬練習", test: "🏆 テスト" };
 
@@ -80,8 +94,23 @@ export default function ScriptPracticePage() {
         load();
     }, [router]);
 
-    const currentDay = Math.min(reports.length + 1, 99);
-    const todayPlan = DAY_PLAN[Math.min(currentDay - 1, DAY_PLAN.length - 1)];
+    // 今どのテスト段階か（0=テスト①へ, 1=テスト②へ, 2=テスト③へ, 3=完了）
+    const passedCount = [progress?.test1_passed, progress?.test2_passed, progress?.test3_passed].filter(Boolean).length;
+    const allDone = passedCount >= 3;
+    // 現テストの番号（1,2,3）とスケジュール
+    const currentTestNo = Math.min(passedCount + 1, 3);
+    const currentPlan = currentTestNo === 3 ? PLAN_10 : PLAN_7;
+    // 直近の合格日時（この段階の練習の起点）
+    const lastPassedAt = passedCount === 0 ? null
+        : passedCount === 1 ? progress?.test1_passed_at
+        : passedCount === 2 ? progress?.test2_passed_at
+        : progress?.test3_passed_at;
+    // 起点以降の報告数でDayを数える
+    const reportsThisStage = lastPassedAt
+        ? reports.filter(r => new Date(r.created_at) > new Date(lastPassedAt!))
+        : reports;
+    const currentDay = Math.min(reportsThisStage.length + 1, currentPlan.length);
+    const todayPlan = currentPlan[Math.min(currentDay - 1, currentPlan.length - 1)];
 
     const submit = async () => {
         if (!content.trim()) { setMsg("練習内容を入力してください"); return; }
@@ -117,7 +146,6 @@ export default function ScriptPracticePage() {
         { key: "test2", no: "②", name: "5分スクリプト", passed: progress?.test2_passed },
         { key: "test3", no: "③", name: "バインダー対面", passed: progress?.test3_passed },
     ];
-    const passedCount = tests.filter(t => t.passed).length;
 
     return (
         <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 20px 64px", fontFamily: "'Inter', sans-serif" }}>
@@ -152,8 +180,19 @@ export default function ScriptPracticePage() {
 
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
                             <div>
-                                <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>Day {currentDay}　{todayPlan.label}</div>
-                                <div style={{ fontSize: 13.5, color: "#c2b8ee", marginTop: 8 }}>{todayPlan.desc}</div>
+                                {allDone ? (
+                                    <>
+                                        <div style={{ fontSize: 12, fontWeight: 800, color: "#ffd76a", marginBottom: 4 }}>🎉 全テストクリア</div>
+                                        <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>おめでとう！</div>
+                                        <div style={{ fontSize: 13.5, color: "#c2b8ee", marginTop: 8 }}>テスト①②③すべて合格しました。営業デビューへ進もう！</div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div style={{ fontSize: 12, fontWeight: 800, color: "#ffd76a", marginBottom: 4 }}>テスト{currentTestNo}に向けて（全{currentPlan.length}日）</div>
+                                        <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>Day {currentDay}　{todayPlan.label}</div>
+                                        <div style={{ fontSize: 13.5, color: "#c2b8ee", marginTop: 8 }}>{todayPlan.desc}</div>
+                                    </>
+                                )}
                             </div>
                             {/* 吹き出し＋キャラ */}
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -162,7 +201,9 @@ export default function ScriptPracticePage() {
                             </div>
                         </div>
 
-                        {!showForm ? (
+                        {allDone ? (
+                            <div style={{ marginTop: 18, padding: "14px", borderRadius: 14, background: "rgba(52,211,153,.12)", border: "1px solid rgba(52,211,153,.4)", textAlign: "center", color: "#34d399", fontWeight: 800, fontSize: 14 }}>🏆 全テスト合格済み</div>
+                        ) : !showForm ? (
                             <button onClick={() => { setPType(todayPlan.type === "test" ? "mock" : todayPlan.type); setShowForm(true); }}
                                 style={{ width: "100%", marginTop: 18, padding: "15px", borderRadius: 999, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #a78bfa, #7c5cf0)", color: "#fff", fontSize: 15, fontWeight: 900, boxShadow: "0 6px 22px rgba(139,92,246,.5)", letterSpacing: 1 }}>
                                 ✍️ 今日の練習を報告する
@@ -228,7 +269,7 @@ export default function ScriptPracticePage() {
                                 <span style={{ fontSize: 18 }}>🚩</span>
                                 <span style={{ fontSize: 9, fontWeight: 900, color: "#ffd76a", letterSpacing: 1, marginTop: 2 }}>START</span>
                             </div>
-                            {DAY_PLAN.map((d, i) => {
+                            {currentPlan.map((d, i) => {
                                 const done = currentDay > d.day;
                                 const isToday = currentDay === d.day;
                                 return (
