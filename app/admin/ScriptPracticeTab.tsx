@@ -66,15 +66,14 @@ export default function ScriptPracticeTab() {
         const update: any = { [testKey]: !current, [atKey]: !current ? new Date().toISOString() : null };
         const { error } = await supabase.from("script_test_progress").update(update).eq("id", pr.id);
         if (error) { alert("更新に失敗しました: " + error.message); return; }
-        // 合格にしたとき（false→true）だけ掲示板に自動投稿
+        // 合格にしたとき（false→true）だけ、ポイント付与＋活躍フィードに記録
         if (!current) {
             const t = TESTS.find(x => x.key === testKey);
-            const u = users.find(x => x.id === pr.user_id);
-            if (t && u) {
-                await supabase.from("cheer_posts").insert({
+            if (t) {
+                await supabase.from("points_history").insert({
                     user_id: pr.user_id,
-                    body: `🎉 ${u.name}さんが「${t.fullLabel}」に合格しました！おめでとう！`,
-                    category: "達成",
+                    change: 30,
+                    reason: `${t.fullLabel} 合格`,
                 });
             }
         }
