@@ -11,6 +11,10 @@ type Report = {
     id: string; user_id: string; day_no: number; practice_type: string;
     content: string; minutes: number | null; created_at: string;
 };
+type PeerProgress = {
+    user_id: string; name: string; reportCount: number; passedCount: number;
+    lastReportAt: string | null; lastSnippet: string | null;
+};
 
 // 7日間の練習プラン
 const DAY_PLAN = [
@@ -29,6 +33,7 @@ export default function ScriptPracticePage() {
     const [userId, setUserId] = useState("");
     const [progress, setProgress] = useState<Progress | null>(null);
     const [reports, setReports] = useState<Report[]>([]);
+    const [peers, setPeers] = useState<PeerProgress[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [pType, setPType] = useState("self");
@@ -42,12 +47,34 @@ export default function ScriptPracticePage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-            const [{ data: prog }, { data: reps }] = await Promise.all([
+            const [{ data: prog }, { data: reps }, { data: allProg }, { data: allReps }, { data: profs }] = await Promise.all([
                 supabase.from("script_test_progress").select("*").eq("user_id", user.id).maybeSingle(),
                 supabase.from("practice_reports").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+                supabase.from("script_test_progress").select("*"),
+                supabase.from("practice_reports").select("user_id, content, created_at").order("created_at", { ascending: false }),
+                supabase.from("profiles").select("id, name"),
             ]);
             setProgress(prog as Progress | null);
             setReports((reps || []) as Report[]);
+            // 同期の進捗（自分以外で練習を始めている人）
+            const nameMap: Record<string, string> = {};
+            (profs || []).forEach((p: any) => { nameMap[p.id] = p.name; });
+            const peerList: PeerProgress[] = (allProg || [])
+                .filter((pp: any) => pp.user_id !== user.id)
+                .map((pp: any) => {
+                    const myReps = (allReps || []).filter((r: any) => r.user_id === pp.user_id);
+                    const last = myReps[0];
+                    return {
+                        user_id: pp.user_id,
+                        name: nameMap[pp.user_id] || "名前未設定",
+                        reportCount: myReps.length,
+                        passedCount: [pp.test1_passed, pp.test2_passed, pp.test3_passed].filter(Boolean).length,
+                        lastReportAt: last ? last.created_at : null,
+                        lastSnippet: last ? String(last.content).slice(0, 40) : null,
+                    };
+                })
+                .sort((a: PeerProgress, b: PeerProgress) => b.reportCount - a.reportCount);
+            setPeers(peerList);
             setLoading(false);
         };
         load();
@@ -254,26 +281,55 @@ export default function ScriptPracticePage() {
                     </div>
                 </div>
 
-                {/* ===== 練習の記録 ===== */}
-                <div>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: "#8b8fa8", letterSpacing: 2, marginBottom: 12 }}>📜 練習の記録（{reports.length}件）</div>
-                    {reports.length === 0 ? (
-                        <div style={{ fontSize: 13, color: "#6b7280", padding: "16px 0", textAlign: "center" }}>まだ記録がありません。今日から始めよう！</div>
-                    ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {reports.map(r => (
-                                <div key={r.id} style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 12, padding: "12px 16px" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                                        <span style={{ fontSize: 11, fontWeight: 900, color: "#a78bfa" }}>Day {r.day_no}</span>
-                                        <span style={{ fontSize: 12, fontWeight: 700, color: "#c7c9dd" }}>{TYPE_LABEL[r.practice_type] || r.practice_type}</span>
-                                        {r.minutes && <span style={{ fontSize: 11, color: "#6b7280" }}>⏱ {r.minutes}分</span>}
-                                        <span style={{ marginLeft: "auto", fontSize: 11, color: "#6b7280" }}>{new Date(r.created_at).toLocaleDateString("ja-JP")}</span>
+                {/* ===== 練習の記録（左:自分 / 右:同期） ===== */}
+                <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
+
+                    {/* 左：自分の記録 */}
+                    <div style={{ flex: "1 1 400px", minWidth: 300 }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: "#8b8fa8", letterSpacing: 2, marginBottom: 12 }}>📜 自分の記録（{reports.length}件）</div>
+                        {reports.length === 0 ? (
+                            <div style={{ fontSize: 13, color: "#6b7280", padding: "16px 0", textAlign: "center" }}>まだ記録がありません。今日から始めよう！</div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {reports.map(r => (
+                                    <div key={r.id} style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 12, padding: "12px 16px" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                                            <span style={{ fontSize: 11, fontWeight: 900, color: "#a78bfa" }}>Day {r.day_no}</span>
+                                            <span style={{ fontSize: 12, fontWeight: 700, color: "#c7c9dd" }}>{TYPE_LABEL[r.practice_type] || r.practice_type}</span>
+                                            {r.minutes && <span style={{ fontSize: 11, color: "#6b7280" }}>⏱ {r.minutes}分</span>}
+                                            <span style={{ marginLeft: "auto", fontSize: 11, color: "#6b7280" }}>{new Date(r.created_at).toLocaleDateString("ja-JP")}</span>
+                                        </div>
+                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{r.content}</div>
                                     </div>
-                                    <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{r.content}</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 右：同期の進捗 */}
+                    <div style={{ flex: "1 1 260px", minWidth: 260 }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: "#8b8fa8", letterSpacing: 2, marginBottom: 12 }}>👥 同期の進捗（{peers.length}人）</div>
+                        {peers.length === 0 ? (
+                            <div style={{ fontSize: 12.5, color: "#6b7280", padding: "12px 0" }}>まだ練習中の仲間がいません</div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {peers.map(p => (
+                                    <div key={p.user_id} style={{ background: "rgba(139,92,246,.05)", border: "1px solid rgba(139,92,246,.2)", borderRadius: 12, padding: "11px 14px" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                            <span style={{ fontSize: 13, fontWeight: 800, color: "#e4dcff" }}>{p.name}</span>
+                                            {p.passedCount === 3 && <span style={{ fontSize: 12 }}>👑</span>}
+                                        </div>
+                                        <div style={{ display: "flex", gap: 10, fontSize: 11, color: "#a79fd0", flexWrap: "wrap" }}>
+                                            <span>📅 練習{p.reportCount}日目</span>
+                                            <span>🏆 テスト{p.passedCount}/3</span>
+                                            {p.lastReportAt && <span>最終 {new Date(p.lastReportAt).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })}</span>}
+                                        </div>
+                                        {p.lastSnippet && <div style={{ fontSize: 11, color: "#8b8fa8", marginTop: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>💬 {p.lastSnippet}</div>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* メニューへ戻る */}
