@@ -62,10 +62,10 @@ export default function ScriptPracticeTab() {
 
     const alertCount = practicing.filter(x => x.daysSinceLast >= 3 && x.passedCount < 3).length;
 
-    const toggleTest = async (pr: Progress, testKey: string, current: boolean) => {
-        const update: any = { [testKey]: !current };
-        update[testKey.replace("_passed", "_passed_at")] = !current ? new Date().toISOString() : null;
-        await supabase.from("script_test_progress").update(update).eq("id", pr.id);
+    const toggleTest = async (pr: Progress, testKey: string, atKey: string, current: boolean) => {
+        const update: any = { [testKey]: !current, [atKey]: !current ? new Date().toISOString() : null };
+        const { error } = await supabase.from("script_test_progress").update(update).eq("id", pr.id);
+        if (error) { alert("更新に失敗しました: " + error.message); return; }
         await load();
     };
 
@@ -114,7 +114,7 @@ export default function ScriptPracticeTab() {
                                         const passed = (pr as any)[t.key] as boolean;
                                         return (
                                             <button key={t.key}
-                                                onClick={(e) => { e.stopPropagation(); toggleTest(pr, t.key, passed); }}
+                                                onClick={(e) => { e.stopPropagation(); toggleTest(pr, t.key, t.atKey, passed); }}
                                                 style={{
                                                     padding: "6px 12px", borderRadius: 8, fontSize: 11.5, fontWeight: 800, cursor: "pointer",
                                                     background: passed ? "rgba(52,211,153,.18)" : "rgba(255,255,255,.04)",
