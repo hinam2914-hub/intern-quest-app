@@ -70,11 +70,12 @@ export default function ScriptPracticeTab() {
         if (!current) {
             const t = TESTS.find(x => x.key === testKey);
             if (t) {
-                await supabase.from("points_history").insert({
+                const { error: phErr } = await supabase.from("points_history").insert({
                     user_id: pr.user_id,
                     change: 30,
                     reason: `${t.fullLabel} 合格`,
                 });
+                if (phErr) alert("ポイント付与に失敗: " + phErr.message);
             }
         }
         await load();
