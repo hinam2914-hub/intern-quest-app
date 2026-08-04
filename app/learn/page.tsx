@@ -115,7 +115,10 @@ export default function LearnPage() {
         const comp = getCompletion(c.id);
         return !comp || comp.status !== "approved";
     };
-    const todayQuest = contents.find(c => c.is_required && notDone(c)) || contents.find(notDone) || contents[0];
+    // 今日のおすすめ：未完了コンテンツから日替わりで選ぶ（必修に偏らないよう全体から）
+    const undoneAll = contents.filter(notDone);
+    const dayIndex = new Date().getDate();
+    const todayQuest = undoneAll.length > 0 ? undoneAll[dayIndex % undoneAll.length] : contents[0];
 
     // 必修Quest一覧
     const requiredQuests = contents.filter(c => c.is_required);
