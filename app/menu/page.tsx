@@ -20,7 +20,6 @@ const CATEGORIES: Category[] = [
             { icon: "☀️", label: "今日の予定", path: "/today-schedule" },
             { icon: "📋", label: "日報", path: "/report" },
             { icon: "✅", label: "マイタスク", path: "/my-tasks" },
-            { icon: "🔁", label: "マイルーティン", path: "/routine" },
         ]
     },
     {
@@ -31,8 +30,7 @@ const CATEGORIES: Category[] = [
             { icon: "🎯", label: "ライフチャレンジ", path: "/challenge" },
             { icon: "🏅", label: "一人前チャレンジ", path: "/rookie" },
             { icon: "🎓", label: "講座スタンプ", path: "/courses" },
-            { icon: "📖", label: "Wiki・用語集", path: "/wiki" },
-            { icon: "📂", label: "資料", path: "/resources" },
+            { icon: "📖", label: "Wiki・資料", path: "/wiki" },
         ]
     },
     {
@@ -41,7 +39,6 @@ const CATEGORIES: Category[] = [
             { icon: "👑", label: "昨日の〇〇王", path: "/kings" },
             { icon: "🎖️", label: "バッジ", path: "/badges" },
             { icon: "📜", label: "ポイント履歴", path: "/history" },
-            { icon: "🎰", label: "ガチャ", path: "/gacha" },
         ]
     },
     {
@@ -50,8 +47,8 @@ const CATEGORIES: Category[] = [
             { icon: "🙏", label: "サンキュー", path: "/thanks" },
             { icon: "🐟", label: "メダカBOX", path: "/medaka" },
             { icon: "📄", label: "MTGレポート", path: "/mtg-report" },
+            { icon: "📚", label: "MTG議事録まとめ", path: "/mtg-box" },
             { icon: "🧑‍🏫", label: "メンター報告", path: "/mentor-report" },
-            { icon: "🗳️", label: "アンケート", path: "/surveys" },
         ]
     },
     {
