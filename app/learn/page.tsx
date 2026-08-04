@@ -30,10 +30,10 @@ const CATEGORY_DEF: { name: string; img?: string; emoji?: string; color: string 
     { name: "就活・キャリア", img: "/categories/cat_career.png", color: "#38bdf8" },
     { name: "社会人基礎", img: "/categories/cat_kiso.png", color: "#34d399" },
     { name: "AI・スキル", img: "/categories/cat_ai.png", color: "#818cf8" },
-    { name: "マインドセット", emoji: "🔥", color: "#fb923c" },
-    { name: "思考法・仕事術", emoji: "💡", color: "#fcd34d" },
-    { name: "営業・ビジネス", emoji: "💼", color: "#a78bfa" },
-    { name: "教養・その他", emoji: "📚", color: "#94a3b8" },
+    { name: "マインドセット", img: "/categories/cat_mind.png", color: "#fb923c" },
+    { name: "思考法・仕事術", img: "/categories/cat_shikou.png", color: "#fcd34d" },
+    { name: "営業・ビジネス", img: "/categories/cat_eigyo.png", color: "#a78bfa" },
+    { name: "教養・その他", img: "/categories/cat_kyoyo.png", color: "#94a3b8" },
 ];
 
 function getYouTubeId(url: string): string | null {
