@@ -14,6 +14,7 @@ const LABEL = (r: string): { text: string; icon: string; cat: string } | null =>
   if (r.includes("recruit_入社")) return { text: "新メンバーを入社に導いた！", icon: "🎉", cat: "sales" };
   if (r.includes("recruit_採用面談")) return { text: "採用面談を実施！", icon: "🤝", cat: "sales" };
   if (r.includes("content_complete")) return { text: "学習コンテンツを完了！", icon: "📚", cat: "learn" };
+  if (r.includes("スクリプト") && r.includes("合格")) return { text: "スクリプトテストに合格！", icon: "🎤", cat: "learn" };
   if (r.includes("kpi")) return { text: "月間KPIを達成！", icon: "🏆", cat: "sales" };
   return null;
 };
