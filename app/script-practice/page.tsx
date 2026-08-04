@@ -331,9 +331,9 @@ export default function ScriptPracticePage() {
                         {reports.length === 0 ? (
                             <div style={{ fontSize: 13, color: "#6b7280", padding: "16px 0", textAlign: "center" }}>まだ記録がありません。今日から始めよう！</div>
                         ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "60vh", overflowY: "auto", paddingRight: 6 }}>
                                 {reports.map(r => (
-                                    <div key={r.id} style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 12, padding: "12px 16px" }}>
+                                    <div key={r.id} style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 12, padding: "12px 16px", flexShrink: 0 }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
                                             <span style={{ fontSize: 11, fontWeight: 900, color: "#a78bfa" }}>Day {r.day_no}</span>
                                             <span style={{ fontSize: 12, fontWeight: 700, color: "#c7c9dd" }}>{TYPE_LABEL[r.practice_type] || r.practice_type}</span>
@@ -353,9 +353,9 @@ export default function ScriptPracticePage() {
                         {peers.length === 0 ? (
                             <div style={{ fontSize: 12.5, color: "#6b7280", padding: "12px 0" }}>まだ練習中の仲間がいません</div>
                         ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "60vh", overflowY: "auto", paddingRight: 6 }}>
                                 {peers.map(p => (
-                                    <div key={p.user_id} style={{ background: "rgba(139,92,246,.05)", border: "1px solid rgba(139,92,246,.2)", borderRadius: 12, padding: "11px 14px" }}>
+                                    <div key={p.user_id} style={{ background: "rgba(139,92,246,.05)", border: "1px solid rgba(139,92,246,.2)", borderRadius: 12, padding: "11px 14px", flexShrink: 0 }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                                             <span style={{ fontSize: 13, fontWeight: 800, color: "#e4dcff" }}>{p.name}</span>
                                             {p.passedCount === 3 && <span style={{ fontSize: 12 }}>👑</span>}
