@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
@@ -47,7 +47,7 @@ function getThumbnail(url: string | null): string | null {
     return null;
 }
 
-export default function LearnPage() {
+function LearnPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [userId, setUserId] = useState("");
@@ -410,5 +410,13 @@ export default function LearnPage() {
                 .nflx-card:hover .nflx-play { opacity: 1 !important; }
             `}</style>
         </main>
+    );
+}
+
+export default function LearnPage() {
+    return (
+        <Suspense fallback={null}>
+            <LearnPageInner />
+        </Suspense>
     );
 }
