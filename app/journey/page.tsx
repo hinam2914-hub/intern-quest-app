@@ -25,6 +25,7 @@ export default function JourneyPage() {
     const [rookieDone, setRookieDone] = useState<Record<string, number>>({});
     const [rookieTotal, setRookieTotal] = useState<Record<string, number>>({});
     const [step2Status, setStep2Status] = useState<string>("none"); // none/pending/approved
+    const [step2Review, setStep2Review] = useState<string>("");
     const [scheduledDate, setScheduledDate] = useState<string>("");
     const [userId, setUserId] = useState<string>("");
     const [stepContents, setStepContents] = useState<Record<number, any[]>>({});
@@ -39,7 +40,7 @@ export default function JourneyPage() {
             const [{ data: challenges }, { data: subs }, { data: jsub }, { data: jcontents }, { data: ccomps }] = await Promise.all([
                 supabase.from("rookie_challenges").select("id, block").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
-                supabase.from("journey_submissions").select("status, scheduled_date").eq("user_id", user.id).eq("step_no", 2).maybeSingle(),
+                supabase.from("journey_submissions").select("status, scheduled_date, review").eq("user_id", user.id).eq("step_no", 2).maybeSingle(),
                 supabase.from("contents").select("id, title, journey_step").gt("journey_step", 0).eq("is_active", true),
                 supabase.from("content_completions").select("content_id").eq("user_id", user.id),
             ]);
@@ -61,6 +62,7 @@ export default function JourneyPage() {
             setRookieDone(done);
             setRookieTotal(total);
             setStep2Status((jsub as any)?.status || "none");
+            setStep2Review((jsub as any)?.review || "");
             setScheduledDate((jsub as any)?.scheduled_date || "");
             setLoading(false);
         };
@@ -178,7 +180,7 @@ export default function JourneyPage() {
 
                     {/* 右：選択中ステップの詳細 */}
                     <div style={{ flex: "1 1 400px", minWidth: 300 }}>
-                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} step2Status={step2Status} userId={userId} onApplied={() => setStep2Status("pending")} scheduledDate={scheduledDate} onDate={setScheduledDate} stepContents={stepContents} doneContentIds={doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} />
+                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} step2Status={step2Status} userId={userId} onApplied={() => setStep2Status("pending")} step2Review={step2Review} scheduledDate={scheduledDate} onDate={setScheduledDate} stepContents={stepContents} doneContentIds={doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} />
 
                         {/* 冒険のヒント */}
                         {!gateOk && (
@@ -206,9 +208,11 @@ export default function JourneyPage() {
     );
 }
 
-function StepCard({ step, state, onCta, step2Status, userId, onApplied, scheduledDate, onDate, stepContents, doneContentIds, onOpenContent }: { step: Step; state: StepState; onCta: (path: string) => void; step2Status: string; userId: string; onApplied: () => void; scheduledDate: string; onDate: (d: string) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void }) {
+function StepCard({ step, state, onCta, step2Status, userId, onApplied, step2Review, scheduledDate, onDate, stepContents, doneContentIds, onOpenContent }: { step: Step; state: StepState; onCta: (path: string) => void; step2Status: string; userId: string; onApplied: () => void; step2Review: string; scheduledDate: string; onDate: (d: string) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void }) {
     const isNow = state === "now";
     const isLock = state === "lock";
+    const [reviewText, setReviewText] = useState("");
+    const [sending, setSending] = useState(false);
     const isDone = state === "done";
     return (
         <div style={{
@@ -285,18 +289,29 @@ function StepCard({ step, state, onCta, step2Status, userId, onApplied, schedule
             )}
             {isNow && step.no === 2 && step2Status !== "approved" && (
                 step2Status === "pending" ? (
-                    <div style={{ width: "100%", marginTop: 18, padding: "15px", borderRadius: 999, textAlign: "center", background: "rgba(167,139,250,.15)", color: "#c4b5fd", fontSize: 14, fontWeight: 800, border: "1px solid rgba(167,139,250,.4)" }}>
-                        ⏳ 参加申請中（承認待ち）
+                    <div style={{ marginTop: 18 }}>
+                        <div style={{ padding: "13px 16px", borderRadius: 12, textAlign: "center", background: "rgba(167,139,250,.15)", color: "#c4b5fd", fontSize: 14, fontWeight: 800, border: "1px solid rgba(167,139,250,.4)" }}>
+                            ⏳ 参加報告を送信済み（承認待ち）
+                        </div>
+                        {step2Review && (
+                            <div style={{ marginTop: 10, padding: "12px 14px", borderRadius: 10, background: "rgba(255,255,255,.04)", border: "1px solid rgba(167,139,250,.15)", fontSize: 13, color: "#c2b8ee", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{step2Review}</div>
+                        )}
                     </div>
                 ) : (
-                    <button onClick={async () => {
-                        if (!userId) return;
-                        const { error } = await supabase.from("journey_submissions").insert({ user_id: userId, step_no: 2, status: "pending" });
-                        if (error) { alert("申請に失敗しました: " + error.message); return; }
-                        onApplied();
-                    }} style={{ width: "100%", marginTop: 18, padding: "15px", borderRadius: 999, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #a78bfa, #7c5cf0)", color: "#fff", fontSize: 15, fontWeight: 900, boxShadow: "0 6px 22px rgba(139,92,246,.5)", letterSpacing: 1 }}>
-                        ⛩️ 登竜門に参加した
-                    </button>
+                    <div style={{ marginTop: 18 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", marginBottom: 8 }}>登竜門の感想を書いて送信（必須）</div>
+                        <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="登竜門で学んだこと・目標などを書こう" rows={4} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(167,139,250,.4)", background: "rgba(0,0,0,.3)", color: "#fff", fontSize: 14, resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                        <button disabled={sending || !reviewText.trim()} onClick={async () => {
+                            if (!userId || !reviewText.trim()) return;
+                            setSending(true);
+                            const { error } = await supabase.from("journey_submissions").upsert({ user_id: userId, step_no: 2, status: "pending", review: reviewText.trim() }, { onConflict: "user_id,step_no" });
+                            setSending(false);
+                            if (error) { alert("送信に失敗しました: " + error.message); return; }
+                            onApplied();
+                        }} style={{ width: "100%", marginTop: 12, padding: "15px", borderRadius: 999, border: "none", cursor: (sending || !reviewText.trim()) ? "not-allowed" : "pointer", opacity: (sending || !reviewText.trim()) ? 0.5 : 1, background: "linear-gradient(135deg, #a78bfa, #7c5cf0)", color: "#fff", fontSize: 15, fontWeight: 900, boxShadow: "0 6px 22px rgba(139,92,246,.5)", letterSpacing: 1 }}>
+                            ⛩️ 参加報告を送信
+                        </button>
+                    </div>
                 )
             )}
             {isNow && step.ctaLabel && step.ctaPath && (
