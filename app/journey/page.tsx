@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
 const GATE_BLOCKS = ["①コミュ基礎", "②研修・同行"];
+const STEP2_NEED = 3; // 承認済み視聴 何本でSTEP2解錠
 
 type StepState = "done" | "now" | "lock";
 type Step = {
@@ -24,15 +25,17 @@ export default function JourneyPage() {
     const [loading, setLoading] = useState(true);
     const [rookieDone, setRookieDone] = useState<Record<string, number>>({});
     const [rookieTotal, setRookieTotal] = useState<Record<string, number>>({});
+    const [watchedCount, setWatchedCount] = useState(0);
     const [selectedNo, setSelectedNo] = useState(3);
 
     useEffect(() => {
         const load = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
-            const [{ data: challenges }, { data: subs }] = await Promise.all([
+            const [{ data: challenges }, { data: subs }, { count: watched }] = await Promise.all([
                 supabase.from("rookie_challenges").select("id, block").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
+                supabase.from("content_completions").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved"),
             ]);
             // ブロック別の全項目数
             const total: Record<string, number> = {};
@@ -47,6 +50,7 @@ export default function JourneyPage() {
             });
             setRookieDone(done);
             setRookieTotal(total);
+            setWatchedCount(watched || 0);
             setLoading(false);
         };
         load();
@@ -78,8 +82,12 @@ export default function JourneyPage() {
 
     // ステップ状態を決める
     const stateOf = (no: number): StepState => {
-        if (no === 1 || no === 2) return "done";        // 入社・登竜門は完了扱い
-        if (no === 3) return gateOk ? "done" : "now";   // 一人前チャレンジ
+        if (no === 1) return "done";                    // 入社は完了扱い
+        if (no === 2) return watchedCount >= STEP2_NEED ? "done" : "now"; // 登竜門：視聴本数
+        if (no === 3) {
+            if (stateOf(2) !== "done") return "lock";   // STEP2未完なら施錠
+            return gateOk ? "done" : "now";             // 一人前チャレンジ
+        }
         if (no === 4) return gateOk ? "now" : "lock";   // ①②クリアで解放
         return "lock";                                   // 5,6はまだ
     };
