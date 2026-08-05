@@ -198,7 +198,7 @@ export default function JourneyPage() {
     );
 }
 
-function StepCard({ step, state, onCta, step2Status, userId, onApplied }: { step: Step; state: StepState; onCta: (path: string) => void; step2Status: string; userId: string; onApplied: () => void; scheduledDate: string; onDate: (d: string) => void }) {
+function StepCard({ step, state, onCta, step2Status, userId, onApplied, scheduledDate, onDate }: { step: Step; state: StepState; onCta: (path: string) => void; step2Status: string; userId: string; onApplied: () => void; scheduledDate: string; onDate: (d: string) => void }) {
     const isNow = state === "now";
     const isLock = state === "lock";
     const isDone = state === "done";
