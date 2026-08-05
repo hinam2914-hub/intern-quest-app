@@ -25,6 +25,7 @@ export default function JourneyPage() {
     const [rookieDone, setRookieDone] = useState<Record<string, number>>({});
     const [rookieTotal, setRookieTotal] = useState<Record<string, number>>({});
     const [step2Status, setStep2Status] = useState<string>("none"); // none/pending/approved
+    const [scheduledDate, setScheduledDate] = useState<string>("");
     const [userId, setUserId] = useState<string>("");
     const [selectedNo, setSelectedNo] = useState(3);
 
@@ -36,7 +37,7 @@ export default function JourneyPage() {
             const [{ data: challenges }, { data: subs }, { data: jsub }] = await Promise.all([
                 supabase.from("rookie_challenges").select("id, block").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
-                supabase.from("journey_submissions").select("status").eq("user_id", user.id).eq("step_no", 2).maybeSingle(),
+                supabase.from("journey_submissions").select("status, scheduled_date").eq("user_id", user.id).eq("step_no", 2).maybeSingle(),
             ]);
             // ブロック別の全項目数
             const total: Record<string, number> = {};
@@ -52,6 +53,7 @@ export default function JourneyPage() {
             setRookieDone(done);
             setRookieTotal(total);
             setStep2Status((jsub as any)?.status || "none");
+            setScheduledDate((jsub as any)?.scheduled_date || "");
             setLoading(false);
         };
         load();
@@ -168,7 +170,7 @@ export default function JourneyPage() {
 
                     {/* 右：選択中ステップの詳細 */}
                     <div style={{ flex: "1 1 400px", minWidth: 300 }}>
-                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} step2Status={step2Status} userId={userId} onApplied={() => setStep2Status("pending")} />
+                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} step2Status={step2Status} userId={userId} onApplied={() => setStep2Status("pending")} scheduledDate={scheduledDate} onDate={setScheduledDate} />
 
                         {/* 冒険のヒント */}
                         {!gateOk && (
@@ -196,7 +198,7 @@ export default function JourneyPage() {
     );
 }
 
-function StepCard({ step, state, onCta, step2Status, userId, onApplied }: { step: Step; state: StepState; onCta: (path: string) => void; step2Status: string; userId: string; onApplied: () => void }) {
+function StepCard({ step, state, onCta, step2Status, userId, onApplied }: { step: Step; state: StepState; onCta: (path: string) => void; step2Status: string; userId: string; onApplied: () => void; scheduledDate: string; onDate: (d: string) => void }) {
     const isNow = state === "now";
     const isLock = state === "lock";
     const isDone = state === "done";
@@ -245,6 +247,17 @@ function StepCard({ step, state, onCta, step2Status, userId, onApplied }: { step
             )}
 
             {/* CTA（今ここのステップだけ） */}
+            {step.no === 2 && (state === "now" || state === "done") && (
+                <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 14, background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>\ud83d\udcc5 \u767b\u7adc\u9580\u7814\u4fee\u65e5</span>
+                    <input type="date" value={scheduledDate} onChange={async (e) => {
+                        const d = e.target.value;
+                        onDate(d);
+                        if (!userId) return;
+                        await supabase.from("journey_submissions").upsert({ user_id: userId, step_no: 2, scheduled_date: d || null }, { onConflict: "user_id,step_no" });
+                    }} style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(167,139,250,.4)", background: "rgba(0,0,0,.3)", color: "#fff", fontSize: 14 }} />
+                </div>
+            )}
             {isNow && step.no === 2 && step2Status !== "approved" && (
                 step2Status === "pending" ? (
                     <div style={{ width: "100%", marginTop: 18, padding: "15px", borderRadius: 999, textAlign: "center", background: "rgba(167,139,250,.15)", color: "#c4b5fd", fontSize: 14, fontWeight: 800, border: "1px solid rgba(167,139,250,.4)" }}>
