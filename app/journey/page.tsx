@@ -249,7 +249,7 @@ function StepCard({ step, state, onCta, step2Status, userId, onApplied }: { step
             {/* CTA（今ここのステップだけ） */}
             {step.no === 2 && (state === "now" || state === "done") && (
                 <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 14, background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>\ud83d\udcc5 \u767b\u7adc\u9580\u7814\u4fee\u65e5</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 登竜門研修日</span>
                     <input type="date" value={scheduledDate} onChange={async (e) => {
                         const d = e.target.value;
                         onDate(d);
