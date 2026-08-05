@@ -168,7 +168,7 @@ export default function JourneyPage() {
 
                     {/* 右：選択中ステップの詳細 */}
                     <div style={{ flex: "1 1 400px", minWidth: 300 }}>
-                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} />
+                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} step2Status={step2Status} userId={userId} onApplied={() => setStep2Status("pending")} />
 
                         {/* 冒険のヒント */}
                         {!gateOk && (
@@ -196,7 +196,7 @@ export default function JourneyPage() {
     );
 }
 
-function StepCard({ step, state, onCta }: { step: Step; state: StepState; onCta: (path: string) => void }) {
+function StepCard({ step, state, onCta, step2Status, userId, onApplied }: { step: Step; state: StepState; onCta: (path: string) => void; step2Status: string; userId: string; onApplied: () => void }) {
     const isNow = state === "now";
     const isLock = state === "lock";
     const isDone = state === "done";
@@ -245,6 +245,22 @@ function StepCard({ step, state, onCta }: { step: Step; state: StepState; onCta:
             )}
 
             {/* CTA（今ここのステップだけ） */}
+            {isNow && step.no === 2 && step2Status !== "approved" && (
+                step2Status === "pending" ? (
+                    <div style={{ width: "100%", marginTop: 18, padding: "15px", borderRadius: 999, textAlign: "center", background: "rgba(167,139,250,.15)", color: "#c4b5fd", fontSize: 14, fontWeight: 800, border: "1px solid rgba(167,139,250,.4)" }}>
+                        ⏳ 参加申請中（承認待ち）
+                    </div>
+                ) : (
+                    <button onClick={async () => {
+                        if (!userId) return;
+                        const { error } = await supabase.from("journey_submissions").insert({ user_id: userId, step_no: 2, status: "pending" });
+                        if (error) { alert("申請に失敗しました: " + error.message); return; }
+                        onApplied();
+                    }} style={{ width: "100%", marginTop: 18, padding: "15px", borderRadius: 999, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #a78bfa, #7c5cf0)", color: "#fff", fontSize: 15, fontWeight: 900, boxShadow: "0 6px 22px rgba(139,92,246,.5)", letterSpacing: 1 }}>
+                        ⛩️ 登竜門に参加した
+                    </button>
+                )
+            )}
             {isNow && step.ctaLabel && step.ctaPath && (
                 <button onClick={() => onCta(step.ctaPath!)} style={{ width: "100%", marginTop: 18, padding: "15px", borderRadius: 999, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #a78bfa, #7c5cf0)", color: "#fff", fontSize: 15, fontWeight: 900, boxShadow: "0 6px 22px rgba(139,92,246,.5)", letterSpacing: 1 }}>
                     ▶ {step.ctaLabel}
