@@ -27,6 +27,8 @@ export default function JourneyPage() {
     const [step2Status, setStep2Status] = useState<string>("none"); // none/pending/approved
     const [scheduledDate, setScheduledDate] = useState<string>("");
     const [userId, setUserId] = useState<string>("");
+    const [stepContents, setStepContents] = useState<Record<number, any[]>>({});
+    const [doneContentIds, setDoneContentIds] = useState<Set<string>>(new Set());
     const [selectedNo, setSelectedNo] = useState(3);
 
     useEffect(() => {
@@ -34,11 +36,17 @@ export default function JourneyPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-            const [{ data: challenges }, { data: subs }, { data: jsub }] = await Promise.all([
+            const [{ data: challenges }, { data: subs }, { data: jsub }, { data: jcontents }, { data: ccomps }] = await Promise.all([
                 supabase.from("rookie_challenges").select("id, block").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
                 supabase.from("journey_submissions").select("status, scheduled_date").eq("user_id", user.id).eq("step_no", 2).maybeSingle(),
+                supabase.from("contents").select("id, title, journey_step").gt("journey_step", 0).eq("is_active", true),
+                supabase.from("content_completions").select("content_id").eq("user_id", user.id),
             ]);
+            const byStep: Record<number, any[]> = {};
+            (jcontents || []).forEach((c: any) => { (byStep[c.journey_step] = byStep[c.journey_step] || []).push(c); });
+            setStepContents(byStep);
+            setDoneContentIds(new Set((ccomps || []).map((c: any) => c.content_id)));
             // ブロック別の全項目数
             const total: Record<string, number> = {};
             (challenges || []).forEach((c: any) => { total[c.block] = (total[c.block] || 0) + 1; });
@@ -170,7 +178,7 @@ export default function JourneyPage() {
 
                     {/* 右：選択中ステップの詳細 */}
                     <div style={{ flex: "1 1 400px", minWidth: 300 }}>
-                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} step2Status={step2Status} userId={userId} onApplied={() => setStep2Status("pending")} scheduledDate={scheduledDate} onDate={setScheduledDate} />
+                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} step2Status={step2Status} userId={userId} onApplied={() => setStep2Status("pending")} scheduledDate={scheduledDate} onDate={setScheduledDate} stepContents={stepContents} doneContentIds={doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} />
 
                         {/* 冒険のヒント */}
                         {!gateOk && (
@@ -198,7 +206,7 @@ export default function JourneyPage() {
     );
 }
 
-function StepCard({ step, state, onCta, step2Status, userId, onApplied, scheduledDate, onDate }: { step: Step; state: StepState; onCta: (path: string) => void; step2Status: string; userId: string; onApplied: () => void; scheduledDate: string; onDate: (d: string) => void }) {
+function StepCard({ step, state, onCta, step2Status, userId, onApplied, scheduledDate, onDate, stepContents, doneContentIds, onOpenContent }: { step: Step; state: StepState; onCta: (path: string) => void; step2Status: string; userId: string; onApplied: () => void; scheduledDate: string; onDate: (d: string) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void }) {
     const isNow = state === "now";
     const isLock = state === "lock";
     const isDone = state === "done";
@@ -256,6 +264,23 @@ function StepCard({ step, state, onCta, step2Status, userId, onApplied, schedule
                         if (!userId) return;
                         await supabase.from("journey_submissions").upsert({ user_id: userId, step_no: 2, scheduled_date: d || null }, { onConflict: "user_id,step_no" });
                     }} style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(167,139,250,.4)", background: "rgba(0,0,0,.3)", color: "#fff", fontSize: 14 }} />
+                </div>
+            )}
+            {!isLock && (stepContents[step.no] || []).length > 0 && (
+                <div style={{ marginTop: 18 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: "#c4b5fd", marginBottom: 10, letterSpacing: 1 }}>📚 このフェーズで見る</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {(stepContents[step.no] || []).map((c: any) => {
+                            const done = doneContentIds.has(c.id);
+                            return (
+                                <div key={c.id} onClick={() => onOpenContent(c.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 12, cursor: "pointer", background: done ? "rgba(52,211,153,.1)" : "rgba(167,139,250,.08)", border: done ? "1px solid rgba(52,211,153,.3)" : "1px solid rgba(167,139,250,.2)" }}>
+                                    <span style={{ fontSize: 15, flexShrink: 0 }}>{done ? "✅" : "○"}</span>
+                                    <span style={{ fontSize: 13, color: done ? "#a7f3d0" : "#e5e0ff", fontWeight: 600, lineHeight: 1.4, flex: 1 }}>{c.title}</span>
+                                    <span style={{ fontSize: 12, color: "#a78bfa", flexShrink: 0 }}>見る ›</span>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
             {isNow && step.no === 2 && step2Status !== "approved" && (

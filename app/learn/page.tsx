@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
 type Content = {
@@ -49,6 +49,7 @@ function getThumbnail(url: string | null): string | null {
 
 export default function LearnPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [userId, setUserId] = useState("");
     const [contents, setContents] = useState<Content[]>([]);
     const [completions, setCompletions] = useState<Completion[]>([]);
@@ -65,9 +66,15 @@ export default function LearnPage() {
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
             const { data: contentRows } = await supabase.from("contents").select("*").eq("is_active", true).order("created_at", { ascending: false });
-            setContents((contentRows || []) as Content[]);
+            const cs = (contentRows || []) as Content[];
+            setContents(cs);
             const { data: completionRows } = await supabase.from("content_completions").select("id,content_id, status, review, feedback").eq("user_id", user.id);
             setCompletions((completionRows || []) as Completion[]);
+            const openId = searchParams.get("open");
+            if (openId) {
+                const target = cs.find(c => c.id === openId);
+                if (target) setSelected(target);
+            }
             setLoading(false);
         };
         load();
