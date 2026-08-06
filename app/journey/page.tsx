@@ -39,7 +39,7 @@ export default function JourneyPage() {
             const [{ data: challenges }, { data: subs }, { data: jsubs }, { data: jcontents }, { data: ccomps }, { data: tattempts }, { data: prof }] = await Promise.all([
                 supabase.from("rookie_challenges").select("id, block").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
-                supabase.from("journey_submissions").select("step_no, status, scheduled_date, review, mtg_attended, mtg_date, event_no_cancel, event_date").eq("user_id", user.id).in("step_no", [1, 2, 3]),
+                supabase.from("journey_submissions").select("step_no, status, scheduled_date, review, mtg_attended, mtg_date, event_no_cancel, event_date").eq("user_id", user.id).in("step_no", [1, 2, 3, 4]),
                 supabase.from("contents").select("id, title, journey_step").gt("journey_step", 0).eq("is_active", true),
                 supabase.from("content_completions").select("content_id").eq("user_id", user.id),
                 supabase.from("test_attempts").select("test_key, passed").eq("user_id", user.id).eq("passed", true),
@@ -82,8 +82,8 @@ export default function JourneyPage() {
         { no: 1, key: "village", img: "/journey/step1_village.png", title: "入社・スラック研修", desc: "アカウント登録・アバター設定・MY GOALS宣言", reward: 10 },
         { no: 2, key: "hut", img: "/journey/step2_hut.png", title: "登竜門キックオフ研修", desc: "学習コンテンツを視聴して基礎を固める", reward: 10 },
         { no: 3, key: "crystal", img: "/journey/step3_crystal.png", title: "プレイヤー昇格", desc: "全体MTG出席・研修/イベント当日キャンセルなしを提出", reward: 20 },
-        { no: 4, key: "dm", img: "/journey/step4_dm.png", title: "DM研修", desc: "採用DMを送って対人の型を身につける", reward: 20, unlock: ["STEP3をクリア", "プレイヤー昇格の承認"] },
-        { no: 5, key: "temple", img: "/journey/step5_temple.png", title: "キャリア面談・配属", desc: "CB（テレアポ）かIP（訪販）か。適性を見て配属先を決める", reward: 20, unlock: ["STEP4をクリア", "DM研修完了"] },
+        { no: 4, key: "dm", img: "/journey/step4_dm.png", title: "DRMスタート", desc: "DRM研修に参加して申請", reward: 20, unlock: ["STEP3をクリア", "プレイヤー昇格の承認"] },
+        { no: 5, key: "temple", img: "/journey/step5_temple.png", title: "キャリア面談・配属", desc: "CB（テレアポ）かIP（訪販）か。適性を見て配属先を決める", reward: 20, unlock: ["STEP4をクリア", "DRM研修の承認"] },
         { no: 6, key: "castle", img: "/journey/step6_castle.png", title: "営業デビュー", desc: "営業デビューテスト合格・スクリプト練習 → 現場へ！", reward: 30, unlock: ["STEP5をクリア", "キャリア面談完了"] },
     ];
 
@@ -98,7 +98,11 @@ export default function JourneyPage() {
             if (stateOf(2) !== "done") return "lock";   // STEP2未完なら施錠
             return subs[3]?.status === "approved" ? "done" : "now"; // プレイヤー昇格：承認で解錠
         }
-        if (no === 4) return subs[3]?.status === "approved" ? "now" : "lock";
+        if (no === 4) {
+            if (subs[3]?.status !== "approved") return "lock"; // STEP3未承認なら施錠
+            return subs[4]?.status === "approved" ? "done" : "now"; // DRMスタート：承認で解錠
+        }
+        if (no === 5) return subs[4]?.status === "approved" ? "now" : "lock";
         return "lock";                                   // 5,6はまだ
     };
 
@@ -265,9 +269,9 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                     <Step3Form userId={userId} sub={sub} onSaved={onSaved} />
                 )
             )}
-            {(step.no === 1 || step.no === 2) && (state === "now" || state === "done") && (
+            {(step.no === 1 || step.no === 2 || step.no === 4) && (state === "now" || state === "done") && (
                 <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 14, background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 {step.no === 1 ? "入社・研修日" : "登竜門研修日"}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 {step.no === 1 ? "入社・研修日" : step.no === 4 ? "DRM研修参加日" : "登竜門研修日"}</span>
                     <input type="date" value={sub.scheduled_date} onChange={async (e) => {
                         const d = e.target.value;
                         onSaved({ scheduled_date: d });
@@ -278,6 +282,22 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                         }
                     }} style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(167,139,250,.4)", background: "rgba(0,0,0,.3)", color: "#fff", fontSize: 14 }} />
                 </div>
+            )}
+            {isNow && step.no === 4 && sub.status !== "approved" && (
+                sub.status === "pending" ? (
+                    <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 12, textAlign: "center", background: "rgba(167,139,250,.15)", color: "#c4b5fd", fontSize: 14, fontWeight: 800, border: "1px solid rgba(167,139,250,.4)" }}>
+                        ⏳ 申請中（承認待ち）
+                    </div>
+                ) : (
+                    <button disabled={!sub.scheduled_date} onClick={async () => {
+                        if (!userId || !sub.scheduled_date) return;
+                        const { data: upd } = await supabase.from("journey_submissions").update({ status: "pending" }).eq("user_id", userId).eq("step_no", 4).select();
+                        if (!upd || upd.length === 0) { await supabase.from("journey_submissions").insert({ user_id: userId, step_no: 4, status: "pending", scheduled_date: sub.scheduled_date }); }
+                        onSaved({ status: "pending" });
+                    }} style={{ width: "100%", marginTop: 14, padding: "15px", borderRadius: 999, border: "none", cursor: sub.scheduled_date ? "pointer" : "not-allowed", opacity: sub.scheduled_date ? 1 : 0.5, background: "linear-gradient(135deg, #a78bfa, #7c5cf0)", color: "#fff", fontSize: 15, fontWeight: 900, boxShadow: "0 6px 22px rgba(139,92,246,.5)", letterSpacing: 1 }}>
+                        📨 DRM研修に参加した
+                    </button>
+                )
             )}
             {!isLock && (stepContents[step.no] || []).length > 0 && (
                 <div style={{ marginTop: 18 }}>
