@@ -26,6 +26,7 @@ export default function JourneyPage() {
     const [rookieTotal, setRookieTotal] = useState<Record<string, number>>({});
     const [subs, setSubs] = useState<Record<number, { status: string; review: string; scheduled_date: string }>>({});
     const [userId, setUserId] = useState<string>("");
+    const [passedTests, setPassedTests] = useState<Set<string>>(new Set());
     const [stepContents, setStepContents] = useState<Record<number, any[]>>({});
     const [doneContentIds, setDoneContentIds] = useState<Set<string>>(new Set());
     const [selectedNo, setSelectedNo] = useState(3);
@@ -35,17 +36,22 @@ export default function JourneyPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-            const [{ data: challenges }, { data: subs }, { data: jsubs }, { data: jcontents }, { data: ccomps }] = await Promise.all([
+            const [{ data: challenges }, { data: subs }, { data: jsubs }, { data: jcontents }, { data: ccomps }, { data: tattempts }, { data: prof }] = await Promise.all([
                 supabase.from("rookie_challenges").select("id, block").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
                 supabase.from("journey_submissions").select("step_no, status, scheduled_date, review").eq("user_id", user.id).in("step_no", [1, 2]),
                 supabase.from("contents").select("id, title, journey_step").gt("journey_step", 0).eq("is_active", true),
                 supabase.from("content_completions").select("content_id").eq("user_id", user.id),
+                supabase.from("test_attempts").select("test_key, passed").eq("user_id", user.id).eq("passed", true),
+                supabase.from("profiles").select("quiz_passed").eq("id", user.id).maybeSingle(),
             ]);
             const byStep: Record<number, any[]> = {};
             (jcontents || []).forEach((c: any) => { (byStep[c.journey_step] = byStep[c.journey_step] || []).push(c); });
             setStepContents(byStep);
             setDoneContentIds(new Set((ccomps || []).map((c: any) => c.content_id)));
+            const pt = new Set<string>((tattempts || []).map((t: any) => t.test_key));
+            if ((prof as any)?.quiz_passed) pt.add("quiz");
+            setPassedTests(pt);
             // ブロック別の全項目数
             const total: Record<string, number> = {};
             (challenges || []).forEach((c: any) => { total[c.block] = (total[c.block] || 0) + 1; });
@@ -181,7 +187,7 @@ export default function JourneyPage() {
 
                     {/* 右：選択中ステップの詳細 */}
                     <div style={{ flex: "1 1 400px", minWidth: 300 }}>
-                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} sub={subs[selected.no] || { status: "none", review: "", scheduled_date: "" }} userId={userId} onSaved={(st) => setSubs(prev => ({ ...prev, [selected.no]: { ...(prev[selected.no] || { status: "none", review: "", scheduled_date: "" }), ...st } }))} stepContents={stepContents} doneContentIds={doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} />
+                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} sub={subs[selected.no] || { status: "none", review: "", scheduled_date: "" }} userId={userId} onSaved={(st) => setSubs(prev => ({ ...prev, [selected.no]: { ...(prev[selected.no] || { status: "none", review: "", scheduled_date: "" }), ...st } }))} stepContents={stepContents} doneContentIds={doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} passedTests={passedTests} onGoTest={(p) => router.push(p)} />
 
                         {/* 冒険のヒント */}
                         {!gateOk && (
@@ -209,7 +215,7 @@ export default function JourneyPage() {
     );
 }
 
-function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, doneContentIds, onOpenContent }: { step: Step; state: StepState; onCta: (path: string) => void; sub: { status: string; review: string; scheduled_date: string }; userId: string; onSaved: (st: any) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void }) {
+function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, doneContentIds, onOpenContent, passedTests, onGoTest }: { step: Step; state: StepState; onCta: (path: string) => void; sub: { status: string; review: string; scheduled_date: string }; userId: string; onSaved: (st: any) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void; passedTests: Set<string>; onGoTest: (path: string) => void }) {
     const isNow = state === "now";
     const isLock = state === "lock";
     const [reviewText, setReviewText] = useState("");
@@ -282,6 +288,23 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                                     <span style={{ fontSize: 15, flexShrink: 0 }}>{done ? "✅" : "○"}</span>
                                     <span style={{ fontSize: 13, color: done ? "#a7f3d0" : "#e5e0ff", fontWeight: 600, lineHeight: 1.4, flex: 1 }}>{c.title}</span>
                                     <span style={{ fontSize: 12, color: "#a78bfa", flexShrink: 0 }}>見る ›</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+            {step.no === 2 && (state === "now" || state === "done") && (
+                <div style={{ marginTop: 18 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: "#c4b5fd", marginBottom: 10, letterSpacing: 1 }}>📝 このフェーズで受けるテスト</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {[{ label: "確認ワークテスト", path: "/quiz", key: "quiz" }, { label: "即レス", path: "/tests/quick-response", key: "quick_response" }, { label: "常識・デリカシーテスト", path: "/tests/common-sense", key: "common_sense" }].map((t) => {
+                            const passed = passedTests.has(t.key);
+                            return (
+                                <div key={t.key} onClick={() => onGoTest(t.path)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 12, cursor: "pointer", background: passed ? "rgba(52,211,153,.1)" : "rgba(167,139,250,.08)", border: passed ? "1px solid rgba(52,211,153,.3)" : "1px solid rgba(167,139,250,.2)" }}>
+                                    <span style={{ fontSize: 15, flexShrink: 0 }}>{passed ? "✅" : "○"}</span>
+                                    <span style={{ fontSize: 13, color: passed ? "#a7f3d0" : "#e5e0ff", fontWeight: 600, lineHeight: 1.4, flex: 1 }}>{t.label}</span>
+                                    <span style={{ fontSize: 12, color: "#a78bfa", flexShrink: 0 }}>{passed ? "合格済" : "受ける"} ›</span>
                                 </div>
                             );
                         })}
