@@ -39,7 +39,7 @@ export default function JourneyPage() {
             const [{ data: challenges }, { data: subs }, { data: jsubs }, { data: jcontents }, { data: ccomps }, { data: tattempts }, { data: prof }] = await Promise.all([
                 supabase.from("rookie_challenges").select("id, block").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
-                supabase.from("journey_submissions").select("step_no, status, scheduled_date, review").eq("user_id", user.id).in("step_no", [1, 2]),
+                supabase.from("journey_submissions").select("step_no, status, scheduled_date, review, mtg_attended, mtg_date, event_no_cancel, event_date").eq("user_id", user.id).in("step_no", [1, 2, 3]),
                 supabase.from("contents").select("id, title, journey_step").gt("journey_step", 0).eq("is_active", true),
                 supabase.from("content_completions").select("content_id").eq("user_id", user.id),
                 supabase.from("test_attempts").select("test_key, passed").eq("user_id", user.id).eq("passed", true),
@@ -66,7 +66,7 @@ export default function JourneyPage() {
             setRookieDone(done);
             setRookieTotal(total);
             const subMap: Record<number, any> = {};
-            (jsubs || []).forEach((r: any) => { subMap[r.step_no] = { status: r.status || "none", review: r.review || "", scheduled_date: r.scheduled_date || "" }; });
+            (jsubs || []).forEach((r: any) => { subMap[r.step_no] = { status: r.status || "none", review: r.review || "", scheduled_date: r.scheduled_date || "", mtg_attended: !!r.mtg_attended, mtg_date: r.mtg_date || "", event_no_cancel: !!r.event_no_cancel, event_date: r.event_date || "" }; });
             setSubs(subMap);
             setLoading(false);
         };
@@ -75,24 +75,14 @@ export default function JourneyPage() {
 
     // STEP3判定：①②が全項目達成でクリア
     const gateOk = GATE_BLOCKS.every(b => (rookieDone[b] || 0) >= (rookieTotal[b] || 0) && (rookieTotal[b] || 0) > 0);
-    const block1 = `${rookieDone["①コミュ基礎"] || 0}/${rookieTotal["①コミュ基礎"] || 0}`;
-    const block2 = `${rookieDone["②研修・同行"] || 0}/${rookieTotal["②研修・同行"] || 0}`;
     const b1ok = (rookieDone["①コミュ基礎"] || 0) >= (rookieTotal["①コミュ基礎"] || 0) && (rookieTotal["①コミュ基礎"] || 0) > 0;
     const b2ok = (rookieDone["②研修・同行"] || 0) >= (rookieTotal["②研修・同行"] || 0) && (rookieTotal["②研修・同行"] || 0) > 0;
 
     const steps: Step[] = [
         { no: 1, key: "village", img: "/journey/step1_village.png", title: "入社・スラック研修", desc: "アカウント登録・アバター設定・MY GOALS宣言", reward: 10 },
         { no: 2, key: "hut", img: "/journey/step2_hut.png", title: "登竜門キックオフ研修", desc: "学習コンテンツを視聴して基礎を固める", reward: 10 },
-        {
-            no: 3, key: "crystal", img: "/journey/step3_crystal.png", title: "一人前チャレンジ",
-            desc: "①コミュ基礎・②研修同行をクリアすると営業研修に進めます", reward: 20,
-            musts: [
-                { label: `①コミュ基礎 ${block1}`, state: b1ok ? "ok" : "doing" },
-                { label: `②研修・同行 ${block2}`, state: b2ok ? "ok" : "doing" },
-            ],
-            ctaLabel: "一人前チャレンジを進める", ctaPath: "/rookie",
-        },
-        { no: 4, key: "dm", img: "/journey/step4_dm.png", title: "DM研修", desc: "採用DMを送って対人の型を身につける", reward: 20, unlock: ["STEP3をクリア", "一人前チャレンジ①②完了"] },
+        { no: 3, key: "crystal", img: "/journey/step3_crystal.png", title: "プレイヤー昇格", desc: "全体MTG出席・研修/イベント当日キャンセルなしを提出", reward: 20 },
+        { no: 4, key: "dm", img: "/journey/step4_dm.png", title: "DM研修", desc: "採用DMを送って対人の型を身につける", reward: 20, unlock: ["STEP3をクリア", "プレイヤー昇格の承認"] },
         { no: 5, key: "temple", img: "/journey/step5_temple.png", title: "キャリア面談・配属", desc: "CB（テレアポ）かIP（訪販）か。適性を見て配属先を決める", reward: 20, unlock: ["STEP4をクリア", "DM研修完了"] },
         { no: 6, key: "castle", img: "/journey/step6_castle.png", title: "営業デビュー", desc: "営業デビューテスト合格・スクリプト練習 → 現場へ！", reward: 30, unlock: ["STEP5をクリア", "キャリア面談完了"] },
     ];
@@ -106,9 +96,9 @@ export default function JourneyPage() {
         }
         if (no === 3) {
             if (stateOf(2) !== "done") return "lock";   // STEP2未完なら施錠
-            return gateOk ? "done" : "now";             // 一人前チャレンジ
+            return subs[3]?.status === "approved" ? "done" : "now"; // プレイヤー昇格：承認で解錠
         }
-        if (no === 4) return gateOk ? "now" : "lock";   // ①②クリアで解放
+        if (no === 4) return subs[3]?.status === "approved" ? "now" : "lock";
         return "lock";                                   // 5,6はまだ
     };
 
@@ -145,7 +135,7 @@ export default function JourneyPage() {
                         <div style={{ height: 9, borderRadius: 999, background: "rgba(255,255,255,.1)", marginTop: 10, overflow: "hidden" }}>
                             <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg,#a78bfa,#7c5cf0)", borderRadius: 999 }} />
                         </div>
-                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>6ステップ中 {doneCount}つ完了{!gateOk && "・今はSTEP3に挑戦中！"}</div>
+                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>6ステップ中 {doneCount}つ完了{subs[3]?.status !== "approved" && "・今はSTEP3に挑戦中！"}</div>
                     </div>
                 </div>
 
@@ -187,10 +177,10 @@ export default function JourneyPage() {
 
                     {/* 右：選択中ステップの詳細 */}
                     <div style={{ flex: "1 1 400px", minWidth: 300 }}>
-                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} sub={subs[selected.no] || { status: "none", review: "", scheduled_date: "" }} userId={userId} onSaved={(st) => setSubs(prev => ({ ...prev, [selected.no]: { ...(prev[selected.no] || { status: "none", review: "", scheduled_date: "" }), ...st } }))} stepContents={stepContents} doneContentIds={doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} passedTests={passedTests} onGoTest={(p) => router.push(p)} />
+                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} sub={subs[selected.no] || { status: "none", review: "", scheduled_date: "", mtg_attended: false, mtg_date: "", event_no_cancel: false, event_date: "" }} userId={userId} onSaved={(st) => setSubs(prev => ({ ...prev, [selected.no]: { ...(prev[selected.no] || { status: "none", review: "", scheduled_date: "", mtg_attended: false, mtg_date: "", event_no_cancel: false, event_date: "" }), ...st } }))} stepContents={stepContents} doneContentIds={doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} passedTests={passedTests} onGoTest={(p) => router.push(p)} />
 
                         {/* 冒険のヒント */}
-                        {!gateOk && (
+                        {subs[3]?.status !== "approved" && (
                             <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 16, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.25)" }}>
                                 <span style={{ fontSize: 26 }}>🧭</span>
                                 <div>
@@ -215,7 +205,7 @@ export default function JourneyPage() {
     );
 }
 
-function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, doneContentIds, onOpenContent, passedTests, onGoTest }: { step: Step; state: StepState; onCta: (path: string) => void; sub: { status: string; review: string; scheduled_date: string }; userId: string; onSaved: (st: any) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void; passedTests: Set<string>; onGoTest: (path: string) => void }) {
+function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, doneContentIds, onOpenContent, passedTests, onGoTest }: { step: Step; state: StepState; onCta: (path: string) => void; sub: { status: string; review: string; scheduled_date: string; mtg_attended?: boolean; mtg_date?: string; event_no_cancel?: boolean; event_date?: string }; userId: string; onSaved: (st: any) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void; passedTests: Set<string>; onGoTest: (path: string) => void }) {
     const isNow = state === "now";
     const isLock = state === "lock";
     const [reviewText, setReviewText] = useState("");
@@ -266,6 +256,15 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
             )}
 
             {/* CTA（今ここのステップだけ） */}
+            {isNow && step.no === 3 && sub.status !== "approved" && (
+                sub.status === "pending" ? (
+                    <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 12, textAlign: "center", background: "rgba(167,139,250,.15)", color: "#c4b5fd", fontSize: 14, fontWeight: 800, border: "1px solid rgba(167,139,250,.4)" }}>
+                        ⏳ 提出済み（承認待ち）
+                    </div>
+                ) : (
+                    <Step3Form userId={userId} sub={sub} onSaved={onSaved} />
+                )
+            )}
             {(step.no === 1 || step.no === 2) && (state === "now" || state === "done") && (
                 <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 14, background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 {step.no === 1 ? "入社・研修日" : "登竜門研修日"}</span>
@@ -273,7 +272,10 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                         const d = e.target.value;
                         onSaved({ scheduled_date: d });
                         if (!userId) return;
-                        await supabase.from("journey_submissions").upsert({ user_id: userId, step_no: step.no, scheduled_date: d || null }, { onConflict: "user_id,step_no" });
+                        const { data: upd } = await supabase.from("journey_submissions").update({ scheduled_date: d || null }).eq("user_id", userId).eq("step_no", step.no).select();
+                        if (!upd || upd.length === 0) {
+                            await supabase.from("journey_submissions").insert({ user_id: userId, step_no: step.no, scheduled_date: d || null, status: "none" });
+                        }
                     }} style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(167,139,250,.4)", background: "rgba(0,0,0,.3)", color: "#fff", fontSize: 14 }} />
                 </div>
             )}
@@ -343,6 +345,44 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                     ▶ {step.ctaLabel}
                 </button>
             )}
+        </div>
+    );
+}
+
+
+function Step3Form({ userId, sub, onSaved }: { userId: string; sub: any; onSaved: (st: any) => void }) {
+    const [mtg, setMtg] = useState<boolean>(!!sub.mtg_attended);
+    const [mtgDate, setMtgDate] = useState<string>(sub.mtg_date || "");
+    const [evt, setEvt] = useState<boolean>(!!sub.event_no_cancel);
+    const [evtDate, setEvtDate] = useState<string>(sub.event_date || "");
+    const [sending, setSending] = useState(false);
+    const ready = mtg && mtgDate && evt && evtDate;
+    const rowStyle = (on: boolean): any => ({ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, cursor: "pointer", background: on ? "rgba(52,211,153,.1)" : "rgba(167,139,250,.08)", border: on ? "1px solid rgba(52,211,153,.3)" : "1px solid rgba(167,139,250,.2)", marginBottom: 8 });
+    const dateStyle: any = { width: "100%", marginTop: 6, marginBottom: 8, padding: "9px 11px", borderRadius: 8, border: "1px solid rgba(167,139,250,.4)", background: "rgba(0,0,0,.3)", color: "#fff", fontSize: 14 };
+    return (
+        <div style={{ marginTop: 18 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", marginBottom: 10 }}>完了したらチェックして日付を入力・提出（必須）</div>
+            <div onClick={() => setMtg(!mtg)} style={rowStyle(mtg)}>
+                <span style={{ fontSize: 16 }}>{mtg ? "✅" : "○"}</span>
+                <span style={{ fontSize: 13.5, color: "#e5e0ff", fontWeight: 700 }}>全体MTGに出席</span>
+            </div>
+            <input type="date" value={mtgDate} onClick={(e) => e.stopPropagation()} onChange={(e) => setMtgDate(e.target.value)} style={dateStyle} />
+            <div onClick={() => setEvt(!evt)} style={rowStyle(evt)}>
+                <span style={{ fontSize: 16 }}>{evt ? "✅" : "○"}</span>
+                <span style={{ fontSize: 13.5, color: "#e5e0ff", fontWeight: 700 }}>研修・イベント当日キャンセルなし</span>
+            </div>
+            <input type="date" value={evtDate} onChange={(e) => setEvtDate(e.target.value)} style={dateStyle} />
+            <button disabled={sending || !ready} onClick={async () => {
+                if (!userId || !ready) return;
+                setSending(true);
+                const payload = { user_id: userId, step_no: 3, status: "pending", mtg_attended: mtg, mtg_date: mtgDate || null, event_no_cancel: evt, event_date: evtDate || null };
+                const { data: upd } = await supabase.from("journey_submissions").update(payload).eq("user_id", userId).eq("step_no", 3).select();
+                if (!upd || upd.length === 0) { await supabase.from("journey_submissions").insert(payload); }
+                setSending(false);
+                onSaved({ status: "pending", mtg_attended: mtg, mtg_date: mtgDate, event_no_cancel: evt, event_date: evtDate });
+            }} style={{ width: "100%", marginTop: 6, padding: "15px", borderRadius: 999, border: "none", cursor: (sending || !ready) ? "not-allowed" : "pointer", opacity: (sending || !ready) ? 0.5 : 1, background: "linear-gradient(135deg, #a78bfa, #7c5cf0)", color: "#fff", fontSize: 15, fontWeight: 900, boxShadow: "0 6px 22px rgba(139,92,246,.5)", letterSpacing: 1 }}>
+                📋 提出する
+            </button>
         </div>
     );
 }
