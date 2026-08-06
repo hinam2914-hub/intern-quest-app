@@ -88,25 +88,41 @@ export default function JourneyPage() {
     ];
 
     // ステップ状態を決める
+    // そのSTEPのコンテンツを全部視聴済みか
+    const contentDone = (no: number): boolean => {
+        const list = stepContents[no] || [];
+        if (list.length === 0) return true;
+        return list.every((c: any) => doneContentIds.has(c.id));
+    };
+    // そのSTEPのテストを全部合格済みか（テストがあるのはSTEP2のみ）
+    const STEP_TESTS: Record<number, string[]> = { 2: ["quiz", "quick_response", "common_sense"] };
+    const testsDone = (no: number): boolean => {
+        const keys = STEP_TESTS[no] || [];
+        return keys.every((k) => passedTests.has(k));
+    };
+    // 申請承認 + コンテンツ全消化 + テスト全合格 で完了
+    const stepClear = (no: number): boolean => {
+        return subs[no]?.status === "approved" && contentDone(no) && testsDone(no);
+    };
     const stateOf = (no: number): StepState => {
-        if (no === 1) return subs[1]?.status === "approved" ? "done" : "now"; // 入社：報告承認で完了
+        if (no === 1) return stepClear(1) ? "done" : "now"; // 入社：報告承認で完了
         if (no === 2) {
             if (stateOf(1) !== "done") return "lock";   // STEP1未完なら施錠
-            return subs[2]?.status === "approved" ? "done" : "now"; // 登竜門：承認で解錠
+            return stepClear(2) ? "done" : "now"; // 登竜門：承認+コンテンツ+テスト
         }
         if (no === 3) {
             if (stateOf(2) !== "done") return "lock";   // STEP2未完なら施錠
-            return subs[3]?.status === "approved" ? "done" : "now"; // プレイヤー昇格：承認で解錠
+            return stepClear(3) ? "done" : "now"; // プレイヤー昇格：承認+コンテンツ
         }
         if (no === 4) {
-            if (subs[3]?.status !== "approved") return "lock"; // STEP3未承認なら施錠
-            return subs[4]?.status === "approved" ? "done" : "now"; // DRMスタート：承認で解錠
+            if (stateOf(3) !== "done") return "lock"; // STEP3未完なら施錠
+            return stepClear(4) ? "done" : "now"; // DRM：承認+コンテンツ
         }
         if (no === 5) {
-            if (subs[4]?.status !== "approved") return "lock";
-            return subs[5]?.status === "approved" ? "done" : "now";
+            if (stateOf(4) !== "done") return "lock";
+            return stepClear(5) ? "done" : "now"; // 面談：承認+コンテンツ
         }
-        if (no === 6) return subs[5]?.status === "approved" ? "now" : "lock";
+        if (no === 6) return stateOf(5) === "done" ? "now" : "lock";
         return "lock";                                   // 5,6はまだ
     };
 
