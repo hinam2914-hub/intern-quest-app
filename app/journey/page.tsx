@@ -327,7 +327,14 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                     💌 サンキューを送る
                 </button>
             )}
-            {step.no === 6 && !isLock && (
+            {step.no === 6 && state === "done" && (
+                <div style={{ marginTop: 18, padding: "22px 20px", borderRadius: 16, background: "linear-gradient(135deg, rgba(251,191,36,.15), rgba(167,139,250,.15))", border: "1px solid rgba(251,191,36,.4)", textAlign: "center" }}>
+                    <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: "#fbbf24", marginBottom: 10 }}>営業デビュー、おめでとう！</div>
+                    <div style={{ fontSize: 13.5, color: "#e5e0ff", lineHeight: 1.8 }}>ここからが本番。学んだことを現場でフルに使って、自分だけの実績を積み上げよう。<br />営業で数字と行動を積めば、それがそのまま語れるガクチカ（=あなたの武器）になる。🔥</div>
+                </div>
+            )}
+            {step.no === 6 && !isLock && state !== "done" && (
                 <div style={{ marginTop: 18 }}>
                     <div style={{ fontSize: 12, fontWeight: 800, color: "#c4b5fd", marginBottom: 10, letterSpacing: 1 }}>🏆 ゴール条件</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
