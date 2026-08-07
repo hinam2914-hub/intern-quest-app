@@ -8,13 +8,17 @@ type Sub = {
     step_no: number;
     status: string;
     scheduled_date: string | null;
+    mtg_date: string | null;
+    event_date: string | null;
+    mtg_attended: boolean | null;
+    event_no_cancel: boolean | null;
     review: string | null;
     created_at: string;
     name?: string;
 };
 
-const STEP_LABEL: Record<number, string> = { 1: "STEP1 入社・スラック研修", 2: "STEP2 登竜門キックオフ研修" };
-const STEP_PT: Record<number, number> = { 1: 10, 2: 10 };
+const STEP_LABEL: Record<number, string> = { 1: "STEP1 入社・スラック研修", 2: "STEP2 登竜門キックオフ研修", 3: "STEP3 プレイヤー昇格", 4: "STEP4 DRMスタート", 5: "STEP5 キャリア面談・配属" };
+const STEP_PT: Record<number, number> = { 1: 10, 2: 10, 3: 20, 4: 20, 5: 20 };
 
 export default function JourneyTab() {
     const [subs, setSubs] = useState<Sub[]>([]);
@@ -24,8 +28,8 @@ export default function JourneyTab() {
         setLoading(true);
         const { data: subRows } = await supabase
             .from("journey_submissions")
-            .select("id, user_id, step_no, status, scheduled_date, review, created_at")
-            .in("step_no", [1, 2])
+            .select("id, user_id, step_no, status, scheduled_date, review, created_at, mtg_date, event_date, mtg_attended, event_no_cancel")
+            .in("step_no", [1, 2, 3, 4, 5])
             .order("created_at", { ascending: false });
         const { data: userRows } = await supabase.from("profiles").select("id, name").eq("is_active", true);
         const nameMap: Record<string, string> = {};
@@ -70,6 +74,8 @@ export default function JourneyTab() {
                 <span style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb" }}>{s.name}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,.12)", padding: "3px 10px", borderRadius: 999 }}>{STEP_LABEL[s.step_no]}</span>
                 {s.scheduled_date && <span style={{ fontSize: 12, color: "#8b8fa8" }}>📅 {s.scheduled_date}</span>}
+                {s.step_no === 3 && s.mtg_date && <span style={{ fontSize: 12, color: "#8b8fa8" }}>🗣 MTG {s.mtg_date}</span>}
+                {s.step_no === 3 && s.event_date && <span style={{ fontSize: 12, color: "#8b8fa8" }}>🎪 イベント {s.event_date}</span>}
                 {s.status === "pending"
                     ? <span style={{ fontSize: 11, fontWeight: 800, color: "#fbbf24", background: "rgba(251,191,36,.12)", padding: "3px 10px", borderRadius: 999 }}>⏳ 承認待ち</span>
                     : <span style={{ fontSize: 11, fontWeight: 800, color: "#34d399", background: "rgba(52,211,153,.12)", padding: "3px 10px", borderRadius: 999 }}>✅ 承認済み</span>}
