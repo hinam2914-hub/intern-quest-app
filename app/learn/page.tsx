@@ -347,14 +347,14 @@ function LearnPageInner() {
                                     <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${getYouTubeId(selected.url)}`} title={selected.title} style={{ border: "none", display: "block", aspectRatio: "16/9" }} allowFullScreen />
                                 </div>
                             ) : (
-                                selected.body && (
-                                    selected.body.startsWith("http") ? (
+                                (selected.body || selected.url) && (
+                                    (selected.body?.startsWith("http") || (!selected.body && selected.url)) ? (
                                         <div style={{ marginBottom: 20 }}>
-                                            <a href={selected.body.trim()} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 12, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)", textDecoration: "none" }}>
+                                            <a href={((selected.body?.startsWith("http") ? selected.body : selected.url) || "").trim()} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 12, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)", textDecoration: "none" }}>
                                                 <span style={{ fontSize: 22 }}>🔗</span>
                                                 <div style={{ overflow: "hidden" }}>
                                                     <div style={{ fontSize: 13, fontWeight: 700, color: "#c7d2fe" }}>資料を開く</div>
-                                                    <div style={{ fontSize: 11, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected.body.trim()}</div>
+                                                    <div style={{ fontSize: 11, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{((selected.body?.startsWith("http") ? selected.body : selected.url) || "").trim()}</div>
                                                 </div>
                                             </a>
                                         </div>
