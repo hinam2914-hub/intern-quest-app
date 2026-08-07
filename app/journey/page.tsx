@@ -156,13 +156,13 @@ export default function JourneyPage() {
                     <div style={{ minWidth: 260, background: "linear-gradient(140deg, rgba(58,31,110,.6), rgba(15,11,40,.7))", border: "1px solid rgba(167,139,250,.4)", borderRadius: 18, padding: "16px 18px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{ fontSize: 13 }}>⭐</span>
-                            <span style={{ fontSize: 12, fontWeight: 800, color: "#c2b8ee" }}>全体の進捗</span>
-                            <span style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginLeft: "auto" }}>{pct}%</span>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: "#c2b8ee" }}>営業デビューまで</span>
+                            <span style={{ fontSize: 24, fontWeight: 900, color: "#fff", marginLeft: "auto" }}>{pct}%</span>
                         </div>
                         <div style={{ height: 9, borderRadius: 999, background: "rgba(255,255,255,.1)", marginTop: 10, overflow: "hidden" }}>
                             <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg,#a78bfa,#7c5cf0)", borderRadius: 999 }} />
                         </div>
-                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>6ステップ中 {doneCount}つ完了{subs[3]?.status !== "approved" && "・今はSTEP3に挑戦中！"}</div>
+                        <div style={{ fontSize: 11, color: "#c4b5fd", marginTop: 8, fontWeight: 700 }}>{doneCount >= 6 ? "🎉 ゴール達成！営業デビューおめでとう！" : "あと" + (6 - doneCount) + "STEPでゴール！ " + doneCount + "/6 完了"}</div>
                     </div>
                 </div>
 
@@ -171,6 +171,7 @@ export default function JourneyPage() {
 
                     {/* 左：島の縦マップ */}
                     <div style={{ flex: "0 0 auto", width: 150, position: "relative", margin: "0 auto" }}>
+                        <div style={{ marginBottom: 10, padding: "5px 18px", borderRadius: 999, background: "rgba(52,211,153,.15)", border: "1px solid rgba(52,211,153,.45)", color: "#34d399", fontSize: 12, fontWeight: 900, letterSpacing: 2 }}>START</div>
                         {steps.map((s, i) => {
                             const st = stateOf(s.no);
                             const isSel = selectedNo === s.no;
@@ -185,6 +186,8 @@ export default function JourneyPage() {
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src={s.img} alt={s.title} style={{
                                             width: s.no === 3 ? 128 : 108, height: s.no === 3 ? 128 : 108, objectFit: "contain",
+                                            filter: st === "now" ? "drop-shadow(0 0 22px rgba(167,139,250,.95)) drop-shadow(0 0 44px rgba(124,92,240,.5))" : st === "lock" ? "grayscale(.7) brightness(.6)" : undefined,
+                                            transform: st === "now" ? "scale(1.08)" : undefined, transition: "all .3s",
                                             filter: st === "lock" ? "grayscale(.7) brightness(.55)" : "none",
                                             transform: isSel ? "scale(1.08)" : "scale(1)", transition: "transform .15s",
                                         }} />
