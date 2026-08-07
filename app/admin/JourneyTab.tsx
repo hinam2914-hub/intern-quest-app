@@ -62,6 +62,8 @@ export default function JourneyTab() {
     const [showApproved, setShowApproved] = useState(false);
     const [filter, setFilter] = useState<Filter>("all");
     const [menuOpen, setMenuOpen] = useState<string | null>(null);
+    const [roster, setRoster] = useState<{ title: string; people: { name: string; date: string }[] } | null>(null);
+    const [userMax, setUserMax] = useState<Record<string, { name: string; max: number; dates: Record<number, string> }>>({});
 
     const load = async () => {
         setLoading(true);
@@ -74,9 +76,16 @@ export default function JourneyTab() {
         setSubs(((subRows || []).map((s: any) => ({ ...s, name: nameMap[s.user_id] || "(不明)" }))) as Sub[]);
         setTotalInterns((userRows || []).length);
         const maxApproved: Record<string, number> = {};
+        const um: Record<string, { name: string; max: number; dates: Record<number, string> }> = {};
         (subRows || []).forEach((s: any) => {
-            if (s.status === "approved") maxApproved[s.user_id] = Math.max(maxApproved[s.user_id] || 0, s.step_no);
+            if (s.status === "approved") {
+                maxApproved[s.user_id] = Math.max(maxApproved[s.user_id] || 0, s.step_no);
+                if (!um[s.user_id]) um[s.user_id] = { name: nameMap[s.user_id] || "(不明)", max: 0, dates: {} };
+                um[s.user_id].max = Math.max(um[s.user_id].max, s.step_no);
+                um[s.user_id].dates[s.step_no] = (s.created_at || "").slice(0, 10);
+            }
         });
+        setUserMax(um);
         const d: Record<number, number> = {};
         for (let st = 1; st <= 5; st++) d[st] = Object.values(maxApproved).filter((m) => m >= st).length;
         setDoneByStep(d);
@@ -114,6 +123,14 @@ export default function JourneyTab() {
     const step3reach = doneByStep[3] || 0;
     const completeRate = totalInterns > 0 ? Math.round((doneAll / totalInterns) * 100) : 0;
 
+    const openRoster = (minStep: number, title: string) => {
+        const people = Object.values(userMax)
+            .filter((u) => u.max >= minStep)
+            .sort((a, b) => b.max - a.max)
+            .map((u) => ({ name: u.name, date: u.dates[minStep] || u.dates[u.max] || "" }));
+        setRoster({ title, people });
+    };
+
     const applyFilter = (list: Sub[]) => {
         if (filter === "all") return list;
         if (filter === "pending") return list.filter(s => s.status === "pending");
@@ -121,8 +138,8 @@ export default function JourneyTab() {
         return list.filter(s => s.step_no === filter);
     };
 
-    const kpiCard = (label: string, value: string, sub: string, accent: string) => (
-        <div style={{ flex: "1 1 180px", padding: "20px 22px", borderRadius: 24, background: "linear-gradient(145deg, rgba(139,92,246,.18), rgba(30,27,58,.6))", border: "1px solid rgba(167,139,250,.25)", boxShadow: "0 4px 24px rgba(139,92,246,.15)", backdropFilter: "blur(8px)" }}>
+    const kpiCard = (label: string, value: string, sub: string, accent: string, onClick?: () => void) => (
+        <div onClick={onClick} style={{ flex: "1 1 180px", padding: "20px 22px", borderRadius: 24, background: "linear-gradient(145deg, rgba(139,92,246,.18), rgba(30,27,58,.6))", border: "1px solid rgba(167,139,250,.25)", boxShadow: "0 4px 24px rgba(139,92,246,.15)", backdropFilter: "blur(8px)", cursor: onClick ? "pointer" : "default" }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa", marginBottom: 8 }}>{label}</div>
             <div style={{ fontSize: 30, fontWeight: 900, color: accent, lineHeight: 1 }}>{value}</div>
             <div style={{ fontSize: 11, color: "#8b8fa8", marginTop: 6 }}>{sub}</div>
@@ -185,10 +202,10 @@ export default function JourneyTab() {
             </div>
 
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 24 }}>
-                {kpiCard("全体完了率", completeRate + "%", "STEP5到達 " + doneAll + " / " + totalInterns + "名", "#a78bfa")}
-                {kpiCard("進行中インターン", inProgress + "名", "冒険マップ開始済み", "#818cf8")}
-                {kpiCard("STEP3到達", step3reach + "名", "プレイヤー昇格以上", "#34d399")}
-                {kpiCard("営業デビュー", doneAll + "名", "キャリア面談まで完了", "#fbbf24")}
+                {kpiCard("全体完了率", completeRate + "%", "STEP5到達 " + doneAll + " / " + totalInterns + "名", "#a78bfa", () => openRoster(5, "STEP5到達者"))}
+                {kpiCard("進行中インターン", inProgress + "名", "冒険マップ開始済み", "#818cf8", () => openRoster(1, "冒険マップ進行中"))}
+                {kpiCard("STEP3到達", step3reach + "名", "プレイヤー昇格以上", "#34d399", () => openRoster(3, "STEP3到達者"))}
+                {kpiCard("営業デビュー", doneAll + "名", "キャリア面談まで完了", "#fbbf24", () => openRoster(5, "営業デビュー名簿"))}
             </div>
 
             <div style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", marginBottom: 12, letterSpacing: 1 }}>ステップ別 到達状況</div>
@@ -197,7 +214,7 @@ export default function JourneyTab() {
                     const cnt = st.no <= 5 ? (doneByStep[st.no] || 0) : (doneByStep[5] || 0);
                     const rate = totalInterns > 0 ? Math.round((cnt / totalInterns) * 100) : 0;
                     return (
-                        <div key={st.no} style={{ flex: "1 1 140px", minWidth: 130, padding: "16px 14px", borderRadius: 20, textAlign: "center", background: "linear-gradient(160deg, rgba(30,27,58,.7), rgba(16,14,32,.7))", border: "1px solid rgba(139,92,246,.2)" }}>
+                        <div key={st.no} onClick={() => openRoster(st.no <= 5 ? st.no : 5, (st.no <= 5 ? "STEP" + st.no + " " : "GOAL ") + st.title + " 到達者")} style={{ flex: "1 1 140px", minWidth: 130, padding: "16px 14px", borderRadius: 20, textAlign: "center", cursor: "pointer", background: "linear-gradient(160deg, rgba(30,27,58,.7), rgba(16,14,32,.7))", border: "1px solid rgba(139,92,246,.2)" }}>
                             <div style={{ fontSize: 30, marginBottom: 6 }}>{st.icon}</div>
                             <div style={{ fontSize: 11, fontWeight: 800, color: "#a78bfa" }}>{st.no <= 5 ? "STEP " + st.no : "GOAL"}</div>
                             <div style={{ fontSize: 11.5, color: "#c2b8ee", margin: "2px 0 8px", lineHeight: 1.3, minHeight: 30 }}>{st.title}</div>
@@ -241,6 +258,31 @@ export default function JourneyTab() {
                 </button>
                 {showApproved && (filteredApproved.length === 0 ? <div style={{ fontSize: 13, color: "#6b7280" }}>まだありません</div> : filteredApproved.map(feedCard))}
             </div>
+
+            {/* 名簿モーダル */}
+            {roster && (
+                <div onClick={() => setRoster(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+                    <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 440, maxHeight: "80vh", overflowY: "auto", borderRadius: 24, padding: 26, background: "linear-gradient(160deg, rgba(30,27,58,.97), rgba(14,12,28,.97))", border: "1px solid rgba(167,139,250,.35)", boxShadow: "0 12px 48px rgba(139,92,246,.3)" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                            <div style={{ fontSize: 16, fontWeight: 900, color: "#f9fafb" }}>📜 {roster.title}（{roster.people.length}名）</div>
+                            <button onClick={() => setRoster(null)} style={{ background: "none", border: "none", color: "#8b8fa8", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+                        </div>
+                        {roster.people.length === 0 ? (
+                            <div style={{ fontSize: 13, color: "#6b7280", padding: "20px 0", textAlign: "center" }}>まだいません</div>
+                        ) : (
+                            roster.people.map((p, i) => (
+                                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "rgba(255,255,255,.03)", border: "1px solid rgba(139,92,246,.12)", marginBottom: 8 }}>
+                                    <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: "rgba(167,139,250,.15)", border: "1px solid rgba(167,139,250,.3)", flexShrink: 0 }}>👤</div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: "#f9fafb" }}>{p.name}</div>
+                                        {p.date && <div style={{ fontSize: 11, color: "#8b8fa8", marginTop: 1 }}>📅 {p.date} 承認</div>}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
