@@ -390,6 +390,12 @@ function LearnPageInner() {
                                             style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", cursor: submitting || !review.trim() ? "not-allowed" : "pointer", background: submitting || !review.trim() ? "rgba(139,92,246,.4)" : "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
                                             {submitting ? "提出中..." : "レビューを提出する"}
                                         </button>
+                                        {getCompletion(selected.id)?.status === "pending" && (
+                                            <div style={{ marginTop: 12, padding: "11px 14px", borderRadius: 10, background: "rgba(251,191,36,.1)", border: "1px solid rgba(251,191,36,.3)", color: "#fbbf24", fontSize: 13, fontWeight: 700, textAlign: "center" }}>⏳ 提出完了（承認待ち）</div>
+                                        )}
+                                        {getCompletion(selected.id)?.status === "approved" && (
+                                            <div style={{ marginTop: 12, padding: "11px 14px", borderRadius: 10, background: "rgba(52,211,153,.1)", border: "1px solid rgba(52,211,153,.3)", color: "#34d399", fontSize: 13, fontWeight: 700, textAlign: "center" }}>✅ 承認済み（+2pt獲得）</div>
+                                        )}
                                     </div>
                                 );
                             })()}
