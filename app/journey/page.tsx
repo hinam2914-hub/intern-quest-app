@@ -200,6 +200,18 @@ export default function JourneyPage() {
                                 </div>
                             );
                         })}
+                        {/* ゴール地点 */}
+                        {(() => {
+                            const reached = stateOf(6) === "done";
+                            return (
+                                <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", marginTop: 4 }}>
+                                    <div style={{ width: 4, height: 28, background: reached ? "linear-gradient(#34d399, #fbbf24)" : "rgba(255,255,255,.1)", marginBottom: 4 }} />
+                                    <div style={{ width: 72, height: 72, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, background: reached ? "radial-gradient(circle, rgba(251,191,36,.35), rgba(251,191,36,.1))" : "rgba(255,255,255,.04)", border: reached ? "2px solid #fbbf24" : "2px solid rgba(255,255,255,.12)", boxShadow: reached ? "0 0 24px rgba(251,191,36,.5)" : "none" }}>🏁</div>
+                                    <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, color: reached ? "#fbbf24" : "#6b7280", letterSpacing: 2 }}>GOAL</div>
+                                    {reached && <div style={{ marginTop: 2, fontSize: 10, fontWeight: 700, color: "#34d399" }}>営業デビュー達成！</div>}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* 右：選択中ステップの詳細 */}
