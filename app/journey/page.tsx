@@ -186,9 +186,7 @@ export default function JourneyPage() {
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src={s.img} alt={s.title} style={{
                                             width: s.no === 3 ? 128 : 108, height: s.no === 3 ? 128 : 108, objectFit: "contain",
-                                            filter: st === "now" ? "drop-shadow(0 0 22px rgba(167,139,250,.95)) drop-shadow(0 0 44px rgba(124,92,240,.5))" : st === "lock" ? "grayscale(.7) brightness(.6)" : undefined,
-                                            transform: st === "now" ? "scale(1.08)" : undefined, transition: "all .3s",
-                                            filter: st === "lock" ? "grayscale(.7) brightness(.55)" : "none",
+                                            filter: st === "now" ? "drop-shadow(0 0 22px rgba(167,139,250,.9)) drop-shadow(0 0 44px rgba(124,92,240,.45))" : st === "lock" ? "grayscale(.7) brightness(.55)" : "none",
                                             transform: isSel ? "scale(1.08)" : "scale(1)", transition: "transform .15s",
                                         }} />
                                         {/* 番号バッジ */}
