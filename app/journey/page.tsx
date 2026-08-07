@@ -84,7 +84,7 @@ export default function JourneyPage() {
         { no: 3, key: "crystal", img: "/journey/step3_crystal.png", title: "プレイヤー昇格", desc: "全体MTG出席・研修/イベント当日キャンセルなしを提出", reward: 20 },
         { no: 4, key: "dm", img: "/journey/step4_dm.png", title: "DRMスタート", desc: "DRM研修に参加して申請", reward: 20, unlock: ["STEP3をクリア", "プレイヤー昇格の承認"] },
         { no: 5, key: "temple", img: "/journey/step5_temple.png", title: "キャリア面談・配属", desc: "キャリア面談を受けて申請しよう", reward: 20, unlock: ["STEP4をクリア", "DRM研修の承認"] },
-        { no: 6, key: "castle", img: "/journey/step6_castle.png", title: "営業デビュー", desc: "営業デビューテスト合格・スクリプト練習 → 現場へ！", reward: 30, unlock: ["STEP5をクリア", "キャリア面談完了"] },
+        { no: 6, key: "castle", img: "/journey/step6_castle.png", title: "営業配属", desc: "営業学習コンテンツ・デビューテスト・コミュ基礎でゴール！", reward: 30, unlock: ["STEP5をクリア"] },
     ];
 
     // ステップ状態を決める
@@ -95,7 +95,7 @@ export default function JourneyPage() {
         return list.every((c: any) => doneContentIds.has(c.id));
     };
     // そのSTEPのテストを全部合格済みか（テストがあるのはSTEP2のみ）
-    const STEP_TESTS: Record<number, string[]> = { 2: ["quiz", "quick_response", "common_sense"] };
+    const STEP_TESTS: Record<number, string[]> = { 2: ["quiz", "quick_response", "common_sense"], 6: ["sales"] };
     const testsDone = (no: number): boolean => {
         const keys = STEP_TESTS[no] || [];
         return keys.every((k) => passedTests.has(k));
@@ -122,7 +122,10 @@ export default function JourneyPage() {
             if (stateOf(4) !== "done") return "lock";
             return stepClear(5) ? "done" : "now"; // 面談：承認+コンテンツ
         }
-        if (no === 6) return stateOf(5) === "done" ? "now" : "lock";
+        if (no === 6) {
+            if (stateOf(5) !== "done") return "lock";
+            return (contentDone(6) && testsDone(6) && b1ok) ? "done" : "now"; // 営業配属：ゴール
+        }
         return "lock";                                   // 5,6はまだ
     };
 
@@ -201,7 +204,7 @@ export default function JourneyPage() {
 
                     {/* 右：選択中ステップの詳細 */}
                     <div style={{ flex: "1 1 400px", minWidth: 300 }}>
-                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} sub={subs[selected.no] || { status: "none", review: "", scheduled_date: "", mtg_attended: false, mtg_date: "", event_no_cancel: false, event_date: "" }} userId={userId} onSaved={(st) => setSubs(prev => ({ ...prev, [selected.no]: { ...(prev[selected.no] || { status: "none", review: "", scheduled_date: "", mtg_attended: false, mtg_date: "", event_no_cancel: false, event_date: "" }), ...st } }))} stepContents={stepContents} doneContentIds={doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} passedTests={passedTests} onGoTest={(p) => router.push(p)} />
+                        <StepCard step={selected} state={selState} onCta={(path) => router.push(path)} sub={subs[selected.no] || { status: "none", review: "", scheduled_date: "", mtg_attended: false, mtg_date: "", event_no_cancel: false, event_date: "" }} userId={userId} onSaved={(st) => setSubs(prev => ({ ...prev, [selected.no]: { ...(prev[selected.no] || { status: "none", review: "", scheduled_date: "", mtg_attended: false, mtg_date: "", event_no_cancel: false, event_date: "" }), ...st } }))} stepContents={stepContents} doneContentIds={doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} passedTests={passedTests} onGoTest={(p) => router.push(p)} b1ok={b1ok} />
 
                         {/* 冒険のヒント */}
                         {subs[3]?.status !== "approved" && (
@@ -229,7 +232,7 @@ export default function JourneyPage() {
     );
 }
 
-function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, doneContentIds, onOpenContent, passedTests, onGoTest }: { step: Step; state: StepState; onCta: (path: string) => void; sub: { status: string; review: string; scheduled_date: string; mtg_attended?: boolean; mtg_date?: string; event_no_cancel?: boolean; event_date?: string }; userId: string; onSaved: (st: any) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void; passedTests: Set<string>; onGoTest: (path: string) => void }) {
+function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, doneContentIds, onOpenContent, passedTests, onGoTest, b1ok }: { step: Step; state: StepState; onCta: (path: string) => void; sub: { status: string; review: string; scheduled_date: string; mtg_attended?: boolean; mtg_date?: string; event_no_cancel?: boolean; event_date?: string }; userId: string; onSaved: (st: any) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void; passedTests: Set<string>; onGoTest: (path: string) => void; b1ok: boolean }) {
     const isNow = state === "now";
     const isLock = state === "lock";
     const [reviewText, setReviewText] = useState("");
@@ -323,6 +326,24 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                 <button onClick={() => onGoTest("/thanks")} style={{ width: "100%", marginTop: 12, padding: "13px", borderRadius: 999, border: "1px solid rgba(251,191,36,.4)", cursor: "pointer", background: "rgba(251,191,36,.08)", color: "#fbbf24", fontSize: 14, fontWeight: 800 }}>
                     💌 サンキューを送る
                 </button>
+            )}
+            {step.no === 6 && !isLock && (
+                <div style={{ marginTop: 18 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: "#c4b5fd", marginBottom: 10, letterSpacing: 1 }}>🏆 ゴール条件</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div onClick={() => onGoTest("/tests/sales")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 12, cursor: "pointer", background: passedTests.has("sales") ? "rgba(52,211,153,.1)" : "rgba(167,139,250,.08)", border: passedTests.has("sales") ? "1px solid rgba(52,211,153,.3)" : "1px solid rgba(167,139,250,.2)" }}>
+                            <span style={{ fontSize: 15 }}>{passedTests.has("sales") ? "✅" : "○"}</span>
+                            <span style={{ fontSize: 13, color: passedTests.has("sales") ? "#a7f3d0" : "#e5e0ff", fontWeight: 600, flex: 1 }}>営業デビューテストに合格</span>
+                            <span style={{ fontSize: 12, color: "#a78bfa" }}>{passedTests.has("sales") ? "合格済" : "受ける"} ›</span>
+                        </div>
+                        <div onClick={() => onGoTest("/rookie")} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 12, cursor: "pointer", background: b1ok ? "rgba(52,211,153,.1)" : "rgba(167,139,250,.08)", border: b1ok ? "1px solid rgba(52,211,153,.3)" : "1px solid rgba(167,139,250,.2)" }}>
+                            <span style={{ fontSize: 15 }}>{b1ok ? "✅" : "○"}</span>
+                            <span style={{ fontSize: 13, color: b1ok ? "#a7f3d0" : "#e5e0ff", fontWeight: 600, flex: 1 }}>一人前チャレンジ コミュ基礎を制覇</span>
+                            <span style={{ fontSize: 12, color: "#a78bfa" }}>{b1ok ? "達成" : "進める"} ›</span>
+                        </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#8b8fa8", marginTop: 8 }}>※ 上のコンテンツ・テスト・コミュ基礎をすべて達成するとゴール！</div>
+                </div>
             )}
             {!isLock && (stepContents[step.no] || []).length > 0 && (
                 <div style={{ marginTop: 18 }}>
