@@ -139,7 +139,7 @@ export default function IslandsPage() {
                     </div>
                 ))}
                 {/* 飛行船 */}
-                <div style={{ position: "absolute", top: "7%", animation: "iqShip 55s linear infinite" }}>
+                <div style={{ position: "absolute", top: "1.5%", opacity: .5, animation: "iqShip 55s linear infinite" }}>
                     <div style={{ width: 64, height: 26, borderRadius: 999, background: "linear-gradient(180deg, #8b5cf6, #6d4bc4)", boxShadow: "0 0 14px rgba(139,92,246,.4)" }} />
                     <div style={{ width: 22, height: 9, margin: "5px auto 0", borderRadius: 3, background: "#4a3a6a" }} />
                 </div>
