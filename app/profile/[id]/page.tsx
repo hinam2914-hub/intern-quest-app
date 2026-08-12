@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import IslandHero from "../../components/IslandHero";
 
 type Profile = {
     id: string;
@@ -234,6 +235,9 @@ export default function ProfilePage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
                     <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
                 </div>
+
+                {/* 島ヒーロー */}
+                <IslandHero userId={userId} name={profile.name} avatarId={(profile.avatar_config && profile.avatar_config.id) ? profile.avatar_config.id : "girl_bob_brown"} streak={profile.streak || 0} totalEarned={totalEarned} />
 
                 {/* 基本情報カード */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 24, marginBottom: 20 }}>
