@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { getHouseStage } from "../components/DotHouse";
 
 type Island = {
     id: string;
@@ -10,16 +11,33 @@ type Island = {
     avatarId: string;
     level: number;
     stepNo: number;
+    totalEarned: number;
 };
 
-const STEP_TITLE: Record<number, string> = { 0: "冒険の始まり", 1: "入社・研修", 2: "登竜門", 3: "プレイヤー昇格", 4: "DRMスタート", 5: "キャリア面談", 6: "営業デビュー" };
+const STEP_TITLE: Record<number, string> = { 0: "\u5192\u967a\u306e\u59cb\u307e\u308a", 1: "\u5165\u793e\u30fb\u7814\u4fee", 2: "\u767b\u7adc\u9580", 3: "\u30d7\u30ec\u30a4\u30e4\u30fc\u6607\u683c", 4: "DRM\u30b9\u30bf\u30fc\u30c8", 5: "\u30ad\u30e3\u30ea\u30a2\u9762\u8ac7", 6: "\u55b6\u696d\u30c7\u30d3\u30e5\u30fc" };
+const HOUSE_IMG: Record<number, string> = { 0: "/island/house/0_tent.png", 1: "/island/house/1_cabin.png", 2: "/island/house/2_house.png", 3: "/island/house/3_big.png", 4: "/island/house/4_mansion.png", 5: "/island/house/5_castle.png" };
+const HOUSE_W: Record<number, number> = { 0: 70, 1: 82, 2: 92, 3: 100, 4: 112, 5: 108 };
+
+function titleBadges(i: Island): string[] {
+    const t: string[] = [];
+    if (i.stepNo >= 6) t.push("\u2694\uFE0F \u55b6\u696d\u30c7\u30d3\u30e5\u30fc");
+    if (i.streak >= 30) t.push("\U0001F525 30\u65e5\u9023\u7d9a");
+    else if (i.streak >= 7) t.push("\U0001F525 " + i.streak + "\u65e5\u9023\u7d9a");
+    if (i.level >= 20) t.push("\u2B50 \u30c8\u30c3\u30d7\u30e9\u30f3\u30ab\u30fc");
+    else if (i.level >= 10) t.push("\U0001F48E \u52aa\u529b\u5bb6");
+    if (t.length === 0) t.push("\U0001F331 \u304b\u3051\u3060\u3057\u5192\u967a\u8005");
+    return t.slice(0, 2);
+}
+
+const OFFSETS = [0, 26, 12];
 
 export default function IslandsPage() {
     const router = useRouter();
     const [islands, setIslands] = useState<Island[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [sortKey, setSortKey] = useState<"step" | "level" | "streak">("step");
+    const [tab, setTab] = useState<"osusume" | "level" | "streak">("osusume");
+    const [departing, setDeparting] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -40,11 +58,12 @@ export default function IslandsPage() {
                 const te = ptMap[p.id] || 0;
                 return {
                     id: p.id,
-                    name: p.name || "名無し",
+                    name: p.name || "\u540d\u7121\u3057",
                     streak: p.streak || 0,
                     avatarId,
                     level: Math.floor(te / 100) + 1,
                     stepNo: stepMap[p.id] || 0,
+                    totalEarned: te,
                 };
             });
             setIslands(list);
@@ -53,45 +72,146 @@ export default function IslandsPage() {
         load();
     }, [router]);
 
+    const stars = useMemo(() => Array.from({ length: 64 }, (_, i) => ({
+        left: (i * 137) % 100,
+        top: (i * 61) % 92,
+        size: 1 + (i % 3),
+        delay: (i % 40) / 10,
+        dur: 2 + (i % 4),
+    })), []);
+
     const filtered = islands
         .filter((i) => i.name.includes(search))
-        .sort((a, b) => sortKey === "step" ? b.stepNo - a.stepNo : sortKey === "level" ? b.level - a.level : b.streak - a.streak);
+        .sort((a, b) => tab === "osusume" ? b.stepNo - a.stepNo || b.level - a.level : tab === "level" ? b.level - a.level : b.streak - a.streak);
 
-    const sortChip = (label: string, key: typeof sortKey) => (
-        <button onClick={() => setSortKey(key)} style={{ padding: "7px 16px", borderRadius: 999, border: sortKey === key ? "1px solid rgba(167,139,250,.6)" : "1px solid rgba(255,255,255,.1)", cursor: "pointer", background: sortKey === key ? "rgba(139,92,246,.25)" : "rgba(255,255,255,.03)", color: sortKey === key ? "#e5e0ff" : "#8b8fa8", fontSize: 12.5, fontWeight: 800 }}>{label}</button>
+    const visit = (id: string) => {
+        if (departing) return;
+        setDeparting(id);
+        setTimeout(() => router.push("/profile/" + id), 420);
+    };
+    const randomVisit = () => {
+        if (!filtered.length || departing) return;
+        visit(filtered[Math.floor(Math.random() * filtered.length)].id);
+    };
+
+    const tabChip = (label: string, key: typeof tab) => (
+        <button onClick={() => setTab(key)} style={{ padding: "8px 16px", borderRadius: 999, border: tab === key ? "1px solid rgba(167,139,250,.65)" : "1px solid rgba(255,255,255,.1)", cursor: "pointer", background: tab === key ? "rgba(139,92,246,.28)" : "rgba(255,255,255,.03)", color: tab === key ? "#e5e0ff" : "#8b8fa8", fontSize: 12.5, fontWeight: 800, whiteSpace: "nowrap" }}>{label}</button>
     );
 
     return (
-        <div style={{ minHeight: "100vh", background: "radial-gradient(circle at 50% 20%, #1a1533 0%, #0b0b14 70%)", padding: "24px 16px 80px" }}>
-            <div style={{ maxWidth: 900, margin: "0 auto" }}>
+        <div style={{ minHeight: "100vh", background: "#0b0b14", padding: "24px 16px 90px", position: "relative", overflow: "hidden" }}>
+            <style>{`
+                @keyframes iqTwinkle { 0%,100%{opacity:.12} 50%{opacity:.9} }
+                @keyframes iqBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+                @keyframes iqShoot { 0%{transform:translate(0,0) rotate(-32deg);opacity:0} 4%{opacity:1} 22%{transform:translate(-360px,230px) rotate(-32deg);opacity:0} 100%{transform:translate(-360px,230px) rotate(-32deg);opacity:0} }
+                @keyframes iqAurora { 0%,100%{transform:translateX(-5%) skewX(-6deg);opacity:.45} 50%{transform:translateX(5%) skewX(5deg);opacity:.75} }
+                @keyframes iqShip { 0%{transform:translateX(-160px)} 100%{transform:translateX(110vw)} }
+                @keyframes iqFar { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-16px)} }
+                @keyframes iqCloud { 0%{transform:translateX(-120px)} 100%{transform:translateX(110vw)} }
+                .iq-isle { position:relative; cursor:pointer; transition: transform .35s ease, filter .35s ease, opacity .4s ease; }
+                .iq-isle:hover { transform: translateY(-12px) scale(1.04); filter: drop-shadow(0 0 24px rgba(139,92,246,.55)); z-index: 5; }
+                .iq-visit-btn { opacity:0; transform: translateY(6px); transition: all .25s ease; }
+                .iq-isle:hover .iq-visit-btn { opacity:1; transform: translateY(0); }
+                @media (hover: none) { .iq-visit-btn { opacity:1; transform:none; } }
+                .iq-glow { position:absolute; inset:-14px; border-radius:32px; background: radial-gradient(circle at 50% 38%, rgba(167,139,250,.3), transparent 65%); opacity:0; transition: opacity .3s; pointer-events:none; }
+                .iq-isle:hover .iq-glow { opacity:1; }
+                .iq-spark { position:absolute; font-size:11px; color:#fbbf24; opacity:0; pointer-events:none; }
+                .iq-isle:hover .iq-spark { animation: iqTwinkle 1s ease-in-out infinite; }
+                .iq-departing { transform: scale(1.55) translateY(-14px) !important; opacity:0 !important; z-index:50; }
+                .iq-dim { opacity:.08; pointer-events:none; }
+            `}</style>
+
+            {/* \u80cc\u666f\uff1a\u661f\u7a7a */}
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+                {stars.map((s, idx) => (
+                    <div key={idx} style={{ position: "absolute", left: s.left + "%", top: s.top + "%", width: s.size, height: s.size, borderRadius: "50%", background: "#fff", animation: `iqTwinkle ${s.dur}s ease-in-out ${s.delay}s infinite` }} />
+                ))}
+                <div style={{ position: "absolute", top: "-8%", left: "-10%", width: "70%", height: "45%", background: "radial-gradient(ellipse, rgba(139,92,246,.22), transparent 65%)", filter: "blur(40px)", animation: "iqAurora 11s ease-in-out infinite" }} />
+                <div style={{ position: "absolute", top: "10%", right: "-14%", width: "60%", height: "40%", background: "radial-gradient(ellipse, rgba(99,102,241,.18), transparent 65%)", filter: "blur(46px)", animation: "iqAurora 14s ease-in-out 2s infinite" }} />
+                <div style={{ position: "absolute", top: "6%", right: "20%", width: 3, height: 90, background: "linear-gradient(180deg, #fff, transparent)", animation: "iqShoot 9s linear 2s infinite" }} />
+                <div style={{ position: "absolute", top: "2%", left: "62%", width: 2, height: 70, background: "linear-gradient(180deg, #fff, transparent)", animation: "iqShoot 13s linear 6s infinite" }} />
+                <div style={{ position: "absolute", top: "14%", width: 130, height: 34, borderRadius: 999, background: "rgba(255,255,255,.05)", filter: "blur(10px)", animation: "iqCloud 60s linear infinite" }} />
+                <div style={{ position: "absolute", top: "34%", width: 170, height: 40, borderRadius: 999, background: "rgba(255,255,255,.04)", filter: "blur(12px)", animation: "iqCloud 85s linear 20s infinite" }} />
+                {[{ t: "16%", l: "6%", w: 54, d: "0s" }, { t: "30%", r: "5%", w: 44, d: "2.5s" }, { t: "64%", l: "3%", w: 38, d: "1.2s" }].map((f: any, idx) => (
+                    <div key={idx} style={{ position: "absolute", top: f.t, left: f.l, right: f.r, width: f.w, opacity: .32, filter: "blur(.5px)", animation: `iqFar 8s ease-in-out ${f.d} infinite` }}>
+                        <div style={{ width: "100%", height: f.w * .34, borderRadius: "50%", background: "#3b325e" }} />
+                        <div style={{ width: 0, height: 0, margin: "0 auto", borderLeft: f.w * .32 + "px solid transparent", borderRight: f.w * .32 + "px solid transparent", borderTop: f.w * .5 + "px solid #2a2347" }} />
+                    </div>
+                ))}
+                {/* \u98db\u884c\u8239 */}
+                <div style={{ position: "absolute", top: "7%", animation: "iqShip 55s linear infinite" }}>
+                    <div style={{ width: 64, height: 26, borderRadius: 999, background: "linear-gradient(180deg, #8b5cf6, #6d4bc4)", boxShadow: "0 0 14px rgba(139,92,246,.4)" }} />
+                    <div style={{ width: 22, height: 9, margin: "5px auto 0", borderRadius: 3, background: "#4a3a6a" }} />
+                </div>
+            </div>
+
+            <div style={{ maxWidth: 940, margin: "0 auto", position: "relative" }}>
                 <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }} onClick={() => router.push("/home")}>INTERN QUEST</div>
-                <h1 style={{ fontSize: 26, fontWeight: 900, color: "#fff", margin: "6px 0 4px" }}>🏝️ みんなの島へ行く</h1>
-                <p style={{ fontSize: 13, color: "#9ca3af", margin: "0 0 20px" }}>仲間の島を訪問して、成長や頑張りを見つけよう！</p>
+                <h1 style={{ fontSize: 28, fontWeight: 900, color: "#fff", margin: "8px 0 6px", textShadow: "0 0 24px rgba(139,92,246,.5)" }}>\U0001F334 \u307f\u3093\u306a\u306e\u5cf6\u3078\u884c\u304f</h1>
+                <p style={{ fontSize: 13, color: "#a5a8c0", margin: "0 0 20px", lineHeight: 1.7 }}>\u4ef2\u9593\u306e\u5cf6\u3092\u8a2a\u554f\u3057\u3066\u3001\u5bb6\u306e\u6210\u9577\u3084\u5192\u967a\u306e\u9032\u307f\u5177\u5408\u3092\u898b\u3066\u307f\u3088\u3046\uff01</p>
 
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 インターンを検索" style={{ width: "100%", padding: "12px 16px", borderRadius: 14, border: "1px solid rgba(167,139,250,.3)", background: "rgba(255,255,255,.04)", color: "#fff", fontSize: 14, marginBottom: 14, boxSizing: "border-box", outline: "none" }} />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="\U0001F50D \u30a4\u30f3\u30bf\u30fc\u30f3\u3092\u691c\u7d22" style={{ width: "100%", padding: "12px 16px", borderRadius: 14, border: "1px solid rgba(167,139,250,.3)", background: "rgba(255,255,255,.04)", color: "#fff", fontSize: 14, marginBottom: 14, boxSizing: "border-box", outline: "none" }} />
 
-                <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
-                    {sortChip("進捗順", "step")}
-                    {sortChip("レベル順", "level")}
-                    {sortChip("連続記録順", "streak")}
+                <div style={{ display: "flex", gap: 8, marginBottom: 30, flexWrap: "wrap" }}>
+                    {tabChip("\U0001F30D \u304a\u3059\u3059\u3081\u306e\u5cf6", "osusume")}
+                    {tabChip("\u2B50 \u30ec\u30d9\u30eb\u9806", "level")}
+                    {tabChip("\U0001F525 \u9023\u7d9a\u8a18\u9332\u9806", "streak")}
+                    <button onClick={randomVisit} style={{ padding: "8px 16px", borderRadius: 999, border: "1px solid rgba(251,191,36,.45)", cursor: "pointer", background: "rgba(251,191,36,.12)", color: "#fbbf24", fontSize: 12.5, fontWeight: 800, whiteSpace: "nowrap" }}>\U0001F3B2 \u30e9\u30f3\u30c0\u30e0\u8a2a\u554f</button>
                 </div>
 
                 {loading ? (
-                    <div style={{ color: "#8b8fa8", padding: 40, textAlign: "center" }}>島を探しています...</div>
+                    <div style={{ color: "#8b8fa8", padding: 40, textAlign: "center" }}>\u5cf6\u3092\u63a2\u3057\u3066\u3044\u307e\u3059...</div>
                 ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 14 }}>
-                        {filtered.map((i) => (
-                            <div key={i.id} onClick={() => router.push("/profile/" + i.id)} style={{ cursor: "pointer", padding: "18px 14px 16px", borderRadius: 22, textAlign: "center", background: "linear-gradient(165deg, rgba(46,38,82,.85), rgba(20,17,40,.85))", border: "1px solid rgba(139,92,246,.25)", boxShadow: "0 6px 22px rgba(0,0,0,.3)", position: "relative" }}>
-                                <div style={{ position: "absolute", top: 10, left: 12, fontSize: 11, fontWeight: 900, color: "#fbbf24", background: "rgba(251,191,36,.12)", border: "1px solid rgba(251,191,36,.3)", padding: "2px 8px", borderRadius: 999 }}>Lv.{i.level}</div>
-                                <div style={{ width: 90, height: 90, margin: "8px auto 8px", borderRadius: "50%", background: "radial-gradient(circle, rgba(167,139,250,.2), rgba(167,139,250,.05))", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={"/avatars/" + i.avatarId + ".png"} alt={i.name} style={{ width: 88, height: 88, objectFit: "cover", borderRadius: "50%" }} />
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "34px 20px" }}>
+                        {filtered.map((i, idx) => {
+                            const stage = getHouseStage(i.totalEarned);
+                            return (
+                                <div key={i.id} style={{ transform: `translateY(${OFFSETS[idx % 3]}px)` }}>
+                                    <div className={"iq-isle" + (departing === i.id ? " iq-departing" : departing ? " iq-dim" : "")} onClick={() => visit(i.id)}>
+                                        <div className="iq-glow" />
+                                        <span className="iq-spark" style={{ top: 8, left: "16%" }}>\u2726</span>
+                                        <span className="iq-spark" style={{ top: 30, right: "12%" }}>\u2726</span>
+                                        <div style={{ animation: `iqBob ${4.6 + (idx % 4) * .5}s ease-in-out ${(idx % 5) * .4}s infinite` }}>
+                                            {/* \u5cf6\u306e\u30b7\u30fc\u30f3 */}
+                                            <div style={{ position: "relative", height: 168, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                                                {/* \u5730\u9762 */}
+                                                <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", width: 176, height: 44, borderRadius: "50%", background: "linear-gradient(180deg, #4ade80, #22a05a)", boxShadow: "inset 0 -8px 12px rgba(0,0,0,.25)" }} />
+                                                <div style={{ position: "absolute", bottom: -16, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "62px solid transparent", borderRight: "62px solid transparent", borderTop: "52px solid #6b4a34" }} />
+                                                <div style={{ position: "absolute", bottom: -34, left: "50%", transform: "translateX(-50%)", width: 110, height: 16, borderRadius: "50%", background: "rgba(0,0,0,.45)", filter: "blur(8px)" }} />
+                                                {/* \u5bb6\uff08\u4e3b\u5f79\uff09 */}
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={HOUSE_IMG[stage.idx]} alt="house" style={{ width: HOUSE_W[stage.idx], position: "relative", zIndex: 1, marginBottom: 30, filter: "drop-shadow(0 6px 10px rgba(0,0,0,.4))" }} />
+                                                {/* \u30a2\u30d0\u30bf\u30fc\uff08\u5bb6\u306e\u524d\uff09 */}
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={"/avatars/" + i.avatarId + ".png"} alt={i.name} style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(16px)", width: 46, height: 46, objectFit: "cover", borderRadius: "50%", zIndex: 2, border: "2px solid rgba(255,255,255,.5)", boxShadow: "0 3px 8px rgba(0,0,0,.4)" }} />
+                                            </div>
+                                            {/* \u60c5\u5831\u30d1\u30cd\u30eb */}
+                                            <div style={{ marginTop: 26, textAlign: "center", padding: "12px 10px 12px", borderRadius: 18, background: "rgba(30,25,55,.55)", border: "1px solid rgba(139,92,246,.22)", backdropFilter: "blur(6px)" }}>
+                                                <div style={{ fontSize: 14.5, fontWeight: 800, color: "#f9fafb" }}>{i.name}</div>
+                                                <div style={{ fontSize: 10.5, color: "#c4b5fd", marginTop: 4, fontWeight: 700 }}>{i.stepNo >= 6 ? "\U0001F3C6 \u55b6\u696d\u30c7\u30d3\u30e5\u30fc" : "STEP" + i.stepNo + " " + (STEP_TITLE[i.stepNo] || "")}</div>
+                                                <div style={{ display: "flex", gap: 5, justifyContent: "center", marginTop: 7 }}>
+                                                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                                                        <span key={n} style={{ width: 8, height: 8, borderRadius: "50%", background: n <= i.stepNo ? "#a78bfa" : "rgba(255,255,255,.14)", boxShadow: n === i.stepNo && i.stepNo > 0 ? "0 0 8px #a78bfa" : "none" }} />
+                                                    ))}
+                                                </div>
+                                                <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 8 }}>
+                                                    <span style={{ fontSize: 10.5, fontWeight: 900, color: "#fbbf24", background: "rgba(251,191,36,.12)", border: "1px solid rgba(251,191,36,.3)", padding: "2px 9px", borderRadius: 999 }}>Lv.{i.level}</span>
+                                                    {i.streak > 0 && <span style={{ fontSize: 10.5, fontWeight: 800, color: "#fb923c", background: "rgba(251,146,60,.1)", border: "1px solid rgba(251,146,60,.3)", padding: "2px 9px", borderRadius: 999 }}>\U0001F525 {i.streak}\u65e5</span>}
+                                                </div>
+                                                <div style={{ display: "flex", gap: 5, justifyContent: "center", marginTop: 7, flexWrap: "wrap" }}>
+                                                    {titleBadges(i).map((t, bi) => (
+                                                        <span key={bi} style={{ fontSize: 10, fontWeight: 800, color: "#ddd6fe", background: "rgba(139,92,246,.16)", border: "1px solid rgba(167,139,250,.3)", padding: "2px 8px", borderRadius: 999 }}>{t}</span>
+                                                    ))}
+                                                </div>
+                                                <div className="iq-visit-btn" style={{ marginTop: 10 }}>
+                                                    <span style={{ display: "inline-block", padding: "7px 18px", borderRadius: 999, background: "linear-gradient(135deg, #8b5cf6, #6d4bc4)", color: "#fff", fontSize: 12, fontWeight: 900, boxShadow: "0 4px 14px rgba(139,92,246,.5)" }}>\U0001F3DD\uFE0F \u5cf6\u3078\u904a\u3076</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb" }}>{i.name}</div>
-                                <div style={{ fontSize: 11, color: "#c4b5fd", marginTop: 3, fontWeight: 700 }}>{i.stepNo >= 6 ? "🏆 営業デビュー" : "STEP" + i.stepNo + " " + (STEP_TITLE[i.stepNo] || "")}</div>
-                                {i.streak > 0 && <div style={{ fontSize: 11, color: "#fb923c", marginTop: 4, fontWeight: 700 }}>🔥 {i.streak}日連続</div>}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
