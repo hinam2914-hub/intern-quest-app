@@ -11,7 +11,6 @@ const AVATARS = [
   { id: "boy_mash_brown", label: "マッシュ・茶" },
   { id: "boy_perm_black", label: "パーマ・黒" },
   { id: "girl_bun_brown", label: "おだんご・茶" },
-  { id: "boy_suit_navy", label: "スーツ・黒髪ショート" },
 
 ];
 
