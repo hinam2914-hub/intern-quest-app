@@ -59,34 +59,34 @@ export default function IslandHero({ userId, name, avatarId, streak, totalEarned
                 return jst.getUTCMinutes() % 11 === 0;
             });
             const zoroPick = seededPick(zoro, ymd + "zoro");
-            if (zoroPick && (zoroPick as any).user_id === userId) t.push("\U0001F55B ゾロ目王");
+            if (zoroPick && (zoroPick as any).user_id === userId) t.push("🕛 ゾロ目王");
 
             const thanksCount: Record<string, number> = {};
             dayThanks.forEach((r: any) => { if (r.to_user_id) thanksCount[r.to_user_id] = (thanksCount[r.to_user_id] || 0) + 1; });
             const byThanks = Object.entries(thanksCount).sort((a, b) => b[1] - a[1]);
-            if (byThanks.length && byThanks[0][0] === userId) t.push("\U0001F64F サンキュー王");
+            if (byThanks.length && byThanks[0][0] === userId) t.push("🙏 サンキュー王");
 
             if (daySubs.length) {
-                if ((daySubs[0] as any).user_id === userId) t.push("\u26A1 一番乗り王");
-                if ((daySubs[daySubs.length - 1] as any).user_id === userId) t.push("\U0001F51A ラストマン王");
+                if ((daySubs[0] as any).user_id === userId) t.push("⚡ 一番乗り王");
+                if ((daySubs[daySubs.length - 1] as any).user_id === userId) t.push("🔚 ラストマン王");
                 const byLen = [...daySubs].sort((a: any, b: any) => (b.content?.length || 0) - (a.content?.length || 0));
-                if ((byLen[0] as any).user_id === userId) t.push("\U0001F4AC 長文王");
-                if ((byLen[byLen.length - 1] as any).user_id === userId) t.push("\U0001F3C3 瞬速王");
+                if ((byLen[0] as any).user_id === userId) t.push("💬 長文王");
+                if ((byLen[byLen.length - 1] as any).user_id === userId) t.push("🏃 瞬速王");
                 const byEmoji = daySubs.map((s: any) => ({ uid: s.user_id, n: countEmoji(s.content || "") })).sort((a, b) => b.n - a.n);
-                if (byEmoji[0].n > 0 && byEmoji[0].uid === userId) t.push("\U0001F3A8 絵文字職人");
+                if (byEmoji[0].n > 0 && byEmoji[0].uid === userId) t.push("🎨 絵文字職人");
             }
 
             const tired = daySubs.filter((s: any) => TIRED_WORDS.some(w => (s.content || "").includes(w)));
             const tiredPick = seededPick(tired, ymd + "tired");
-            if (tiredPick && (tiredPick as any).user_id === userId) t.push("\U0001F634 おつかれ王");
+            if (tiredPick && (tiredPick as any).user_id === userId) t.push("😴 おつかれ王");
 
             const activeIds = Array.from(new Set([
                 ...dayThanks.map((r: any) => r.to_user_id),
                 ...daySubs.map((r: any) => r.user_id),
             ]));
             if (activeIds.length) {
-                if (seededPick(activeIds, ymd + "lucky") === userId) t.push("\U0001F3B2 ラッキー王");
-                if (seededPick(activeIds, ymd + "star") === userId) t.push("\U0001F0CF 本日の主役");
+                if (seededPick(activeIds, ymd + "lucky") === userId) t.push("🎲 ラッキー王");
+                if (seededPick(activeIds, ymd + "star") === userId) t.push("🃏 本日の主役");
             }
 
             setTitles(t.slice(0, 3));
@@ -95,7 +95,7 @@ export default function IslandHero({ userId, name, avatarId, streak, totalEarned
 
     const stage = getHouseStage(totalEarned);
     const level = Math.floor(totalEarned / 100) + 1;
-    const bubble = titles.length ? "\U0001F451 昨日の" + titles.map(s => s.slice(s.indexOf(" ") + 1)).join("・") + "！" : "ようこそ、" + name + "の島へ！";
+    const bubble = titles.length ? "👑 昨日の" + titles.map(s => s.slice(s.indexOf(" ") + 1)).join("・") + "！" : "ようこそ、" + name + "の島へ！";
 
     return (
         <div style={{ position: "relative", borderRadius: 22, overflow: "hidden", marginBottom: 20, background: "radial-gradient(circle at 50% 15%, #221b45 0%, #0d0b1c 75%)", border: "1px solid rgba(139,92,246,.25)" }}>
@@ -130,7 +130,7 @@ export default function IslandHero({ userId, name, avatarId, streak, totalEarned
             {/* ステータス帯 */}
             <div style={{ position: "relative", padding: "14px 16px 16px", background: "rgba(13,11,28,.7)", borderTop: "1px solid rgba(139,92,246,.2)", backdropFilter: "blur(4px)" }}>
                 <div style={{ textAlign: "center", fontSize: 12, fontWeight: 800, color: "#c4b5fd", marginBottom: 8 }}>
-                    {stage.label}「{stage.name}」{stepNo >= 6 ? "　\U0001F3C6 営業デビュー" : "　STEP" + stepNo + " " + (STEP_TITLE[stepNo] || "")}
+                    {stage.label}「{stage.name}」{stepNo >= 6 ? "　🏆 営業デビュー" : "　STEP" + stepNo + " " + (STEP_TITLE[stepNo] || "")}
                 </div>
                 <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 10 }}>
                     {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -140,7 +140,7 @@ export default function IslandHero({ userId, name, avatarId, streak, totalEarned
                 <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11.5, fontWeight: 900, color: "#fbbf24", background: "rgba(251,191,36,.12)", border: "1px solid rgba(251,191,36,.3)", padding: "3px 11px", borderRadius: 999 }}>Lv.{level}</span>
                     <span style={{ fontSize: 11.5, fontWeight: 800, color: "#a5b4fc", background: "rgba(99,102,241,.12)", border: "1px solid rgba(99,102,241,.3)", padding: "3px 11px", borderRadius: 999 }}>{totalEarned.toLocaleString()}pt</span>
-                    {streak > 0 && <span style={{ fontSize: 11.5, fontWeight: 800, color: "#fb923c", background: "rgba(251,146,60,.1)", border: "1px solid rgba(251,146,60,.3)", padding: "3px 11px", borderRadius: 999 }}>\U0001F525 {streak}日連続</span>}
+                    {streak > 0 && <span style={{ fontSize: 11.5, fontWeight: 800, color: "#fb923c", background: "rgba(251,146,60,.1)", border: "1px solid rgba(251,146,60,.3)", padding: "3px 11px", borderRadius: 999 }}>🔥 {streak}日連続</span>}
                 </div>
             </div>
         </div>
