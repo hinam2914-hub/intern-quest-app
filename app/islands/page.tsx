@@ -85,7 +85,7 @@ export default function IslandsPage() {
                                 <div style={{ position: "absolute", top: 10, left: 12, fontSize: 11, fontWeight: 900, color: "#fbbf24", background: "rgba(251,191,36,.12)", border: "1px solid rgba(251,191,36,.3)", padding: "2px 8px", borderRadius: 999 }}>Lv.{i.level}</div>
                                 <div style={{ width: 90, height: 90, margin: "8px auto 8px", borderRadius: "50%", background: "radial-gradient(circle, rgba(167,139,250,.2), rgba(167,139,250,.05))", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={"/avatars/" + i.avatarId + ".png"} alt={i.name} style={{ width: 80, height: 80, objectFit: "contain" }} />
+                                    <img src={"/avatars/" + i.avatarId + ".png"} alt={i.name} style={{ width: 88, height: 88, objectFit: "cover", borderRadius: "50%" }} />
                                 </div>
                                 <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb" }}>{i.name}</div>
                                 <div style={{ fontSize: 11, color: "#c4b5fd", marginTop: 3, fontWeight: 700 }}>{i.stepNo >= 6 ? "🏆 営業デビュー" : "STEP" + i.stepNo + " " + (STEP_TITLE[i.stepNo] || "")}</div>

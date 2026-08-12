@@ -29,6 +29,7 @@ const CATEGORIES: Category[] = [
             { icon: "🧠", label: "思考クエスト", path: "/thinking" },
             { icon: "🎯", label: "ライフチャレンジ", path: "/challenge" },
             { icon: "🗺️", label: "冒険マップ", path: "/journey" },
+            { icon: "🏝️", label: "みんなの島へ行く", path: "/islands" },
             { icon: "🏅", label: "一人前チャレンジ", path: "/rookie" },
             { icon: "🎤", label: "スクリプト練習", path: "/script-practice" },
             { icon: "🎓", label: "講座スタンプ", path: "/courses" },
