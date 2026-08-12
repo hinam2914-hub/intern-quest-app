@@ -122,7 +122,7 @@ export default function IslandsPage() {
             `}</style>
 
             {/* 背景：星空 */}
-            <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            <div style={{ position: "fixed", inset: 0, pointerEvents: "none" }}>
                 {stars.map((s, idx) => (
                     <div key={idx} style={{ position: "absolute", left: s.left + "%", top: s.top + "%", width: s.size, height: s.size, borderRadius: "50%", background: "#fff", animation: `iqTwinkle ${s.dur}s ease-in-out ${s.delay}s infinite` }} />
                 ))}
