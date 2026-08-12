@@ -37,14 +37,18 @@ export default function ThinkingPage() {
         // 今日(JST)の通算日数で、お題プールから1問を決定的に選ぶ（毎日自動で切り替わる）
         const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
         const dayNumber = Math.floor(jstNow.getTime() / 86400000); // 1970年からの日数(JST)
-        const q = pool.length > 0 ? pool[dayNumber % pool.length] : undefined;
-        // 過去のお題：回答が1件以上ついたお題のみ（＝過去に出題済み）。今日のお題は除く。
+        // 出題済み（回答が1件以上ついたお題）を先に取得
         const poolIds = pool.map(pq => pq.id);
         let answeredQids: string[] = [];
         if (poolIds.length > 0) {
             const { data: ansRows } = await supabase.from("thinking_answers").select("question_id").in("question_id", poolIds);
             answeredQids = Array.from(new Set((ansRows || []).map((r: any) => r.question_id)));
         }
+        // 今日のお題：未出題プールから日替わり選択（全部出題済みなら全プールで一周リセット）
+        const unanswered = pool.filter(pq => !answeredQids.includes(pq.id));
+        const activePool = unanswered.length > 0 ? unanswered : pool;
+        const q = activePool.length > 0 ? activePool[dayNumber % activePool.length] : undefined;
+        // 過去のお題：出題済みのみ。今日のお題は除く。
         const past = pool.filter(pq => answeredQids.includes(pq.id) && (!q || pq.id !== q.id)).reverse();
         setPastQuestions(past);
         setOpenPast(null); setPastAnswers({});
