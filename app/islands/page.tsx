@@ -12,6 +12,7 @@ type Island = {
     level: number;
     stepNo: number;
     totalEarned: number;
+    config: Record<string, string>;
 };
 
 const STEP_TITLE: Record<number, string> = { 0: "冒険の始まり", 1: "入社・研修", 2: "登竜門", 3: "プレイヤー昇格", 4: "DRMスタート", 5: "キャリア面談", 6: "営業デビュー" };
@@ -30,6 +31,17 @@ function titleBadges(i: Island): string[] {
 }
 
 const OFFSETS = [0, 30, 14];
+
+const GROUND_BG: Record<string, string> = {
+    ground_hanabatake: "linear-gradient(180deg, #86efac, #4ade80)",
+    ground_yukihara: "linear-gradient(180deg, #f8fafc, #cbd5e1)",
+    ground_sunahama: "linear-gradient(180deg, #fde68a, #f59e0b)",
+    ground_momiji: "linear-gradient(180deg, #fdba74, #ea580c)",
+};
+const TREE_EMOJI: Record<string, string> = { tree_sakura: "🌸", tree_yashi: "🌴", tree_momi: "🎄", tree_momiji: "🍁" };
+const DECO_EMOJI: Record<string, string> = { deco_funsui: "⛲", deco_bench: "🪑", deco_gaitou: "💡", deco_yukidaruma: "⛄", deco_torii: "⛩️" };
+const SKY_EMOJI: Record<string, string> = { sky_niji: "🌈", sky_chocho: "🦋", sky_fuusen: "🎈" };
+const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "🐈", animal_inu: "🐕" };
 const FLOWER_COLORS = ["#f472b6", "#fbbf24", "#f87171", "#c084fc", "#fb923c"];
 
 function IslandScene({ i, idx }: { i: Island; idx: number }) {
@@ -42,6 +54,7 @@ function IslandScene({ i, idx }: { i: Island; idx: number }) {
             {rare100 && <div style={{ position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)", width: 250, height: 66, borderRadius: "50%", border: "2px solid rgba(167,139,250,.55)", boxShadow: "0 0 26px rgba(167,139,250,.5), inset 0 0 22px rgba(167,139,250,.3)", animation: "iqLantern 3.2s ease-in-out infinite" }} />}
             {/* 地面 */}
             <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", width: 210, height: 54, borderRadius: "50%", background: "linear-gradient(180deg, #4ade80, #22a05a)", boxShadow: "inset 0 -9px 13px rgba(0,0,0,.25)" }} />
+            {i.config.ground && GROUND_BG[i.config.ground] && <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", width: 210, height: 54, borderRadius: "50%", background: GROUND_BG[i.config.ground], boxShadow: "inset 0 -9px 13px rgba(0,0,0,.2)" }} />}
             {/* 道 */}
             <div style={{ position: "absolute", bottom: 22, left: "50%", transform: "translateX(-8px)", width: 34, height: 34, borderRadius: "50% 50% 60% 60%", background: "linear-gradient(180deg, #d9c49a, #bfa87e)", opacity: .9, zIndex: 1 }} />
             {/* 土台 */}
@@ -90,6 +103,10 @@ function IslandScene({ i, idx }: { i: Island; idx: number }) {
             {/* アバター（主人公） */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={"/avatars/" + i.avatarId + ".png"} alt={i.name} style={{ position: "absolute", bottom: 26, left: "50%", transform: "translateX(-80px)", width: 48, height: 48, objectFit: "cover", borderRadius: "50%", zIndex: 4, border: "2px solid rgba(255,255,255,.55)", boxShadow: "0 4px 9px rgba(0,0,0,.45)" }} />
+            {i.config.tree && TREE_EMOJI[i.config.tree] && <div style={{ position: "absolute", bottom: 40, right: 20, fontSize: 40, zIndex: 3, filter: "drop-shadow(0 3px 4px rgba(0,0,0,.4))" }}>{TREE_EMOJI[i.config.tree]}</div>}
+            {i.config.deco && DECO_EMOJI[i.config.deco] && <div style={{ position: "absolute", bottom: 30, left: 30, fontSize: 30, zIndex: 3, filter: "drop-shadow(0 2px 3px rgba(0,0,0,.4))" }}>{DECO_EMOJI[i.config.deco]}</div>}
+            {i.config.sky && SKY_EMOJI[i.config.sky] && <div style={{ position: "absolute", top: 6, right: 26, fontSize: 34, zIndex: 3, opacity: .95, animation: "iqFar 6s ease-in-out infinite" }}>{SKY_EMOJI[i.config.sky]}</div>}
+            {i.config.animal && ANIMAL_EMOJI[i.config.animal] && <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(52px)", fontSize: 24, zIndex: 4, animation: "iqBob 2.6s ease-in-out infinite", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.4))" }}>{ANIMAL_EMOJI[i.config.animal]}</div>}
         </div>
     );
 }
@@ -107,7 +124,7 @@ export default function IslandsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             const [{ data: profiles }, { data: points }, { data: jsubs }] = await Promise.all([
-                supabase.from("profiles").select("id, name, streak, avatar_config").eq("is_active", true),
+                supabase.from("profiles").select("id, name, streak, avatar_config, island_config").eq("is_active", true),
                 supabase.from("user_points").select("id, total_earned"),
                 supabase.from("journey_submissions").select("user_id, step_no, status").eq("status", "approved"),
             ]);
@@ -127,6 +144,7 @@ export default function IslandsPage() {
                     level: Math.floor(te / 100) + 1,
                     stepNo: stepMap[p.id] || 0,
                     totalEarned: te,
+                    config: (p.island_config || {}) as Record<string, string>,
                 };
             });
             setIslands(list);
