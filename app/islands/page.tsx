@@ -20,12 +20,12 @@ const HOUSE_W: Record<number, number> = { 0: 84, 1: 98, 2: 110, 3: 120, 4: 134, 
 
 function titleBadges(i: Island): string[] {
     const t: string[] = [];
-    if (i.stepNo >= 6) t.push("\u2694\uFE0F 営業デビュー");
-    if (i.streak >= 30) t.push("\U0001F525 30日連続");
-    else if (i.streak >= 7) t.push("\U0001F525 " + i.streak + "日連続");
-    if (i.level >= 20) t.push("\u2B50 トップランカー");
-    else if (i.level >= 10) t.push("\U0001F48E 努力家");
-    if (t.length === 0) t.push("\U0001F331 かけだし冒険者");
+    if (i.stepNo >= 6) t.push("⚔️ 営業デビュー");
+    if (i.streak >= 30) t.push("🔥 30日連続");
+    else if (i.streak >= 7) t.push("🔥 " + i.streak + "日連続");
+    if (i.level >= 20) t.push("⭐ トップランカー");
+    else if (i.level >= 10) t.push("💎 努力家");
+    if (t.length === 0) t.push("🌱 かけだし冒険者");
     return t.slice(0, 2);
 }
 
@@ -39,7 +39,7 @@ function IslandScene({ i, idx }: { i: Island; idx: number }) {
     return (
         <div style={{ position: "relative", height: 215, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
             {/* 魔法陣 Lv100+ */}
-            {rare100 && <div style={{ position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)", width: 250, height: 66, borderRadius: "50%", border: "2px solid rgba(167,139,250,.55)", boxShadow: "0 0 26px rgba(167,139,250,.5), inset 0 0 22px rgba(167,139,250,.3)", animation: "iqSpin 9s linear infinite" }} />}
+            {rare100 && <div style={{ position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)", width: 250, height: 66, borderRadius: "50%", border: "2px solid rgba(167,139,250,.55)", boxShadow: "0 0 26px rgba(167,139,250,.5), inset 0 0 22px rgba(167,139,250,.3)", animation: "iqLantern 3.2s ease-in-out infinite" }} />}
             {/* 地面 */}
             <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", width: 210, height: 54, borderRadius: "50%", background: "linear-gradient(180deg, #4ade80, #22a05a)", boxShadow: "inset 0 -9px 13px rgba(0,0,0,.25)" }} />
             {/* 道 */}
@@ -48,7 +48,7 @@ function IslandScene({ i, idx }: { i: Island; idx: number }) {
             <div style={{ position: "absolute", bottom: -22, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "74px solid transparent", borderRight: "74px solid transparent", borderTop: "62px solid #6b4a34" }} />
             <div style={{ position: "absolute", bottom: -40, left: "50%", transform: "translateX(-50%)", width: 130, height: 18, borderRadius: "50%", background: "rgba(0,0,0,.45)", filter: "blur(9px)" }} />
             {/* 木 x2 */}
-            {[{ l: 14, s: 1 }, { l: 158, s: .8 }].map((tr, k) => (
+            {[{ l: 42, s: 1 }, { l: 152, s: .8 }].map((tr, k) => (
                 <div key={k} style={{ position: "absolute", bottom: 34, left: tr.l, transform: `scale(${tr.s})`, zIndex: 1 }}>
                     <div style={{ width: 0, height: 0, borderLeft: "13px solid transparent", borderRight: "13px solid transparent", borderBottom: "26px solid #16a34a" }} />
                     <div style={{ width: 0, height: 0, marginTop: -14, borderLeft: "16px solid transparent", borderRight: "16px solid transparent", borderBottom: "24px solid #15803d", transform: "translateX(-3px)" }} />
@@ -89,7 +89,7 @@ function IslandScene({ i, idx }: { i: Island; idx: number }) {
             ))}
             {/* アバター（主人公） */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={"/avatars/" + i.avatarId + ".png"} alt={i.name} style={{ position: "absolute", bottom: 26, left: "50%", transform: "translateX(-44px)", width: 58, height: 58, objectFit: "cover", borderRadius: "50%", zIndex: 4, border: "2px solid rgba(255,255,255,.55)", boxShadow: "0 4px 9px rgba(0,0,0,.45)" }} />
+            <img src={"/avatars/" + i.avatarId + ".png"} alt={i.name} style={{ position: "absolute", bottom: 26, left: "50%", transform: "translateX(-80px)", width: 48, height: 48, objectFit: "cover", borderRadius: "50%", zIndex: 4, border: "2px solid rgba(255,255,255,.55)", boxShadow: "0 4px 9px rgba(0,0,0,.45)" }} />
         </div>
     );
 }
@@ -222,16 +222,16 @@ export default function IslandsPage() {
 
             <div style={{ maxWidth: 980, margin: "0 auto", position: "relative" }}>
                 <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }} onClick={() => router.push("/home")}>INTERN QUEST</div>
-                <h1 style={{ fontSize: 28, fontWeight: 900, color: "#fff", margin: "8px 0 6px", textShadow: "0 0 24px rgba(139,92,246,.5)" }}>\U0001F334 みんなの島へ行く</h1>
+                <h1 style={{ fontSize: 28, fontWeight: 900, color: "#fff", margin: "8px 0 6px", textShadow: "0 0 24px rgba(139,92,246,.5)" }}>🌴 みんなの島へ行く</h1>
                 <p style={{ fontSize: 13, color: "#a5a8c0", margin: "0 0 20px", lineHeight: 1.7 }}>仲間の島を訪問して、家の成長や冒険の進み具合を見てみよう！</p>
 
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="\U0001F50D インターンを検索" style={{ width: "100%", padding: "12px 16px", borderRadius: 14, border: "1px solid rgba(167,139,250,.3)", background: "rgba(255,255,255,.04)", color: "#fff", fontSize: 14, marginBottom: 14, boxSizing: "border-box", outline: "none" }} />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 インターンを検索" style={{ width: "100%", padding: "12px 16px", borderRadius: 14, border: "1px solid rgba(167,139,250,.3)", background: "rgba(255,255,255,.04)", color: "#fff", fontSize: 14, marginBottom: 14, boxSizing: "border-box", outline: "none" }} />
 
                 <div style={{ display: "flex", gap: 8, marginBottom: 34, flexWrap: "wrap" }}>
-                    {tabChip("\U0001F30D おすすめの島", "osusume")}
-                    {tabChip("\u2B50 レベル順", "level")}
-                    {tabChip("\U0001F525 連続記録順", "streak")}
-                    <button onClick={randomVisit} style={{ padding: "8px 16px", borderRadius: 999, border: "1px solid rgba(251,191,36,.45)", cursor: "pointer", background: "rgba(251,191,36,.12)", color: "#fbbf24", fontSize: 12.5, fontWeight: 800, whiteSpace: "nowrap" }}>\U0001F3B2 ランダム訪問</button>
+                    {tabChip("🌍 おすすめの島", "osusume")}
+                    {tabChip("⭐ レベル順", "level")}
+                    {tabChip("🔥 連続記録順", "streak")}
+                    <button onClick={randomVisit} style={{ padding: "8px 16px", borderRadius: 999, border: "1px solid rgba(251,191,36,.45)", cursor: "pointer", background: "rgba(251,191,36,.12)", color: "#fbbf24", fontSize: 12.5, fontWeight: 800, whiteSpace: "nowrap" }}>🎲 ランダム訪問</button>
                 </div>
 
                 {loading ? (
@@ -242,8 +242,8 @@ export default function IslandsPage() {
                             <div key={i.id} style={{ transform: `translateY(${OFFSETS[idx % 3]}px)` }}>
                                 <div className={"iq-isle" + (departing === i.id ? " iq-departing" : departing ? " iq-dim" : "")} onClick={() => visit(i.id)}>
                                     <div className="iq-glow" />
-                                    <span className="iq-spark" style={{ top: 8, left: "16%" }}>\u2726</span>
-                                    <span className="iq-spark" style={{ top: 34, right: "12%" }}>\u2726</span>
+                                    <span className="iq-spark" style={{ top: 8, left: "16%" }}>✦</span>
+                                    <span className="iq-spark" style={{ top: 34, right: "12%" }}>✦</span>
                                     <div style={{ animation: `iqBob ${4.6 + (idx % 4) * .5}s ease-in-out ${(idx % 5) * .4}s infinite` }}>
                                         <IslandScene i={i} idx={idx} />
                                     </div>
@@ -253,20 +253,20 @@ export default function IslandsPage() {
                                         <div style={{ marginTop: 6 }}>
                                             <span style={{ fontSize: 12, fontWeight: 900, color: "#fbbf24", background: "rgba(251,191,36,.13)", border: "1px solid rgba(251,191,36,.35)", padding: "3px 12px", borderRadius: 999 }}>Lv.{i.level}</span>
                                         </div>
-                                        <div style={{ fontSize: 10.5, color: "#c4b5fd", marginTop: 7, fontWeight: 700 }}>{i.stepNo >= 6 ? "\U0001F3C6 営業デビュー" : "STEP" + i.stepNo + " " + (STEP_TITLE[i.stepNo] || "")}</div>
+                                        <div style={{ fontSize: 10.5, color: "#c4b5fd", marginTop: 7, fontWeight: 700 }}>{i.stepNo >= 6 ? "🏆 営業デビュー" : "STEP" + i.stepNo + " " + (STEP_TITLE[i.stepNo] || "")}</div>
                                         <div style={{ display: "flex", gap: 5, justifyContent: "center", marginTop: 6 }}>
                                             {[1, 2, 3, 4, 5, 6].map((n) => (
                                                 <span key={n} style={{ width: 8, height: 8, borderRadius: "50%", background: n <= i.stepNo ? "#a78bfa" : "rgba(255,255,255,.14)", boxShadow: n === i.stepNo && i.stepNo > 0 ? "0 0 8px #a78bfa" : "none" }} />
                                             ))}
                                         </div>
                                         <div style={{ display: "flex", gap: 5, justifyContent: "center", marginTop: 8, flexWrap: "wrap" }}>
-                                            {i.streak > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: "#fb923c", background: "rgba(251,146,60,.1)", border: "1px solid rgba(251,146,60,.28)", padding: "2px 8px", borderRadius: 999 }}>\U0001F525 {i.streak}日</span>}
+                                            {i.streak > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: "#fb923c", background: "rgba(251,146,60,.1)", border: "1px solid rgba(251,146,60,.28)", padding: "2px 8px", borderRadius: 999 }}>🔥 {i.streak}日</span>}
                                             {titleBadges(i).map((t, bi) => (
                                                 <span key={bi} style={{ fontSize: 10, fontWeight: 800, color: "#ddd6fe", background: "rgba(139,92,246,.14)", border: "1px solid rgba(167,139,250,.26)", padding: "2px 8px", borderRadius: 999 }}>{t}</span>
                                             ))}
                                         </div>
                                         <div className="iq-visit-btn" style={{ marginTop: 11 }}>
-                                            <span style={{ display: "inline-block", padding: "9px 24px", borderRadius: 999, background: "linear-gradient(135deg, #8b5cf6, #6d4bc4)", color: "#fff", fontSize: 13, fontWeight: 900, boxShadow: "0 5px 18px rgba(139,92,246,.55)" }}>\u25B6 島へ遊びに行く</span>
+                                            <span style={{ display: "inline-block", padding: "9px 24px", borderRadius: 999, background: "linear-gradient(135deg, #8b5cf6, #6d4bc4)", color: "#fff", fontSize: 13, fontWeight: 900, boxShadow: "0 5px 18px rgba(139,92,246,.55)" }}>▶ 島へ遊びに行く</span>
                                         </div>
                                     </div>
                                 </div>
