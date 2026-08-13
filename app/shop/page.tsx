@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabase";
 type ShopItem = { id: string; title: string; description: string; cost: number; category: string };
 type Request = { id: string; shop_item_id: string; cost: number; status: string; created_at: string; itemTitle?: string };
 type AvatarItem = { id: string; image_id: string; name: string; description: string | null; price: number; rarity: string };
+type IslandItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string };
 
 const categoryIcon: Record<string, string> = { gift: "🎁", book: "📚", sauna: "♨️", title: "👑" };
 const categoryLabel: Record<string, string> = { gift: "ギフト", book: "書籍", sauna: "サウナ", title: "称号" };
@@ -27,13 +28,19 @@ export default function ShopPage() {
     const [message, setMessage] = useState("");
     const [success, setSuccess] = useState(false);
     const [note, setNote] = useState<Record<string, string>>({});
-    const [shopTab, setShopTab] = useState<"gift" | "avatar">("gift");
+    const [shopTab, setShopTab] = useState<"gift" | "avatar" | "island">("gift");
     const [avatarItems, setAvatarItems] = useState<AvatarItem[]>([]);
     const [ownedAvatars, setOwnedAvatars] = useState<string[]>([]);
     const [pendingAvatars, setPendingAvatars] = useState<string[]>([]);
     const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
     const [buyTarget, setBuyTarget] = useState<AvatarItem | null>(null);
     const [buyingAvatar, setBuyingAvatar] = useState(false);
+    const [islandItems, setIslandItems] = useState<IslandItem[]>([]);
+    const [ownedIsland, setOwnedIsland] = useState<string[]>([]);
+    const [pendingIsland, setPendingIsland] = useState<string[]>([]);
+    const [islandConfig, setIslandConfig] = useState<Record<string, string>>({});
+    const [buyIslandTarget, setBuyIslandTarget] = useState<IslandItem | null>(null);
+    const [buyingIsland, setBuyingIsland] = useState(false);
 
     useEffect(() => {
         const load = async () => {
@@ -43,15 +50,22 @@ export default function ShopPage() {
 
             const { data: pointRow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
             setPoints(pointRow?.points || 0);
-            const [{ data: profRow }, { data: avItems }, { data: avPur }] = await Promise.all([
-                supabase.from("profiles").select("avatar_config").eq("id", user.id).maybeSingle(),
+            const [{ data: profRow }, { data: avItems }, { data: avPur }, { data: isItems }, { data: isPur }] = await Promise.all([
+                supabase.from("profiles").select("avatar_config, island_config").eq("id", user.id).maybeSingle(),
                 supabase.from("avatar_items").select("*").eq("is_active", true).order("sort_order"),
                 supabase.from("avatar_purchases").select("item_id,status").eq("user_id", user.id),
+                supabase.from("island_items").select("*").eq("is_active", true).order("sort_order"),
+                supabase.from("island_purchases").select("item_id,status").eq("user_id", user.id),
             ]);
             setSelectedAvatar((profRow as any)?.avatar_config?.id || null);
             setAvatarItems((avItems || []) as AvatarItem[]);
             setOwnedAvatars((avPur || []).filter((p: any) => p.status === "approved").map((p: any) => p.item_id));
             setPendingAvatars((avPur || []).filter((p: any) => p.status === "pending").map((p: any) => p.item_id));
+
+            setIslandConfig(((profRow as any)?.island_config || {}) as Record<string, string>);
+            setIslandItems((isItems || []) as IslandItem[]);
+            setOwnedIsland((isPur || []).filter((p: any) => p.status === "approved").map((p: any) => p.item_id));
+            setPendingIsland((isPur || []).filter((p: any) => p.status === "pending").map((p: any) => p.item_id));
 
             const { data: itemRows } = await supabase.from("shop_items").select("*").eq("is_active", true).order("cost");
             setItems((itemRows || []) as ShopItem[]);
@@ -83,6 +97,27 @@ export default function ShopPage() {
         await supabase.from("profiles").update({ avatar_config: { type: "preset", id: imageId } }).eq("id", userId);
         setSelectedAvatar(imageId);
         setSuccess(true); setMessage("✅ アバターを変更しました！");
+        setTimeout(() => setMessage(""), 3000);
+    };
+    const requestBuyIsland = async () => {
+        if (!buyIslandTarget || !userId || buyingIsland) return;
+        if (points < buyIslandTarget.price) { setSuccess(false); setMessage("ポイントが足りません"); setBuyIslandTarget(null); setTimeout(() => setMessage(""), 3000); return; }
+        setBuyingIsland(true);
+        await supabase.from("island_purchases").insert({ user_id: userId, item_id: buyIslandTarget.id, status: "pending" });
+        setPendingIsland([...pendingIsland, buyIslandTarget.id]);
+        setBuyingIsland(false);
+        setBuyIslandTarget(null);
+        setSuccess(true); setMessage("✅ 島アイテムの購入を申請しました！承認をお待ちください");
+        setTimeout(() => setMessage(""), 4000);
+    };
+    const toggleEquipIsland = async (item: IslandItem) => {
+        if (!userId) return;
+        const cur: Record<string, string> = { ...islandConfig };
+        const removing = cur[item.category] === item.css_key;
+        if (removing) { delete cur[item.category]; } else { cur[item.category] = item.css_key; }
+        await supabase.from("profiles").update({ island_config: cur }).eq("id", userId);
+        setIslandConfig(cur);
+        setSuccess(true); setMessage(removing ? "✅ 「" + item.name + "」を片付けました" : "✅ 「" + item.name + "」を島に設置しました！");
         setTimeout(() => setMessage(""), 3000);
     };
 
@@ -152,9 +187,44 @@ export default function ShopPage() {
                 <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
                     <button onClick={() => setShopTab("gift")} style={{ padding: "10px 20px", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 800, background: shopTab === "gift" ? "linear-gradient(135deg, #ffb45c, #ff8a3d)" : "rgba(255,255,255,0.06)", color: shopTab === "gift" ? "#fff" : "#9ca3af" }}>🎁 景品</button>
                     <button onClick={() => setShopTab("avatar")} style={{ padding: "10px 20px", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 800, background: shopTab === "avatar" ? "linear-gradient(135deg, #a78bfa, #8b5cf6)" : "rgba(255,255,255,0.06)", color: shopTab === "avatar" ? "#fff" : "#9ca3af" }}>👗 アバター</button>
+                    <button onClick={() => setShopTab("island")} style={{ padding: "10px 20px", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 800, background: shopTab === "island" ? "linear-gradient(135deg, #34d399, #10b981)" : "rgba(255,255,255,0.06)", color: shopTab === "island" ? "#fff" : "#9ca3af" }}>🏝️ 島</button>
                 </div>
 
-                {shopTab === "avatar" ? (
+                {shopTab === "island" ? (
+                  <div style={{ marginBottom: 32 }}>
+                    {islandItems.length === 0 ? (
+                      <div style={{ textAlign: "center", color: "#6b7280", fontSize: 13, padding: 40 }}>まだ島アイテムがありません</div>
+                    ) : (
+                      ["ground", "tree", "deco", "sky", "animal"].map((cat) => {
+                        const catItems = islandItems.filter((it) => it.category === cat);
+                        if (!catItems.length) return null;
+                        const CAT_LABEL: Record<string, string> = { ground: "🌍 地面", tree: "🌲 木", deco: "🪑 デコ", sky: "✨ 空", animal: "🐾 どうぶつ" };
+                        return (
+                          <div key={cat} style={{ marginBottom: 26 }}>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", marginBottom: 10 }}>{CAT_LABEL[cat]}<span style={{ fontSize: 10.5, color: "#6b7280", fontWeight: 700, marginLeft: 8 }}>各1つだけ設置できます</span></div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 12 }}>
+                              {catItems.map((it) => {
+                                const owned = ownedIsland.includes(it.id);
+                                const pending = pendingIsland.includes(it.id);
+                                const isOn = islandConfig[it.category] === it.css_key;
+                                const rc = it.rarity === "epic" ? "#a855f7" : "#9ca3af";
+                                return (
+                                  <div key={it.id} onClick={() => { if (owned) toggleEquipIsland(it); else if (!pending) setBuyIslandTarget(it); }}
+                                    style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: "16px 10px 12px", textAlign: "center", cursor: "pointer", position: "relative", border: isOn ? "3px solid #34d399" : `2px solid ${owned ? "rgba(255,255,255,0.08)" : rc + "44"}` }}>
+                                    <div style={{ fontSize: 44, filter: owned ? "none" : "grayscale(1) opacity(.5)" }}>{it.emoji || "🎁"}</div>
+                                    {!owned && <div style={{ position: "absolute", top: 12, right: 12, fontSize: 18 }}>{pending ? "⏳" : "🔒"}</div>}
+                                    <div style={{ fontSize: 12.5, fontWeight: 800, color: isOn ? "#34d399" : "#e5e7eb", marginTop: 6 }}>{isOn ? "✓ " : ""}{it.name}</div>
+                                    <div style={{ fontSize: 11, fontWeight: 800, color: owned ? "#34d399" : pending ? "#f59e0b" : rc, marginTop: 3 }}>{owned ? (isOn ? "設置中・タップで片付け" : "タップで設置") : pending ? "承認待ち" : `${it.price.toLocaleString()}pt`}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                ) : shopTab === "avatar" ? (
                   <div style={{ marginBottom: 32 }}>
                     {avatarItems.length === 0 ? (
                       <div style={{ textAlign: "center", color: "#6b7280", fontSize: 13, padding: 40 }}>まだアバターがありません</div>
@@ -260,6 +330,18 @@ export default function ShopPage() {
                         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 18 }}>所持 {points.toLocaleString()}pt → 残り {(points - buyTarget.price).toLocaleString()}pt</div>
                         <button onClick={requestBuyAvatar} disabled={buyingAvatar} style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: "linear-gradient(135deg, #a78bfa, #8b5cf6)", color: "#fff", fontSize: 15, fontWeight: 900, cursor: "pointer", opacity: buyingAvatar ? 0.6 : 1 }}>{buyingAvatar ? "申請中..." : "購入を申請する"}</button>
                         <button onClick={() => setBuyTarget(null)} style={{ width: "100%", marginTop: 8, padding: 12, borderRadius: 14, border: "none", background: "transparent", color: "#9ca3af", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>やめる</button>
+                    </div>
+                </div>
+            )}
+            {buyIslandTarget && (
+                <div onClick={() => setBuyIslandTarget(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 20001 }}>
+                    <div onClick={(e) => e.stopPropagation()} style={{ background: "#1a1a2e", borderRadius: 20, padding: 24, width: "100%", maxWidth: 360, textAlign: "center", border: "1px solid rgba(52,211,153,0.3)" }}>
+                        <div style={{ fontSize: 84 }}>{buyIslandTarget.emoji || "🎁"}</div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: "#f9fafb", marginTop: 8 }}>{buyIslandTarget.name}</div>
+                        <div style={{ fontSize: 22, fontWeight: 900, color: "#fbbf24", margin: "14px 0 4px" }}>{buyIslandTarget.price.toLocaleString()}pt</div>
+                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 18 }}>所持 {points.toLocaleString()}pt → 残り {(points - buyIslandTarget.price).toLocaleString()}pt</div>
+                        <button onClick={requestBuyIsland} disabled={buyingIsland} style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: "linear-gradient(135deg, #34d399, #10b981)", color: "#fff", fontSize: 15, fontWeight: 900, cursor: "pointer", opacity: buyingIsland ? 0.6 : 1 }}>{buyingIsland ? "申請中..." : "購入を申請する"}</button>
+                        <button onClick={() => setBuyIslandTarget(null)} style={{ width: "100%", marginTop: 8, padding: 12, borderRadius: 14, border: "none", background: "transparent", color: "#9ca3af", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>やめる</button>
                     </div>
                 </div>
             )}
