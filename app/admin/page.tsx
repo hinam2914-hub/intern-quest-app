@@ -366,6 +366,7 @@ export default function AdminPage() {
     const [pendingTaskReportCount, setPendingTaskReportCount] = useState(0);
     const [pendingRecruitCount, setPendingRecruitCount] = useState(0);
     const [pendingAvatarCount, setPendingAvatarCount] = useState(0);
+    const [pendingIslandCount, setPendingIslandCount] = useState(0);
     const [pendingJourneyCount, setPendingJourneyCount] = useState(0);
     const [pendingQuestionCount, setPendingQuestionCount] = useState(0);
     const [pendingMgrTestCount, setPendingMgrTestCount] = useState(0);
@@ -730,6 +731,8 @@ export default function AdminPage() {
             setPendingRecruitCount(recruitC || 0);
             const { count: avatarC } = await supabase.from("avatar_purchases").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingAvatarCount(avatarC || 0);
+            const { count: islandC } = await supabase.from("island_purchases").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingIslandCount(islandC || 0);
             const { count: journeyC } = await supabase.from("journey_submissions").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingJourneyCount(journeyC || 0);
             const { count: questionC } = await supabase.from("questions_box").select("*", { count: "exact", head: true }).is("answered_at", null);
@@ -2206,6 +2209,7 @@ export default function AdminPage() {
                             pendingTest: pendingTestCount,
                             pendingRecruit: pendingRecruitCount,
                             pendingAvatar: pendingAvatarCount,
+                            pendingIsland: pendingIslandCount,
                             pendingJourney: pendingJourneyCount,
                             pendingLearn: contentCompletions.filter((c: any) => c.status === "pending").length,
                             pendingChallenge: challengeSubmissions.filter((c: any) => c.status === "pending").length,

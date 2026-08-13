@@ -15,7 +15,7 @@ const JOB_LABEL: Record<string, string> = { "訪販": "訪販(IP)", "テレア�
 const DEPT_ORDER = ["IP", "CB", "SP", "HR", "MK", "EXAM"];
 
 type Stats = {
-  notSubmitted: number; submitRate: number; pendingCount: number; userCount: number; pendingAvatar?: number;
+  notSubmitted: number; submitRate: number; pendingCount: number; userCount: number; pendingAvatar?: number; pendingIsland?: number;
   pendingTask?: number; pendingKkc?: number; pendingAdvice?: number; pendingMedaka?: number;
   pendingMentor?: number; pendingMtg?: number; pendingTest?: number; pendingRecruit?: number; pendingChallenge?: number; pendingRequest?: number; pendingQuestion?: number; pendingMgrTest?: number; pendingLearn?: number; pendingJourney?: number;
 };
@@ -37,6 +37,7 @@ const QUICK: Card[] = [
   { key: "journey", icon: "🗺️", title: "冒険マップ進捗", desc: "STEP1〜5の申請承認", badgeKey: "pendingJourney" },
   { key: "script_practice", icon: "🎤", title: "スクリプト練習", desc: "練習進捗・テスト合格チェック" },
   { key: "avatar_shop", icon: "🛍", title: "アバターショップ", desc: "購入承認・アイテム管理", badgeKey: "pendingAvatar" },
+  { key: "island_shop", icon: "🏝️", title: "島ショップ", desc: "島アイテムの購入承認", badgeKey: "pendingIsland" },
   { key: "sibyl_guide", icon: "📖", title: "シビュラの見方", desc: "5軸・ランク・配属ルール" },
 ];
 
