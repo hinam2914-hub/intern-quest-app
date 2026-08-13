@@ -1371,7 +1371,6 @@ export default function AdminPage() {
                                 { key: "resources", label: "資料管理" },
                                 { key: "wiki", label: "用語集" },
                                 { key: "shop", label: "ショップ" },
-                                { key: "island_shop", label: "🏝️ 島ショップ" },
                                 { key: "career", label: "就活ボックス" },
                                 { key: "companies", label: "企業管理" },
                             ],
@@ -2190,8 +2189,18 @@ export default function AdminPage() {
                 {activeTab === "rookie" && <RookieTab />}
                 {activeTab === "script_practice" && <ScriptPracticeTab />}
                 {activeTab === "course" && <CourseManageTab />}
-                {activeTab === "avatar_shop" && <AvatarShopTab />}
-                {activeTab === "island_shop" && <IslandShopTab />}
+                {activeTab === "avatar_shop" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🏝️ 島</button></div>
+                        <AvatarShopTab />
+                    </div>
+                )}
+                {activeTab === "island_shop" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>🏝️ 島</button></div>
+                        <IslandShopTab />
+                    </div>
+                )}
                 {activeTab === "journey" && <JourneyTab />}
                 {activeTab === "home" && (
                     <DashboardHome
@@ -2210,6 +2219,7 @@ export default function AdminPage() {
                             pendingRecruit: pendingRecruitCount,
                             pendingAvatar: pendingAvatarCount,
                             pendingIsland: pendingIslandCount,
+                            pendingShop: pendingAvatarCount + pendingIslandCount,
                             pendingJourney: pendingJourneyCount,
                             pendingLearn: contentCompletions.filter((c: any) => c.status === "pending").length,
                             pendingChallenge: challengeSubmissions.filter((c: any) => c.status === "pending").length,
@@ -4847,6 +4857,7 @@ export default function AdminPage() {
                 )}
                 {activeTab === "shop" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🏝️ 島</button></div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🛍️ 新規景品追加</div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
