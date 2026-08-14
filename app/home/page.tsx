@@ -285,8 +285,8 @@ export default function HomePage() {
     if (typeof window !== "undefined") localStorage.setItem("homeSound", next ? "on" : "off");
     if (next) setTimeout(() => { try { const AC = (window as any).AudioContext || (window as any).webkitAudioContext; const ctx: AudioContext = (window as any).__iqAudio || new AC(); (window as any).__iqAudio = ctx; ctx.resume(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = "sine"; osc.frequency.setValueAtTime(660, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 0.09); gain.gain.setValueAtTime(0.25, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.13); } catch {} }, 50);
   };
-  const isDark = true; // 紫ダークテーマへ全面移行
-  const bg = isDark ? "radial-gradient(circle at 50% 30%, #14142b 0%, #0a0a0f 65%)" : "url(/island_bg.png) center top / cover no-repeat fixed, #bfe3f5";
+  const isDark = false; // 背景は明るい昼、UIは紫ダーク
+  const bg = "radial-gradient(circle at 78% 12%, rgba(255,255,255,.55), transparent 42%), linear-gradient(180deg, #7cc5f0 0%, #a9dcf5 45%, #cfeafb 100%)";
   const nameColor = isDark ? "#f9fafb" : "#2b3440";
   const helloColor = isDark ? "#6b7280" : "#6f7a86";
   const flameStyle = isDark
