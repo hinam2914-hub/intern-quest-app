@@ -8,19 +8,19 @@ type ShopItem = { id: string; name: string; category: string; emoji: string | nu
 type Cfg = Record<string, string>;
 
 const CATS: string[] = ["ground", "tree", "deco", "sky", "animal"];
-const CAT_LABEL: Record<string, string> = { ground: "\🌍 地面", tree: "\🌲 木", deco: "\🪑 デコ", sky: "\u2728 空", animal: "\🐾 どうぶつ" };
+const CAT_LABEL: Record<string, string> = { ground: "🌍 地面", tree: "🌲 木", deco: "🪑 デコ", sky: "\u2728 空", animal: "🐾 どうぶつ" };
 const HOUSE_IMG: string[] = ["/island/house/0_tent.png", "/island/house/1_cabin.png", "/island/house/2_house.png", "/island/house/3_big.png", "/island/house/4_mansion.png", "/island/house/5_castle.png"];
-const HOUSE_W: number[] = [104, 120, 134, 146, 160, 154];
+const HOUSE_W: number[] = [126, 136, 144, 152, 160, 154];
 const GROUND_TOP: Record<string, string> = {
     ground_hanabatake: "linear-gradient(180deg, #a3e88a, #6cc255)",
     ground_yukihara: "linear-gradient(180deg, #f4f9ff, #d3e3f2)",
     ground_sunahama: "linear-gradient(180deg, #fbe6a8, #ecc264)",
     ground_momiji: "linear-gradient(180deg, #f6b878, #e07d3a)",
 };
-const TREE_EMOJI: Record<string, string> = { tree_sakura: "\🌸", tree_yashi: "\🌴", tree_momi: "\🎄", tree_momiji: "\🍁" };
-const DECO_EMOJI: Record<string, string> = { deco_funsui: "\u26F2", deco_bench: "\🪑", deco_gaitou: "\💡", deco_yukidaruma: "\u26C4", deco_torii: "\u26E9\uFE0F" };
-const SKY_EMOJI: Record<string, string> = { sky_niji: "\🌈", sky_chocho: "\🦋", sky_fuusen: "\🎈" };
-const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "\🐈", animal_inu: "\🐕" };
+const TREE_EMOJI: Record<string, string> = { tree_sakura: "🌸", tree_yashi: "🌴", tree_momi: "🎄", tree_momiji: "🍁" };
+const DECO_EMOJI: Record<string, string> = { deco_funsui: "\u26F2", deco_bench: "🪑", deco_gaitou: "💡", deco_yukidaruma: "\u26C4", deco_torii: "\u26E9️" };
+const SKY_EMOJI: Record<string, string> = { sky_niji: "🌈", sky_chocho: "🦋", sky_fuusen: "🎈" };
+const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "🐈", animal_inu: "🐕" };
 const ANIMAL_NAME: Record<string, string> = { animal_neko: "ねこ", animal_inu: "いぬ" };
 
 export default function HomeIsland({ userId, totalEarned, onHouseClick }: { userId: string; totalEarned: number; onHouseClick?: () => void }) {
@@ -75,7 +75,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
     const tapPet = () => {
         if (!view.animal) return;
         setPetHop(true);
-        setToast(ANIMAL_NAME[view.animal] + "がうれしそう！ \💜");
+        setToast(ANIMAL_NAME[view.animal] + "がうれしそう！ 💜");
         setTimeout(() => setPetHop(false), 700);
         setTimeout(() => setToast(""), 1800);
     };
@@ -95,11 +95,8 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
             `}</style>
 
             <div style={{ position: "relative", padding: "8px 0 0" }}>
-                {/* 雲（島の背後） */}
-                <div style={{ position: "absolute", top: 30, left: "6%", width: 110, height: 30, borderRadius: 999, background: "rgba(255,255,255,.9)", boxShadow: "26px 6px 0 -4px rgba(255,255,255,.85), -22px 8px 0 -6px rgba(255,255,255,.8)", animation: "hiCloud 9s ease-in-out infinite alternate", pointerEvents: "none", zIndex: 0 }} />
-                <div style={{ position: "absolute", top: 78, right: "8%", width: 90, height: 26, borderRadius: 999, background: "rgba(255,255,255,.82)", boxShadow: "20px 5px 0 -4px rgba(255,255,255,.78)", animation: "hiCloud 12s ease-in-out 1s infinite alternate-reverse", pointerEvents: "none", zIndex: 0 }} />
 
-                <div style={{ position: "relative", minHeight: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", animation: "hiFloat 6s ease-in-out infinite" }}>
+                <div style={{ position: "relative", minHeight: 250, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", animation: "hiFloat 6s ease-in-out infinite" }}>
                     {/* 空アイテム */}
                     {view.sky && SKY_EMOJI[view.sky] && <div key={"sky" + view.sky} style={{ position: "absolute", top: 2, right: "24%", fontSize: 44, zIndex: 1, animation: "hiFloat 5s ease-in-out infinite, hiPop .5s ease-out" }}>{SKY_EMOJI[view.sky]}</div>}
                     {/* 木（家の左奥） */}
@@ -132,23 +129,23 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 10 }}>
-                    <div style={{ fontSize: 11.5, fontWeight: 800, color: "#e5e0ff", background: "rgba(11,11,20,.72)", border: "1px solid rgba(167,139,250,.4)", padding: "6px 14px", borderRadius: 999 }}>\🏝\uFE0F 島コレクション {owned.length}/{items.length}</div>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: "#7c5a2b", background: "rgba(255,255,255,.75)", border: "1px solid rgba(255,180,92,.45)", padding: "6px 14px", borderRadius: 999 }}>🏝️ 島コレクション {owned.length}/{items.length}</div>
                 </div>
 
                 {!editing && (
                     <>
-                        <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 14, background: "rgba(11,11,20,.72)", border: "1px solid rgba(167,139,250,.3)" }}>
+                        <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 14, background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,180,92,.35)" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: "#c4b5fd" }}>{stage.isMax ? "\👑 GOAL達成！" : (nextName ? "\🏠 " + nextName + "まで" : "GOALまで")}</span>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: "#fbbf24" }}>{stage.isMax ? "MAX！" : "あと " + stage.toNext.toLocaleString() + "pt"}</span>
+                                <span style={{ fontSize: 12, fontWeight: 800, color: "#7a5a2b" }}>{stage.isMax ? "👑 GOAL達成！" : (nextName ? "🏠 " + nextName + "まで" : "GOALまで")}</span>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: "#e8590c" }}>{stage.isMax ? "MAX！" : "あと " + stage.toNext.toLocaleString() + "pt"}</span>
                             </div>
-                            <div style={{ height: 9, background: "rgba(255,255,255,.12)", borderRadius: 6, overflow: "hidden" }}>
-                                <div style={{ width: stage.progress + "%", height: "100%", background: "linear-gradient(90deg, #a78bfa, #34d399)", borderRadius: 6, transition: "width 1s ease" }} />
+                            <div style={{ height: 9, background: "rgba(150,110,50,.18)", borderRadius: 6, overflow: "hidden" }}>
+                                <div style={{ width: stage.progress + "%", height: "100%", background: "linear-gradient(180deg, #8ee04a, #5cbf2a)", borderRadius: 6, transition: "width 1s ease" }} />
                             </div>
                         </div>
                         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 14 }}>
-                            <button onClick={startEdit} style={{ padding: "12px 30px", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 14.5, fontWeight: 900, background: "linear-gradient(135deg, #a78bfa, #8b5cf6)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,.5)" }}>\🎨 島をかざる</button>
-                            <button onClick={() => router.push("/shop")} style={{ padding: "12px 20px", borderRadius: 999, border: "1px solid rgba(167,139,250,.45)", cursor: "pointer", fontSize: 14, fontWeight: 800, background: "rgba(11,11,20,.62)", color: "#c4b5fd" }}>\🛍\uFE0F ショップ</button>
+                            <button onClick={startEdit} style={{ padding: "12px 30px", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 14.5, fontWeight: 900, background: "linear-gradient(135deg, #a78bfa, #8b5cf6)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,.5)" }}>🎨 島をかざる</button>
+                            <button onClick={() => router.push("/shop")} style={{ padding: "12px 20px", borderRadius: 999, border: "1px solid rgba(255,180,92,.5)", cursor: "pointer", fontSize: 14, fontWeight: 800, background: "rgba(255,255,255,.65)", color: "#c2410c" }}>🛍️ ショップ</button>
                         </div>
                     </>
                 )}
@@ -160,7 +157,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                 <div style={{ marginTop: 16, borderRadius: 18, background: "rgba(11,11,20,.94)", border: "1px solid rgba(139,92,246,.4)", overflow: "hidden" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
                         <button onClick={cancelEdit} style={{ border: "none", background: "transparent", color: "#9ca3af", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>やめる</button>
-                        <span style={{ fontSize: 14, fontWeight: 900, color: "#f4f2ff" }}>\🏝\uFE0F 島をかざる</span>
+                        <span style={{ fontSize: 14, fontWeight: 900, color: "#f4f2ff" }}>🏝️ 島をかざる</span>
                         <button onClick={save} disabled={saving} style={{ border: "none", background: "linear-gradient(135deg, #34d399, #10b981)", color: "#052e22", fontSize: 13, fontWeight: 900, cursor: "pointer", padding: "7px 16px", borderRadius: 999, opacity: saving ? .6 : 1 }}>{saving ? "保存中..." : "保存"}</button>
                     </div>
                     <div style={{ display: "flex", gap: 6, padding: "12px 12px 8px", overflowX: "auto" }} className="hi-scroll">
@@ -174,8 +171,8 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                             const isOn = draft[it.category] === it.css_key;
                             return (
                                 <div key={it.id} onClick={() => tapItem(it)} style={{ flexShrink: 0, width: 92, textAlign: "center", cursor: "pointer", padding: "12px 6px 10px", borderRadius: 14, background: "rgba(255,255,255,.04)", border: isOn ? "2px solid #fbbf24" : isOwned ? "2px solid rgba(167,139,250,.4)" : "2px solid rgba(255,255,255,.08)", position: "relative" }}>
-                                    <div style={{ fontSize: 38, filter: isOwned ? "none" : "grayscale(1) opacity(.45)" }}>{it.emoji || "\🎁"}</div>
-                                    {!isOwned && <div style={{ position: "absolute", top: 8, right: 8, fontSize: 15 }}>\🔒</div>}
+                                    <div style={{ fontSize: 38, filter: isOwned ? "none" : "grayscale(1) opacity(.45)" }}>{it.emoji || "🎁"}</div>
+                                    {!isOwned && <div style={{ position: "absolute", top: 8, right: 8, fontSize: 15 }}>🔒</div>}
                                     {isOn && <div style={{ position: "absolute", top: 8, left: 8, fontSize: 14, color: "#fbbf24" }}>\u2713</div>}
                                     <div style={{ fontSize: 11, fontWeight: 800, color: isOn ? "#fbbf24" : "#e5e7eb", marginTop: 5 }}>{it.name}</div>
                                     <div style={{ fontSize: 10, fontWeight: 800, color: isOwned ? "#34d399" : "#8b8fa8", marginTop: 2 }}>{isOwned ? (isOn ? "装備中" : "タップで飾る") : it.price.toLocaleString() + "pt"}</div>
@@ -190,7 +187,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
             {detail && (
                 <div onClick={() => setDetail(null)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 40, borderRadius: 18 }}>
                     <div onClick={(e: any) => e.stopPropagation()} style={{ width: "100%", background: "#1a1a2e", borderRadius: "20px 20px 0 0", padding: "20px 20px 24px", textAlign: "center", border: "1px solid rgba(139,92,246,.3)" }}>
-                        <div style={{ fontSize: 56 }}>{detail.emoji || "\🎁"}</div>
+                        <div style={{ fontSize: 56 }}>{detail.emoji || "🎁"}</div>
                         <div style={{ fontSize: 16, fontWeight: 900, color: "#f9fafb", marginTop: 6 }}>{detail.name}</div>
                         <div style={{ fontSize: 13, fontWeight: 800, color: "#fbbf24", marginTop: 4 }}>{detail.price.toLocaleString()}pt でショップで購入できます</div>
                         <button onClick={() => router.push("/shop")} style={{ width: "100%", marginTop: 16, padding: 13, borderRadius: 14, border: "none", background: "linear-gradient(135deg, #a78bfa, #8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 900, cursor: "pointer" }}>ショップで見る</button>
