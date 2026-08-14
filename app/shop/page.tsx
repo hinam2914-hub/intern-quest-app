@@ -94,7 +94,8 @@ export default function ShopPage() {
     };
     const equipAvatar = async (imageId: string) => {
         if (!userId) return;
-        await supabase.from("profiles").update({ avatar_config: { type: "preset", id: imageId } }).eq("id", userId);
+        const { error: acErr } = await supabase.from("profiles").update({ avatar_config: { type: "preset", id: imageId } }).eq("id", userId);
+        if (acErr) { setSuccess(false); setMessage("保存に失敗しました: " + acErr.message); setTimeout(() => setMessage(""), 4000); return; }
         setSelectedAvatar(imageId);
         setSuccess(true); setMessage("✅ アバターを変更しました！");
         setTimeout(() => setMessage(""), 3000);
@@ -115,7 +116,8 @@ export default function ShopPage() {
         const cur: Record<string, string> = { ...islandConfig };
         const removing = cur[item.category] === item.css_key;
         if (removing) { delete cur[item.category]; } else { cur[item.category] = item.css_key; }
-        await supabase.from("profiles").update({ island_config: cur }).eq("id", userId);
+        const { error: icErr } = await supabase.from("profiles").update({ island_config: cur }).eq("id", userId);
+        if (icErr) { setSuccess(false); setMessage("保存に失敗しました: " + icErr.message); setTimeout(() => setMessage(""), 4000); return; }
         setIslandConfig(cur);
         setSuccess(true); setMessage(removing ? "✅ 「" + item.name + "」を片付けました" : "✅ 「" + item.name + "」を島に設置しました！");
         setTimeout(() => setMessage(""), 3000);
