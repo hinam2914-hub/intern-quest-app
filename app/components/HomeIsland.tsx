@@ -35,6 +35,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
     const [toast, setToast] = useState("");
     const [detail, setDetail] = useState<ShopItem | null>(null);
     const [petHop, setPetHop] = useState(false);
+    const [petSay, setPetSay] = useState("");
 
     useEffect(() => {
         if (!userId) return;
@@ -75,7 +76,8 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
     const tapPet = () => {
         if (!view.animal) return;
         setPetHop(true);
-        setToast(ANIMAL_NAME[view.animal] + "がうれしそう！ 💜");
+        setPetSay(view.animal === "animal_inu" ? "わん！" : "にゃ！");
+        setTimeout(() => setPetSay(""), 1300);
         setTimeout(() => setPetHop(false), 700);
         setTimeout(() => setToast(""), 1800);
     };
@@ -85,9 +87,10 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
             <style>{`
                 @keyframes hiCloud { 0%{transform:translateX(-30px)} 100%{transform:translateX(30px)} }
                 @keyframes hiFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-                @keyframes hiPet { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+                @keyframes hiPet { 0%,100%{transform:scaleX(-1) translateY(0)} 50%{transform:scaleX(-1) translateY(-3px)} }
+                @media (prefers-reduced-motion: reduce) { .hi-pet { animation: none !important; } }
                 @keyframes hiPetShadow { 0%,100%{transform:translateX(-50%) scaleX(1)} 50%{transform:translateX(-50%) scaleX(.8)} }
-                @keyframes hiHop { 0%{transform:translateY(0)} 40%{transform:translateY(-18px)} 100%{transform:translateY(0)} }
+                @keyframes hiHop { 0%{transform:scaleX(-1) translateY(0)} 40%{transform:scaleX(-1) translateY(-14px)} 100%{transform:scaleX(-1) translateY(0)} }
                 @keyframes hiPop { 0%{transform:scale(.2);opacity:0} 70%{transform:scale(1.14)} 100%{transform:scale(1);opacity:1} }
                 @keyframes hiToast { 0%{opacity:0;transform:translate(-50%,6px)} 15%{opacity:1;transform:translate(-50%,0)} 85%{opacity:1} 100%{opacity:0} }
                 .hi-scroll::-webkit-scrollbar { height: 5px; }
