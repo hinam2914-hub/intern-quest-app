@@ -5,33 +5,34 @@ import { supabase } from "../lib/supabase";
 import { getHouseStage } from "./DotHouse";
 
 type ShopItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string };
+type Cfg = Record<string, string>;
 
-const CATS = ["ground", "tree", "deco", "sky", "animal"];
-const CAT_LABEL = { ground: "\U0001F30D 地面", tree: "\U0001F332 木", deco: "\U0001FA91 デコ", sky: "\u2728 空", animal: "\U0001F43E どうぶつ" };
+const CATS: string[] = ["ground", "tree", "deco", "sky", "animal"];
+const CAT_LABEL: Record<string, string> = { ground: "\U0001F30D 地面", tree: "\U0001F332 木", deco: "\U0001FA91 デコ", sky: "\u2728 空", animal: "\U0001F43E どうぶつ" };
 const HOUSE_IMG = ["/island/house/0_tent.png", "/island/house/1_cabin.png", "/island/house/2_house.png", "/island/house/3_big.png", "/island/house/4_mansion.png", "/island/house/5_castle.png"];
 const HOUSE_W = [150, 174, 196, 214, 236, 228];
-const GROUND_BG = {
+const GROUND_BG: Record<string, string> = {
     ground_hanabatake: "linear-gradient(180deg, #86efac, #4ade80)",
     ground_yukihara: "linear-gradient(180deg, #f8fafc, #cbd5e1)",
     ground_sunahama: "linear-gradient(180deg, #fde68a, #f59e0b)",
     ground_momiji: "linear-gradient(180deg, #fdba74, #ea580c)",
 };
-const TREE_EMOJI = { tree_sakura: "\U0001F338", tree_yashi: "\U0001F334", tree_momi: "\U0001F384", tree_momiji: "\U0001F341" };
-const DECO_EMOJI = { deco_funsui: "\u26F2", deco_bench: "\U0001FA91", deco_gaitou: "\U0001F4A1", deco_yukidaruma: "\u26C4", deco_torii: "\u26E9\uFE0F" };
-const SKY_EMOJI = { sky_niji: "\U0001F308", sky_chocho: "\U0001F98B", sky_fuusen: "\U0001F388" };
-const ANIMAL_EMOJI = { animal_neko: "\U0001F408", animal_inu: "\U0001F415" };
+const TREE_EMOJI: Record<string, string> = { tree_sakura: "\U0001F338", tree_yashi: "\U0001F334", tree_momi: "\U0001F384", tree_momiji: "\U0001F341" };
+const DECO_EMOJI: Record<string, string> = { deco_funsui: "\u26F2", deco_bench: "\U0001FA91", deco_gaitou: "\U0001F4A1", deco_yukidaruma: "\u26C4", deco_torii: "\u26E9\uFE0F" };
+const SKY_EMOJI: Record<string, string> = { sky_niji: "\U0001F308", sky_chocho: "\U0001F98B", sky_fuusen: "\U0001F388" };
+const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "\U0001F408", animal_inu: "\U0001F415" };
 
-export default function HomeIsland({ userId, totalEarned, onHouseClick }) {
+export default function HomeIsland({ userId, totalEarned, onHouseClick }: { userId: string; totalEarned: number; onHouseClick?: () => void }) {
     const router = useRouter();
-    const [items, setItems] = useState([]);
-    const [owned, setOwned] = useState([]);
-    const [config, setConfig] = useState({});
+    const [items, setItems] = useState<ShopItem[]>([]);
+    const [owned, setOwned] = useState<string[]>([]);
+    const [config, setConfig] = useState<Cfg>({});
     const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState({});
-    const [tab, setTab] = useState("ground");
+    const [draft, setDraft] = useState<Cfg>({});
+    const [tab, setTab] = useState<string>("ground");
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState("");
-    const [detail, setDetail] = useState(null);
+    const [detail, setDetail] = useState<ShopItem | null>(null);
 
     useEffect(() => {
         if (!userId) return;
@@ -41,9 +42,9 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }) {
                 supabase.from("island_items").select("*").eq("is_active", true).order("sort_order"),
                 supabase.from("island_purchases").select("item_id, status").eq("user_id", userId),
             ]);
-            setConfig((prow && prow.island_config) || {});
-            setItems(its || []);
-            setOwned((pur || []).filter((p) => p.status === "approved").map((p) => p.item_id));
+            setConfig(((prow as any) && (prow as any).island_config) || {});
+            setItems((its || []) as ShopItem[]);
+            setOwned((pur || []).filter((p: any) => p.status === "approved").map((p: any) => p.item_id));
         })();
     }, [userId]);
 
@@ -52,7 +53,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }) {
     const nextName = stage.nextName;
     const startEdit = () => { setDraft({ ...config }); setEditing(true); setToast(""); };
     const cancelEdit = () => { setEditing(false); setToast(""); };
-    const tapItem = (it) => {
+    const tapItem = (it: ShopItem) => {
         if (!owned.includes(it.id)) { setDetail(it); return; }
         const d = { ...draft };
         if (d[it.category] === it.css_key) { delete d[it.category]; } else { d[it.category] = it.css_key; }
@@ -134,12 +135,12 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }) {
                         <button onClick={save} disabled={saving} style={{ border: "none", background: "linear-gradient(135deg, #34d399, #10b981)", color: "#052e22", fontSize: 13, fontWeight: 900, cursor: "pointer", padding: "7px 16px", borderRadius: 999, opacity: saving ? .6 : 1 }}>{saving ? "保存中..." : "保存"}</button>
                     </div>
                     <div style={{ display: "flex", gap: 6, padding: "12px 12px 8px", overflowX: "auto" }} className="hi-scroll">
-                        {CATS.map((c) => (
+                        {CATS.map((c: string) => (
                             <button key={c} onClick={() => setTab(c)} style={{ flexShrink: 0, padding: "7px 14px", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 800, background: tab === c ? "rgba(139,92,246,.35)" : "rgba(255,255,255,.06)", color: tab === c ? "#e5e0ff" : "#9ca3af" }}>{CAT_LABEL[c]}</button>
                         ))}
                     </div>
                     <div style={{ display: "flex", gap: 10, padding: "8px 14px 16px", overflowX: "auto" }} className="hi-scroll">
-                        {items.filter((it) => it.category === tab).map((it) => {
+                        {items.filter((it: ShopItem) => it.category === tab).map((it: ShopItem) => {
                             const isOwned = owned.includes(it.id);
                             const isOn = draft[it.category] === it.css_key;
                             return (
@@ -152,14 +153,14 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }) {
                                 </div>
                             );
                         })}
-                        {items.filter((it) => it.category === tab).length === 0 && <div style={{ color: "#8b8fa8", fontSize: 12, padding: 20 }}>アイテムなし</div>}
+                        {items.filter((it: ShopItem) => it.category === tab).length === 0 && <div style={{ color: "#8b8fa8", fontSize: 12, padding: 20 }}>アイテムなし</div>}
                     </div>
                 </div>
             )}
 
             {detail && (
                 <div onClick={() => setDetail(null)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 40, borderRadius: 18 }}>
-                    <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", background: "#1a1a2e", borderRadius: "20px 20px 0 0", padding: "20px 20px 24px", textAlign: "center", border: "1px solid rgba(139,92,246,.3)" }}>
+                    <div onClick={(e: any) => e.stopPropagation()} style={{ width: "100%", background: "#1a1a2e", borderRadius: "20px 20px 0 0", padding: "20px 20px 24px", textAlign: "center", border: "1px solid rgba(139,92,246,.3)" }}>
                         <div style={{ fontSize: 56 }}>{detail.emoji || "\U0001F381"}</div>
                         <div style={{ fontSize: 16, fontWeight: 900, color: "#f9fafb", marginTop: 6 }}>{detail.name}</div>
                         <div style={{ fontSize: 13, fontWeight: 800, color: "#fbbf24", marginTop: 4 }}>{detail.price.toLocaleString()}pt でショップで購入できます</div>
