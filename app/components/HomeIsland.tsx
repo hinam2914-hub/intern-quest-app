@@ -160,9 +160,10 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                     )}
                     {/* どうぶつ（家の右手前・小道の右横） */}
                     {view.animal && ANIMAL_EMOJI[view.animal] && (
-                        <div key={"animal" + view.animal} onClick={tapPet} style={{ position: "absolute", bottom: 56, left: "60%", zIndex: 5, cursor: "pointer", textAlign: "center" }}>
-                            <div style={{ fontSize: 20, transform: "scaleX(-1)", animation: petHop ? "hiHop .7s ease-out" : "hiPet 3.2s ease-in-out infinite", filter: "drop-shadow(0 2px 2px rgba(0,0,0,.25))" }}>{ANIMAL_EMOJI[view.animal]}</div>
-                            <div style={{ width: 16, height: 5, margin: "0 auto", borderRadius: "50%", background: "rgba(60,90,45,.32)", animation: "hiPetShadow 3.2s ease-in-out infinite" }} />
+                        <div key={"animal" + view.animal} onClick={tapPet} style={{ position: "absolute", left: "68%", top: "58%", zIndex: 8, cursor: "pointer", textAlign: "center" }}>
+                            {petSay && <div style={{ position: "absolute", top: -30, left: "50%", transform: "translateX(-50%)", padding: "4px 10px", borderRadius: 10, background: "rgba(255,255,255,.95)", color: "#4a3a2a", fontSize: 12, fontWeight: 900, whiteSpace: "nowrap", boxShadow: "0 2px 6px rgba(0,0,0,.2)", zIndex: 9 }}>{petSay}</div>}
+                            <div className="hi-pet" style={{ fontSize: 38, transform: "scaleX(-1)", animation: petHop ? "hiHop .7s ease-out" : "hiPet 3.2s ease-in-out infinite", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.25))" }}>{ANIMAL_EMOJI[view.animal]}</div>
+                            <div className="hi-pet" style={{ width: 26, height: 7, margin: "-2px auto 0", borderRadius: "50%", background: "rgba(64,49,35,.22)", filter: "blur(5px)", animation: "hiPetShadow 3.2s ease-in-out infinite" }} />
                         </div>
                     )}
                 </div>
