@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import DotKun from "../components/DotKun";
 import DotHouse, { getHouseStage } from "../components/DotHouse";
+import HomeIsland from "../components/HomeIsland";
 
 type Theme = "light" | "dark";
 type Task = { key: string; icon: string; label: string; href: string };
@@ -104,6 +105,7 @@ export default function HomePage() {
     setShowGoalModal(false);
   };
   const [totalEarned, setTotalEarned] = useState(0);
+  const [homeUserId, setHomeUserId] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
   const [task, setTask] = useState<Task>({ key: "report", icon: "📝", label: "日報を書く", href: "/report" });
   const [doneCount, setDoneCount] = useState(0);
@@ -137,6 +139,7 @@ export default function HomePage() {
       const { data: pointRow } = await supabase.from("user_points").select("total_earned").eq("id", user.id).single();
       const te = (pointRow as any)?.total_earned || 0;
       setTotalEarned(te);
+      setHomeUserId(user.id);
       // 家の進化検知（前回見た段階より上がってたら1回だけ祝う）
       try {
         const curIdx = getHouseStage(te).idx;
@@ -406,7 +409,7 @@ export default function HomePage() {
                 })}
               </div>
             )}
-            <DotHouse totalEarned={totalEarned} accent={isDark ? "#a78bfa" : "#ff8a3d"} light={!isDark} onHouseClick={() => { playPoko(); router.push("/mypage"); }} />
+            <HomeIsland userId={homeUserId} totalEarned={totalEarned} onHouseClick={() => { playPoko(); router.push("/mypage"); }} />
 
             {/* MY GOALS */}
             <div style={{ marginTop: 16, padding: "16px 18px", borderRadius: 16, background: isDark ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.75)", border: `1px solid ${isDark ? "rgba(139,92,246,0.25)" : "rgba(255,138,61,0.3)"}` }}>
