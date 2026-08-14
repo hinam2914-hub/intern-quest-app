@@ -21,6 +21,7 @@ const TREE_EMOJI: Record<string, string> = { tree_sakura: "🌸", tree_yashi: "�
 const DECO_EMOJI: Record<string, string> = { deco_funsui: "⛲", deco_bench: "🪑", deco_gaitou: "💡", deco_yukidaruma: "⛄", deco_torii: "⛩️" };
 const SKY_EMOJI: Record<string, string> = { sky_niji: "🌈", sky_chocho: "🦋", sky_fuusen: "🎈" };
 const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "🐈", animal_inu: "🐕" };
+const ANIMAL_IMG: Record<string, string> = { animal_neko: "/island/animals/cat.png", animal_inu: "/island/animals/dog.png" };
 const ANIMAL_NAME: Record<string, string> = { animal_neko: "ねこ", animal_inu: "いぬ" };
 
 export default function HomeIsland({ userId, totalEarned, onHouseClick }: { userId: string; totalEarned: number; onHouseClick?: () => void }) {
@@ -87,10 +88,10 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
             <style>{`
                 @keyframes hiCloud { 0%{transform:translateX(-30px)} 100%{transform:translateX(30px)} }
                 @keyframes hiFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-                @keyframes hiPet { 0%,100%{transform:scaleX(-1) translateY(0)} 50%{transform:scaleX(-1) translateY(-3px)} }
+                @keyframes hiPet { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
                 @media (prefers-reduced-motion: reduce) { .hi-pet { animation: none !important; } }
                 @keyframes hiPetShadow { 0%,100%{transform:translateX(-50%) scaleX(1)} 50%{transform:translateX(-50%) scaleX(.8)} }
-                @keyframes hiHop { 0%{transform:scaleX(-1) translateY(0)} 40%{transform:scaleX(-1) translateY(-14px)} 100%{transform:scaleX(-1) translateY(0)} }
+                @keyframes hiHop { 0%{transform:translateY(0)} 40%{transform:translateY(-14px)} 100%{transform:translateY(0)} }
                 @keyframes hiPop { 0%{transform:scale(.2);opacity:0} 70%{transform:scale(1.14)} 100%{transform:scale(1);opacity:1} }
                 @keyframes hiToast { 0%{opacity:0;transform:translate(-50%,6px)} 15%{opacity:1;transform:translate(-50%,0)} 85%{opacity:1} 100%{opacity:0} }
                 .hi-scroll::-webkit-scrollbar { height: 5px; }
@@ -160,9 +161,10 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                     )}
                     {/* どうぶつ（家の右手前・小道の右横） */}
                     {view.animal && ANIMAL_EMOJI[view.animal] && (
-                        <div key={"animal" + view.animal} onClick={tapPet} style={{ position: "absolute", left: "68%", top: "58%", zIndex: 8, cursor: "pointer", textAlign: "center" }}>
-                            {petSay && <div style={{ position: "absolute", top: -30, left: "50%", transform: "translateX(-50%)", padding: "4px 10px", borderRadius: 10, background: "rgba(255,255,255,.95)", color: "#4a3a2a", fontSize: 12, fontWeight: 900, whiteSpace: "nowrap", boxShadow: "0 2px 6px rgba(0,0,0,.2)", zIndex: 9 }}>{petSay}</div>}
-                            <div className="hi-pet" style={{ fontSize: 38, transform: "scaleX(-1)", animation: petHop ? "hiHop .7s ease-out" : "hiPet 3.2s ease-in-out infinite", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.25))" }}>{ANIMAL_EMOJI[view.animal]}</div>
+                        <div key={"animal" + view.animal} onClick={tapPet} style={{ position: "absolute", left: "68%", top: "58%", zIndex: 8, cursor: "pointer", textAlign: "center", transform: view.animal === "animal_inu" ? "scaleX(-1)" : "none" }}>
+                            {petSay && <div style={{ position: "absolute", top: -30, left: "50%", transform: view.animal === "animal_inu" ? "translateX(-50%) scaleX(-1)" : "translateX(-50%)", padding: "4px 10px", borderRadius: 10, background: "rgba(255,255,255,.95)", color: "#4a3a2a", fontSize: 12, fontWeight: 900, whiteSpace: "nowrap", boxShadow: "0 2px 6px rgba(0,0,0,.2)", zIndex: 9 }}>{petSay}</div>}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img className="hi-pet" src={ANIMAL_IMG[view.animal]} alt="" style={{ width: 58, height: 58, objectFit: "contain", display: "block", animation: petHop ? "hiHop .7s ease-out" : "hiPet 3.2s ease-in-out infinite", filter: "drop-shadow(0 3px 4px rgba(0,0,0,.3))" }} />
                             <div className="hi-pet" style={{ width: 26, height: 7, margin: "-2px auto 0", borderRadius: "50%", background: "rgba(64,49,35,.22)", filter: "blur(5px)", animation: "hiPetShadow 3.2s ease-in-out infinite" }} />
                         </div>
                     )}
