@@ -170,6 +170,7 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
 
         const byDept: Record<string, { total: number; sub: number }> = {};
         for (const u of activeAll) {
+          if ((u as any).exclude_from_stats) continue; // 日報提出率のみ3人除外
           const code = deptCode[u.department_id];
           if (!code) continue;
           byDept[code] = byDept[code] || { total: 0, sub: 0 };
