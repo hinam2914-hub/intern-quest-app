@@ -436,7 +436,7 @@ export default function AdminPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map(e => e.trim());
             if (!user.email || !adminEmails.includes(user.email)) { router.push("/home"); return; }
 
-            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, grade, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category, onboarding_done, created_at, position").eq("is_active", true);
+            const { data: profileRows } = await supabase.from("profiles").select("id, name, role, streak, started_at, education, grade, department_id, team_id, avatar_url, growth_rank, growth_grade, growth_status, mbti, club_category, hobby_category, onboarding_done, created_at, position, exclude_from_stats").eq("is_active", true);
             const users = (profileRows || []) as UserRow[];
             setUserCount(users.length);
 
@@ -517,7 +517,10 @@ export default function AdminPage() {
             const submissions = submissionRows || [];
             const submittedIds = [...new Set(submissions.map((row) => row.user_id))];
             setReportCount(submittedIds.length);
-            setSubmitRate(users.length === 0 ? 0 : Math.round((submittedIds.length / users.length) * 100));
+            const statUsers = users.filter((u: any) => !(u as any).exclude_from_stats);
+            const statIds = statUsers.map((u) => u.id);
+            const submittedStatIds = submittedIds.filter((id: any) => statIds.includes(id));
+            setSubmitRate(statUsers.length === 0 ? 0 : Math.round((submittedStatIds.length / statUsers.length) * 100));
             // 直近3日（今日・昨日・一昨日）に1回も提出がない人を未提出者とする
             const threeDaysAgo = new Date();
             threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
@@ -527,7 +530,7 @@ export default function AdminPage() {
                 .select("user_id, created_at")
                 .gte("created_at", threeDaysAgo.toISOString());
             const submitted3DayIds = [...new Set((recent3Rows || []).map((row: any) => row.user_id))];
-            setNotSubmittedUsers(users.filter((u) => !submitted3DayIds.includes(u.id)));
+            setNotSubmittedUsers(statUsers.filter((u) => !submitted3DayIds.includes(u.id)));
             // 昨日(JST)の提出率を計算（DashboardHome用）
             {
                 const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -537,7 +540,8 @@ export default function AdminPage() {
                 const endUtc = new Date(`${yYmd}T23:59:59+09:00`).toISOString();
                 const { data: yRows } = await supabase.from("submissions").select("user_id").gte("created_at", startUtc).lte("created_at", endUtc);
                 const yIds = [...new Set((yRows || []).map((r: any) => r.user_id))];
-                setYesterdaySubmitRate(users.length === 0 ? 0 : Math.round((yIds.length / users.length) * 100));
+                const yStatIds = yIds.filter((id: any) => statIds.includes(id));
+                setYesterdaySubmitRate(statUsers.length === 0 ? 0 : Math.round((yStatIds.length / statUsers.length) * 100));
             }
             setReports(submissions.map((row) => ({ ...row, userName: users.find((u) => u.id === row.user_id)?.name || "名前未設定" })));
 
