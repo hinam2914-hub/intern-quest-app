@@ -88,6 +88,7 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
       try {
         const now = new Date();
         const d7 = new Date(now.getTime() - 7 * 86400000).toISOString();
+        const d3 = new Date(now.getTime() - 3 * 86400000).toISOString();
 
         const [{ data: profs }, { data: depts }, { data: subs7 }, { data: ph7 }, { data: rec7 }, { count: ivC }] = await Promise.all([
           supabase.from("profiles").select("id,name,mbti,education,club_category,hobby_category,department_id,exclude_from_stats"),
@@ -107,6 +108,8 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
         const deptCode: Record<string, string> = {};
         (depts || []).forEach((d: any) => { deptCode[d.id] = d.code; });
         const submitted7 = new Set((subs7 || []).map((s: any) => s.user_id));
+        const { data: subs3 } = await supabase.from("submissions").select("user_id").gte("created_at", d3);
+        const submitted3 = new Set((subs3 || []).map((s: any) => s.user_id));
 
         let hard = 0, risk = 0, mismatch = 0, leader = 0;
         const mismatchNames: { name: string; to: string; cur: string; uid: string }[] = [];
@@ -141,7 +144,7 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
         }
         const activeAllIds = new Set(activeAll.map((u: any) => u.id));
         const statAllIds = new Set(statAll.map((u: any) => u.id));
-        const submitted7Stat = new Set([...submitted7].filter((id: any) => statAllIds.has(id)));
+        const submitted7Stat = new Set([...submitted3].filter((id: any) => statAllIds.has(id)));
         const submitRate7 = statAll.length ? Math.round((submitted7Stat.size / statAll.length) * 100) : 0;
         const submitted7All = new Set([...submitted7].filter((id: any) => activeAllIds.has(id)));
         const active7 = new Set((ph7 || []).map((p: any) => p.user_id));
@@ -175,7 +178,7 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
           if (!code) continue;
           byDept[code] = byDept[code] || { total: 0, sub: 0 };
           byDept[code].total++;
-          if (submitted7.has(u.id)) byDept[code].sub++;
+          if (submitted3.has(u.id)) byDept[code].sub++;
         }
         setDeptRates(DEPT_ORDER.filter((c) => byDept[c]).map((c) => ({ code: c, rate: Math.round((byDept[c].sub / byDept[c].total) * 100) })));
 
@@ -319,7 +322,7 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
 
       {/* ③ WEEKLY SUMMARY */}
       <div style={{ borderRadius: 20, padding: "24px 26px", background: "rgba(18,18,36,.85)", border: "1px solid rgba(255,255,255,.07)" }}>
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, color: "#8b8fa8", marginBottom: 16 }}>📊 WEEKLY SUMMARY（直近7日）</div>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, color: "#8b8fa8", marginBottom: 16 }}>📊 WEEKLY SUMMARY（直近3日）</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "14px 26px", marginBottom: 22 }}>
           {weekly.map((b) => (
             <div key={b.label}>
