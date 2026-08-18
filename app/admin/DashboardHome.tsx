@@ -90,7 +90,7 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
         const d7 = new Date(now.getTime() - 7 * 86400000).toISOString();
 
         const [{ data: profs }, { data: depts }, { data: subs7 }, { data: ph7 }, { data: rec7 }, { count: ivC }] = await Promise.all([
-          supabase.from("profiles").select("id,name,mbti,education,club_category,hobby_category,department_id"),
+          supabase.from("profiles").select("id,name,mbti,education,club_category,hobby_category,department_id,exclude_from_stats"),
           supabase.from("departments").select("id,code"),
           supabase.from("submissions").select("user_id").gte("created_at", d7),
           supabase.from("points_history").select("user_id,reason").gte("created_at", d7),
@@ -103,6 +103,7 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
         const active = (profs || []).filter((p: any) => !isExcluded(p.id) && !resignedIds.has(p.id));
         // 運用指標（提出率・アクティブ率・部署別）は経営側も含めた全在籍者を母数にする（離職者のみ除外）
         const activeAll = (profs || []).filter((p: any) => !resignedIds.has(p.id));
+        const statAll = activeAll.filter((p: any) => !p.exclude_from_stats); // 日報提出率のみ3人除外
         const deptCode: Record<string, string> = {};
         (depts || []).forEach((d: any) => { deptCode[d.id] = d.code; });
         const submitted7 = new Set((subs7 || []).map((s: any) => s.user_id));
@@ -131,6 +132,7 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
 
         const byDeptTmp: Record<string, { total: number; sub: number }> = {};
         for (const u of active) {
+          if ((u as any).exclude_from_stats) continue; // 日報提出率のみ3人除外
           const code = deptCode[u.department_id];
           if (!code) continue;
           byDeptTmp[code] = byDeptTmp[code] || { total: 0, sub: 0 };
@@ -138,8 +140,10 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
           if (submitted7.has(u.id)) byDeptTmp[code].sub++;
         }
         const activeAllIds = new Set(activeAll.map((u: any) => u.id));
+        const statAllIds = new Set(statAll.map((u: any) => u.id));
+        const submitted7Stat = new Set([...submitted7].filter((id: any) => statAllIds.has(id)));
+        const submitRate7 = statAll.length ? Math.round((submitted7Stat.size / statAll.length) * 100) : 0;
         const submitted7All = new Set([...submitted7].filter((id: any) => activeAllIds.has(id)));
-        const submitRate7 = activeAll.length ? Math.round((submitted7All.size / activeAll.length) * 100) : 0;
         const active7 = new Set((ph7 || []).map((p: any) => p.user_id));
         const active7All = new Set([...active7].filter((id: any) => activeAllIds.has(id)));
         const activeRate = activeAll.length ? Math.round((active7All.size / activeAll.length) * 100) : 0;
