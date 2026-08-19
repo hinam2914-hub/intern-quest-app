@@ -12,6 +12,16 @@ type MyKing = { emoji: string; title: string; dotkun: string };
 
 function getLevel(points: number): number { return Math.max(1, Math.floor(points / 100) + 1); }
 function dotStage(level: number): number { return level >= 70 ? 5 : level >= 50 ? 4 : level >= 30 ? 3 : level >= 10 ? 2 : 1; }
+function jstYesterday(): string {
+  const now = new Date();
+  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000);
+  return jst.toISOString().slice(0, 10);
+}
+function countEmoji(s: string): number {
+  const m = s.match(/\p{Extended_Pictographic}/gu);
+  return m ? m.length : 0;
+}
+const HOME_TIRED_WORDS = ["疲れ", "つかれ", "しんど", "だるい", "ねむい", "眠い"];
 function getTodayJST(): string {
   const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return jst.toISOString().slice(0, 10);
@@ -228,6 +238,30 @@ export default function HomePage() {
           let longest = subs[0];
           subs.forEach(s => { if ((s.content?.length || 0) > (longest.content?.length || 0)) longest = s; });
           if (longest.user_id === user.id) myKingList.push({ emoji: "💬", title: "長文王", dotkun: "昨日いちばん熱のこもった長い日報だったよ！熱意、伝わってる📖" });
+          const kingYmd = jstYesterday();
+          const zoro = subs.filter((x: any) => { const j = new Date(new Date(x.created_at).getTime() + 9 * 3600000); return j.getUTCMinutes() % 11 === 0; });
+          const zoroPick: any = seededPick(zoro, kingYmd + "zoro");
+          if (zoroPick && zoroPick.user_id === user.id) myKingList.push({ emoji: "🎰", title: "ゾロ目王", dotkun: "昨日はゾロ目のタイミングで日報を出してたよ！強運の持ち主かも🎰" });
+          if (subs[subs.length - 1].user_id === user.id) myKingList.push({ emoji: "🌙", title: "ラストマン王", dotkun: "昨日いちばん最後まで頑張ってたね！おつかれさま🌙" });
+          let shortest = subs[0];
+          subs.forEach((x: any) => { if ((x.content?.length || 0) < (shortest.content?.length || 0)) shortest = x; });
+          if (shortest.user_id === user.id) myKingList.push({ emoji: "🏃", title: "瞬速王", dotkun: "昨日いちばんスパッと要点をまとめてたね！スピード感◎🏃" });
+          const byEmoji = subs.map((x: any) => ({ uid: x.user_id, n: countEmoji(x.content || "") })).sort((a: any, b: any) => b.n - a.n);
+          if (byEmoji[0].n > 0 && byEmoji[0].uid === user.id) myKingList.push({ emoji: "🎨", title: "絵文字職人", dotkun: "昨日いちばん絵文字を使いこなしてたよ！表現力ゆたか🎨" });
+          const tired = subs.filter((x: any) => HOME_TIRED_WORDS.some(w => (x.content || "").includes(w)));
+          const tiredPick: any = seededPick(tired, kingYmd + "tired");
+          if (tiredPick && tiredPick.user_id === user.id) myKingList.push({ emoji: "😴", title: "おつかれ王", dotkun: "昨日はおつかれ気味だったかな？ちゃんと休んでね🍵" });
+        }
+        {
+          const kingYmd2 = jstYesterday();
+          const activeSet = new Set<string>();
+          (kThanks as any[] || []).forEach(t => { if (t.to_user_id) activeSet.add(t.to_user_id); });
+          (kSubs as any[] || []).forEach(x => { if (x.user_id) activeSet.add(x.user_id); });
+          const activeIds = Array.from(activeSet);
+          if (activeIds.length) {
+            if (seededPick(activeIds, kingYmd2 + "lucky") === user.id) myKingList.push({ emoji: "🎲", title: "ラッキー王", dotkun: "今日はいいことあるかも！ラッキーデーだよ🎲" });
+            if (seededPick(activeIds, kingYmd2 + "star") === user.id) myKingList.push({ emoji: "🎉", title: "本日の主役", dotkun: "今日はあなたが主役！すてきな一日になりますように🎉" });
+          }
         }
         if (myKingList.length > 0 && localStorage.getItem("kingPopupSeen") !== todayYmd) {
           setMyKings(myKingList);
