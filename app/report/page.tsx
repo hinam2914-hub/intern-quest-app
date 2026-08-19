@@ -43,6 +43,7 @@ export default function ReportPage() {
     const [gachaSpinning, setGachaSpinning] = useState(false);
     const [gachaResult, setGachaResult] = useState<number | null>(null);
     const [reportDone, setReportDone] = useState(false);
+    const [showThanksPopup, setShowThanksPopup] = useState(false);
     const [questDone, setQuestDone] = useState(0);
     const [questTotal, setQuestTotal] = useState(0);
 
@@ -153,6 +154,7 @@ export default function ReportPage() {
             setDotkunFb(generateDotKunFeedback({ factText, interpText: "", actionText, streak: newStreak }));
             setFactText(""); setActionText(""); setLoading(false);
             setReportDone(true);
+            setShowThanksPopup(true);
         } finally {
             setSubmitting(false);
         }
@@ -333,6 +335,17 @@ export default function ReportPage() {
                 )}
             </div>
             <style>{`@keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }`}</style>
+            {showThanksPopup && (
+                <div onClick={() => setShowThanksPopup(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20, cursor: "pointer" }}>
+                    <div onClick={(e) => e.stopPropagation()} style={{ background: "#1a1a2e", borderRadius: 20, padding: "28px 24px 24px", width: "100%", maxWidth: 360, textAlign: "center", border: "1px solid rgba(52,211,153,0.35)", cursor: "default" }}>
+                        <div style={{ fontSize: 52 }}>🙏</div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: "#f9fafb", marginTop: 8 }}>日報おつかれさま！</div>
+                        <div style={{ fontSize: 13.5, color: "#c4b5fd", lineHeight: 1.75, marginTop: 12 }}>今日がんばった自分と、<br />支えてくれた仲間に<br />「サンキュー」を伝えよう💛</div>
+                        <button onClick={() => router.push("/thanks")} style={{ width: "100%", marginTop: 20, padding: 14, borderRadius: 14, border: "none", background: "linear-gradient(135deg, #34d399, #10b981)", color: "#fff", fontSize: 15, fontWeight: 900, cursor: "pointer" }}>🙏 サンキューを送る</button>
+                        <button onClick={() => setShowThanksPopup(false)} style={{ width: "100%", marginTop: 8, padding: 11, borderRadius: 14, border: "none", background: "transparent", color: "#9ca3af", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>あとで</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
