@@ -13,6 +13,7 @@ type Island = {
     stepNo: number;
     totalEarned: number;
     config: Record<string, string>;
+    licenses: Record<string, boolean>;
 };
 
 const STEP_TITLE: Record<number, string> = { 0: "冒険の始まり", 1: "入社・研修", 2: "登竜門", 3: "プレイヤー昇格", 4: "DRMスタート", 5: "キャリア面談", 6: "営業デビュー" };
@@ -124,7 +125,7 @@ export default function IslandsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             const [{ data: profiles }, { data: points }, { data: jsubs }] = await Promise.all([
-                supabase.from("profiles").select("id, name, streak, avatar_config, island_config").eq("is_active", true),
+                supabase.from("profiles").select("id, name, streak, avatar_config, island_config, licenses").eq("is_active", true),
                 supabase.from("user_points").select("id, total_earned"),
                 supabase.from("journey_submissions").select("user_id, step_no, status").eq("status", "approved"),
             ]);
@@ -145,6 +146,7 @@ export default function IslandsPage() {
                     stepNo: stepMap[p.id] || 0,
                     totalEarned: te,
                     config: (p.island_config || {}) as Record<string, string>,
+                    licenses: (p.licenses || {}) as Record<string, boolean>,
                 };
             });
             setIslands(list);
@@ -268,6 +270,13 @@ export default function IslandsPage() {
                                     {/* 情報パネル（島から離して浮遊感） */}
                                     <div style={{ marginTop: 40, textAlign: "center", padding: "13px 10px 13px", borderRadius: 18, background: "rgba(30,25,55,.5)", border: "1px solid rgba(139,92,246,.2)", backdropFilter: "blur(6px)" }}>
                                         <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb" }}>{i.name}</div>
+                                        {(i.licenses.ip || i.licenses.cb || i.licenses.sales) && (
+                                            <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 6 }}>
+                                                {i.licenses.ip && <img src="/island/licenses/license_ip.png" alt="IP" style={{ width: 24, height: 24 }} />}
+                                                {i.licenses.cb && <img src="/island/licenses/license_cb.png" alt="CB" style={{ width: 24, height: 24 }} />}
+                                                {i.licenses.sales && <img src="/island/licenses/license_sales.png" alt="営業昇格" style={{ width: 24, height: 24 }} />}
+                                            </div>
+                                        )}
                                         <div style={{ marginTop: 6 }}>
                                             <span style={{ fontSize: 12, fontWeight: 900, color: "#fbbf24", background: "rgba(251,191,36,.13)", border: "1px solid rgba(251,191,36,.35)", padding: "3px 12px", borderRadius: 999 }}>Lv.{i.level}</span>
                                         </div>
