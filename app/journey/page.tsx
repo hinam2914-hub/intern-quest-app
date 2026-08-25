@@ -26,6 +26,7 @@ export default function JourneyPage() {
     const [rookieTotal, setRookieTotal] = useState<Record<string, number>>({});
     const [subs, setSubs] = useState<Record<number, { status: string; review: string; scheduled_date: string }>>({});
     const [userId, setUserId] = useState<string>("");
+    const [salesLicensed, setSalesLicensed] = useState(false);
     const [passedTests, setPassedTests] = useState<Set<string>>(new Set());
     const [stepContents, setStepContents] = useState<Record<number, any[]>>({});
     const [doneContentIds, setDoneContentIds] = useState<Set<string>>(new Set());
@@ -43,11 +44,12 @@ export default function JourneyPage() {
                 supabase.from("contents").select("id, title, journey_step").gt("journey_step", 0).eq("is_active", true),
                 supabase.from("content_completions").select("content_id").eq("user_id", user.id),
                 supabase.from("test_attempts").select("test_key, passed").eq("user_id", user.id).eq("passed", true),
-                supabase.from("profiles").select("quiz_passed").eq("id", user.id).maybeSingle(),
+                supabase.from("profiles").select("quiz_passed, licenses").eq("id", user.id).maybeSingle(),
             ]);
             const byStep: Record<number, any[]> = {};
             (jcontents || []).forEach((c: any) => { (byStep[c.journey_step] = byStep[c.journey_step] || []).push(c); });
             setStepContents(byStep);
+            setSalesLicensed(!!((prof as any)?.licenses?.sales));
             setDoneContentIds(new Set((ccomps || []).map((c: any) => c.content_id)));
             const pt = new Set<string>((tattempts || []).map((t: any) => t.test_key));
             if ((prof as any)?.quiz_passed) pt.add("quiz");
@@ -131,6 +133,18 @@ export default function JourneyPage() {
 
     const doneCount = steps.filter(s => stateOf(s.no) === "done").length;
     const pct = Math.round((doneCount / steps.length) * 100);
+    const step6Done = stateOf(6) === "done";
+    useEffect(() => {
+        if (!userId || !step6Done || salesLicensed) return;
+        (async () => {
+            const { data: p } = await supabase.from("profiles").select("licenses").eq("id", userId).maybeSingle();
+            const cur = ((p as any)?.licenses || {}) as Record<string, boolean>;
+            if (cur.sales) { setSalesLicensed(true); return; }
+            const next = { ...cur, sales: true };
+            const { error } = await supabase.from("profiles").update({ licenses: next }).eq("id", userId);
+            if (!error) setSalesLicensed(true);
+        })();
+    }, [userId, step6Done, salesLicensed]);
     const selected = steps.find(s => s.no === selectedNo) || steps[2];
     const selState = stateOf(selected.no);
 
