@@ -38,7 +38,7 @@ export default function JourneyPage() {
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
             const [{ data: challenges }, { data: subs }, { data: jsubs }, { data: jcontents }, { data: ccomps }, { data: tattempts }, { data: prof }] = await Promise.all([
-                supabase.from("rookie_challenges").select("id, block").eq("is_active", true),
+                supabase.from("rookie_challenges").select("id, block, title").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
                 supabase.from("journey_submissions").select("step_no, status, scheduled_date, review, mtg_attended, mtg_date, event_no_cancel, event_date").eq("user_id", user.id).in("step_no", [1, 2, 3, 4, 5]),
                 supabase.from("contents").select("id, title, journey_step").gt("journey_step", 0).eq("is_active", true),
@@ -56,10 +56,10 @@ export default function JourneyPage() {
             setPassedTests(pt);
             // ブロック別の全項目数
             const total: Record<string, number> = {};
-            (challenges || []).forEach((c: any) => { total[c.block] = (total[c.block] || 0) + 1; });
+            (challenges || []).forEach((c: any) => { if (c.title === "1面談を作れる") return; total[c.block] = (total[c.block] || 0) + 1; });
             // 承認済みのchallenge_id → block を引いて集計
             const idToBlock: Record<string, string> = {};
-            (challenges || []).forEach((c: any) => { idToBlock[c.id] = c.block; });
+            (challenges || []).forEach((c: any) => { if (c.title === "1面談を作れる") return; idToBlock[c.id] = c.block; });
             const done: Record<string, number> = {};
             (subs || []).forEach((s: any) => {
                 const b = idToBlock[s.challenge_id];
