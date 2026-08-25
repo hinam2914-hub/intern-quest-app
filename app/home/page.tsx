@@ -469,7 +469,7 @@ export default function HomePage() {
                   <img src="/island/licenses/license_ip.png" alt="IP" style={{ width: 46, height: 46, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 900, color: "#5c4a3a" }}>IP免許</div>
-                    <div style={{ fontSize: 11, color: "#a08356" }}>インフラPJで稼働できる証</div>
+                    <div style={{ fontSize: 11, color: "#a08356" }}>インフラ初稼働を迎えたら</div>
                   </div>
                   <button onClick={() => applyLicense("ip")} disabled={applyingLicense} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 900, background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", opacity: applyingLicense ? 0.6 : 1, flexShrink: 0 }}>申請する</button>
                 </div>
@@ -479,7 +479,7 @@ export default function HomePage() {
                   <img src="/island/licenses/license_cb.png" alt="CB" style={{ width: 46, height: 46, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 900, color: "#5c4a3a" }}>CB免許</div>
-                    <div style={{ fontSize: 11, color: "#a08356" }}>テレアポで稼働できる証</div>
+                    <div style={{ fontSize: 11, color: "#a08356" }}>テレアポ初稼働を迎えたら</div>
                   </div>
                   <button onClick={() => applyLicense("cb")} disabled={applyingLicense} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 900, background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", opacity: applyingLicense ? 0.6 : 1, flexShrink: 0 }}>申請する</button>
                 </div>
