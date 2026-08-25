@@ -34,22 +34,28 @@ export default function ThinkingPage() {
             .eq("is_active", true).eq("type", t)
             .order("created_at", { ascending: true });
         const pool = (qRows || []) as Question[];
-        // 今日(JST)の通算日数で、お題プールから1問を決定的に選ぶ（毎日自動で切り替わる）
+        // 今日(JST)の日付文字列
         const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-        const dayNumber = Math.floor(jstNow.getTime() / 86400000); // 1970年からの日数(JST)
-        // 出題済み（回答が1件以上ついたお題）を先に取得
-        const poolIds = pool.map(pq => pq.id);
-        let answeredQids: string[] = [];
-        if (poolIds.length > 0) {
-            const { data: ansRows } = await supabase.from("thinking_answers").select("question_id").in("question_id", poolIds);
-            answeredQids = Array.from(new Set((ansRows || []).map((r: any) => r.question_id)));
+        const todayStr = jstNow.toISOString().slice(0, 10);
+        // 今日すでに出題済みのお題があればそれを使う（1日1問を保証）
+        let q: Question | undefined = pool.find(pq => (pq as any).last_shown_date === todayStr);
+        if (!q && pool.length > 0) {
+            // 未提出（last_shown_dateがnull）を最優先、次に最も長く出していない順で選ぶ
+            const sorted = [...pool].sort((a, b) => {
+                const da = (a as any).last_shown_date || "";
+                const db = (b as any).last_shown_date || "";
+                if (da === db) return a.created_at < b.created_at ? -1 : 1;
+                return da < db ? -1 : 1; // 空文字(null)が先頭
+            });
+            q = sorted[0];
+            // 出題履歴を記録
+            await supabase.from("thinking_questions").update({ last_shown_date: todayStr }).eq("id", q.id);
+            (q as any).last_shown_date = todayStr;
         }
-        // 今日のお題：未出題プールから日替わり選択（全部出題済みなら全プールで一周リセット）
-        const unanswered = pool.filter(pq => !answeredQids.includes(pq.id));
-        const activePool = unanswered.length > 0 ? unanswered : pool;
-        const q = activePool.length > 0 ? activePool[dayNumber % activePool.length] : undefined;
-        // 過去のお題：出題済みのみ。今日のお題は除く。
-        const past = pool.filter(pq => answeredQids.includes(pq.id) && (!q || pq.id !== q.id)).reverse();
+        // 過去のお題：一度でも出題済み（last_shown_dateあり）かつ今日のお題以外。新しく出した順。
+        const past = pool
+            .filter(pq => (pq as any).last_shown_date && (!q || pq.id !== q.id))
+            .sort((a, b) => ((b as any).last_shown_date || "").localeCompare((a as any).last_shown_date || ""));
         setPastQuestions(past);
         setOpenPast(null); setPastAnswers({});
         setQuestion(q || null);
