@@ -265,6 +265,25 @@ export default function ProfilePage() {
                                     </span>
                                 )}
                             </div>
+                            {(() => {
+                                const lic = (profile as any).licenses || {};
+                                const items = [
+                                    lic.ip ? { img: "license_ip.png", label: "IP免許", color: "#93c5fd" } : null,
+                                    lic.cb ? { img: "license_cb.png", label: "CB免許", color: "#6ee7b7" } : null,
+                                    lic.sales ? { img: "license_sales.png", label: "営業昇格", color: "#fcd34d" } : null,
+                                ].filter(Boolean) as { img: string; label: string; color: string }[];
+                                if (items.length === 0) return null;
+                                return (
+                                    <div style={{ display: "flex", gap: 14, marginTop: 14 }}>
+                                        {items.map((it) => (
+                                            <div key={it.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                                                <img src={"/island/licenses/" + it.img} alt={it.label} style={{ width: 52, height: 52 }} />
+                                                <span style={{ fontSize: 10.5, fontWeight: 700, color: it.color }}>{it.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                     {profile.bio && (
