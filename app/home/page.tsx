@@ -460,6 +460,32 @@ export default function HomePage() {
             <HomeIsland userId={homeUserId} totalEarned={totalEarned} onHouseClick={() => { playPoko(); router.push("/mypage"); }} />
 
           </div>
+          {(!licenses.ip || !licenses.cb) && (
+            <div style={{ width: "100%", marginTop: 12, borderRadius: 20, padding: "14px 16px", background: "linear-gradient(180deg, rgba(255,252,242,.96), rgba(252,244,226,.96))", boxShadow: "0 6px 18px rgba(120,90,40,.16), inset 0 1px 0 rgba(255,255,255,.7)", border: "1.5px solid rgba(190,160,110,.35)", animation: "popIn 0.5s ease-out 0.32s both" }}>
+              <div style={{ fontSize: 12.5, fontWeight: 900, color: "#8a6a3a", marginBottom: 4, letterSpacing: 1 }}>🎫 取得できる免許</div>
+              <div style={{ fontSize: 11, color: "#a08356", marginBottom: 10 }}>申請すると、あなたのプロフィールに免許が表示されるよ</div>
+              {!licenses.ip && (
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: !licenses.cb ? "1px solid rgba(180,150,100,.18)" : "none" }}>
+                  <img src="/island/licenses/license_ip.png" alt="IP" style={{ width: 46, height: 46, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 900, color: "#5c4a3a" }}>IP免許</div>
+                    <div style={{ fontSize: 11, color: "#a08356" }}>インフラPJで稼働できる証</div>
+                  </div>
+                  <button onClick={() => applyLicense("ip")} disabled={applyingLicense} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 900, background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", opacity: applyingLicense ? 0.6 : 1, flexShrink: 0 }}>申請する</button>
+                </div>
+              )}
+              {!licenses.cb && (
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
+                  <img src="/island/licenses/license_cb.png" alt="CB" style={{ width: 46, height: 46, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 900, color: "#5c4a3a" }}>CB免許</div>
+                    <div style={{ fontSize: 11, color: "#a08356" }}>テレアポで稼働できる証</div>
+                  </div>
+                  <button onClick={() => applyLicense("cb")} disabled={applyingLicense} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 900, background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", opacity: applyingLicense ? 0.6 : 1, flexShrink: 0 }}>申請する</button>
+                </div>
+              )}
+            </div>
+          )}
           <div style={{ width: "100%", marginTop: 12, borderRadius: 20, padding: "14px 16px 12px", background: "linear-gradient(180deg, rgba(255,252,242,.96), rgba(252,244,226,.96))", boxShadow: "0 6px 18px rgba(120,90,40,.16), inset 0 1px 0 rgba(255,255,255,.7)", border: "1.5px solid rgba(190,160,110,.35)", animation: "popIn 0.5s ease-out 0.38s both" }}>
             <div style={{ fontSize: 12.5, fontWeight: 900, color: "#8a6a3a", marginBottom: 8, letterSpacing: 1 }}>今日のミッション</div>
             {[
