@@ -114,8 +114,21 @@ export default function HomePage() {
     setSavingGoal(false);
     setShowGoalModal(false);
   };
+  const applyLicense = async (key: string) => {
+    if (applyingLicense) return;
+    setApplyingLicense(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const next = { ...licenses, [key]: true };
+      const { error } = await supabase.from("profiles").update({ licenses: next }).eq("id", user.id);
+      if (!error) setLicenses(next);
+    }
+    setApplyingLicense(false);
+  };
   const [totalEarned, setTotalEarned] = useState(0);
   const [homeUserId, setHomeUserId] = useState("");
+  const [licenses, setLicenses] = useState<Record<string, boolean>>({});
+  const [applyingLicense, setApplyingLicense] = useState(false);
   const [theme, setTheme] = useState<Theme>("light");
   const [task, setTask] = useState<Task>({ key: "report", icon: "📝", label: "日報を書く", href: "/report" });
   const [doneCount, setDoneCount] = useState(0);
@@ -145,7 +158,7 @@ export default function HomePage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
-      const { data: profile } = await supabase.from("profiles").select("name, streak, avatar_config").eq("id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("name, streak, avatar_config, licenses").eq("id", user.id).single();
       const { data: pointRow } = await supabase.from("user_points").select("total_earned").eq("id", user.id).single();
       const te = (pointRow as any)?.total_earned || 0;
       setTotalEarned(te);
@@ -178,6 +191,7 @@ export default function HomePage() {
       } catch {}
       if (profile) {
         setName((profile as any).name || "");
+        setLicenses((profile as any).licenses || {});
         setAvatarId((profile as any).avatar_config?.id || null);
         setStreak((profile as any).streak || 0);
         const { data: goalRow } = await supabase.from("user_goals").select("*").eq("user_id", user.id).maybeSingle();
@@ -445,33 +459,6 @@ export default function HomePage() {
             )}
             <HomeIsland userId={homeUserId} totalEarned={totalEarned} onHouseClick={() => { playPoko(); router.push("/mypage"); }} />
 
-            {/* MY GOALS */}
-            <div style={{ marginTop: 16, padding: "16px 18px", borderRadius: 16, background: isDark ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.75)", border: `1px solid ${isDark ? "rgba(139,92,246,0.25)" : "rgba(255,138,61,0.3)"}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <span style={{ fontSize: 11.5, fontWeight: 900, letterSpacing: 2, color: isDark ? "#a78bfa" : "#e07a2f" }}>🎯 MY GOALS</span>
-                <button onClick={() => setShowGoalModal(true)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 800, background: isDark ? "rgba(139,92,246,0.2)" : "rgba(255,138,61,0.15)", color: isDark ? "#c4b5fd" : "#e07a2f" }}>✏️ 編集</button>
-              </div>
-              {(goals.monthly_target || goals.monthly_theme || goals.quarter_goal || goals.career_goal) ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {[
-                    { label: "今月の目標", value: goals.monthly_target, icon: "📊" },
-                    { label: "今月のテーマ", value: goals.monthly_theme, icon: "💡" },
-                    { label: "3ヶ月目標", value: goals.quarter_goal, icon: "📈" },
-                    { label: "就活ゴール", value: goals.career_goal, icon: "🏁" },
-                  ].map((g) => (
-                    <div key={g.label} style={{ padding: "10px 12px", borderRadius: 10, background: isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.6)" }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: isDark ? "#8b8fa8" : "#a08060", marginBottom: 3 }}>{g.icon} {g.label}</div>
-                      <div style={{ fontSize: 13.5, fontWeight: 800, color: isDark ? "#f9fafb" : "#5c4a3a", lineHeight: 1.4 }}>{g.value || "—"}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div onClick={() => setShowGoalModal(true)} style={{ padding: "18px 12px", textAlign: "center", cursor: "pointer", borderRadius: 10, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.5)" }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: isDark ? "#c4b5fd" : "#e07a2f", marginBottom: 4 }}>目標を設定しよう</div>
-                  <div style={{ fontSize: 11.5, color: isDark ? "#8b8fa8" : "#a08060" }}>今月の数字・テーマ・3ヶ月目標・就活ゴール</div>
-                </div>
-              )}
-            </div>
           </div>
           <div style={{ width: "100%", marginTop: 12, borderRadius: 20, padding: "14px 16px 12px", background: "linear-gradient(180deg, rgba(255,252,242,.96), rgba(252,244,226,.96))", boxShadow: "0 6px 18px rgba(120,90,40,.16), inset 0 1px 0 rgba(255,255,255,.7)", border: "1.5px solid rgba(190,160,110,.35)", animation: "popIn 0.5s ease-out 0.38s both" }}>
             <div style={{ fontSize: 12.5, fontWeight: 900, color: "#8a6a3a", marginBottom: 8, letterSpacing: 1 }}>今日のミッション</div>
