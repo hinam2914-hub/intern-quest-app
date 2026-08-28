@@ -116,6 +116,11 @@ const normalizeWrittenAnswers = (raw: any): { question?: string; answer: string 
     return [];
 };
 const WRITTEN_QUESTIONS: Record<string, string[]> = {
+    manager: [
+        "チームで成果を出すために必要な要素を3つ書いてください",
+        "メンバーが成長しない原因とその解決策を書いてください",
+        "良いマネージャーとは何かを定義してください",
+    ],
     quiz: [
         "「信頼を得るために必要な行動」を3つ書いてください",
         "「成長が早い人の特徴」を具体的に説明してください",
