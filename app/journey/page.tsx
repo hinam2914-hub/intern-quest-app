@@ -326,9 +326,9 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                     <Step3Form userId={userId} sub={sub} onSaved={onSaved} />
                 )
             )}
-            {(step.no === 1 || step.no === 2 || step.no === 4 || step.no === 5) && (state === "now" || state === "done") && (
+            {(step.no === 1 || step.no === 2 || step.no === 4 || step.no === 5 || step.no === 7) && (state === "now" || state === "done") && (
                 <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 14, background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 {step.no === 1 ? "入社・研修日" : step.no === 4 ? "DRM研修参加日" : step.no === 5 ? "キャリア面談日" : "キックオフ研修日"}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 {step.no === 1 ? "入社・研修日" : step.no === 4 ? "DRM研修参加日" : step.no === 5 ? "キャリア面談日" : step.no === 7 ? "一人前チャレンジ研修日" : "キックオフ研修日"}</span>
                     <input type="date" value={sub.scheduled_date} onChange={async (e) => {
                         const d = e.target.value;
                         onSaved({ scheduled_date: d });
