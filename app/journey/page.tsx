@@ -8,6 +8,7 @@ const GATE_BLOCKS = ["①コミュ基礎", "②研修・同行"];
 type StepState = "done" | "now" | "lock";
 type Step = {
     no: number;
+    displayNo?: number;
     key: string;
     img: string;
     title: string;
@@ -89,6 +90,7 @@ export default function JourneyPage() {
         { no: 5, key: "temple", img: "/journey/step5_temple.png", title: "キャリア面談・配属", desc: "キャリア面談を受けて申請しよう", reward: 20, unlock: ["STEP4をクリア", "DRM研修の承認"] },
         { no: 6, key: "castle", img: "/journey/step6_castle.png", title: "営業配属", desc: "営業学習コンテンツ・デビューテスト・コミュ基礎でゴール！", reward: 30, unlock: ["STEP5をクリア"] },
     ];
+    steps.forEach((st, i) => { st.displayNo = i + 1; });
 
     // ステップ状態を決める
     // そのSTEPのコンテンツを全部視聴済みか
@@ -280,7 +282,7 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
             {isNow && <><span style={{ position: "absolute", top: 16, right: 30, fontSize: 12, opacity: .7 }}>✦</span><span style={{ position: "absolute", top: 44, right: 90, fontSize: 9, opacity: .5 }}>⭐</span></>}
 
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 900, color: isNow ? "#c4b5fd" : "#8b8fa8" }}>STEP {step.no}</span>
+                <span style={{ fontSize: 11, fontWeight: 900, color: isNow ? "#c4b5fd" : "#8b8fa8" }}>STEP {step.displayNo}</span>
                 {isNow && <span style={{ fontSize: 10, fontWeight: 900, color: "#fff", background: "#7c5cf0", borderRadius: 999, padding: "2px 10px" }}>今ここ</span>}
                 {isDone && <span style={{ fontSize: 10, fontWeight: 900, color: "#34d399", background: "rgba(52,211,153,.15)", border: "1px solid rgba(52,211,153,.4)", borderRadius: 999, padding: "2px 10px" }}>✓ 完了</span>}
                 {isLock && <span style={{ fontSize: 10, fontWeight: 800, color: "#9ca3af" }}>🔒 未解放</span>}
