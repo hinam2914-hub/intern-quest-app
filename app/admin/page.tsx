@@ -368,6 +368,7 @@ export default function AdminPage() {
     const [pendingAvatarCount, setPendingAvatarCount] = useState(0);
     const [pendingIslandCount, setPendingIslandCount] = useState(0);
     const [pendingJourneyCount, setPendingJourneyCount] = useState(0);
+    const [pendingRookieCount, setPendingRookieCount] = useState(0);
     const [pendingQuestionCount, setPendingQuestionCount] = useState(0);
     const [pendingMgrTestCount, setPendingMgrTestCount] = useState(0);
     // ===== 人材アーカイブ =====
@@ -739,6 +740,8 @@ export default function AdminPage() {
             setPendingIslandCount(islandC || 0);
             const { count: journeyC } = await supabase.from("journey_submissions").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingJourneyCount(journeyC || 0);
+            const { count: rookieC } = await supabase.from("rookie_submissions").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingRookieCount(rookieC || 0);
             const { count: questionC } = await supabase.from("questions_box").select("*", { count: "exact", head: true }).is("answered_at", null);
             setPendingQuestionCount(questionC || 0);
             // 人材アーカイブ取得
@@ -2225,6 +2228,7 @@ export default function AdminPage() {
                             pendingIsland: pendingIslandCount,
                             pendingShop: pendingAvatarCount + pendingIslandCount,
                             pendingJourney: pendingJourneyCount,
+                            pendingRookie: pendingRookieCount,
                             pendingLearn: contentCompletions.filter((c: any) => c.status === "pending").length,
                             pendingChallenge: challengeSubmissions.filter((c: any) => c.status === "pending").length,
                             pendingRequest: pendingCount,

@@ -17,7 +17,7 @@ const DEPT_ORDER = ["IP", "CB", "SP", "HR", "MK", "EXAM"];
 type Stats = {
   notSubmitted: number; submitRate: number; pendingCount: number; userCount: number; pendingAvatar?: number; pendingIsland?: number; pendingShop?: number;
   pendingTask?: number; pendingKkc?: number; pendingAdvice?: number; pendingMedaka?: number;
-  pendingMentor?: number; pendingMtg?: number; pendingTest?: number; pendingRecruit?: number; pendingChallenge?: number; pendingRequest?: number; pendingQuestion?: number; pendingMgrTest?: number; pendingLearn?: number; pendingJourney?: number;
+  pendingMentor?: number; pendingMtg?: number; pendingTest?: number; pendingRecruit?: number; pendingChallenge?: number; pendingRequest?: number; pendingQuestion?: number; pendingMgrTest?: number; pendingLearn?: number; pendingJourney?: number; pendingRookie?: number;
 };
 type Card = { key: string; icon: string; title: string; desc?: string; badgeKey?: keyof Stats };
 
@@ -33,7 +33,7 @@ const QUICK: Card[] = [
   { key: "sibyl", icon: "🔮", title: "シビュラ", desc: "AI適性分析" },
   { key: "course", icon: "🎓", title: "講座スタンプ", desc: "受講・講師の承認" },
   { key: "required_check", icon: "📌", title: "必修チェック", desc: "宿題の完了状況・未提出者" },
-  { key: "rookie", icon: "🏅", title: "一人前チャレンジ", desc: "新人の進捗・営業研修OK判定" },
+  { key: "rookie", icon: "🏅", title: "一人前チャレンジ", desc: "新人の進捗・営業研修OK判定", badgeKey: "pendingRookie" },
   { key: "journey", icon: "🗺️", title: "冒険マップ進捗", desc: "STEP1〜5の申請承認", badgeKey: "pendingJourney" },
   { key: "script_practice", icon: "🎤", title: "スクリプト練習", desc: "練習進捗・テスト合格チェック" },
   { key: "shop", icon: "🛍", title: "ショップ管理", desc: "景品・アバター・島の購入承認", badgeKey: "pendingShop" },
