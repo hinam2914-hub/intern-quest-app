@@ -82,7 +82,8 @@ export default function JourneyPage() {
 
     const steps: Step[] = [
         { no: 1, key: "village", img: "/journey/step1_village.png", title: "入社・スラック研修", desc: "アカウント登録・アバター設定・MY GOALS宣言", reward: 10 },
-        { no: 2, key: "hut", img: "/journey/step2_hut.png", title: "登竜門キックオフ研修", desc: "学習コンテンツを視聴して基礎を固める", reward: 10 },
+        { no: 2, key: "hut", img: "/journey/step2_hut.png", title: "キックオフ研修", desc: "学習コンテンツを視聴して基礎を固める", reward: 10 },
+        { no: 7, key: "rookie", img: "/journey/step2_hut.png", title: "一人前チャレンジ研修", desc: "確認ワーク・即レス・常識デリカシーのテストに合格しよう", reward: 15 },
         { no: 3, key: "crystal", img: "/journey/step3_crystal.png", title: "プレイヤー昇格", desc: "全体MTG出席・研修/イベント当日キャンセルなしを提出", reward: 20 },
         { no: 4, key: "dm", img: "/journey/step4_dm.png", title: "DRMスタート", desc: "DRM研修に参加して申請", reward: 20, unlock: ["STEP3をクリア", "プレイヤー昇格の承認"] },
         { no: 5, key: "temple", img: "/journey/step5_temple.png", title: "キャリア面談・配属", desc: "キャリア面談を受けて申請しよう", reward: 20, unlock: ["STEP4をクリア", "DRM研修の承認"] },
@@ -97,7 +98,7 @@ export default function JourneyPage() {
         return list.every((c: any) => doneContentIds.has(c.id));
     };
     // そのSTEPのテストを全部合格済みか（テストがあるのはSTEP2のみ）
-    const STEP_TESTS: Record<number, string[]> = { 2: ["quiz", "quick_response", "common_sense"], 6: ["sales"] };
+    const STEP_TESTS: Record<number, string[]> = { 7: ["quiz", "quick_response", "common_sense"], 6: ["sales"] };
     const testsDone = (no: number): boolean => {
         const keys = STEP_TESTS[no] || [];
         return keys.every((k) => passedTests.has(k));
@@ -112,8 +113,12 @@ export default function JourneyPage() {
             if (stateOf(1) !== "done") return "lock";   // STEP1未完なら施錠
             return stepClear(2) ? "done" : "now"; // 登竜門：承認+コンテンツ+テスト
         }
+        if (no === 7) {
+            if (stateOf(2) !== "done") return "lock";   // STEP2(キックオフ)未完なら施錠
+            return (contentDone(7) && testsDone(7)) ? "done" : "now"; // 一人前チャレンジ：テスト合格
+        }
         if (no === 3) {
-            if (stateOf(2) !== "done") return "lock";   // STEP2未完なら施錠
+            if (stateOf(7) !== "done") return "lock";   // 一人前チャレンジ未完なら施錠
             return stepClear(3) ? "done" : "now"; // プレイヤー昇格：承認+コンテンツ
         }
         if (no === 4) {
@@ -176,7 +181,7 @@ export default function JourneyPage() {
                         <div style={{ height: 9, borderRadius: 999, background: "rgba(255,255,255,.1)", marginTop: 10, overflow: "hidden" }}>
                             <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg,#a78bfa,#7c5cf0)", borderRadius: 999 }} />
                         </div>
-                        <div style={{ fontSize: 11, color: "#c4b5fd", marginTop: 8, fontWeight: 700 }}>{doneCount >= 6 ? "🎉 ゴール達成！営業デビューおめでとう！" : "あと" + (6 - doneCount) + "STEPでゴール！ " + doneCount + "/6 完了"}</div>
+                        <div style={{ fontSize: 11, color: "#c4b5fd", marginTop: 8, fontWeight: 700 }}>{doneCount >= steps.length ? "🎉 ゴール達成！営業デビューおめでとう！" : "あと" + (steps.length - doneCount) + "STEPでゴール！ " + doneCount + "/" + steps.length + " 完了"}</div>
                     </div>
                 </div>
 
@@ -321,7 +326,7 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
             )}
             {(step.no === 1 || step.no === 2 || step.no === 4 || step.no === 5) && (state === "now" || state === "done") && (
                 <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 14, background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 {step.no === 1 ? "入社・研修日" : step.no === 4 ? "DRM研修参加日" : step.no === 5 ? "キャリア面談日" : "登竜門研修日"}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 {step.no === 1 ? "入社・研修日" : step.no === 4 ? "DRM研修参加日" : step.no === 5 ? "キャリア面談日" : "キックオフ研修日"}</span>
                     <input type="date" value={sub.scheduled_date} onChange={async (e) => {
                         const d = e.target.value;
                         onSaved({ scheduled_date: d });
@@ -425,7 +430,7 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                     </div>
                 ) : (
                     <div style={{ marginTop: 18 }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", marginBottom: 8 }}>{step.no === 1 ? "入社・研修の感想" : "登竜門の感想"}を書いて送信（必須）</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", marginBottom: 8 }}>{step.no === 1 ? "入社・研修の感想" : "キックオフの感想"}を書いて送信（必須）</div>
                         <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="学んだこと・目標などを書こう" rows={4} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(167,139,250,.4)", background: "rgba(0,0,0,.3)", color: "#fff", fontSize: 14, resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
                         <button disabled={sending || !reviewText.trim()} onClick={async () => {
                             if (!userId || !reviewText.trim()) return;
