@@ -41,7 +41,7 @@ export default function JourneyPage() {
             const [{ data: challenges }, { data: subs }, { data: jsubs }, { data: jcontents }, { data: ccomps }, { data: tattempts }, { data: prof }] = await Promise.all([
                 supabase.from("rookie_challenges").select("id, block, title").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
-                supabase.from("journey_submissions").select("step_no, status, scheduled_date, review, mtg_attended, mtg_date, event_no_cancel, event_date").eq("user_id", user.id).in("step_no", [1, 2, 3, 4, 5]),
+                supabase.from("journey_submissions").select("step_no, status, scheduled_date, review, mtg_attended, mtg_date, event_no_cancel, event_date").eq("user_id", user.id).in("step_no", [1, 2, 3, 4, 5, 7]),
                 supabase.from("contents").select("id, title, journey_step").gt("journey_step", 0).eq("is_active", true),
                 supabase.from("content_completions").select("content_id").eq("user_id", user.id),
                 supabase.from("test_attempts").select("test_key, passed").eq("user_id", user.id).eq("passed", true),
