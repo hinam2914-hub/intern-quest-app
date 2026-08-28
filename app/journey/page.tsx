@@ -403,7 +403,7 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
                     </div>
                 </div>
             )}
-            {step.no === 2 && (state === "now" || state === "done") && (
+            {step.no === 7 && (state === "now" || state === "done") && (
                 <div style={{ marginTop: 18 }}>
                     <div style={{ fontSize: 12, fontWeight: 800, color: "#c4b5fd", marginBottom: 10, letterSpacing: 1 }}>📝 このフェーズで受けるテスト</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
