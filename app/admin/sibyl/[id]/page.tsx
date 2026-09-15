@@ -186,7 +186,10 @@ export default function SibylPersonalPage() {
           </div>
 
           <div style={{ flex: 1, minWidth: 300 }}>
-            <div style={{ fontSize: 22, fontWeight: 900, color: color ? COLOR_HEX[color] : "#fff", textShadow: color ? `0 0 18px ${COLOR_HEX[color]}66` : "none" }}>{typeName} <span style={{ fontSize: 14, color: color ? COLOR_HEX[color] : "#a78bfa", opacity: .85 }}>({p.mbti || "未設定"}{p.mbti && MBTI_NAME[p.mbti] ? `・${MBTI_NAME[p.mbti]}` : ""})</span></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ display: "inline-block", fontSize: 26, fontWeight: 900, color: "#0b0b14", background: color ? COLOR_HEX[color] : "#a78bfa", padding: "6px 18px", borderRadius: 999, letterSpacing: 1, boxShadow: color ? `0 0 24px ${COLOR_HEX[color]}88, 0 4px 14px rgba(0,0,0,.4)` : "none" }}>{typeName}</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: color ? COLOR_HEX[color] : "#a78bfa", background: color ? `${COLOR_HEX[color]}1a` : "rgba(167,139,250,.1)", border: color ? `1.5px solid ${COLOR_HEX[color]}66` : "1.5px solid rgba(167,139,250,.4)", padding: "5px 14px", borderRadius: 999 }}>{p.mbti || "未設定"}{p.mbti && MBTI_NAME[p.mbti] ? `・${MBTI_NAME[p.mbti]}` : ""}</span>
+            </div>
             <div style={{ fontSize: 12.5, color: "#a5a8c0", fontWeight: 600, marginTop: 4, marginBottom: 16 }}>{course?.courseName.split("｜")[1] || "分析にはMBTIの登録が必要です"}</div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <div style={{ position: "relative", width: 104, height: 104 }}>
