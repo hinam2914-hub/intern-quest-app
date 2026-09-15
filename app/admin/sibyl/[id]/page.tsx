@@ -186,7 +186,7 @@ export default function SibylPersonalPage() {
             <div style={{ fontSize: 10, fontWeight: 700, color: "#8b8fa8", marginTop: 8, lineHeight: 1.6 }}>
               資質 {total} + 行動 {action.total}<br />= {potential.score} / 150
             </div>
-            <div style={{ fontSize: 9.5, fontWeight: 700, color: "#6b7280", marginTop: 6 }}>（資質のみ: {rank}ランク）</div>
+            <div style={{ fontSize: 9.5, fontWeight: 700, color: "#6b7280", marginTop: 6, lineHeight: 1.6 }}>資質のみ: {rank}ランク<br /><span style={{ fontSize: 8.5, color: "#4b5563" }}>（一覧のフィルターはこちら）</span></div>
           </div>
 
           <div style={{ flex: 1, minWidth: 300 }}>

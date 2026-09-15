@@ -5293,10 +5293,11 @@ export default function AdminPage() {
                             ))}
                         </div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: "#8b8fa8", letterSpacing: 1, marginRight: 4 }}>ランク</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: "#8b8fa8", letterSpacing: 1, marginRight: 4 }}>資質ランク</span>
                             {[["all", "全部", "#9ca3af"], ["S", "S", "#a78bfa"], ["A", "A", "#34d399"], ["B", "B", "#38bdf8"], ["C", "C", "#fbbf24"], ["D", "D", "#f87171"]].map(([k, l, col]) => (
                                 <button key={k} onClick={() => setSibylRank(k)} style={{ padding: "6px 14px", borderRadius: 8, border: sibylRank === k ? `1.5px solid ${col}` : "1px solid rgba(255,255,255,0.1)", fontWeight: 900, cursor: "pointer", fontSize: 12, background: sibylRank === k ? `${col}26` : "rgba(255,255,255,0.05)", color: sibylRank === k ? col : "#9ca3af" }}>{l}</button>
                             ))}
+                            <span style={{ fontSize: 10.5, color: "#6b7280", marginLeft: 6 }}>※学歴・MBTI・部活・趣味から算出した資質のみ。行動スコアを加えた「ポテンシャルランク」は個人分析で確認</span>
                         </div>
                         <div style={{ maxHeight: "65vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 6 }}>
                         {userDetails.filter((u: any) => sibylDept === "all" || u.department_id === sibylDept).map((u: any) => {
