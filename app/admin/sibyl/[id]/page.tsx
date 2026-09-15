@@ -11,6 +11,7 @@ const MBTI_NAME: Record<string, string> = {
   ISTP: "巨匠", ISFP: "冒険家", ESTP: "起業家", ESFP: "エンターテイナー",
 };
 const COLOR_TYPE: Record<string, string> = { "緑": "外交官タイプ", "紫": "分析家タイプ", "青": "番人タイプ", "黄": "探検家タイプ" };
+const COLOR_HEX: Record<string, string> = { "緑": "#34d399", "紫": "#a78bfa", "青": "#38bdf8", "黄": "#fbbf24" };
 const JOB_LABEL: Record<string, string> = { "訪販": "訪販(IP)", "テレアポ": "テレアポ(CB)", "クローザー": "クローザー(CB)", "人事": "人事(HR)", "管理マネージャー": "管理マネージャー" };
 
 export default function SibylPersonalPage() {
@@ -171,6 +172,7 @@ export default function SibylPersonalPage() {
             <div style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{p.name}</div>
             <div style={{ fontSize: 11.5, color: "#8b8fa8", fontWeight: 700, marginTop: 2 }}>{deptName || "所属未設定"}{p.grade ? ` ／ ${p.grade}` : ""}</div>
             {p.education && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{p.education}</div>}
+            {p.club_category && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>部活：{p.club_category}</div>}
           </div>
 
           <div style={{ textAlign: "center", flexShrink: 0, padding: "0 10px" }}>
@@ -184,7 +186,7 @@ export default function SibylPersonalPage() {
           </div>
 
           <div style={{ flex: 1, minWidth: 300 }}>
-            <div style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>{typeName} <span style={{ fontSize: 14, color: "#a78bfa" }}>({p.mbti || "未設定"}{p.mbti && MBTI_NAME[p.mbti] ? `・${MBTI_NAME[p.mbti]}` : ""})</span></div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: color ? COLOR_HEX[color] : "#fff", textShadow: color ? `0 0 18px ${COLOR_HEX[color]}66` : "none" }}>{typeName} <span style={{ fontSize: 14, color: color ? COLOR_HEX[color] : "#a78bfa", opacity: .85 }}>({p.mbti || "未設定"}{p.mbti && MBTI_NAME[p.mbti] ? `・${MBTI_NAME[p.mbti]}` : ""})</span></div>
             <div style={{ fontSize: 12.5, color: "#a5a8c0", fontWeight: 600, marginTop: 4, marginBottom: 16 }}>{course?.courseName.split("｜")[1] || "分析にはMBTIの登録が必要です"}</div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <div style={{ position: "relative", width: 104, height: 104 }}>
