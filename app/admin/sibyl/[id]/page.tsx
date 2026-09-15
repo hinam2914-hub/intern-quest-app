@@ -172,7 +172,11 @@ export default function SibylPersonalPage() {
             <div style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{p.name}</div>
             <div style={{ fontSize: 11.5, color: "#8b8fa8", fontWeight: 700, marginTop: 2 }}>{deptName || "所属未設定"}{p.grade ? ` ／ ${p.grade}` : ""}</div>
             {p.education && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{p.education}</div>}
-            {p.club_category && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>部活：{p.club_category}</div>}
+            {p.club_category && (() => {
+              const cc = p.club_category as string;
+              const cl = cc.includes("運動") || cc.includes("体育") ? "#f97316" : cc.includes("文化") ? "#38bdf8" : "#8b8fa8";
+              return <div style={{ marginTop: 8 }}><span style={{ display: "inline-block", fontSize: 12, fontWeight: 900, color: cl, background: `${cl}1f`, border: `1.5px solid ${cl}88`, padding: "4px 12px", borderRadius: 999, letterSpacing: 1 }}>{cc}</span></div>;
+            })()}
           </div>
 
           <div style={{ textAlign: "center", flexShrink: 0, padding: "0 10px" }}>
