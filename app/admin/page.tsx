@@ -316,6 +316,7 @@ export default function AdminPage() {
     const [thanksViewMode, setThanksViewMode] = useState<"timeline" | "byuser">("timeline");
     const [selectedThanksUserId, setSelectedThanksUserId] = useState<string | null>(null);
     const [sibylDept, setSibylDept] = useState<string>("all");
+    const [sibylRank, setSibylRank] = useState<string>("all");
     const [sibylTab, setSibylTab] = useState<Record<string, string>>({});
     // ===== アンケート機能 =====
     const [surveys, setSurveys] = useState<Survey[]>([]);
@@ -5291,16 +5292,26 @@ export default function AdminPage() {
                                 <button key={dept.id} onClick={() => setSibylDept(dept.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", fontWeight: 700, cursor: "pointer", fontSize: 12, background: sibylDept === dept.id ? "linear-gradient(135deg, #8b5cf6, #6366f1)" : "rgba(255,255,255,0.05)", color: sibylDept === dept.id ? "#fff" : "#9ca3af" }}>{dept.name}</button>
                             ))}
                         </div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: "#8b8fa8", letterSpacing: 1, marginRight: 4 }}>ランク</span>
+                            {[["all", "全部", "#9ca3af"], ["S", "S", "#a78bfa"], ["A", "A", "#34d399"], ["B", "B", "#38bdf8"], ["C", "C", "#fbbf24"], ["D", "D", "#f87171"]].map(([k, l, col]) => (
+                                <button key={k} onClick={() => setSibylRank(k)} style={{ padding: "6px 14px", borderRadius: 8, border: sibylRank === k ? `1.5px solid ${col}` : "1px solid rgba(255,255,255,0.1)", fontWeight: 900, cursor: "pointer", fontSize: 12, background: sibylRank === k ? `${col}26` : "rgba(255,255,255,0.05)", color: sibylRank === k ? col : "#9ca3af" }}>{l}</button>
+                            ))}
+                        </div>
                         <div style={{ maxHeight: "65vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 6 }}>
                         {userDetails.filter((u: any) => sibylDept === "all" || u.department_id === sibylDept).map((u: any) => {
                             const sibyl = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
+                            const sibylTotal = sibyl.cog + sibyl.grit + sibyl.social + sibyl.drive + sibyl.create;
+                            const qRank = sibylTotal >= 68 ? "S" : sibylTotal >= 56 ? "A" : sibylTotal >= 44 ? "B" : sibylTotal >= 32 ? "C" : "D";
+                            const qRankColor = qRank === "S" ? "#a78bfa" : qRank === "A" ? "#34d399" : qRank === "B" ? "#38bdf8" : qRank === "C" ? "#fbbf24" : "#f87171";
+                            if (sibylRank !== "all" && qRank !== sibylRank) return null;
                             const matches = calculateDepartmentMatch(sibyl, { mbti: u.mbti || "", education: u.education || "" });
                             const hasData = u.mbti || u.education || u.club_category || u.hobby_category;
 
                             return (
                                 <div key={u.id} style={{ padding: "12px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>👤 {u.name}</div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 8, fontSize: 15, fontWeight: 900, color: qRankColor, background: `${qRankColor}1f`, border: `1.5px solid ${qRankColor}88` }}>{qRank}</span><div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{u.name}</div></div>
                                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                                             {!hasData && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, fontWeight: 700 }}>データ未入力</span>}
                                             <button onClick={() => router.push(`/admin/sibyl/${u.id}`)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #8b5cf6, #6366f1)", boxShadow: "0 2px 10px rgba(139,92,246,.35)" }}>🔮 個人分析</button>
