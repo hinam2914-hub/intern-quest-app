@@ -20,6 +20,11 @@ const GROUND_TOP: Record<string, string> = {
 const TREE_EMOJI: Record<string, string> = { tree_sakura: "🌸", tree_yashi: "🌴", tree_momi: "🎄", tree_momiji: "🍁" };
 const DECO_EMOJI: Record<string, string> = { deco_funsui: "⛲", deco_bench: "🪑", deco_gaitou: "💡", deco_yukidaruma: "⛄", deco_torii: "⛩️" };
 const SKY_EMOJI: Record<string, string> = { sky_niji: "🌈", sky_chocho: "🦋", sky_fuusen: "🎈" };
+const TREE_IMG: Record<string, string> = { tree_sakura: "/island/trees/tree_sakura.png" };
+const DECO_IMG: Record<string, string> = { deco_funsui: "/island/deco/deco_funsui.png" };
+const SKY_IMG: Record<string, string> = { sky_niji: "/island/sky/sky_niji.png" };
+const GROUND_IMG: Record<string, string> = { ground_hanabatake: "/island/ground/ground_hanabatake.png" };
+const ITEM_IMG: Record<string, string> = { ...TREE_IMG, ...DECO_IMG, ...SKY_IMG, ...GROUND_IMG, animal_neko: "/island/animals/cat.png", animal_inu: "/island/animals/dog.png" };
 const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "🐈", animal_inu: "🐕" };
 const ANIMAL_IMG: Record<string, string> = { animal_neko: "/island/animals/cat.png", animal_inu: "/island/animals/dog.png" };
 const ANIMAL_NAME: Record<string, string> = { animal_neko: "ねこ", animal_inu: "いぬ" };
@@ -102,7 +107,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
 
                 <div style={{ position: "relative", minHeight: 265, width: "min(88vw, 420px)", margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", animation: "hiFloat 6s ease-in-out infinite" }}>
                     {/* 空アイテム */}
-                    {view.sky && SKY_EMOJI[view.sky] && <div key={"sky" + view.sky} style={{ position: "absolute", top: 0, right: "24%", fontSize: 42, zIndex: 1, animation: "hiFloat 5s ease-in-out infinite, hiPop .5s ease-out" }}>{SKY_EMOJI[view.sky]}</div>}
+                    {view.sky && (SKY_IMG[view.sky] ? (view.sky === "sky_niji" ? <img key={"sky" + view.sky} src={SKY_IMG[view.sky]} alt="" style={{ position: "absolute", bottom: 112, left: "50%", transform: "translateX(-50%)", width: "96%", zIndex: 2, pointerEvents: "none", opacity: .92, animation: "hiPop .5s ease-out" }} /> : <img key={"sky" + view.sky} src={SKY_IMG[view.sky]} alt="" style={{ position: "absolute", top: "6%", right: "10%", width: "16%", zIndex: 6, pointerEvents: "none", animation: "hiFloat 5s ease-in-out infinite, hiPop .5s ease-out" }} />) : (SKY_EMOJI[view.sky] && <div key={"sky" + view.sky} style={{ position: "absolute", top: 0, right: "24%", fontSize: 42, zIndex: 1, animation: "hiFloat 5s ease-in-out infinite, hiPop .5s ease-out" }}>{SKY_EMOJI[view.sky]}</div>))}
 
                     {/* 島の影（浮遊感・薄青紫） */}
                     <div style={{ position: "absolute", bottom: -26, left: "50%", transform: "translateX(-50%)", width: "62%", height: 24, borderRadius: "50%", background: "rgba(130,125,200,.32)", filter: "blur(13px)", zIndex: 0 }} />
@@ -116,6 +121,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
 
                     {/* 島の上面（奥暗→手前明の草地） */}
                     <div style={{ position: "absolute", bottom: 46, left: "50%", transform: "translateX(-50%)", width: "88%", height: 96, borderRadius: "50%", background: (view.ground && GROUND_TOP[view.ground]) || "radial-gradient(ellipse at 50% 42%, #baf28b 0%, #83d96d 55%, #54b967 100%)", boxShadow: "inset 0 3px 5px rgba(255,255,255,.35), inset 0 -8px 12px rgba(50,100,40,.3)", zIndex: 2 }}>
+                        {view.ground && GROUND_IMG[view.ground] && <img src={GROUND_IMG[view.ground]} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "fill", borderRadius: "50%", zIndex: 1, pointerEvents: "none" }} />}
                         {/* 環境装飾：草・花・石（小さく控えめ） */}
                         {[{ l: "12%", t: "48%", e: "🌿", s: 12 }, { l: "84%", t: "40%", e: "🌿", s: 11 }, { l: "26%", t: "70%", e: "🌿", s: 10 }, { l: "70%", t: "76%", e: "🌿", s: 11 }].map((g, k) => (
                             <div key={"g" + k} style={{ position: "absolute", left: g.l, top: g.t, fontSize: g.s, opacity: .85 }}>{g.e}</div>
@@ -140,7 +146,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                     </div>
 
                     {/* 木（家の左奥・上面より手前レイヤー） */}
-                    {view.tree && TREE_EMOJI[view.tree] && <div key={"tree" + view.tree} style={{ position: "absolute", bottom: 104, left: "17%", fontSize: 46, zIndex: 3, filter: "drop-shadow(0 4px 5px rgba(0,0,0,.25))", animation: "hiPop .5s ease-out" }}>{TREE_EMOJI[view.tree]}</div>}
+                    {view.tree && (TREE_IMG[view.tree] ? <div key={"tree" + view.tree} style={{ position: "absolute", bottom: 86, left: "5%", width: "36%", zIndex: 3, animation: "hiPop .5s ease-out" }}><div style={{ position: "absolute", bottom: -3, left: "50%", transform: "translateX(-50%)", width: "68%", height: 12, borderRadius: "50%", background: "rgba(45,80,40,.36)", filter: "blur(5px)" }} /><img src={TREE_IMG[view.tree]} alt="" style={{ width: "100%", display: "block", position: "relative", filter: "drop-shadow(0 4px 6px rgba(0,0,0,.2))" }} /></div> : (TREE_EMOJI[view.tree] && <div key={"tree" + view.tree} style={{ position: "absolute", bottom: 104, left: "17%", fontSize: 46, zIndex: 3, filter: "drop-shadow(0 4px 5px rgba(0,0,0,.25))", animation: "hiPop .5s ease-out" }}>{TREE_EMOJI[view.tree]}</div>))}
 
                     {/* 家の足元影 */}
                     <div style={{ position: "absolute", bottom: 66, left: "50%", transform: "translateX(-50%)", width: HOUSE_W[stage.idx] * .82, height: 15, borderRadius: "50%", background: "rgba(60,90,45,.32)", filter: "blur(5px)", zIndex: 3 }} />
@@ -153,12 +159,17 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                     <div style={{ position: "absolute", bottom: 48, left: "50%", transform: "translateX(-50%)", width: 58, height: 42, clipPath: "polygon(38% 0, 62% 0, 92% 100%, 8% 100%)", background: "linear-gradient(180deg, #e6d3a8, #d4bc8a)", opacity: .92, zIndex: 3 }} />
 
                     {/* デコ（家の右手前） */}
-                    {view.deco && DECO_EMOJI[view.deco] && (
+                    {view.deco && (DECO_IMG[view.deco] ? (
+                        <div key={"deco" + view.deco} style={{ position: "absolute", bottom: 70, right: "5%", width: "26%", zIndex: 5, animation: "hiPop .5s ease-out" }}>
+                            <div style={{ position: "absolute", bottom: -3, left: "50%", transform: "translateX(-50%)", width: "80%", height: 12, borderRadius: "50%", background: "rgba(45,80,40,.36)", filter: "blur(5px)" }} />
+                            <img src={DECO_IMG[view.deco]} alt="" style={{ width: "100%", display: "block", position: "relative", filter: "drop-shadow(0 4px 6px rgba(0,0,0,.2))" }} />
+                        </div>
+                    ) : (DECO_EMOJI[view.deco] && (
                         <div key={"deco" + view.deco} style={{ position: "absolute", bottom: 62, right: "20%", zIndex: 5, textAlign: "center", animation: "hiPop .5s ease-out" }}>
                             <div style={{ fontSize: 30, filter: "drop-shadow(0 2px 3px rgba(0,0,0,.25))" }}>{DECO_EMOJI[view.deco]}</div>
                             <div style={{ width: 22, height: 6, margin: "0 auto", borderRadius: "50%", background: "rgba(60,90,45,.3)", filter: "blur(2px)" }} />
                         </div>
-                    )}
+                    )))}
                     {/* どうぶつ（家の右手前・小道の右横） */}
                     {view.animal && ANIMAL_EMOJI[view.animal] && (
                         <div key={"animal" + view.animal} onClick={tapPet} style={{ position: "absolute", left: "68%", top: "58%", zIndex: 8, cursor: "pointer", textAlign: "center", transform: view.animal === "animal_inu" ? "scaleX(-1)" : "none" }}>
@@ -213,7 +224,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                             const isOn = draft[it.category] === it.css_key;
                             return (
                                 <div key={it.id} onClick={() => tapItem(it)} style={{ flexShrink: 0, width: 92, textAlign: "center", cursor: "pointer", padding: "12px 6px 10px", borderRadius: 14, background: "rgba(255,255,255,.04)", border: isOn ? "2px solid #fbbf24" : isOwned ? "2px solid rgba(167,139,250,.4)" : "2px solid rgba(255,255,255,.08)", position: "relative" }}>
-                                    <div style={{ fontSize: 38, filter: isOwned ? "none" : "grayscale(1) opacity(.45)" }}>{it.emoji || "🎁"}</div>
+                                    {ITEM_IMG[it.css_key] ? <img src={ITEM_IMG[it.css_key]} alt="" style={{ width: 56, height: 56, objectFit: "contain", display: "block", margin: "0 auto", filter: isOwned ? "drop-shadow(0 2px 3px rgba(0,0,0,.3))" : "grayscale(1) opacity(.45)" }} /> : <div style={{ fontSize: 38, filter: isOwned ? "none" : "grayscale(1) opacity(.45)" }}>{it.emoji || "🎁"}</div>}
                                     {!isOwned && <div style={{ position: "absolute", top: 8, right: 8, fontSize: 15 }}>🔒</div>}
                                     {isOn && <div style={{ position: "absolute", top: 8, left: 8, fontSize: 14, color: "#fbbf24" }}>✓</div>}
                                     <div style={{ fontSize: 11, fontWeight: 800, color: isOn ? "#fbbf24" : "#e5e7eb", marginTop: 5 }}>{it.name}</div>
