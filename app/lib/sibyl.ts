@@ -287,7 +287,7 @@ export function getPotentialRank(sibylTotal: number, actionTotal: number): { ran
     if (score >= 125) return { rank: "S", score, color: "#a78bfa", label: "圧倒的ポテンシャル" };
     if (score >= 105) return { rank: "A", score, color: "#34d399", label: "高いポテンシャル" };
     if (score >= 85) return { rank: "B", score, color: "#38bdf8", label: "着実に伸びている" };
-    if (score >= 65) return { rank: "C", score, color: "#fbbf24", label: "これから伸びる" };
+    if (score >= 58) return { rank: "C", score, color: "#fbbf24", label: "これから伸びる" };
     return { rank: "D", score, color: "#f87171", label: "まずは行動から" };
 }
 
