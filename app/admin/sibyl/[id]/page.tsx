@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
-import { calculateSibyl, calculateDepartmentMatch, calculateGrowthCourse, getIkuseiGuide, getMbtiColor, mentorCompat, calculateActionScore, getPotentialRank, isExcluded, isHighEducation } from "../../../lib/sibyl";
+import { getQualityRank, getQualityRankColor, calculateSibyl, calculateDepartmentMatch, calculateGrowthCourse, getIkuseiGuide, getMbtiColor, mentorCompat, calculateActionScore, getPotentialRank, isExcluded, isHighEducation } from "../../../lib/sibyl";
 
 const MBTI_NAME: Record<string, string> = {
   INTJ: "建築家", INTP: "論理学者", ENTJ: "指揮官", ENTP: "討論者",
@@ -84,8 +84,8 @@ export default function SibylPersonalPage() {
 
   const s = calculateSibyl({ mbti: p.mbti || "", education: p.education || "", club: p.club_category || "", hobby: p.hobby_category || "" });
   const total = s.cog + s.grit + s.social + s.drive + s.create;
-  const rank = total >= 68 ? "S" : total >= 56 ? "A" : total >= 44 ? "B" : total >= 32 ? "C" : "D";
-  const rankColor = rank === "S" ? "#a78bfa" : rank === "A" ? "#34d399" : rank === "B" ? "#38bdf8" : rank === "C" ? "#fbbf24" : "#f87171";
+  const rank = getQualityRank(total);
+  const rankColor = getQualityRankColor(rank);
   const orgScore = Math.min(100, Math.round((total / 90) * 100));
   const color = getMbtiColor(p.mbti || "");
   const typeName = color ? COLOR_TYPE[color] : "未分析";

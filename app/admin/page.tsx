@@ -75,7 +75,7 @@ function formatDateTime(value: string): string {
     const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
     return jst.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-import { MBTI_SCORES, CLUB_SCORES, HOBBY_SCORES, getEducationSibyl, calculateSibyl, calculateDepartmentMatch, getMbtiColor, isHighEducation, calculateGrowthCourse, getIkuseiGuide, mentorCompat, peerCompat, isExcluded } from "../lib/sibyl";
+import { MBTI_SCORES, CLUB_SCORES, HOBBY_SCORES, getEducationSibyl, calculateSibyl, getQualityRank, getQualityRankColor, calculateDepartmentMatch, getMbtiColor, isHighEducation, calculateGrowthCourse, getIkuseiGuide, mentorCompat, peerCompat, isExcluded } from "../lib/sibyl";
 function getEducationScore(education: string): number {
     if (!education) return 0;
     const e = education;
@@ -5299,7 +5299,7 @@ export default function AdminPage() {
                                 userDetails.filter((u: any) => sibylDept === "all" || u.department_id === sibylDept).forEach((u: any) => {
                                     const sb = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
                                     const t = sb.cog + sb.grit + sb.social + sb.drive + sb.create;
-                                    const r = t >= 68 ? "S" : t >= 56 ? "A" : t >= 44 ? "B" : t >= 32 ? "C" : "D";
+                                    const r = getQualityRank(t);
                                     cnt[r]++; cnt.all++;
                                 });
                                 return [["all", "全部", "#9ca3af"], ["S", "S", "#a78bfa"], ["A", "A", "#34d399"], ["B", "B", "#38bdf8"], ["C", "C", "#fbbf24"], ["D", "D", "#f87171"]].map(([k, l, col]) => (
@@ -5312,8 +5312,8 @@ export default function AdminPage() {
                         {userDetails.filter((u: any) => sibylDept === "all" || u.department_id === sibylDept).map((u: any) => {
                             const sibyl = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
                             const sibylTotal = sibyl.cog + sibyl.grit + sibyl.social + sibyl.drive + sibyl.create;
-                            const qRank = sibylTotal >= 68 ? "S" : sibylTotal >= 56 ? "A" : sibylTotal >= 44 ? "B" : sibylTotal >= 32 ? "C" : "D";
-                            const qRankColor = qRank === "S" ? "#a78bfa" : qRank === "A" ? "#34d399" : qRank === "B" ? "#38bdf8" : qRank === "C" ? "#fbbf24" : "#f87171";
+                            const qRank = getQualityRank(sibylTotal);
+                            const qRankColor = getQualityRankColor(qRank);
                             if (sibylRank !== "all" && qRank !== sibylRank) return null;
                             const matches = calculateDepartmentMatch(sibyl, { mbti: u.mbti || "", education: u.education || "" });
                             const hasData = u.mbti || u.education || u.club_category || u.hobby_category;

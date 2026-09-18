@@ -274,6 +274,15 @@ export function calculateActionScore(a: ActionStats): { total: number; breakdown
 }
 
 // 資質(最大100) + 行動(最大50) = ポテンシャル(最大150)
+export const QUALITY_RANK_THRESHOLDS = { S: 76, A: 64, B: 50, C: 36 };
+export function getQualityRank(total: number): string {
+    const t = QUALITY_RANK_THRESHOLDS;
+    return total >= t.S ? "S" : total >= t.A ? "A" : total >= t.B ? "B" : total >= t.C ? "C" : "D";
+}
+export function getQualityRankColor(rank: string): string {
+    return rank === "S" ? "#a78bfa" : rank === "A" ? "#34d399" : rank === "B" ? "#38bdf8" : rank === "C" ? "#fbbf24" : "#f87171";
+}
+
 export function getPotentialRank(sibylTotal: number, actionTotal: number): { rank: string; score: number; color: string; label: string } {
     const score = sibylTotal + actionTotal;
     if (score >= 125) return { rank: "S", score, color: "#a78bfa", label: "圧倒的ポテンシャル" };
