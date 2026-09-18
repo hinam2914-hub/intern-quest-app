@@ -75,7 +75,7 @@ function formatDateTime(value: string): string {
     const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
     return jst.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-import { MBTI_SCORES, CLUB_SCORES, HOBBY_SCORES, getEducationSibyl, calculateSibyl, getQualityRank, getQualityRankColor, calculateDepartmentMatch, getMbtiColor, isHighEducation, calculateGrowthCourse, getIkuseiGuide, mentorCompat, peerCompat, isExcluded } from "../lib/sibyl";
+import { MBTI_SCORES, CLUB_SCORES, HOBBY_SCORES, getEducationSibyl, calculateSibyl, getQualityRank, getQualityRankColor, calculateActionScore, getPotentialRank, calculateDepartmentMatch, getMbtiColor, isHighEducation, calculateGrowthCourse, getIkuseiGuide, mentorCompat, peerCompat, isExcluded } from "../lib/sibyl";
 function getEducationScore(education: string): number {
     if (!education) return 0;
     const e = education;
@@ -317,6 +317,18 @@ export default function AdminPage() {
     const [selectedThanksUserId, setSelectedThanksUserId] = useState<string | null>(null);
     const [sibylDept, setSibylDept] = useState<string>("all");
     const [sibylRank, setSibylRank] = useState<string>("all");
+    const [sibylAction, setSibylAction] = useState<Record<string, number>>({});
+    useEffect(() => {
+        if (activeTab !== "sibyl") return;
+        (async () => {
+            const { data } = await supabase.rpc("sibyl_action_stats");
+            const m: Record<string, number> = {};
+            (data || []).forEach((r: any) => {
+                m[r.user_id] = calculateActionScore({ streak: r.submit_days || 0, submitRate: Math.round(((r.submit_days || 0) / 30) * 100), testPassed: r.test_passed || 0, contentDone: r.content_done || 0, courseStamps: r.course_stamps || 0, thanksSent: r.thanks_sent || 0, thanksReceived: r.thanks_received || 0, challengeDone: r.challenge_done || 0, kpiAchieved: 0, level: 0 }).total;
+            });
+            setSibylAction(m);
+        })();
+    }, [activeTab]);
     const [sibylTab, setSibylTab] = useState<Record<string, string>>({});
     // ===== アンケート機能 =====
     const [surveys, setSurveys] = useState<Survey[]>([]);
@@ -5293,27 +5305,30 @@ export default function AdminPage() {
                             ))}
                         </div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: "#8b8fa8", letterSpacing: 1, marginRight: 4 }}>資質ランク</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: "#8b8fa8", letterSpacing: 1, marginRight: 4 }}>ポテンシャルランク</span>
                             {(() => {
                                 const cnt: Record<string, number> = { all: 0, S: 0, A: 0, B: 0, C: 0, D: 0 };
                                 userDetails.filter((u: any) => sibylDept === "all" || u.department_id === sibylDept).forEach((u: any) => {
                                     const sb = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
                                     const t = sb.cog + sb.grit + sb.social + sb.drive + sb.create;
-                                    const r = getQualityRank(t);
+                                    const r = sibylAction[u.id] !== undefined ? getPotentialRank(t, sibylAction[u.id]).rank : getQualityRank(t);
                                     cnt[r]++; cnt.all++;
                                 });
                                 return [["all", "全部", "#9ca3af"], ["S", "S", "#a78bfa"], ["A", "A", "#34d399"], ["B", "B", "#38bdf8"], ["C", "C", "#fbbf24"], ["D", "D", "#f87171"]].map(([k, l, col]) => (
                                     <button key={k} onClick={() => setSibylRank(k)} style={{ padding: "6px 14px", borderRadius: 8, border: sibylRank === k ? `1.5px solid ${col}` : "1px solid rgba(255,255,255,0.1)", fontWeight: 900, cursor: "pointer", fontSize: 12, background: sibylRank === k ? `${col}26` : "rgba(255,255,255,0.05)", color: sibylRank === k ? col : "#9ca3af" }}>{l} <span style={{ opacity: .6, fontWeight: 700 }}>{cnt[k]}</span></button>
                                 ));
                             })()}
-                            <span style={{ fontSize: 10.5, color: "#6b7280", marginLeft: 6 }}>※学歴・MBTI・部活・趣味から算出した資質のみ。行動スコアを加えた「ポテンシャルランク」は個人分析で確認</span>
+                            <span style={{ fontSize: 10.5, color: "#6b7280", marginLeft: 6 }}>※資質（学歴・MBTI・部活・趣味）＋行動（提出・テスト・サンキュー・チャレンジ）。個人分析と同じ基準</span>
                         </div>
                         <div style={{ maxHeight: "65vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 6 }}>
                         {userDetails.filter((u: any) => sibylDept === "all" || u.department_id === sibylDept).map((u: any) => {
                             const sibyl = calculateSibyl({ mbti: u.mbti || "", education: u.education || "", club: u.club_category || "", hobby: u.hobby_category || "" });
                             const sibylTotal = sibyl.cog + sibyl.grit + sibyl.social + sibyl.drive + sibyl.create;
-                            const qRank = getQualityRank(sibylTotal);
-                            const qRankColor = getQualityRankColor(qRank);
+                            const actTotal = sibylAction[u.id];
+                            const pot = actTotal !== undefined ? getPotentialRank(sibylTotal, actTotal) : null;
+                            const qRank = pot ? pot.rank : getQualityRank(sibylTotal);
+                            const qRankColor = pot ? pot.color : getQualityRankColor(qRank);
+                            const qualityOnly = getQualityRank(sibylTotal);
                             if (sibylRank !== "all" && qRank !== sibylRank) return null;
                             const matches = calculateDepartmentMatch(sibyl, { mbti: u.mbti || "", education: u.education || "" });
                             const hasData = u.mbti || u.education || u.club_category || u.hobby_category;
@@ -5321,7 +5336,7 @@ export default function AdminPage() {
                             return (
                                 <div key={u.id} style={{ padding: "12px 20px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 8, fontSize: 15, fontWeight: 900, color: qRankColor, background: `${qRankColor}1f`, border: `1.5px solid ${qRankColor}88` }}>{qRank}</span><div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{u.name}</div></div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 8, fontSize: 15, fontWeight: 900, color: qRankColor, background: `${qRankColor}1f`, border: `1.5px solid ${qRankColor}88` }}>{qRank}</span><div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb" }}>{u.name}</div><span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700 }}>資質{qualityOnly}{pot ? ` ／ 行動${actTotal}` : ""}</span></div>
                                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                                             {!hasData && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(248,113,113,0.15)", color: "#f87171", fontSize: 11, fontWeight: 700 }}>データ未入力</span>}
                                             <button onClick={() => router.push(`/admin/sibyl/${u.id}`)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #8b5cf6, #6366f1)", boxShadow: "0 2px 10px rgba(139,92,246,.35)" }}>🔮 個人分析</button>
