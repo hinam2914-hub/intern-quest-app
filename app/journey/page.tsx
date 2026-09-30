@@ -82,7 +82,7 @@ export default function JourneyPage() {
     const b2ok = (rookieDone["②研修・同行"] || 0) >= (rookieTotal["②研修・同行"] || 0) && (rookieTotal["②研修・同行"] || 0) > 0;
 
     const steps: Step[] = [
-        { no: 1, key: "village", img: "/journey/step1_village.png", title: "入社・スラック研修", desc: "アカウント登録・アバター設定・MY GOALS宣言", reward: 10 },
+        { no: 1, key: "village", img: "/journey/step1_village.png", title: "入社", desc: "入社日を登録しよう", reward: 10 },
         { no: 2, key: "hut", img: "/journey/step2_hut.png", title: "キックオフ研修", desc: "学習コンテンツを視聴して基礎を固める", reward: 10 },
         { no: 7, key: "rookie", img: "/journey/step2_hut.png", title: "一人前チャレンジ研修", desc: "確認ワーク・即レス・常識デリカシーのテストに合格しよう", reward: 15 },
         { no: 3, key: "crystal", img: "/journey/step3_crystal.png", title: "プレイヤー昇格", desc: "全体MTG出席・研修/イベント当日キャンセルなしを提出", reward: 20 },
@@ -328,7 +328,7 @@ function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, done
             )}
             {(step.no === 1 || step.no === 2 || step.no === 4 || step.no === 5 || step.no === 7) && (state === "now" || state === "done") && (
                 <div style={{ marginTop: 18, padding: "13px 16px", borderRadius: 14, background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 {step.no === 1 ? "入社・研修日" : step.no === 4 ? "DRM研修参加日" : step.no === 5 ? "キャリア面談日" : step.no === 7 ? "一人前チャレンジ研修日" : "キックオフ研修日"}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#c4b5fd", whiteSpace: "nowrap" }}>📅 {step.no === 1 ? "入社日" : step.no === 4 ? "DRM研修参加日" : step.no === 5 ? "キャリア面談日" : step.no === 7 ? "一人前チャレンジ研修日" : "キックオフ研修日"}</span>
                     <input type="date" value={sub.scheduled_date} onChange={async (e) => {
                         const d = e.target.value;
                         onSaved({ scheduled_date: d });
