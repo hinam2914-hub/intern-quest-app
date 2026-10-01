@@ -28,6 +28,7 @@ const BLOCKS: { key: string; label: string; desc: string; icon: string; color: s
     { key: "①コミュ基礎", label: "コミュ基礎", desc: "チャット・報連相の型を身につける", icon: "💬", color: "#8b5cf6" },
     { key: "②研修・同行", label: "研修・同行", desc: "研修と同行で学ぶ姿勢をつくる", icon: "📝", color: "#06b6d4" },
     { key: "③初稼働まで", label: "初稼働まで", desc: "現場に出る準備を整える", icon: "🚀", color: "#f59e0b" },
+    { key: "⑤中間チャレンジ", label: "中間チャレンジ", desc: "初稼働から1ヶ月、現場で続ける力をつける", icon: "🔥", color: "#ef4444" },
     { key: "④人間力", label: "人間力", desc: "信頼される人になる", icon: "🌱", color: "#10b981" },
 ];
 
