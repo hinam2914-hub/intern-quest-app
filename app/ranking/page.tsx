@@ -247,7 +247,13 @@ export default function RankingPage() {
                 })).sort((a, b) => b.points - a.points));
             }
             // ===== 学習コンテンツ完了数ランキング（承認済みのみ） =====
-            const { data: learnAllRows } = await supabase.from("content_completions").select("user_id").eq("status", "approved");
+            const learnAllRows: { user_id: string }[] = [];
+            for (let from = 0; ; from += 1000) {
+                const { data: chunk } = await supabase.from("content_completions").select("user_id").eq("status", "approved").range(from, from + 999);
+                if (!chunk || chunk.length === 0) break;
+                learnAllRows.push(...(chunk as { user_id: string }[]));
+                if (chunk.length < 1000) break;
+            }
             const learnCounts: { [id: string]: number } = {};
             (learnAllRows || []).forEach((row: { user_id: string }) => { if (row.user_id) learnCounts[row.user_id] = (learnCounts[row.user_id] || 0) + 1; });
             const learnIds = Object.keys(learnCounts);
