@@ -19,7 +19,7 @@ function FbInner() {
     useEffect(() => {
         (async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            const { data } = await supabase.from("profiles").select("id, name").eq("is_active", true).eq("mentor_passed", true).order("name");
+            const { data } = await supabase.from("profiles").select("id, name").eq("is_active", true).eq("fb_mentor", true).order("name");
             setPeople(((data || []) as any[]).filter(p => p.id !== user?.id));
             setLoaded(true);
         })();
