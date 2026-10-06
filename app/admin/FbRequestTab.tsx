@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-type Req = { id: string; user_id: string; submission_id: string | null; thinking_session_id: string | null; target: string; focus: string | null; status: string; fb_good: string | null; fb_think: string | null; fb_next: string | null; issue_quest: boolean; quest_claimed_at: string | null; created_at: string; responded_at: string | null; name?: string; content?: string; turns?: any[] };
+type Req = { id: string; user_id: string; submission_id: string | null; thinking_session_id: string | null; target: string; focus: string | null; status: string; fb_good: string | null; fb_think: string | null; fb_next: string | null; issue_quest: boolean; quest_claimed_at: string | null; created_at: string; responded_at: string | null; assignee_id?: string | null; assigneeName?: string; name?: string; content?: string; turns?: any[] };
 
 const TARGET_LABEL: Record<string, string> = { mentor: "担当メンター", leader: "チームリーダー", any: "おまかせ" };
 
@@ -19,6 +19,11 @@ export default function FbRequestTab() {
     const [showReport, setShowReport] = useState<string | null>(null);
     const [showAi, setShowAi] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    const [meId, setMeId] = useState("");
+    const [mineOnly, setMineOnly] = useState(false);
+    const [showAssign, setShowAssign] = useState(false);
+    const [people, setPeople] = useState<{ id: string; name: string; mentor_id: string | null; leader_id: string | null; department_id: string | null }[]>([]);
+    const [assignQ, setAssignQ] = useState("");
 
     const load = async () => {
         const { data } = await supabase.from("fb_requests").select("*").order("created_at", { ascending: false }).limit(200);
@@ -31,12 +36,27 @@ export default function FbRequestTab() {
             sids.length ? supabase.from("submissions").select("id, content").in("id", sids) : Promise.resolve({ data: [] as any[] }),
             tsids.length ? supabase.from("thinking_sessions").select("id, turns").in("id", tsids) : Promise.resolve({ data: [] as any[] }),
         ]);
+        const aids = [...new Set(rows.map(r => r.assignee_id).filter(Boolean))] as string[];
+        const { data: aprofs } = aids.length ? await supabase.from("profiles").select("id, name").in("id", aids) : { data: [] as any[] };
+        const am = new Map((aprofs || []).map((p: any) => [p.id, p.name]));
         const pm = new Map((profs || []).map((p: any) => [p.id, p.name]));
         const sm = new Map((subs || []).map((s: any) => [s.id, s.content]));
         const tm = new Map((sess || []).map((s: any) => [s.id, s.turns]));
-        setReqs(rows.map(r => ({ ...r, name: pm.get(r.user_id) || "名前未設定", content: r.submission_id ? sm.get(r.submission_id) : undefined, turns: r.thinking_session_id ? tm.get(r.thinking_session_id) : undefined })));
+        setReqs(rows.map(r => ({ ...r, name: pm.get(r.user_id) || "名前未設定", assigneeName: r.assignee_id ? (am.get(r.assignee_id) || "") : "", content: r.submission_id ? sm.get(r.submission_id) : undefined, turns: r.thinking_session_id ? tm.get(r.thinking_session_id) : undefined })));
     };
-    useEffect(() => { load(); }, []);
+    useEffect(() => {
+        load();
+        (async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) setMeId(user.id);
+            const { data } = await supabase.from("profiles").select("id, name, mentor_id, leader_id, department_id").eq("is_active", true).order("name");
+            setPeople((data || []) as any);
+        })();
+    }, []);
+    const setAssign = async (uid: string, field: "mentor_id" | "leader_id", val: string) => {
+        await supabase.from("profiles").update({ [field]: val || null }).eq("id", uid);
+        setPeople(prev => prev.map(p => p.id === uid ? { ...p, [field]: val || null } : p));
+    };
 
     const startWrite = (r: Req) => { setOpen(r.id); setDraft({ good: r.fb_good || "", think: r.fb_think || "", next: r.fb_next || "", issue: r.issue_quest ?? true }); };
 
@@ -51,7 +71,7 @@ export default function FbRequestTab() {
         setSaving(false); setOpen(null); load();
     };
 
-    const list = reqs.filter(r => filter === "all" ? true : r.status === filter);
+    const list = reqs.filter(r => (filter === "all" ? true : r.status === filter) && (!mineOnly || r.assignee_id === meId || (r.target === "any" && !r.assignee_id)));
     const pendingN = reqs.filter(r => r.status === "pending").length;
     const box: React.CSSProperties = { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 14, marginBottom: 12 };
     const ta: React.CSSProperties = { width: "100%", minHeight: 64, borderRadius: 10, padding: 10, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 13, boxSizing: "border-box", resize: "vertical" };
@@ -65,14 +85,39 @@ export default function FbRequestTab() {
                 <button style={btn(filter === "pending")} onClick={() => setFilter("pending")}>未対応 {pendingN}</button>
                 <button style={btn(filter === "done")} onClick={() => setFilter("done")}>対応済み</button>
                 <button style={btn(filter === "all")} onClick={() => setFilter("all")}>すべて</button>
+                <button style={btn(mineOnly)} onClick={() => setMineOnly(!mineOnly)}>自分宛て</button>
+                <span style={{ flex: 1 }} />
+                <button style={btn(showAssign)} onClick={() => setShowAssign(!showAssign)}>👥 担当設定</button>
             </div>
+            {showAssign && (
+                <div style={{ ...box, marginBottom: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 900, color: "#fff", marginBottom: 6 }}>担当メンター／チームリーダーの設定</div>
+                    <div style={{ fontSize: 11.5, color: "#8b8fa8", marginBottom: 10 }}>本人が「担当メンター」「チームリーダー」を選んでFBを頼んだとき、ここで設定した人に届く。未設定なら「おまかせ」扱い</div>
+                    <input value={assignQ} onChange={e => setAssignQ(e.target.value)} placeholder="名前で絞り込み" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(0,0,0,0.3)", color: "#fff", fontSize: 13, boxSizing: "border-box", marginBottom: 10 }} />
+                    <div style={{ maxHeight: 360, overflowY: "auto" }}>
+                        {people.filter(p => !assignQ || (p.name || "").includes(assignQ)).map(p => (
+                            <div key={p.id} style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: 8, alignItems: "center", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                                <div style={{ fontSize: 13, color: "#e5e7eb", fontWeight: 700 }}>{p.name || "名前未設定"}</div>
+                                <select value={p.mentor_id || ""} onChange={e => setAssign(p.id, "mentor_id", e.target.value)} style={{ padding: "6px 8px", borderRadius: 8, background: "#141428", color: "#fff", border: "1px solid rgba(255,255,255,0.12)", fontSize: 12 }}>
+                                    <option value="">メンター未設定</option>
+                                    {people.filter(m => m.id !== p.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                </select>
+                                <select value={p.leader_id || ""} onChange={e => setAssign(p.id, "leader_id", e.target.value)} style={{ padding: "6px 8px", borderRadius: 8, background: "#141428", color: "#fff", border: "1px solid rgba(255,255,255,0.12)", fontSize: 12 }}>
+                                    <option value="">リーダー未設定</option>
+                                    {people.filter(m => m.id !== p.id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                </select>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             {list.length === 0 && <div style={{ color: "#6b7280", fontSize: 13, padding: 20, textAlign: "center" }}>リクエストはありません</div>}
             {list.map(r => (
                 <div key={r.id} style={box}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <div>
                             <span style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>{r.name}</span>
-                            <span style={{ fontSize: 11, color: "#8b8fa8", marginLeft: 8 }}>{TARGET_LABEL[r.target] || r.target}</span>
+                            <span style={{ fontSize: 11, color: "#8b8fa8", marginLeft: 8 }}>{TARGET_LABEL[r.target] || r.target}{r.assigneeName ? ` → ${r.assigneeName}` : r.target !== "any" ? "（未設定→おまかせ）" : ""}</span>
                             {r.thinking_session_id && <span style={{ fontSize: 10, marginLeft: 8, padding: "2px 6px", borderRadius: 6, background: "rgba(139,92,246,0.2)", color: "#c4b5fd" }}>AIで深掘り済み</span>}
                         </div>
                         <div style={{ fontSize: 11, color: r.status === "pending" ? "#f87171" : "#34d399", fontWeight: 800 }}>{r.status === "pending" ? "未対応" : r.quest_claimed_at ? "クエスト受領済み" : r.issue_quest ? "クエスト未受領" : "対応済"}　<span style={{ color: "#6b7280", fontWeight: 500 }}>{ago(r.created_at)}</span></div>

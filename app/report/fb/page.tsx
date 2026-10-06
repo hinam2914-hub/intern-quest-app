@@ -24,7 +24,9 @@ function FbInner() {
         setSending(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { router.push("/login"); return; }
-        await supabase.from("fb_requests").insert({ user_id: user.id, submission_id: sid, thinking_session_id: tsid, target, focus: focus.trim() || null });
+        const { data: prof } = await supabase.from("profiles").select("mentor_id, leader_id").eq("id", user.id).single();
+        const assignee = target === "mentor" ? (prof as any)?.mentor_id : target === "leader" ? (prof as any)?.leader_id : null;
+        await supabase.from("fb_requests").insert({ user_id: user.id, submission_id: sid, thinking_session_id: tsid, target, focus: focus.trim() || null, assignee_id: assignee || null });
         setDone(true);
         setSending(false);
         setTimeout(() => router.push("/home"), 1600);
