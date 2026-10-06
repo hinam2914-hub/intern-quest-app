@@ -265,42 +265,6 @@ export default function ReportPage() {
                     </div>
                 )}
 
-                {/* ===== 提出完了：次の行動を選ぶ ===== */}
-                {reportDone && (
-                    <div style={{ borderRadius: 24, padding: "22px 20px", marginBottom: 16, background: "linear-gradient(160deg, rgba(139,92,246,0.22), rgba(11,11,20,0.7))", border: "1.5px solid rgba(167,139,250,0.45)", boxShadow: "0 12px 40px rgba(76,29,149,0.3)" }}>
-                        <div style={{ textAlign: "center", marginBottom: 14 }}>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>今日の冒険、お疲れさまでした！</div>
-                            <div style={{ fontSize: 12.5, color: "#c4b5fd", marginTop: 4 }}>この後、さらに成長するためにやってみましょう！</div>
-                        </div>
-                        <div style={{ display: "grid", gap: 10 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", opacity: 0.55 }}>
-                                <span style={{ fontSize: 26 }}>🧠</span>
-                                <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>AIと作戦会議</div><div style={{ fontSize: 12, color: "#9ca3af" }}>今日の行動をAIと一緒に深掘りする</div></div>
-                                <span style={{ fontSize: 10, fontWeight: 900, color: "#c4b5fd", border: "1px solid rgba(167,139,250,0.4)", borderRadius: 6, padding: "2px 6px" }}>COMING SOON</span>
-                            </div>
-                            <button onClick={() => router.push(`/report/fb${submittedId ? `?sid=${submittedId}` : ""}`)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(56,189,248,0.4)", background: "rgba(56,189,248,0.1)", cursor: "pointer", textAlign: "left" }}>
-                                <span style={{ fontSize: 26 }}>💌</span>
-                                <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>FBをお願いする</div><div style={{ fontSize: 12, color: "#9ca3af" }}>メンターから別の視点をもらう</div></div>
-                                <span style={{ color: "#38bdf8", fontWeight: 900 }}>›</span>
-                            </button>
-                            <div style={{ padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(52,211,153,0.4)", background: "rgba(52,211,153,0.08)" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                    <span style={{ fontSize: 26 }}>🧪</span>
-                                    <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>明日の実験を決める</div><div style={{ fontSize: 12, color: "#9ca3af" }}>今日の学びを明日の行動に変える。1つだけ</div></div>
-                                </div>
-                                {expSaved ? (
-                                    <div style={{ marginTop: 10, fontSize: 13, color: "#34d399", fontWeight: 800 }}>明日の実験に登録しました！ 💡 仮説思考EXP +5　明日の日報で結果を振り返ろう</div>
-                                ) : (
-                                    <>
-                                        <textarea value={expPlan} onChange={e => setExpPlan(e.target.value.slice(0, 200))} placeholder="例：DMを送る時間帯を18〜20時に固定して、返信率を比較する" style={{ width: "100%", minHeight: 64, marginTop: 10, borderRadius: 12, padding: 10, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 13.5, boxSizing: "border-box", resize: "vertical" }} />
-                                        <button onClick={saveExperiment} disabled={!expPlan.trim()} style={{ width: "100%", marginTop: 8, padding: "11px 0", borderRadius: 12, border: "none", background: expPlan.trim() ? "linear-gradient(90deg,#34d399,#10b981)" : "rgba(255,255,255,0.08)", color: expPlan.trim() ? "#0b0b14" : "#6b7280", fontSize: 14, fontWeight: 900, cursor: expPlan.trim() ? "pointer" : "default" }}>明日の実験に登録</button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* ===== Today's Quest Result（主役） ===== */}
                 <div style={{ borderRadius: 24, padding: "24px 22px", marginBottom: 16, background: "linear-gradient(160deg, rgba(139,92,246,0.25), rgba(76,29,149,0.1))", border: "1.5px solid rgba(167,139,250,0.4)", boxShadow: "0 12px 40px rgba(76,29,149,0.3)", textAlign: "center", position: "relative", overflow: "hidden" }}>
                     <div style={{ fontSize: 11, fontWeight: 900, color: "#c4b5fd", letterSpacing: 3, marginBottom: 4 }}>TODAY'S QUEST RESULT</div>
@@ -393,25 +357,39 @@ export default function ReportPage() {
                     </div>
                 )}
 
-                {/* ドットくんフィードバック */}
-                {dotkunFb && (
-                    <div style={{ marginTop: 16, padding: "16px 18px", borderRadius: 16, background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.3)", display: "flex", gap: 14, alignItems: "flex-start" }}>
-                        <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }}><DotKun size={46} mood={dotkunFb.mood} /></div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa", marginBottom: 6 }}>ドットくんより</div>
-                            {dotkunFb.lines.map((line, i) => (<p key={i} style={{ margin: "0 0 6px", fontSize: 14, lineHeight: 1.6, color: "#e5e7eb" }}>{line}</p>))}
-                        </div>
-                    </div>
-                )}
-
-                {/* 提出後: 学習導線 */}
+                {/* ===== 提出完了：次の行動を選ぶ ===== */}
                 {reportDone && (
-                    <div style={{ marginTop: 16, padding: "18px 20px", borderRadius: 16, background: "linear-gradient(135deg, rgba(6,182,212,0.18), rgba(99,102,241,0.15))", border: "1px solid rgba(6,182,212,0.35)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
-                        <div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb", marginBottom: 3 }}>📚 この勢いで、学習も進めちゃおう！</div>
-                            <div style={{ fontSize: 12.5, color: "#9ca3af" }}>動画・記事を見てポイントもGET</div>
+                    <div style={{ borderRadius: 24, padding: "22px 20px", marginTop: 16, marginBottom: 0, background: "linear-gradient(160deg, rgba(139,92,246,0.22), rgba(11,11,20,0.7))", border: "1.5px solid rgba(167,139,250,0.45)", boxShadow: "0 12px 40px rgba(76,29,149,0.3)" }}>
+                        <div style={{ textAlign: "center", marginBottom: 14 }}>
+                            <div style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>今日の冒険、お疲れさまでした！</div>
+                            <div style={{ fontSize: 12.5, color: "#c4b5fd", marginTop: 4 }}>この後、さらに成長するためにやってみましょう！</div>
                         </div>
-                        <button onClick={() => router.push("/learn")} style={{ flexShrink: 0, padding: "11px 22px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #06b6d4, #6366f1)", color: "#fff", fontWeight: 800, fontSize: 13.5, cursor: "pointer" }}>続けて学習する →</button>
+                        <div style={{ display: "grid", gap: 10 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", opacity: 0.55 }}>
+                                <span style={{ fontSize: 26 }}>🧠</span>
+                                <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>AIと作戦会議</div><div style={{ fontSize: 12, color: "#9ca3af" }}>今日の行動をAIと一緒に深掘りする</div></div>
+                                <span style={{ fontSize: 10, fontWeight: 900, color: "#c4b5fd", border: "1px solid rgba(167,139,250,0.4)", borderRadius: 6, padding: "2px 6px" }}>COMING SOON</span>
+                            </div>
+                            <button onClick={() => router.push(`/report/fb${submittedId ? `?sid=${submittedId}` : ""}`)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(56,189,248,0.4)", background: "rgba(56,189,248,0.1)", cursor: "pointer", textAlign: "left" }}>
+                                <span style={{ fontSize: 26 }}>💌</span>
+                                <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>FBをお願いする</div><div style={{ fontSize: 12, color: "#9ca3af" }}>メンターから別の視点をもらう</div></div>
+                                <span style={{ color: "#38bdf8", fontWeight: 900 }}>›</span>
+                            </button>
+                            <div style={{ padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(52,211,153,0.4)", background: "rgba(52,211,153,0.08)" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    <span style={{ fontSize: 26 }}>🧪</span>
+                                    <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>明日の実験を決める</div><div style={{ fontSize: 12, color: "#9ca3af" }}>今日の学びを明日の行動に変える。1つだけ</div></div>
+                                </div>
+                                {expSaved ? (
+                                    <div style={{ marginTop: 10, fontSize: 13, color: "#34d399", fontWeight: 800 }}>明日の実験に登録しました！ 💡 仮説思考EXP +5　明日の日報で結果を振り返ろう</div>
+                                ) : (
+                                    <>
+                                        <textarea value={expPlan} onChange={e => setExpPlan(e.target.value.slice(0, 200))} placeholder="例：DMを送る時間帯を18〜20時に固定して、返信率を比較する" style={{ width: "100%", minHeight: 64, marginTop: 10, borderRadius: 12, padding: 10, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 13.5, boxSizing: "border-box", resize: "vertical" }} />
+                                        <button onClick={saveExperiment} disabled={!expPlan.trim()} style={{ width: "100%", marginTop: 8, padding: "11px 0", borderRadius: 12, border: "none", background: expPlan.trim() ? "linear-gradient(90deg,#34d399,#10b981)" : "rgba(255,255,255,0.08)", color: expPlan.trim() ? "#0b0b14" : "#6b7280", fontSize: 14, fontWeight: 900, cursor: expPlan.trim() ? "pointer" : "default" }}>明日の実験に登録</button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
 
