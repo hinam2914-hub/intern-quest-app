@@ -3,32 +3,25 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 
-const TARGETS = [
-    { key: "mentor", icon: "✅", title: "担当メンター", desc: "いつも見てくれているメンター" },
-    { key: "leader", icon: "👤", title: "チームリーダー", desc: "チーム全体の視点で見てほしい" },
-    { key: "any", icon: "🎲", title: "おまかせ", desc: "適切なメンターにお願いする" },
-] as const;
-
 function FbInner() {
     const router = useRouter();
     const sp = useSearchParams();
     const sid = sp.get("sid");
     const tsid = sp.get("tsid");
-    const [target, setTarget] = useState<"mentor" | "leader" | "any">("mentor");
+    const [pick, setPick] = useState<string>("any");
+    const [people, setPeople] = useState<{ id: string; name: string }[]>([]);
+    const [loaded, setLoaded] = useState(false);
+    const [q, setQ] = useState("");
     const [focus, setFocus] = useState("");
     const [sending, setSending] = useState(false);
     const [done, setDone] = useState(false);
-    const [names, setNames] = useState<{ mentor: string | null; leader: string | null }>({ mentor: null, leader: null });
+
     useEffect(() => {
         (async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            const { data: prof } = await supabase.from("profiles").select("mentor_id, leader_id").eq("id", user.id).single();
-            const ids = [(prof as any)?.mentor_id, (prof as any)?.leader_id].filter(Boolean);
-            if (ids.length === 0) return;
-            const { data: ps } = await supabase.from("profiles").select("id, name").in("id", ids);
-            const m = new Map((ps || []).map((x: any) => [x.id, x.name]));
-            setNames({ mentor: m.get((prof as any)?.mentor_id) || null, leader: m.get((prof as any)?.leader_id) || null });
+            const { data } = await supabase.from("profiles").select("id, name").eq("is_active", true).eq("mentor_passed", true).order("name");
+            setPeople(((data || []) as any[]).filter(p => p.id !== user?.id));
+            setLoaded(true);
         })();
     }, []);
 
@@ -37,13 +30,14 @@ function FbInner() {
         setSending(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { router.push("/login"); return; }
-        const { data: prof } = await supabase.from("profiles").select("mentor_id, leader_id").eq("id", user.id).single();
-        const assignee = target === "mentor" ? (prof as any)?.mentor_id : target === "leader" ? (prof as any)?.leader_id : null;
-        await supabase.from("fb_requests").insert({ user_id: user.id, submission_id: sid, thinking_session_id: tsid, target, focus: focus.trim() || null, assignee_id: assignee || null });
+        await supabase.from("fb_requests").insert({ user_id: user.id, submission_id: sid, thinking_session_id: tsid, target: pick === "any" ? "any" : "mentor", focus: focus.trim() || null, assignee_id: pick === "any" ? null : pick });
         setDone(true);
         setSending(false);
         setTimeout(() => router.push("/home"), 1600);
     };
+
+    const pickedName = people.find(p => p.id === pick)?.name;
+    const card = (active: boolean): React.CSSProperties => ({ textAlign: "left", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 14, cursor: "pointer", border: active ? "1.5px solid #a78bfa" : "1px solid rgba(255,255,255,0.1)", background: active ? "rgba(139,92,246,0.22)" : "rgba(255,255,255,0.04)", width: "100%" });
 
     return (
         <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at 50% 0%, #1a1030 0%, #0b0b16 55%)", padding: "24px 16px 60px" }}>
@@ -55,24 +49,30 @@ function FbInner() {
                 {done ? (
                     <div style={{ textAlign: "center", padding: "60px 0" }}>
                         <div style={{ fontSize: 64 }}>🕊️</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginTop: 10 }}>メンターに届けました</div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginTop: 10 }}>{pickedName ? `${pickedName}さんに届けました` : "メンターに届けました"}</div>
                         <div style={{ fontSize: 13, color: "#c4b5fd", marginTop: 6 }}>返事が来たら島でお知らせします</div>
                     </div>
                 ) : (
                     <>
                         <div style={{ fontSize: 13, color: "#c4b5fd", marginBottom: 10 }}>誰にお願いしますか？</div>
-                        <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
-                            {TARGETS.map(t => (
-                                <button key={t.key} onClick={() => setTarget(t.key)} style={{ textAlign: "left", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, cursor: "pointer", border: target === t.key ? "1.5px solid #a78bfa" : "1px solid rgba(255,255,255,0.1)", background: target === t.key ? "rgba(139,92,246,0.22)" : "rgba(255,255,255,0.04)" }}>
-                                    <span style={{ fontSize: 22 }}>{t.icon}</span>
-                                    <div><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{t.title}{t.key === "mentor" && <span style={{ fontSize: 12, color: names.mentor ? "#a78bfa" : "#6b7280", marginLeft: 8 }}>{names.mentor ? `${names.mentor}さん` : "（未設定・おまかせ扱い）"}</span>}{t.key === "leader" && <span style={{ fontSize: 12, color: names.leader ? "#a78bfa" : "#6b7280", marginLeft: 8 }}>{names.leader ? `${names.leader}さん` : "（未設定・おまかせ扱い）"}</span>}</div><div style={{ fontSize: 12, color: "#9ca3af" }}>{t.desc}</div></div>
+                        <button onClick={() => setPick("any")} style={{ ...card(pick === "any"), marginBottom: 10 }}>
+                            <span style={{ fontSize: 22 }}>🎲</span>
+                            <div><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>おまかせ</div><div style={{ fontSize: 12, color: "#9ca3af" }}>手の空いているメンターにお願いする</div></div>
+                        </button>
+                        <input value={q} onChange={e => setQ(e.target.value)} placeholder="名前で探す" style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 14, boxSizing: "border-box", marginBottom: 8 }} />
+                        <div style={{ maxHeight: 280, overflowY: "auto", display: "grid", gap: 6, marginBottom: 20 }}>
+                            {people.filter(p => !q || (p.name || "").includes(q)).map(p => (
+                                <button key={p.id} onClick={() => setPick(p.id)} style={card(pick === p.id)}>
+                                    <span style={{ fontSize: 18 }}>{pick === p.id ? "✅" : "👤"}</span>
+                                    <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{p.name}</span>
                                 </button>
                             ))}
+                            {loaded && people.length === 0 && <div style={{ fontSize: 12, color: "#6b7280", padding: 8 }}>指名できるメンターがまだいません。「おまかせ」で送ってください</div>}
                         </div>
                         <div style={{ fontSize: 13, color: "#c4b5fd", marginBottom: 8 }}>特に見てほしいこと（任意）</div>
                         <textarea value={focus} onChange={e => setFocus(e.target.value.slice(0, 200))} placeholder="例：アポが取れなかった原因について、自分の考え方が合っているか見てほしいです。" style={{ width: "100%", minHeight: 110, borderRadius: 14, padding: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 14, resize: "vertical", boxSizing: "border-box" }} />
                         <div style={{ textAlign: "right", fontSize: 11, color: "#6b7280", marginTop: 4 }}>{focus.length}/200</div>
-                        <button onClick={send} disabled={sending} style={{ width: "100%", marginTop: 16, padding: "14px 0", borderRadius: 14, border: "none", background: "linear-gradient(90deg,#8b5cf6,#a78bfa)", color: "#fff", fontSize: 15, fontWeight: 900, cursor: "pointer", boxShadow: "0 8px 24px rgba(139,92,246,0.45)" }}>{sending ? "送信中..." : "FBをお願いする"}</button>
+                        <button onClick={send} disabled={sending} style={{ width: "100%", marginTop: 16, padding: "14px 0", borderRadius: 14, border: "none", background: "linear-gradient(90deg,#8b5cf6,#a78bfa)", color: "#fff", fontSize: 15, fontWeight: 900, cursor: "pointer", boxShadow: "0 8px 24px rgba(139,92,246,0.45)" }}>{sending ? "送信中..." : pickedName ? `${pickedName}さんにFBをお願いする` : "FBをお願いする"}</button>
                     </>
                 )}
             </div>
