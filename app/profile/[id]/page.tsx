@@ -117,6 +117,8 @@ export default function ProfilePage() {
     const [challenges, setChallenges] = useState<ChallengeSubmission[]>([]);
     const [thanksCount, setThanksCount] = useState(0);
     const [isMyself, setIsMyself] = useState(false);
+    const [learnDone, setLearnDone] = useState(0);
+    const [learnTotal, setLearnTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [expandedChallenge, setExpandedChallenge] = useState<string | null>(null);
     const [reports, setReports] = useState<{ id: string; content: string; created_at: string }[]>([]);
@@ -145,6 +147,16 @@ export default function ProfilePage() {
                 return;
             }
             setProfile(profileData as Profile);
+
+            // 学習コンテンツ（承認済み / 公開中の総数）
+            {
+                const [{ count: doneCnt }, { count: totalCnt }] = await Promise.all([
+                    supabase.from("content_completions").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "approved"),
+                    supabase.from("contents").select("id", { count: "exact", head: true }),
+                ]);
+                setLearnDone(doneCnt || 0);
+                setLearnTotal(totalCnt || 0);
+            }
 
             // department取得
             if (profileData.department_id) {
@@ -337,6 +349,16 @@ export default function ProfilePage() {
                                 <div style={{ color: "#f9fafb" }}>{profile.hobby_category}</div>
                             </div>
                         )}
+                    </div>
+                </div>
+
+                {/* 学習コンテンツ */}
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: "#d1d5db" }}>
+                        📚 学習コンテンツ ({learnDone}/{learnTotal})
+                    </div>
+                    <div style={{ height: 8, borderRadius: 4, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${learnTotal ? Math.round((learnDone / learnTotal) * 100) : 0}%`, background: "linear-gradient(90deg,#38bdf8,#818cf8)", borderRadius: 4 }} />
                     </div>
                 </div>
 
