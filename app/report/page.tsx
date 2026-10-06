@@ -44,6 +44,18 @@ export default function ReportPage() {
             if (!user) return;
             const { data } = await supabase.from("experiments").select("id, plan").eq("user_id", user.id).lte("target_date", getTodayJST()).is("result", null).order("target_date", { ascending: false }).limit(1);
             if (data && data.length > 0) setYesterdayExp(data[0] as any);
+            // 今日すでに提出済みなら、内容と完了画面を復元
+            const { data: todayRows } = await supabase.from("submissions").select("id, content, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(3);
+            const todayRow = (todayRows || []).find((r: any) => toJSTDateOnly(r.created_at) === getTodayJST());
+            if (todayRow) {
+                const c: string = (todayRow as any).content || "";
+                const g = c.match(/【今日のGood】[^\n]*\n([\s\S]*?)\n\n【明日のQuest】/);
+                const a = c.match(/【明日のQuest】[^\n]*\n([\s\S]*)$/);
+                setFactText(g ? g[1] : c); setActionText(a ? a[1] : "");
+                setSubmittedId((todayRow as any).id); setReportDone(true); setSuccess(true);
+                const { data: ex } = await supabase.from("experiments").select("id").eq("submission_id", (todayRow as any).id).limit(1);
+                if (ex && ex.length > 0) setExpSaved(true);
+            }
         })();
     }, []);
     const saveExperiment = async () => {
@@ -185,7 +197,7 @@ export default function ReportPage() {
             setSuccess(true);
             setMessage(bonus > 0 ? `+${addPoints}pt 獲得！連続ボーナス +${bonus}pt も獲得 🎉` : `+${addPoints}pt 獲得しました！`);
             setDotkunFb(generateDotKunFeedback({ factText, interpText: "", actionText, streak: newStreak }));
-            setFactText(""); setActionText(""); setLoading(false);
+            setLoading(false);
             setReportDone(true);
             setSubmittedId((insertedSub as any)?.id || null);
             setShowThanksPopup(true);
@@ -327,7 +339,19 @@ export default function ReportPage() {
                     <TodayScheduleReview ref={reviewRef} onProgressChange={(d, t) => { setQuestDone(d); setQuestTotal(t); }} />
                 </div>
 
+                {/* ===== 提出済み：今日の内容 ===== */}
+                {reportDone && (
+                    <div style={{ borderRadius: 18, padding: 20, marginBottom: 20, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(52,211,153,0.25)" }}>
+                        <div style={{ fontSize: 11, fontWeight: 900, color: "#34d399", letterSpacing: 2, marginBottom: 10 }}>✅ 今日の日報は提出済み</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#34d399", marginBottom: 4 }}>😊 今日のGood！</div>
+                        <div style={{ fontSize: 14, color: "#e5e7eb", whiteSpace: "pre-wrap", lineHeight: 1.6, marginBottom: 14 }}>{factText}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#a78bfa", marginBottom: 4 }}>🔥 Tomorrow Quest！</div>
+                        <div style={{ fontSize: 14, color: "#e5e7eb", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{actionText}</div>
+                    </div>
+                )}
+
                 {/* ===== 振り返り質問（2つ） ===== */}
+                {!reportDone && (<>
                 <div style={{ borderRadius: 18, padding: 20, marginBottom: 20, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     <div style={{ marginBottom: 16 }}>
                         <div style={{ fontSize: 14, fontWeight: 800, color: "#34d399", marginBottom: 8 }}>😊 今日のGood！</div>
@@ -348,6 +372,7 @@ export default function ReportPage() {
                     {submitting ? "送信中..." : "✨ 今日のQuestを完了する！"}
                 </button>
                 <div style={{ textAlign: "center", fontSize: 11, color: "#6b6b85", marginTop: 8 }}>提出するとポイントが獲得できます！</div>
+                </>)}
 
                 {/* メッセージ */}
                 {message && (
