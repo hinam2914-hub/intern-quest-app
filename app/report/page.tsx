@@ -31,6 +31,39 @@ export default function ReportPage() {
     const router = useRouter();
     const reviewRef = useRef<TodayScheduleReviewHandle>(null);
     const [factText, setFactText] = useState("");        // 今日のGood
+    const [submittedId, setSubmittedId] = useState<string | null>(null);
+    const [expPlan, setExpPlan] = useState("");
+    const [expSaved, setExpSaved] = useState(false);
+    const [yesterdayExp, setYesterdayExp] = useState<{ id: string; plan: string } | null>(null);
+    const [yResult, setYResult] = useState<"better" | "same" | "worse" | null>(null);
+    const [yReflect, setYReflect] = useState("");
+    const [yDone, setYDone] = useState(false);
+    useEffect(() => {
+        (async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data } = await supabase.from("experiments").select("id, plan").eq("user_id", user.id).lte("target_date", getTodayJST()).is("result", null).order("target_date", { ascending: false }).limit(1);
+            if (data && data.length > 0) setYesterdayExp(data[0] as any);
+        })();
+    }, []);
+    const saveExperiment = async () => {
+        if (!expPlan.trim() || expSaved) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const t = new Date(`${getTodayJST()}T00:00:00+09:00`); t.setDate(t.getDate() + 1);
+        const target = t.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+        await supabase.from("experiments").insert({ user_id: user.id, submission_id: submittedId, plan: expPlan.trim(), target_date: target });
+        await supabase.from("thinking_skill_logs").insert([{ user_id: user.id, skill: "hypothesis", exp: 5, source: "experiment_plan" }]);
+        setExpSaved(true);
+    };
+    const saveYesterday = async () => {
+        if (!yesterdayExp || !yResult || yDone) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        await supabase.from("experiments").update({ result: yResult, reflection: yReflect.trim() || null, reviewed_at: new Date().toISOString() }).eq("id", yesterdayExp.id);
+        await supabase.from("thinking_skill_logs").insert([{ user_id: user.id, skill: "improve", exp: 10, source: "experiment_review", source_id: yesterdayExp.id }]);
+        setYDone(true);
+    };
     const [interpText, setInterpText] = useState("");    // 未使用（空で保存）
     const [actionText, setActionText] = useState("");    // 明日のQuest
     const [loading, setLoading] = useState(false);
@@ -85,7 +118,7 @@ export default function ReportPage() {
                 return;
             }
 
-            const { error: submissionError } = await supabase.from("submissions").insert({ user_id: user.id, content: combinedText });
+            const { data: insertedSub, error: submissionError } = await supabase.from("submissions").insert({ user_id: user.id, content: combinedText }).select("id").single();
             if (submissionError) { setMessage("提出に失敗しました"); setLoading(false); return; }
 
             const nowIso = new Date().toISOString();
@@ -154,6 +187,7 @@ export default function ReportPage() {
             setDotkunFb(generateDotKunFeedback({ factText, interpText: "", actionText, streak: newStreak }));
             setFactText(""); setActionText(""); setLoading(false);
             setReportDone(true);
+            setSubmittedId((insertedSub as any)?.id || null);
             setShowThanksPopup(true);
         } finally {
             setSubmitting(false);
@@ -207,6 +241,65 @@ export default function ReportPage() {
                     </div>
                     <button onClick={() => router.push("/home")} style={{ border: "1px solid rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.12)", borderRadius: 12, padding: "8px 14px", fontSize: 12.5, fontWeight: 700, color: "#c4b5fd", cursor: "pointer", whiteSpace: "nowrap" }}>🏝️ 島へ</button>
                 </div>
+
+                {/* ===== 昨日の実験（未振り返りがあるとき） ===== */}
+                {yesterdayExp && !reportDone && (
+                    <div style={{ borderRadius: 20, padding: 18, marginBottom: 16, background: "linear-gradient(160deg, rgba(52,211,153,0.16), rgba(11,11,20,0.6))", border: "1.5px solid rgba(52,211,153,0.4)" }}>
+                        <div style={{ fontSize: 11, fontWeight: 900, color: "#34d399", letterSpacing: 2 }}>🧪 昨日の実験</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: "6px 0 12px", lineHeight: 1.5 }}>{yesterdayExp.plan}</div>
+                        {yDone ? (
+                            <div style={{ fontSize: 13, color: "#34d399", fontWeight: 800 }}>振り返り完了！ 🔄 改善力EXP +10</div>
+                        ) : (
+                            <>
+                                <div style={{ fontSize: 12.5, color: "#c4b5fd", marginBottom: 8 }}>結果はどうでしたか？</div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 10 }}>
+                                    {([["better", "◎ 良くなった", "#34d399"], ["same", "○ 変わらなかった", "#9ca3af"], ["worse", "△ 悪くなった", "#f87171"]] as const).map(([k, l, c]) => (
+                                        <button key={k} onClick={() => setYResult(k)} style={{ padding: "10px 4px", borderRadius: 12, fontSize: 12.5, fontWeight: 800, cursor: "pointer", border: yResult === k ? `1.5px solid ${c}` : "1px solid rgba(255,255,255,0.1)", background: yResult === k ? `${c}26` : "rgba(255,255,255,0.04)", color: yResult === k ? c : "#9ca3af" }}>{l}</button>
+                                    ))}
+                                </div>
+                                <div style={{ fontSize: 12.5, color: "#c4b5fd", marginBottom: 6 }}>なぜこの結果になったと思いますか？</div>
+                                <textarea value={yReflect} onChange={e => setYReflect(e.target.value.slice(0, 300))} placeholder="振り返ってみましょう…" style={{ width: "100%", minHeight: 70, borderRadius: 12, padding: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 13.5, boxSizing: "border-box", resize: "vertical" }} />
+                                <button onClick={saveYesterday} disabled={!yResult} style={{ width: "100%", marginTop: 10, padding: "12px 0", borderRadius: 12, border: "none", background: yResult ? "linear-gradient(90deg,#34d399,#10b981)" : "rgba(255,255,255,0.08)", color: yResult ? "#0b0b14" : "#6b7280", fontSize: 14, fontWeight: 900, cursor: yResult ? "pointer" : "default" }}>振り返りを完了する</button>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* ===== 提出完了：次の行動を選ぶ ===== */}
+                {reportDone && (
+                    <div style={{ borderRadius: 24, padding: "22px 20px", marginBottom: 16, background: "linear-gradient(160deg, rgba(139,92,246,0.22), rgba(11,11,20,0.7))", border: "1.5px solid rgba(167,139,250,0.45)", boxShadow: "0 12px 40px rgba(76,29,149,0.3)" }}>
+                        <div style={{ textAlign: "center", marginBottom: 14 }}>
+                            <div style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>今日の冒険、お疲れさまでした！</div>
+                            <div style={{ fontSize: 12.5, color: "#c4b5fd", marginTop: 4 }}>この後、さらに成長するためにやってみましょう！</div>
+                        </div>
+                        <div style={{ display: "grid", gap: 10 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", opacity: 0.55 }}>
+                                <span style={{ fontSize: 26 }}>🧠</span>
+                                <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>AIと作戦会議</div><div style={{ fontSize: 12, color: "#9ca3af" }}>今日の行動をAIと一緒に深掘りする</div></div>
+                                <span style={{ fontSize: 10, fontWeight: 900, color: "#c4b5fd", border: "1px solid rgba(167,139,250,0.4)", borderRadius: 6, padding: "2px 6px" }}>COMING SOON</span>
+                            </div>
+                            <button onClick={() => router.push(`/report/fb${submittedId ? `?sid=${submittedId}` : ""}`)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(56,189,248,0.4)", background: "rgba(56,189,248,0.1)", cursor: "pointer", textAlign: "left" }}>
+                                <span style={{ fontSize: 26 }}>💌</span>
+                                <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>FBをお願いする</div><div style={{ fontSize: 12, color: "#9ca3af" }}>メンターから別の視点をもらう</div></div>
+                                <span style={{ color: "#38bdf8", fontWeight: 900 }}>›</span>
+                            </button>
+                            <div style={{ padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(52,211,153,0.4)", background: "rgba(52,211,153,0.08)" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    <span style={{ fontSize: 26 }}>🧪</span>
+                                    <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>明日の実験を決める</div><div style={{ fontSize: 12, color: "#9ca3af" }}>今日の学びを明日の行動に変える。1つだけ</div></div>
+                                </div>
+                                {expSaved ? (
+                                    <div style={{ marginTop: 10, fontSize: 13, color: "#34d399", fontWeight: 800 }}>明日の実験に登録しました！ 💡 仮説思考EXP +5　明日の日報で結果を振り返ろう</div>
+                                ) : (
+                                    <>
+                                        <textarea value={expPlan} onChange={e => setExpPlan(e.target.value.slice(0, 200))} placeholder="例：DMを送る時間帯を18〜20時に固定して、返信率を比較する" style={{ width: "100%", minHeight: 64, marginTop: 10, borderRadius: 12, padding: 10, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 13.5, boxSizing: "border-box", resize: "vertical" }} />
+                                        <button onClick={saveExperiment} disabled={!expPlan.trim()} style={{ width: "100%", marginTop: 8, padding: "11px 0", borderRadius: 12, border: "none", background: expPlan.trim() ? "linear-gradient(90deg,#34d399,#10b981)" : "rgba(255,255,255,0.08)", color: expPlan.trim() ? "#0b0b14" : "#6b7280", fontSize: 14, fontWeight: 900, cursor: expPlan.trim() ? "pointer" : "default" }}>明日の実験に登録</button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* ===== Today's Quest Result（主役） ===== */}
                 <div style={{ borderRadius: 24, padding: "24px 22px", marginBottom: 16, background: "linear-gradient(160deg, rgba(139,92,246,0.25), rgba(76,29,149,0.1))", border: "1.5px solid rgba(167,139,250,0.4)", boxShadow: "0 12px 40px rgba(76,29,149,0.3)", textAlign: "center", position: "relative", overflow: "hidden" }}>
