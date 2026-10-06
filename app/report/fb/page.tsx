@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 
@@ -18,6 +18,19 @@ function FbInner() {
     const [focus, setFocus] = useState("");
     const [sending, setSending] = useState(false);
     const [done, setDone] = useState(false);
+    const [names, setNames] = useState<{ mentor: string | null; leader: string | null }>({ mentor: null, leader: null });
+    useEffect(() => {
+        (async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data: prof } = await supabase.from("profiles").select("mentor_id, leader_id").eq("id", user.id).single();
+            const ids = [(prof as any)?.mentor_id, (prof as any)?.leader_id].filter(Boolean);
+            if (ids.length === 0) return;
+            const { data: ps } = await supabase.from("profiles").select("id, name").in("id", ids);
+            const m = new Map((ps || []).map((x: any) => [x.id, x.name]));
+            setNames({ mentor: m.get((prof as any)?.mentor_id) || null, leader: m.get((prof as any)?.leader_id) || null });
+        })();
+    }, []);
 
     const send = async () => {
         if (sending) return;
@@ -52,7 +65,7 @@ function FbInner() {
                             {TARGETS.map(t => (
                                 <button key={t.key} onClick={() => setTarget(t.key)} style={{ textAlign: "left", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, cursor: "pointer", border: target === t.key ? "1.5px solid #a78bfa" : "1px solid rgba(255,255,255,0.1)", background: target === t.key ? "rgba(139,92,246,0.22)" : "rgba(255,255,255,0.04)" }}>
                                     <span style={{ fontSize: 22 }}>{t.icon}</span>
-                                    <div><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{t.title}</div><div style={{ fontSize: 12, color: "#9ca3af" }}>{t.desc}</div></div>
+                                    <div><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{t.title}{t.key === "mentor" && <span style={{ fontSize: 12, color: names.mentor ? "#a78bfa" : "#6b7280", marginLeft: 8 }}>{names.mentor ? `${names.mentor}さん` : "（未設定・おまかせ扱い）"}</span>}{t.key === "leader" && <span style={{ fontSize: 12, color: names.leader ? "#a78bfa" : "#6b7280", marginLeft: 8 }}>{names.leader ? `${names.leader}さん` : "（未設定・おまかせ扱い）"}</span>}</div><div style={{ fontSize: 12, color: "#9ca3af" }}>{t.desc}</div></div>
                                 </button>
                             ))}
                         </div>
