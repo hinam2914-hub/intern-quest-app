@@ -415,11 +415,20 @@ export default function ReportPage() {
                             <div style={{ fontSize: 12.5, color: "#c4b5fd", marginTop: 4 }}>この後、さらに成長するためにやってみましょう！</div>
                         </div>
                         <div style={{ display: "grid", gap: 10 }}>
+                            {/* AI_ENABLED: OPENAI_API_KEY を入れたら下の false を true に */}
+                            {false ? (
                             <button onClick={() => router.push(`/report/ai${submittedId ? `?sid=${submittedId}` : ""}`)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(167,139,250,0.5)", background: "rgba(139,92,246,0.14)", cursor: "pointer", textAlign: "left" }}>
                                 <span style={{ fontSize: 26 }}>🧠</span>
                                 <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>AIと作戦会議</div><div style={{ fontSize: 12, color: "#9ca3af" }}>今日の行動をAIと一緒に深掘りする（3問）</div></div>
                                 <span style={{ color: "#a78bfa", fontWeight: 900 }}>›</span>
                             </button>
+                            ) : (
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", opacity: 0.55 }}>
+                                <span style={{ fontSize: 26 }}>🧠</span>
+                                <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>AIと作戦会議</div><div style={{ fontSize: 12, color: "#9ca3af" }}>今日の行動をAIと一緒に深掘りする</div></div>
+                                <span style={{ fontSize: 10, fontWeight: 900, color: "#c4b5fd", border: "1px solid rgba(167,139,250,0.4)", borderRadius: 6, padding: "2px 6px" }}>COMING SOON</span>
+                            </div>
+                            )}
                             <button onClick={() => router.push(`/report/fb${submittedId ? `?sid=${submittedId}` : ""}`)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(56,189,248,0.4)", background: "rgba(56,189,248,0.1)", cursor: "pointer", textAlign: "left" }}>
                                 <span style={{ fontSize: 26 }}>💌</span>
                                 <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>FBをお願いする</div><div style={{ fontSize: 12, color: "#9ca3af" }}>メンターから別の視点をもらう</div></div>
