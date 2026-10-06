@@ -31,6 +31,20 @@ function getYmdJST(iso: string): string {
     return `${y}-${m}-${day}`;
 }
 
+// 1,000行上限を超えて全件取得する
+async function fetchAllUserIds(table: string, filters: [string, string | boolean][] = []): Promise<{ user_id: string }[]> {
+    const rows: { user_id: string }[] = [];
+    for (let from = 0; ; from += 1000) {
+        let q = supabase.from(table).select("user_id").range(from, from + 999);
+        for (const [col, val] of filters) q = q.eq(col, val);
+        const { data: chunk } = await q;
+        if (!chunk || chunk.length === 0) break;
+        rows.push(...(chunk as { user_id: string }[]));
+        if (chunk.length < 1000) break;
+    }
+    return rows;
+}
+
 export default function RankingPage() {
     const router = useRouter();
     const [users, setUsers] = useState<RankingUser[]>([]);
@@ -126,7 +140,7 @@ export default function RankingPage() {
                 })).sort((a, b) => b.points - a.points));
             }
             // ===== ペイフォワードランキング（承認済み報告数） =====
-            const { data: pfRows } = await supabase.from("mentor_reports").select("user_id").eq("status", "approved");
+            const pfRows = await fetchAllUserIds("mentor_reports", [["status", "approved"]]);
             const pfCounts: { [id: string]: number } = {};
             (pfRows || []).forEach((row: any) => { if (row.user_id) pfCounts[row.user_id] = (pfCounts[row.user_id] || 0) + 1; });
             const pfIds = Object.keys(pfCounts);
@@ -156,7 +170,7 @@ export default function RankingPage() {
                 })).sort((a, b) => b.points - a.points));
             }
             // ===== ライフチャレンジ数ランキング =====
-            const { data: challengeAllRows } = await supabase.from("challenge_submissions").select("user_id").eq("status", "approved");
+            const challengeAllRows = await fetchAllUserIds("challenge_submissions", [["status", "approved"]]);
             const challengeCounts: { [id: string]: number } = {};
             (challengeAllRows || []).forEach((row: any) => { if (row.user_id) challengeCounts[row.user_id] = (challengeCounts[row.user_id] || 0) + 1; });
             const challengeIds = Object.keys(challengeCounts);
@@ -171,7 +185,7 @@ export default function RankingPage() {
                 })).sort((a, b) => b.points - a.points));
             }
             // ===== 思考クエスト回答数ランキング =====
-            const { data: thinkingAllRows } = await supabase.from("thinking_answers").select("user_id");
+            const thinkingAllRows = await fetchAllUserIds("thinking_answers", []);
             const thinkingCounts: { [id: string]: number } = {};
             (thinkingAllRows || []).forEach((row: any) => { if (row.user_id) thinkingCounts[row.user_id] = (thinkingCounts[row.user_id] || 0) + 1; });
             const thinkingIds = Object.keys(thinkingCounts);
@@ -183,7 +197,7 @@ export default function RankingPage() {
                 })).sort((a, b) => b.points - a.points));
             }
             // ===== 質問クエスト投稿数ランキング =====
-            const { data: questionAllRows } = await supabase.from("questions_box").select("user_id");
+            const questionAllRows = await fetchAllUserIds("questions_box", []);
             const questionCounts: { [id: string]: number } = {};
             (questionAllRows || []).forEach((row: any) => { if (row.user_id) questionCounts[row.user_id] = (questionCounts[row.user_id] || 0) + 1; });
             const questionIds = Object.keys(questionCounts);
@@ -247,13 +261,7 @@ export default function RankingPage() {
                 })).sort((a, b) => b.points - a.points));
             }
             // ===== 学習コンテンツ完了数ランキング（承認済みのみ） =====
-            const learnAllRows: { user_id: string }[] = [];
-            for (let from = 0; ; from += 1000) {
-                const { data: chunk } = await supabase.from("content_completions").select("user_id").eq("status", "approved").range(from, from + 999);
-                if (!chunk || chunk.length === 0) break;
-                learnAllRows.push(...(chunk as { user_id: string }[]));
-                if (chunk.length < 1000) break;
-            }
+            const learnAllRows = await fetchAllUserIds("content_completions", [["status", "approved"]]);
             const learnCounts: { [id: string]: number } = {};
             (learnAllRows || []).forEach((row: { user_id: string }) => { if (row.user_id) learnCounts[row.user_id] = (learnCounts[row.user_id] || 0) + 1; });
             const learnIds = Object.keys(learnCounts);
@@ -270,19 +278,19 @@ export default function RankingPage() {
             // ===== 仕事完遂量ランキング（KKC + MTG + タスク + ルーティン連続） =====
             const workCounts: { [id: string]: number } = {};
             // 1. KKC（承認済み）
-            const { data: kkcRows } = await supabase.from("problem_solutions").select("user_id").eq("status", "approved");
+            const kkcRows = await fetchAllUserIds("problem_solutions", [["status", "approved"]]);
             (kkcRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
             // 2. MTG報告書（承認済み）
-            const { data: mtgRows } = await supabase.from("mtg_reports").select("user_id").eq("status", "approved");
+            const mtgRows = await fetchAllUserIds("mtg_reports", [["status", "approved"]]);
             (mtgRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
             // 3. 個人タスク（完了）
-            const { data: personalTaskRows } = await supabase.from("personal_tasks").select("user_id").eq("is_done", true);
+            const personalTaskRows = await fetchAllUserIds("personal_tasks", [["is_done", true]]);
             (personalTaskRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
             // 4. adminタスク報告書（承認済み）
-            const { data: taskReportRows } = await supabase.from("task_reports").select("user_id").eq("status", "approved");
+            const taskReportRows = await fetchAllUserIds("task_reports", [["status", "approved"]]);
             (taskReportRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
            // 5. ルーティン完遂個数（routine_checksのチェック数を合算）
-            const { data: allRoutineChecksCount } = await supabase.from("routine_checks").select("user_id");
+            const allRoutineChecksCount = await fetchAllUserIds("routine_checks", []);
             (allRoutineChecksCount || []).forEach((row: { user_id: string }) => {
                 if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1;
             });
