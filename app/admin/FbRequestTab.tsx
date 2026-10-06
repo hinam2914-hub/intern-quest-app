@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 
 type Req = { id: string; user_id: string; submission_id: string | null; thinking_session_id: string | null; target: string; focus: string | null; status: string; fb_good: string | null; fb_think: string | null; fb_next: string | null; issue_quest: boolean; quest_claimed_at: string | null; created_at: string; responded_at: string | null; assignee_id?: string | null; assigneeName?: string; name?: string; content?: string; turns?: any[] };
 
-const TARGET_LABEL: Record<string, string> = { mentor: "担当メンター", leader: "チームリーダー", any: "おまかせ" };
+const TARGET_LABEL: Record<string, string> = { mentor: "指名", leader: "指名", any: "おまかせ" };
 
 function ago(iso: string) {
     const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -117,7 +117,7 @@ export default function FbRequestTab() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <div>
                             <span style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>{r.name}</span>
-                            <span style={{ fontSize: 11, color: "#8b8fa8", marginLeft: 8 }}>{TARGET_LABEL[r.target] || r.target}{r.assigneeName ? ` → ${r.assigneeName}` : r.target !== "any" ? "（未設定→おまかせ）" : ""}</span>
+                            <span style={{ fontSize: 11, color: "#8b8fa8", marginLeft: 8 }}>{TARGET_LABEL[r.target] || r.target}{r.assigneeName ? `：${r.assigneeName}` : ""}</span>
                             {r.thinking_session_id && <span style={{ fontSize: 10, marginLeft: 8, padding: "2px 6px", borderRadius: 6, background: "rgba(139,92,246,0.2)", color: "#c4b5fd" }}>AIで深掘り済み</span>}
                         </div>
                         <div style={{ fontSize: 11, color: r.status === "pending" ? "#f87171" : "#34d399", fontWeight: 800 }}>{r.status === "pending" ? "未対応" : r.quest_claimed_at ? "クエスト受領済み" : r.issue_quest ? "クエスト未受領" : "対応済"}　<span style={{ color: "#6b7280", fontWeight: 500 }}>{ago(r.created_at)}</span></div>
