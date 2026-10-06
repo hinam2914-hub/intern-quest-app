@@ -38,12 +38,22 @@ export default function ReportPage() {
     const [yResult, setYResult] = useState<"better" | "same" | "worse" | null>(null);
     const [yReflect, setYReflect] = useState("");
     const [yDone, setYDone] = useState(false);
+    const [fbList, setFbList] = useState<{ id: string; fb_good: string | null; fb_think: string | null; fb_next: string | null; responded_at: string; responder: string; issue_quest: boolean }[]>([]);
     useEffect(() => {
         (async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
             const { data } = await supabase.from("experiments").select("id, plan").eq("user_id", user.id).lte("target_date", getTodayJST()).is("result", null).order("target_date", { ascending: false }).limit(1);
             if (data && data.length > 0) setYesterdayExp(data[0] as any);
+            // メンターからのFB（直近7日・返信済み）
+            {
+                const since = new Date(Date.now() - 7 * 86400000).toISOString();
+                const { data: fbs } = await supabase.from("fb_requests").select("id, fb_good, fb_think, fb_next, responded_at, responder_id, issue_quest").eq("user_id", user.id).eq("status", "done").gte("responded_at", since).order("responded_at", { ascending: false }).limit(3);
+                const rids = [...new Set((fbs || []).map((f: any) => f.responder_id).filter(Boolean))];
+                const { data: rps } = rids.length ? await supabase.from("profiles").select("id, name").in("id", rids) : { data: [] as any[] };
+                const rm = new Map((rps || []).map((r: any) => [r.id, r.name]));
+                setFbList((fbs || []).map((f: any) => ({ ...f, responder: rm.get(f.responder_id) || "メンター" })));
+            }
             // 今日すでに提出済みなら、内容と完了画面を復元
             const { data: todayRows } = await supabase.from("submissions").select("id, content, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(3);
             const todayRow = (todayRows || []).find((r: any) => toJSTDateOnly(r.created_at) === getTodayJST());
@@ -338,6 +348,21 @@ export default function ReportPage() {
                     <div style={{ fontSize: 12, fontWeight: 800, color: "#9ca3af", letterSpacing: 1, marginBottom: 12 }}>✨ Questの振り返り</div>
                     <TodayScheduleReview ref={reviewRef} onProgressChange={(d, t) => { setQuestDone(d); setQuestTotal(t); }} />
                 </div>
+
+                {/* ===== メンターからのFB ===== */}
+                {fbList.length > 0 && (
+                    <div style={{ borderRadius: 18, padding: 18, marginBottom: 16, background: "linear-gradient(160deg, rgba(56,189,248,0.12), rgba(11,11,20,0.6))", border: "1.5px solid rgba(56,189,248,0.35)" }}>
+                        <div style={{ fontSize: 11, fontWeight: 900, color: "#38bdf8", letterSpacing: 2, marginBottom: 10 }}>💌 メンターからのFB</div>
+                        {fbList.map(f => (
+                            <div key={f.id} style={{ padding: "10px 0", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                <div style={{ fontSize: 11.5, color: "#9ca3af", marginBottom: 6 }}>{f.responder}さん　{new Date(f.responded_at).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })}</div>
+                                {f.fb_good && <div style={{ fontSize: 13.5, color: "#e5e7eb", marginBottom: 4, lineHeight: 1.6 }}><span style={{ color: "#34d399", fontWeight: 900 }}>👍 GOOD　</span>{f.fb_good}</div>}
+                                {f.fb_think && <div style={{ fontSize: 13.5, color: "#e5e7eb", marginBottom: 4, lineHeight: 1.6 }}><span style={{ color: "#fbbf24", fontWeight: 900 }}>🧠 THINK　</span>{f.fb_think}</div>}
+                                {f.fb_next && <div style={{ fontSize: 13.5, color: "#e5e7eb", lineHeight: 1.6 }}><span style={{ color: "#a78bfa", fontWeight: 900 }}>⚔️ NEXT　</span>{f.fb_next}{f.issue_quest && <span style={{ fontSize: 11, color: "#c4b5fd", marginLeft: 6 }}>（クエスト）</span>}</div>}
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* ===== 提出済み：今日の内容 ===== */}
                 {reportDone && (

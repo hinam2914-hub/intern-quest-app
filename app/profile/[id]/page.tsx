@@ -119,6 +119,7 @@ export default function ProfilePage() {
     const [isMyself, setIsMyself] = useState(false);
     const [learnDone, setLearnDone] = useState(0);
     const [learnTotal, setLearnTotal] = useState(0);
+    const [skills, setSkills] = useState<Record<string, number>>({ hypothesis: 0, cause: 0, verbal: 0, improve: 0, self: 0 });
     const [loading, setLoading] = useState(true);
     const [expandedChallenge, setExpandedChallenge] = useState<string | null>(null);
     const [reports, setReports] = useState<{ id: string; content: string; created_at: string }[]>([]);
@@ -156,6 +157,13 @@ export default function ProfilePage() {
                 ]);
                 setLearnDone(doneCnt || 0);
                 setLearnTotal(totalCnt || 0);
+            }
+            // THINKING SKILLS（EXP合算）
+            {
+                const { data: logs } = await supabase.from("thinking_skill_logs").select("skill, exp").eq("user_id", userId);
+                const acc: Record<string, number> = { hypothesis: 0, cause: 0, verbal: 0, improve: 0, self: 0 };
+                (logs || []).forEach((l: any) => { acc[l.skill] = (acc[l.skill] || 0) + (l.exp || 0); });
+                setSkills(acc);
             }
 
             // department取得
@@ -350,6 +358,24 @@ export default function ProfilePage() {
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* THINKING SKILLS */}
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#d1d5db" }}>🧠 THINKING SKILLS</div>
+                    {([["hypothesis", "💡 仮説思考", "#a78bfa"], ["cause", "🔍 原因分析", "#38bdf8"], ["verbal", "🗣 言語化", "#34d399"], ["improve", "🔄 改善力", "#fbbf24"], ["self", "🚀 自走力", "#f87171"]] as const).map(([k, label, col]) => {
+                        const exp = skills[k] || 0; const lv = Math.floor(exp / 50) + 1; const pct = (exp % 50) * 2;
+                        return (
+                            <div key={k} style={{ marginBottom: 8 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                                    <span style={{ color: "#e5e7eb", fontWeight: 700 }}>{label}</span>
+                                    <span style={{ color: col, fontWeight: 800 }}>Lv.{lv} <span style={{ color: "#6b7280", fontWeight: 500 }}>{exp} EXP</span></span>
+                                </div>
+                                <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}><div style={{ height: "100%", width: `${pct}%`, background: col, borderRadius: 3 }} /></div>
+                            </div>
+                        );
+                    })}
+                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>日報後の実験・振り返り・メンタークエストで上がる（動画視聴では上がらない）</div>
                 </div>
 
                 {/* 学習コンテンツ */}
