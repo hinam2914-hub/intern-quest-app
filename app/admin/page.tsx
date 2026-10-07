@@ -28,6 +28,7 @@ import RecruitTab from "./RecruitTab";
 import RequiredCheckTab from "./RequiredCheckTab";
 import RookieTab from "./RookieTab";
 import FbRequestTab from "./FbRequestTab";
+import SkillCheckTab from "./SkillCheckTab";
 import ScriptPracticeTab from "./ScriptPracticeTab";
 import CourseManageTab from "./CourseManageTab";
 import AvatarShopTab from "./AvatarShopTab";
@@ -136,7 +137,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"required_check" | "rookie" | "fb_requests" | "script_practice" | "home" | "dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box" | "recruit" | "course" | "avatar_shop" | "island_shop" | "journey">("home");
+    const [activeTab, setActiveTab] = useState<"required_check" | "rookie" | "fb_requests" | "skill_check" | "script_practice" | "home" | "dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box" | "recruit" | "course" | "avatar_shop" | "island_shop" | "journey">("home");
     const [scheduleTargetUser, setScheduleTargetUser] = useState<string | null>(null);
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -384,6 +385,7 @@ export default function AdminPage() {
     const [pendingJourneyCount, setPendingJourneyCount] = useState(0);
     const [pendingRookieCount, setPendingRookieCount] = useState(0);
     const [pendingFbCount, setPendingFbCount] = useState(0);
+    const [pendingSkillCount, setPendingSkillCount] = useState(0);
     const [pendingQuestionCount, setPendingQuestionCount] = useState(0);
     const [pendingMgrTestCount, setPendingMgrTestCount] = useState(0);
     // ===== 人材アーカイブ =====
@@ -758,6 +760,9 @@ export default function AdminPage() {
             const { count: rookieC } = await supabase.from("rookie_submissions").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingRookieCount(rookieC || 0);
             const { count: fbC } = await supabase.from("fb_requests").select("*", { count: "exact", head: true }).eq("status", "pending");
+            const { count: skC1 } = await supabase.from("skill_checks").select("*", { count: "exact", head: true }).eq("status", "pending");
+            const { count: skC2 } = await supabase.from("skill_claims").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingSkillCount((skC1 ?? 0) + (skC2 ?? 0));
             setPendingFbCount(fbC || 0);
             const { count: questionC } = await supabase.from("questions_box").select("*", { count: "exact", head: true }).is("answered_at", null);
             setPendingQuestionCount(questionC || 0);
@@ -2212,6 +2217,7 @@ export default function AdminPage() {
                 {activeTab === "required_check" && <RequiredCheckTab />}
                 {activeTab === "rookie" && <RookieTab />}
                 {activeTab === "fb_requests" && <FbRequestTab />}
+                {activeTab === "skill_check" && <SkillCheckTab />}
                 {activeTab === "script_practice" && <ScriptPracticeTab />}
                 {activeTab === "course" && <CourseManageTab />}
                 {activeTab === "avatar_shop" && (
@@ -2248,6 +2254,7 @@ export default function AdminPage() {
                             pendingJourney: pendingJourneyCount,
                             pendingRookie: pendingRookieCount,
                             pendingFb: pendingFbCount,
+                            pendingSkill: pendingSkillCount,
                             pendingLearn: contentCompletions.filter((c: any) => c.status === "pending").length,
                             pendingChallenge: challengeSubmissions.filter((c: any) => c.status === "pending").length,
                             pendingRequest: pendingCount,
