@@ -271,3 +271,86 @@ export async function requestCheck(sb: SupabaseClient, uid: string, nodeId: stri
   await sb.from("skill_checks").insert({ user_id: uid, node_id: nodeId });
   return true;
 }
+
+// ====================== Phase 2-2: CHALLENGING / CURRENT QUEST ======================
+export type Focus = { current: string | null; subs: string[] };
+
+export async function getFocus(sb: SupabaseClient, uid: string): Promise<Focus> {
+  const { data } = await sb.from("user_skill_focus").select("node_id, priority").eq("user_id", uid).order("priority");
+  const ids = (data ?? []).map((r: any) => r.node_id as string);
+  return { current: ids[0] ?? null, subs: ids.slice(1) };
+}
+/** add / remove / promote / clear（サーバー側で1,2,3に再採番） */
+export async function focusOp(sb: SupabaseClient, action: "add" | "remove" | "promote" | "clear", nodeId?: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await sb.rpc("skill_focus_op", { p_node_id: nodeId ?? null, p_action: action });
+  if (error) return { ok: false, error: error.message.includes("focus_full") ? "full" : error.message };
+  return { ok: true };
+}
+
+const STAGE_ORDER: Record<string, number> = { learn: 0, practice: 1, prove: 2, check: 3 };
+/** 次に行動すべき未達成条件を1件：LEARN→PRACTICE→PROVE→CHECK、同stage内は達成に近いもの */
+export function pickQuestCond(n: NodeState): CondState | null {
+  const undone = n.conds.filter((c) => !c.done);
+  if (!undone.length) return null;
+  undone.sort((a, b) => {
+    const s = (STAGE_ORDER[a.stage] ?? 9) - (STAGE_ORDER[b.stage] ?? 9); if (s) return s;
+    const ra = a.threshold > 0 ? Math.min(a.current, a.threshold) / a.threshold : 0, rb = b.threshold > 0 ? Math.min(b.current, b.threshold) / b.threshold : 0;
+    if (rb !== ra) return rb - ra; return a.order_no - b.order_no;
+  });
+  return undone[0];
+}
+/** 条件→短いクエスト文 */
+export function questText(c: CondState | null): string {
+  if (!c) return "";
+  const left = Math.max(0, c.threshold - Math.min(c.current, c.threshold));
+  const p = c.param ?? "";
+  switch (c.type) {
+    case "report_days": return `あと日報${left}日！`;
+    case "experiments_created": return `あと実験${left}回！`;
+    case "experiments_reviewed": return `あと振り返り${left}回！`;
+    case "experiments_good": return `実験で「良くなった」あと${left}回！`;
+    case "experiments_ai": return `AIを使った実験あと${left}回！`;
+    case "experiments_ai_good": return `AI実験で「良くなった」あと${left}回！`;
+    case "experiments_from_fb": return "FBをもとに実験してみよう！";
+    case "sales_count": return `あと獲得${left}件！`;
+    case "personal_tasks_done": return `あと個人タスク${left}件！`;
+    case "routine_streak": return `ルーティンあと${left}日！`;
+    case "thanks_sent": return `サンキューあと${left}件送ろう！`;
+    case "thanks_received": return `サンキューあと${left}件もらおう！`;
+    case "fb_requested": return `FB依頼あと${left}回！`;
+    case "fb_responded": return `FB返信あと${left}件！`;
+    case "quests_issued": return `クエスト発行あと${left}件！`;
+    case "content_category": return `${p}の学習あと${left}本！`;
+    case "thinking_sessions": return `AI作戦会議あと${left}回！`;
+    case "skill_log_count": return `${p === "cause" ? "原因分析" : p === "hypothesis" ? "仮説" : "振り返り"}あと${left}回！`;
+    case "skill_exp": return `${p === "cause" ? "原因分析" : p === "hypothesis" ? "仮説思考" : p === "improve" ? "改善力" : "思考"}EXPあと${left}！`;
+    case "test_flag": case "script_test": case "any_of": return `${c.label.replace(/に合格$/, "").replace(/合格.*$/, "")}をクリアしよう！`;
+    case "journey_step": return `冒険マップSTEP${c.threshold}へ進もう！`;
+    case "rookie_block": return `一人前「${p}」をクリアしよう！`;
+    case "profile_filled": return "プロフィールを入力しよう！";
+    case "license": return "営業免許を取ろう！";
+    case "referral_hire": return `リファラル採用あと${left}人！`;
+    case "mentor_check": return "メンター認定を申請しよう！";
+    case "claim_approved": return "申告してみよう！";
+    default: return c.threshold > 1 ? `${c.label} あと${left}！` : `${c.label}！`;
+  }
+}
+/** 次の冒険候補（ルールベース、最大3） */
+export function nextQuestCandidates(r: EvalResult, excludeIds: string[], justUnlockedId?: string): { node: NodeState; reason: string }[] {
+  const out: { node: NodeState; reason: string }[] = [];
+  const ex = new Set(excludeIds);
+  const avail = r.nodes.filter((n) => n.status === "available" && !ex.has(n.id));
+  const push = (n: NodeState | undefined, reason: string) => { if (n && !out.some((o) => o.node.id === n.id)) out.push({ node: n, reason }); };
+  if (justUnlockedId) {
+    const j = r.nodes.find((n) => n.id === justUnlockedId);
+    if (j) push(avail.find((n) => n.category === j.category && n.order_no === j.order_no + 1), "今取ったスキルの次のステップ");
+  }
+  push([...avail].sort((a, b) => b.progress - a.progress)[0], "あと少しで解放できる");
+  const nearJob = r.jobs.filter((j) => j.is_obtainable && !j.unlocked).sort((a, b) => a.missing.length - b.missing.length)[0];
+  if (nearJob) push(avail.filter((n) => nearJob.missing.includes(n.id)).sort((a, b) => b.progress - a.progress)[0], `${nearJob.name}への最短ルート`);
+  return out.slice(0, 3);
+}
+/** 一番近いJOB（目標JOB表示用） */
+export function nearestJob(r: EvalResult): JobState | null {
+  return r.jobs.filter((j) => j.is_obtainable && !j.unlocked).sort((a, b) => a.missing.length - b.missing.length)[0] ?? r.jobs.find((j) => j.unlocked) ?? null;
+}

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import MentorQuestEvent from "../components/MentorQuestEvent";
 import MentorInboxBanner from "../components/MentorInboxBanner";
+import TodayQuestCard from "../components/TodayQuestCard";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import DotKun from "../components/DotKun";
@@ -363,6 +364,7 @@ export default function HomePage() {
     <>
     <MentorQuestEvent />
     <MentorInboxBanner />
+    <TodayQuestCard />
     <style>{`
       @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
       @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }

@@ -8,9 +8,11 @@ const STAGE: Record<string, { icon: string; label: string }> = {
 };
 const CAT_LABEL: Record<string, string> = { sales: "SALES", comm: "COMMUNICATION", think: "THINKING", mgmt: "MANAGEMENT", ai: "AI SKILL" };
 
-export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCheck, onClaim }: {
+export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCheck, onClaim, focusState, nextNode, onChallenge, onPromote, onRemoveFocus }: {
   node: NodeState; jobs: JobState[]; isMobile: boolean; onClose: () => void;
   onRequestCheck: (n: NodeState) => void; onClaim: (n: NodeState, text: string, url: string) => void;
+  focusState: "none" | "current" | "sub"; nextNode?: NodeState | null;
+  onChallenge: (n: NodeState) => void; onPromote: (n: NodeState) => void; onRemoveFocus: (n: NodeState) => void;
 }) {
   const [claimText, setClaimText] = useState(""); const [claimUrl, setClaimUrl] = useState("");
   const color = AREA_COLOR[node.category] ?? "#8b5cf6";
@@ -39,8 +41,9 @@ export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCh
       {node.status === "unlocked" ? (
         <div style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)", borderRadius: 14, padding: 14, textAlign: "center", marginBottom: 12 }}>
           <div style={{ fontSize: 26 }}>🎉</div>
-          <div style={{ fontWeight: 900, fontSize: 15 }}>UNLOCKED</div>
+          <div style={{ fontWeight: 900, fontSize: 15 }}>SKILL UNLOCKED</div>
           {node.unlocked_at && <div style={{ fontSize: 11, color: "#92400e" }}>{node.unlocked_at.slice(0, 10)} 取得</div>}
+          {nextNode && <div style={{ fontSize: 12, color: "#78350f", marginTop: 6 }}>次に繋がるスキル：{nextNode.icon} {nextNode.name}</div>}
         </div>
       ) : node.status === "locked" ? (
         <div style={{ fontSize: 12, color: "#b45309", background: "#fef3c7", borderRadius: 10, padding: "8px 12px", marginBottom: 12 }}>🔒 前のスキルを取得するとここに来られます</div>
@@ -64,6 +67,24 @@ export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCh
 
       {node.status === "available" && remaining > 0 && (
         <div style={{ textAlign: "center", fontWeight: 900, fontSize: 14, color, margin: "6px 0 10px" }}>あと {remaining} つで解放！</div>
+      )}
+      {node.status === "available" && focusState === "none" && (
+        <button onClick={() => onChallenge(node)} style={{ width: "100%", padding: 13, borderRadius: 14, border: "none", fontWeight: 900, fontSize: 14, cursor: "pointer", background: "linear-gradient(135deg,#fbbf24,#f59e0b)", color: "#fff", boxShadow: "0 6px 16px rgba(245,158,11,.4)", marginBottom: 8 }}>🎯 このスキルに挑戦する</button>
+      )}
+      {node.status !== "unlocked" && focusState === "current" && (
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ textAlign: "center", background: "linear-gradient(135deg,#fef3c7,#fde68a)", borderRadius: 12, padding: "8px 10px", fontWeight: 900, color: "#92400e", fontSize: 13 }}>🎯 CURRENT QUEST ・ 挑戦中</div>
+          <button onClick={() => onRemoveFocus(node)} style={{ width: "100%", marginTop: 6, padding: 9, borderRadius: 12, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>挑戦をやめる</button>
+        </div>
+      )}
+      {node.status !== "unlocked" && focusState === "sub" && (
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ textAlign: "center", background: "#fef9c3", borderRadius: 12, padding: "8px 10px", fontWeight: 900, color: "#a16207", fontSize: 13 }}>🎯 SUB QUEST</div>
+          <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            <button onClick={() => onPromote(node)} style={{ flex: 1, padding: 10, borderRadius: 12, border: "none", background: "linear-gradient(135deg,#fbbf24,#f59e0b)", color: "#fff", fontWeight: 900, fontSize: 13, cursor: "pointer" }}>メインに設定</button>
+            <button onClick={() => onRemoveFocus(node)} style={{ flex: 1, padding: 10, borderRadius: 12, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>挑戦をやめる</button>
+          </div>
+        </div>
       )}
 
       {node.status !== "unlocked" && needsCheck && (

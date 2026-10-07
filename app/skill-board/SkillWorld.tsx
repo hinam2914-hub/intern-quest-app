@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { EvalResult, NodeState, JobState } from "../lib/skills";
+import { pickQuestCond, questText, type EvalResult, type NodeState, type JobState, type Focus } from "../lib/skills";
 import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, pt, curve, type Pt } from "./world";
 
 type Cam = { x: number; y: number; s: number };
@@ -34,8 +34,10 @@ function House({ x, y, roof = "#ef4444", w = 36 }: { x: string | number; y: stri
   </div>);
 }
 
-export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo }: {
+export type Walk = { key: number; from: Pt; to: Pt };
+export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd }: {
   res: EvalResult; avatarId: string | null; selectedId: string | null; onSelect: (n: NodeState | null) => void; focusTo?: { key: number; target: Pt };
+  focus: Focus; locNodeId: string | null; walk: Walk | null; onWalkEnd?: () => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [cam, setCam] = useState<Cam>({ x: 0, y: 0, s: 1 });
@@ -47,12 +49,28 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const unlockedByCat: Record<string, number> = {};
   res.nodes.forEach((n) => { if (n.status === "unlocked") unlockedByCat[n.category] = (unlockedByCat[n.category] ?? 0) + 1; });
 
-  const lastUnlocked = [...res.nodes].filter((n) => n.status === "unlocked" && n.unlocked_at).sort((a, b) => (b.unlocked_at! > a.unlocked_at! ? 1 : -1))[0];
-  const avatarAt: Pt = lastUnlocked ? NODE_POS[lastUnlocked.id] : START;
-  const nextBest = res.nodes.filter((n) => n.status === "available").sort((a, b) => b.progress - a.progress)[0];
-  const nextCond = nextBest?.conds.find((c) => !c.done);
+  const homePos: Pt = locNodeId && NODE_POS[locNodeId] ? NODE_POS[locNodeId] : START;
+  // 歩行：world座標上で2次ベジェを補間（パン・ズームの影響を受けない）
+  const [avatarAt, setAvatarAt] = useState<Pt>(homePos);
+  const [walking, setWalking] = useState(false);
+  useEffect(() => { if (!walking) setAvatarAt(homePos); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [homePos.x, homePos.y]);
+  useEffect(() => {
+    if (!walk) return;
+    const a = walk.from, b = walk.to, c = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 30 };
+    const dur = 1600; const t0 = performance.now(); setWalking(true); let raf = 0;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / dur); const e = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      setAvatarAt({ x: (1 - e) * (1 - e) * a.x + 2 * (1 - e) * e * c.x + e * e * b.x, y: (1 - e) * (1 - e) * a.y + 2 * (1 - e) * e * c.y + e * e * b.y });
+      if (t < 1) raf = requestAnimationFrame(step); else { setWalking(false); onWalkEnd?.(); }
+    };
+    raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walk?.key]);
+  const currentNode = focus.current ? res.nodes.find((n) => n.id === focus.current) ?? null : null;
+  const nextBest = currentNode ?? res.nodes.filter((n) => n.status === "available").sort((a, b) => b.progress - a.progress)[0];
   const nextPos = nextBest ? NODE_POS[nextBest.id] : null;
-  const bubble = nextCond ? (nextCond.threshold > 1 ? `${nextCond.label} あと${nextCond.threshold - Math.min(nextCond.current, nextCond.threshold)}！` : `${nextCond.label}で解放！`) : nextBest ? `次は「${nextBest.name}」` : "";
+  const bubble = nextBest ? (questText(pickQuestCond(nextBest)) || `次は「${nextBest.name}」`) : "";
 
   function clamp(c: Cam): Cam { const minX = vp.w - WORLD_W * c.s, minY = vp.h - WORLD_H * c.s; return { s: c.s, x: Math.min(0, Math.max(minX, c.x)), y: Math.min(0, Math.max(minY, c.y)) }; }
   function centerOn(p: Pt, s?: number) { const sc = s ?? cam.s; setCam(clamp({ s: sc, x: vp.w / 2 - p.x * sc, y: vp.h / 2 - p.y * sc })); }
@@ -60,7 +78,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   useEffect(() => { const el = wrapRef.current; if (!el) return; const ro = new ResizeObserver(() => setVp({ w: el.clientWidth, h: el.clientHeight })); ro.observe(el); setVp({ w: el.clientWidth, h: el.clientHeight }); return () => ro.disconnect(); }, []);
   useEffect(() => { // 初期構図：アバターと次の目的地の間
     const s = vp.w < 640 ? 1.15 : Math.min(1.35, Math.max(1.0, vp.w / 1300));
-    const t = nextPos ? { x: avatarAt.x * 0.6 + nextPos.x * 0.4, y: avatarAt.y * 0.6 + nextPos.y * 0.4 } : avatarAt;
+    const t = nextPos ? { x: homePos.x * 0.6 + nextPos.x * 0.4, y: homePos.y * 0.6 + nextPos.y * 0.4 } : homePos;
     setCam(clamp({ s, x: vp.w / 2 - t.x * s, y: vp.h / 2 - t.y * s + 40 }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vp.w, vp.h]);
@@ -210,7 +228,8 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
         {/* 道 */}
         <svg width={WORLD_W} height={WORLD_H} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
           {roadEls}
-          {nextPos && <path d={curve(avatarAt, nextPos)} fill="none" stroke="#fff" strokeWidth={4} strokeDasharray="2 14" strokeLinecap="round" opacity={0.95} style={{ animation: "swSteps 1.2s linear infinite", filter: "drop-shadow(0 0 4px rgba(251,191,36,.9))" }} />}
+          {nextPos && currentNode && <path d={curve(homePos, nextPos)} fill="none" stroke="#fbbf24" strokeWidth={12} strokeLinecap="round" opacity={0.55} style={{ filter: "drop-shadow(0 0 10px rgba(251,191,36,.9))" }} />}
+          {nextPos && <path d={curve(homePos, nextPos)} fill="none" stroke="#fff" strokeWidth={4} strokeDasharray="2 14" strokeLinecap="round" opacity={0.95} style={{ animation: "swSteps 1.2s linear infinite", filter: "drop-shadow(0 0 4px rgba(251,191,36,.9))" }} />}
         </svg>
 
         {/* START 村 */}
@@ -232,8 +251,13 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           const u = n.status === "unlocked", a = n.status === "available";
           const key = n.kind === "key"; const lm = key ? 66 : 42; const w = key ? 120 : 90; const sel = selectedId === n.id;
           const props = PROPS[n.category] ?? [];
+          const isCur = focus.current === n.id, isSub = focus.subs.includes(n.id);
           return (
-            <div key={n.id} onClick={() => clickNode(n)} style={{ position: "absolute", left: p.x - w / 2, top: p.y - lm - 22, width: w, cursor: "pointer", zIndex: sel ? 20 : 10, transition: "transform .2s", transform: sel ? "scale(1.12)" : "none", textAlign: "center" }}>
+            <div key={n.id} onClick={() => clickNode(n)} style={{ position: "absolute", left: p.x - w / 2, top: p.y - lm - 22, width: w, cursor: "pointer", zIndex: sel ? 20 : isCur ? 12 : 10, transition: "transform .2s", transform: sel ? "scale(1.12)" : "none", textAlign: "center" }}>
+              {isCur && <div style={{ position: "absolute", left: "50%", top: "40%", width: w + 60, height: w + 60, marginLeft: -(w + 60) / 2, marginTop: -(w + 60) / 2, borderRadius: "50%", background: "radial-gradient(circle, rgba(251,191,36,.35), rgba(251,191,36,0) 65%)", pointerEvents: "none" }} />}
+              {isCur && <div style={{ position: "absolute", left: "50%", top: "40%", width: w + 14, height: w + 14, marginLeft: -(w + 14) / 2, marginTop: -(w + 14) / 2, borderRadius: "50%", border: "4px dashed #fbbf24", animation: "swSpin 8s linear infinite", pointerEvents: "none", boxShadow: "0 0 16px rgba(251,191,36,.7)" }} />}
+              {(isCur || isSub) && <div style={{ position: "absolute", top: -34, left: "50%", transform: "translateX(-50%)", fontSize: isCur ? 26 : 18, zIndex: 3, animation: "swBounce 1.4s ease-in-out infinite", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.3))" }}>🎯</div>}
+              {isCur && <div style={{ position: "absolute", top: -52, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#92400e", background: "#fde68a", borderRadius: 6, padding: "1px 6px", whiteSpace: "nowrap", zIndex: 3 }}>CURRENT QUEST</div>}
               {!fog && <div style={{ position: "absolute", left: -14, bottom: 18, fontSize: 16, opacity: 0.9 }}>{props[(n.order_no - 1) % props.length]}</div>}
               {!fog && !key && <div style={{ position: "absolute", right: -12, bottom: 30, fontSize: 13, opacity: 0.85 }}>{props[(n.order_no + 2) % props.length]}</div>}
               {a && !fog && <div style={{ position: "absolute", top: -22, left: "50%", transform: "translateX(-50%)", fontSize: 20, fontWeight: 900, color: "#ef4444", animation: "swBounce 1s ease-in-out infinite", textShadow: "0 0 6px #fff, 0 0 2px #fff" }}>！</div>}
@@ -326,6 +350,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
         @keyframes swBird{0%{transform:translateX(-80px)}100%{transform:translateX(2100px)}}
         @keyframes swFlow{to{stroke-dashoffset:-70}}
         @keyframes swSteps{to{stroke-dashoffset:-32}}
+        @keyframes swSpin{to{transform:rotate(360deg)}}
       `}</style>
     </div>
   );
