@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import IslandHero from "../../components/IslandHero";
+import SkillBoardCard from "../../components/SkillBoardCard";
 
 type Profile = {
     id: string;
@@ -360,6 +361,7 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
+                <SkillBoardCard userId={String(params.id)} />
                 {/* THINKING SKILLS */}
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 16, marginBottom: 20 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#d1d5db" }}>🧠 THINKING SKILLS</div>
