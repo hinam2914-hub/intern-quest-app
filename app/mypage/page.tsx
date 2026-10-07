@@ -8,6 +8,7 @@ import { calculateSibyl, getMbtiColor, calculateGrowthCourse } from "../lib/siby
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
 import { AnimatePresence, motion } from "framer-motion";
 import DotKun from "../components/DotKun";
+import SkillBoardCard from "../components/SkillBoardCard";
 
 type PointHistory = {
     id?: string;
@@ -2077,6 +2078,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                     <div style={{ fontSize: 40, flexShrink: 0 }}>🎁</div>
                 </div>
+                <SkillBoardCard />
                 {/* ===== 努力ランクカード（モック準拠） ===== */}
                 {(() => {
                     const AXES = [
