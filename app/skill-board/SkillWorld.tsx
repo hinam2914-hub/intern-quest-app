@@ -90,7 +90,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
 
   return (
     <div ref={wrapRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-      style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: drag.current ? "grabbing" : "grab", touchAction: "none", background: sky, userSelect: "none" }}>
+      style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: drag.current ? "grabbing" : "grab", touchAction: "none", background: sky, userSelect: "none", fontFamily: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif' }}>
 
       {/* ===== 遠景レイヤー（パララックス 0.35x） ===== */}
       <div style={{ position: "absolute", left: 0, top: 0, width: WORLD_W, height: WORLD_H, transform: `translate(${cam.x * 0.35}px,${cam.y * 0.35}px)`, pointerEvents: "none" }}>
@@ -109,21 +109,21 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
         {/* 気球・鳥 */}
         <div style={{ position: "absolute", left: 500, top: 80, fontSize: 46, animation: "swBalloon 14s ease-in-out infinite alternate", filter: "drop-shadow(0 6px 6px rgba(0,0,0,.15))" }}>🎈</div>
         <div style={{ position: "absolute", left: 1300, top: 640, fontSize: 36, animation: "swBalloon 18s ease-in-out infinite alternate-reverse", filter: "drop-shadow(0 6px 6px rgba(0,0,0,.15))" }}>🪂</div>
-        {[0, 1, 2].map((i) => <div key={i} style={{ position: "absolute", left: 0, top: 120 + i * 260, fontSize: 14, color: "#4b6a8a", animation: `swBird ${40 + i * 15}s linear infinite`, animationDelay: `${-i * 12}s`, opacity: 0.7 }}>〰️</div>)}
+        {[0, 1, 2].map((i) => <div key={i} style={{ position: "absolute", left: 0, top: 120 + i * 260, fontSize: 16, animation: `swBird ${40 + i * 15}s linear infinite`, animationDelay: `${-i * 12}s`, opacity: 0.8 }}>🕊️</div>)}
       </div>
 
       {/* 近景の雲（画面固定） */}
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} style={{ position: "absolute", top: `${6 + i * 22}%`, left: 0, width: 150 + i * 30, height: 42 + i * 6, background: "rgba(255,255,255,.85)", borderRadius: 999, filter: "blur(2px)", animation: `swCloud ${80 + i * 25}s linear infinite`, animationDelay: `${-i * 23}s`, pointerEvents: "none", boxShadow: "36px -16px 0 -4px rgba(255,255,255,.75), 74px 0 0 -2px rgba(255,255,255,.8)", opacity: 0.9, zIndex: 2 }} />
+        <div key={i} style={{ position: "absolute", top: `${6 + i * 22}%`, left: 0, width: 150 + i * 30, height: 42 + i * 6, background: "rgba(255,255,255,.85)", borderRadius: 999, filter: "blur(2px)", animation: `swCloud ${80 + i * 25}s linear infinite`, animationDelay: `${-i * 23}s`, pointerEvents: "none", boxShadow: "36px -16px 0 -4px rgba(255,255,255,.75), 74px 0 0 -2px rgba(255,255,255,.8)", opacity: 0.55, zIndex: 0 }} />
       ))}
 
       {/* ===== ワールド本体 ===== */}
-      <div style={{ position: "absolute", left: 0, top: 0, width: WORLD_W, height: WORLD_H, transform: `translate(${cam.x}px,${cam.y}px) scale(${cam.s})`, transformOrigin: "0 0", willChange: "transform" }}>
+      <div style={{ position: "absolute", left: 0, top: 0, width: WORLD_W, height: WORLD_H, transform: `translate(${cam.x}px,${cam.y}px) scale(${cam.s})`, transformOrigin: "0 0", willChange: "transform", zIndex: 1 }}>
 
         {/* 川（THINKINGの湖 → 下へ） */}
         <svg width={WORLD_W} height={WORLD_H} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
-          <path d="M 860 780 C 900 900, 1060 940, 1120 1000 C 1160 1050, 1130 1200, 1150 1400" fill="none" stroke="#9ed7f7" strokeWidth={26} strokeLinecap="round" opacity={0.9} />
-          <path d="M 860 780 C 900 900, 1060 940, 1120 1000 C 1160 1050, 1130 1200, 1150 1400" fill="none" stroke="#dff4ff" strokeWidth={6} strokeDasharray="30 40" strokeLinecap="round" opacity={0.9} style={{ animation: "swFlow 3s linear infinite" }} />
+          <path d="M 860 780 C 900 900, 1060 940, 1120 1000 C 1160 1050, 1140 1120, 1145 1180" fill="none" stroke="#9ed7f7" strokeWidth={26} strokeLinecap="round" opacity={0.9} />
+          <path d="M 860 780 C 900 900, 1060 940, 1120 1000 C 1160 1050, 1140 1120, 1145 1180" fill="none" stroke="#dff4ff" strokeWidth={6} strokeDasharray="30 40" strokeLinecap="round" opacity={0.9} style={{ animation: "swFlow 3s linear infinite" }} />
         </svg>
 
         {/* エリア地形 */}
@@ -239,7 +239,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
         })}
 
         {/* アバター（主役） */}
-        <div style={{ position: "absolute", left: avatarAt.x - 46, top: avatarAt.y - 128, width: 92, zIndex: 30, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", left: avatarAt.x - 46 - 64, top: avatarAt.y - 118, width: 92, zIndex: 30, pointerEvents: "none" }}>
           <div style={{ position: "absolute", left: 6, right: 6, bottom: -4, height: 30, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(251,191,36,.75), rgba(251,191,36,0) 70%)", animation: "swGlow 1.8s ease-in-out infinite alternate" }} />
           <div style={{ position: "absolute", left: 22, right: 22, bottom: 4, height: 12, borderRadius: "50%", background: "rgba(0,0,0,.22)", filter: "blur(3px)" }} />
           {nextBest && (
