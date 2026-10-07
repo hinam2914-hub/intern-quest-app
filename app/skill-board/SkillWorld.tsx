@@ -113,15 +113,16 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   function centerOn(p: Pt, s?: number) { const sc = s ?? cam.s; setCam(clamp({ s: sc, x: vp.w / 2 - p.x * sc, y: vp.h / 2 - p.y * sc })); }
   useEffect(() => { const el = wrapRef.current; if (!el) return; const ro = new ResizeObserver(() => setVp({ w: el.clientWidth, h: el.clientHeight })); ro.observe(el); setVp({ w: el.clientWidth, h: el.clientHeight }); return () => ro.disconnect(); }, []);
   useEffect(() => {
-    const s = vp.w < 640 ? 1.25 : Math.min(1.5, Math.max(1.15, vp.w / 1150));
+    const s = vp.w < 640 ? 1.3 : Math.min(2.0, Math.max(1.5, vp.w / 850));
     const k = vp.w < 640 ? 0.88 : 0.65;
-    const t = nextPos ? { x: homePos.x * k + nextPos.x * (1 - k), y: homePos.y * k + nextPos.y * (1 - k) } : homePos;
+    const av = { x: homePos.x - 74, y: homePos.y - 60 };
+    const t = nextPos ? { x: av.x * k + nextPos.x * (1 - k), y: av.y * k + nextPos.y * (1 - k) } : av;
     setCam(clamp({ s, x: vp.w / 2 - t.x * s, y: vp.h / 2 - t.y * s + 30 }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vp.w, vp.h]);
   useEffect(() => { if (focusTo) centerOn(focusTo.target); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusTo?.key]);
-  const minS = Math.max(0.42, Math.max(vp.w / WORLD_W, vp.h / WORLD_H));
+  const minS = Math.max(0.4, Math.max(vp.w / WORLD_W, vp.h / WORLD_H));
   function onPointerDown(e: React.PointerEvent) { if (pinch.current) return; drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false }; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); }
   function onPointerMove(e: React.PointerEvent) { if (!drag.current) return; const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y; if (Math.abs(dx) + Math.abs(dy) > 4) drag.current.moved = true; setCam(clamp({ s: cam.s, x: drag.current.cx + dx, y: drag.current.cy + dy })); }
   function onPointerUp() { setTimeout(() => { drag.current = null; }, 0); }
@@ -161,13 +162,15 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
     const a = pt(r.from), b = pt(r.to); const lit = r.from === "START" || byId.get(r.from)?.status === "unlocked";
     const d = curve(a, b, r.via); const air = r.to.startsWith("ai");
     if (air) { roadEls.push(<path key={`l${i}`} d={d} fill="none" stroke="#c4b5fd" strokeWidth={6} strokeDasharray="4 16" strokeLinecap="round" opacity={0.7} />); return; }
-    roadEls.push(<path key={`l${i}`} d={d} fill="none" stroke="#b98a5a" strokeWidth={20} strokeLinecap="round" opacity={0.85} />);
-    roadEls.push(<path key={`lt${i}`} d={d} fill="none" stroke={lit ? "#fde68a" : "#e9c99a"} strokeWidth={12} strokeLinecap="round" opacity={0.95} />);
+    const mountain = r.to.startsWith("mgmt");
+    roadEls.push(<path key={`l${i}`} d={d} fill="none" stroke={mountain ? "#8c8c8c" : "#b98a5a"} strokeWidth={mountain ? 24 : 20} strokeLinecap="round" opacity={0.9} />);
+    roadEls.push(<path key={`lt${i}`} d={d} fill="none" stroke={lit ? "#fde68a" : mountain ? "#e5e7eb" : "#e9c99a"} strokeWidth={mountain ? 14 : 12} strokeLinecap="round" opacity={0.95} />);
+    if (mountain) roadEls.push(<path key={`ls${i}`} d={d} fill="none" stroke="#9ca3af" strokeWidth={14} strokeDasharray="4 12" strokeLinecap="butt" opacity={0.6} />);
   });
   res.jobs.forEach((j) => {
     const jp = JOB_POS[j.id]; if (!jp) return;
     j.requires.forEach((rid) => { const a = NODE_POS[rid]; if (!a) return; const lit = byId.get(rid)?.status === "unlocked";
-      roadEls.push(<path key={`j${j.id}${rid}`} d={curve(a, jp)} fill="none" stroke={lit ? "#fbbf24" : "#fde68a"} strokeWidth={lit ? 5 : 2.5} strokeDasharray={lit ? undefined : "4 10"} strokeLinecap="round" opacity={lit ? 0.95 : j.is_obtainable ? 0.45 : 0.2} style={lit ? { filter: "drop-shadow(0 0 6px rgba(251,191,36,.9))" } : undefined} />); });
+      roadEls.push(<path key={`j${j.id}${rid}`} d={curve(a, jp)} fill="none" stroke={lit ? "#fbbf24" : "#fde68a"} strokeWidth={lit ? 5 : 2.5} strokeDasharray={lit ? undefined : "4 10"} strokeLinecap="round" opacity={lit ? 0.9 : j.is_obtainable ? 0.3 : 0.15} style={lit ? { filter: "drop-shadow(0 0 6px rgba(251,191,36,.9))" } : undefined} />); });
   });
 
   /* 足跡（CURRENT QUEST へ） */
@@ -271,6 +274,25 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           {/* 橋（comm→sales の川越え） */}
           <rect x="1086" y="1056" width="60" height="22" rx="4" fill="#c48a4b" stroke="#8a5a2b" strokeWidth="3" />
           {[0, 1, 2, 3, 4].map((i) => <line key={i} x1={1092 + i * 12} y1="1056" x2={1092 + i * 12} y2="1078" stroke="#8a5a2b" strokeWidth="2" />)}
+          {/* THINKING→MANAGEMENT：山道の石橋と坂 */}
+          <ellipse cx="1210" cy="665" rx="120" ry="48" fill="url(#high)" opacity=".9" />
+          <path d="M 1150 690 Q 1210 640 1270 612" fill="none" stroke="#a8a29e" strokeWidth="34" strokeLinecap="round" />
+          <path d="M 1150 690 Q 1210 640 1270 612" fill="none" stroke="#e7e5e4" strokeWidth="22" strokeLinecap="round" />
+          <path d="M 1160 700 Q 1210 660 1262 625" fill="none" stroke="#a8a29e" strokeWidth="4" strokeDasharray="10 8" />
+          <path d="M 1168 714 Q 1210 690 1252 652" fill="none" stroke="#a8a29e" strokeWidth="6" opacity=".7" />
+          {[0, 1, 2].map((i) => <ellipse key={"arch" + i} cx={1180 + i * 32} cy={686 - i * 18} rx="9" ry="12" fill="#78716c" opacity=".5" />)}
+          {[0, 1, 2, 3, 4].map((i) => <rect key={"ramp" + i} x={1266 + i * 14} y={606 - i * 11} width="30" height="7" rx="2" fill="#e5e7eb" stroke="#94a3b8" strokeWidth="1.5" />)}
+          {/* 街灯（SALES の街道沿い） */}
+          {[1120, 1250, 1400, 1560, 1700, 1850].map((x, i) => <g key={"lamp" + i}><rect x={x - 2} y={1020 + (i % 2) * 90} width="4" height="34" fill="#475569" /><circle cx={x} cy={1016 + (i % 2) * 90} r="6" fill="#fde68a" stroke="#475569" strokeWidth="2" style={{ filter: "drop-shadow(0 0 6px #fbbf24)" }} /></g>)}
+          {/* 郊外：村→街のあいだ（石畳が薄れる） */}
+          <ellipse cx="1060" cy="1095" rx="120" ry="110" fill="url(#cobble)" opacity=".25" />
+          {/* 気球乗り場（THINKING→空へ） */}
+          <ellipse cx="400" cy="606" rx="70" ry="34" fill="url(#grass)" />
+          <ellipse cx="400" cy="600" rx="40" ry="16" fill="#d6b48a" stroke="#8a5a2b" strokeWidth="3" />
+          <rect x="386" y="572" width="28" height="22" rx="4" fill="#b9834a" stroke="#8a5a2b" strokeWidth="2" />
+          <line x1="390" y1="572" x2="378" y2="540" stroke="#8a5a2b" strokeWidth="2" /><line x1="410" y1="572" x2="422" y2="540" stroke="#8a5a2b" strokeWidth="2" />
+          <ellipse cx="400" cy="518" rx="30" ry="34" fill="#f87171" /><path d="M 370 518 a30 34 0 0 1 60 0" fill="#fbbf24" opacity=".8" /><path d="M 385 484 a15 34 0 0 1 30 0 L 400 552 Z" fill="#fff" opacity=".5" />
+          <rect x="358" y="610" width="84" height="18" rx="4" fill="#fff" stroke="#8a5a2b" strokeWidth="2" /><text x="400" y="623" textAnchor="middle" fontSize="10" fontWeight="900" fill="#8a5a2b">🎈 空へ</text>
           {/* 柵（COMM） */}
           <path d="M 240 1215 H 1100" stroke="#c48a4b" strokeWidth="4" />
           {[...Array(30)].map((_, i) => <rect key={i} x={244 + i * 29} y="1206" width="5" height="18" fill="#c48a4b" />)}
@@ -347,13 +369,13 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             <div key={n.id} onClick={() => clickNode(n)} style={{ position: "absolute", left: p.x - w / 2, top: p.y - lmH - 18, width: w, cursor: "pointer", zIndex: sel ? 20 : isCur ? 12 : 10, transition: "transform .2s", transform: sel ? "scale(1.1)" : "none", textAlign: "center" }}>
               {/* CURRENT QUEST：光柱・リング・キラキラ */}
               {isCur && <>
-                <div style={{ position: "absolute", left: "50%", bottom: 8, width: 70, height: 240, marginLeft: -35, background: "linear-gradient(180deg, rgba(251,191,36,0) 0%, rgba(251,191,36,.35) 60%, rgba(251,191,36,.6) 100%)", filter: "blur(6px)", pointerEvents: "none", animation: "swGlow 2s ease-in-out infinite alternate" }} />
+                <div style={{ position: "absolute", left: "50%", bottom: 8, width: 84, height: 320, marginLeft: -42, background: "linear-gradient(180deg, rgba(251,191,36,0) 0%, rgba(253,224,71,.45) 55%, rgba(251,191,36,.75) 100%)", filter: "blur(5px)", pointerEvents: "none", animation: "swGlow 2s ease-in-out infinite alternate" }} />
                 <div style={{ position: "absolute", left: "50%", bottom: 6, width: w + 40, height: 30, marginLeft: -(w + 40) / 2, borderRadius: "50%", border: "4px solid #fbbf24", boxShadow: "0 0 18px #fbbf24, inset 0 0 18px rgba(251,191,36,.6)", pointerEvents: "none", animation: "swPulse 2s ease-in-out infinite" }} />
                 {[0, 1, 2, 3].map((i) => <div key={i} style={{ position: "absolute", left: 8 + i * 28, top: -10 + (i % 2) * 30, fontSize: 12, animation: `swTwinkle ${1 + i * 0.3}s ease-in-out infinite alternate` }}>✨</div>)}
                 <div style={{ position: "absolute", top: -62, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#92400e", background: "#fde68a", borderRadius: 6, padding: "1px 6px", whiteSpace: "nowrap", zIndex: 3 }}>CURRENT QUEST</div>
               </>}
               {(isCur || isSub) && <div style={{ position: "absolute", top: -44, left: "50%", transform: "translateX(-50%)", fontSize: isCur ? 28 : 18, zIndex: 3, animation: "swBounce 1.4s ease-in-out infinite", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.3))" }}>🎯</div>}
-              {a && !fog && !isCur && <div style={{ position: "absolute", top: -30, left: "50%", transform: "translateX(-50%)", fontSize: 20, fontWeight: 900, color: "#ef4444", animation: "swBounce 1s ease-in-out infinite", textShadow: "0 0 6px #fff, 0 0 2px #fff" }}>！</div>}
+              {a && !fog && !isCur && <div style={{ position: "absolute", top: -30, left: "50%", transform: "translateX(-50%)", fontSize: 16, fontWeight: 900, color: "#ef4444", animation: "swBounce 1s ease-in-out infinite", textShadow: "0 0 6px #fff, 0 0 2px #fff" }}>！</div>}
               {u && <div style={{ position: "absolute", top: -6, right: 4, fontSize: 18, zIndex: 2, animation: "swFlag 1s ease-in-out infinite alternate" }}>🚩</div>}
               {/* 足元 */}
               <div style={{ position: "absolute", left: "12%", right: "12%", bottom: 10, height: key ? 28 : 20, borderRadius: "50%", background: u ? `radial-gradient(ellipse, ${color}99, ${color}11)` : a ? `radial-gradient(ellipse, ${color}55, transparent 70%)` : "rgba(60,60,80,.18)", filter: "blur(2px)", animation: a && !fog && !isCur ? "swPulse 2s ease-in-out infinite" : undefined }} />
@@ -362,8 +384,12 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
                 {fog ? <div style={{ fontSize: 40 }}>☁️</div> : lm.img ? <img src={lm.img} alt="" style={{ width: (lm.w ?? 70) * (key ? 1.15 : 1), display: "block" }} /> : lm.svg ? <LmSvg kind={lm.svg} color={color} size={key ? 64 : 48} /> : <div style={{ fontSize: 40 }}>{n.icon}</div>}
                 {!fog && (lm.badge || !lm.img) && <span style={{ position: "absolute", right: 4, top: 6, width: 24, height: 24, borderRadius: 12, background: u ? color : "#fff", border: `2px solid ${u ? "#fff" : color}`, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 5px rgba(0,0,0,.2)" }}>{lm.badge ?? n.icon}</span>}
               </div>
-              <div style={{ marginTop: 4, whiteSpace: "nowrap" }}>
-                <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 10, background: u ? color : fog ? "rgba(255,255,255,.6)" : "rgba(255,255,255,.95)", color: u ? "#fff" : fog ? "#94a3b8" : "#1e293b", fontSize: key ? 12.5 : 11.5, fontWeight: 900, boxShadow: "0 2px 6px rgba(0,0,0,.18)", border: key && !u ? `2px solid ${color}` : "2px solid rgba(255,255,255,.9)" }}>{fog ? "？？？" : n.name}</span>
+              <div style={{ marginTop: 2, whiteSpace: "nowrap" }}>
+                {isCur || sel ? (
+                  <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fef3c7)", color: "#1e293b", fontSize: 13, fontWeight: 900, boxShadow: "0 3px 8px rgba(0,0,0,.2)", border: "2px solid #fbbf24" }}>{fog ? "？？？" : n.name}</span>
+                ) : (
+                  <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: fog ? "#b9a68a" : u ? "#8a5a2b" : "#a8713a", color: fog ? "#efe6d6" : "#fff7e6", fontSize: key ? 10.5 : 9.5, fontWeight: 800, boxShadow: "0 2px 3px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.25)", border: "1.5px solid #6b4423", opacity: fog ? 0.7 : n.status === "locked" ? 0.75 : 1, letterSpacing: 0.3 }}>{fog ? "？？？" : n.name}</span>
+                )}
               </div>
             </div>
           );
