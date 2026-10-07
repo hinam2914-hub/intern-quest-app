@@ -40,7 +40,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
     return () => ro.disconnect();
   }, []);
   useEffect(() => { // 初回：アバターにセンタリング
-    const s = vp.w < 640 ? 0.75 : 1;
+    const s = vp.w < 640 ? 0.8 : Math.min(1.8, Math.max(1, vp.w / 1000));
     setCam(clamp({ s, x: vp.w / 2 - avatarAt.x * s, y: vp.h / 2 - avatarAt.y * s + 60 }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vp.w, vp.h]);
@@ -61,7 +61,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   }
   function onPointerUp() { setTimeout(() => { drag.current = null; }, 0); }
   function onWheel(e: React.WheelEvent) {
-    const ns = Math.min(1.6, Math.max(0.5, cam.s * (e.deltaY > 0 ? 0.9 : 1.1)));
+    const ns = Math.min(2.0, Math.max(0.5, cam.s * (e.deltaY > 0 ? 0.9 : 1.1)));
     const rect = wrapRef.current!.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
     const wx = (mx - cam.x) / cam.s, wy = (my - cam.y) / cam.s;
@@ -73,7 +73,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   function onTouchMove(e: React.TouchEvent) {
     if (e.touches.length === 2 && pinch.current) {
       const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      const ns = Math.min(1.6, Math.max(0.5, pinch.current.s * (d / pinch.current.d)));
+      const ns = Math.min(2.0, Math.max(0.5, pinch.current.s * (d / pinch.current.d)));
       const rect = wrapRef.current!.getBoundingClientRect();
       const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left, my = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
       const wx = (mx - cam.x) / cam.s, wy = (my - cam.y) / cam.s;
@@ -147,7 +147,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
               {/* 看板 */}
               <div style={{ position: "absolute", left: 24, top: 10, padding: "4px 12px", borderRadius: 10, background: "rgba(255,255,255,.85)", border: `2px solid ${AREA_COLOR[a.key]}`, fontSize: 11, fontWeight: 900, letterSpacing: 1, color: AREA_COLOR[a.key], boxShadow: "0 3px 8px rgba(0,0,0,.12)", whiteSpace: "nowrap" }}>{a.emoji} {a.label}</div>
               {/* 未探索の霞 */}
-              {!explored && <div style={{ position: "absolute", left: "34%", right: -20, top: -30, bottom: -30, background: "radial-gradient(ellipse at 70% 50%, rgba(255,255,255,.95) 0%, rgba(255,255,255,.85) 55%, rgba(255,255,255,0) 100%)", pointerEvents: "none" }} />}
+              {!explored && <div style={{ position: "absolute", left: "36%", right: "-4%", top: "-18%", bottom: "-18%", borderRadius: "50%", background: "radial-gradient(ellipse at 60% 50%, rgba(255,255,255,.96) 0%, rgba(255,255,255,.85) 50%, rgba(255,255,255,0) 72%)", filter: "blur(10px)", pointerEvents: "none" }} />}
             </div>
           );
         })}
