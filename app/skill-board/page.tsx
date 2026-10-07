@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { evaluateUser, syncUnlocks, requestCheck, getFocus, focusOp, nextQuestCandidates, questText, pickQuestCond, type EvalResult, type NodeState, type Focus } from "../lib/skills";
 import SkillWorld, { type Walk } from "./SkillWorld";
@@ -11,7 +11,6 @@ type Celebration = { id?: string; title: string; sub: string; icon: string; key:
 
 export default function SkillBoardPage() {
   const router = useRouter();
-  const sp = useSearchParams();
   const [uid, setUid] = useState<string | null>(null);
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [res, setRes] = useState<EvalResult | null>(null);
@@ -56,7 +55,7 @@ export default function SkillBoardPage() {
     setRes(r);
     const f = newNodes.length ? await getFocus(supabase, user.id) : await refreshFocus(user.id, r);
     if (newNodes.length) setFocus(f);
-    if (initial && sp.get("focus") === "1" && f.current && NODE_POS[f.current]) setTimeout(() => setFocusTo({ key: Date.now(), target: NODE_POS[f.current!] }), 50);
+    if (initial && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("focus") === "1" && f.current && NODE_POS[f.current]) setTimeout(() => setFocusTo({ key: Date.now(), target: NODE_POS[f.current!] }), 50);
     if (sel) setSel(r.nodes.find((n) => n.id === sel.id) ?? null);
   }
   useEffect(() => { load(true); const f = () => setIsMobile(window.innerWidth < 640); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); // eslint-disable-next-line react-hooks/exhaustive-deps
