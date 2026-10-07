@@ -59,7 +59,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
 
   useEffect(() => { const el = wrapRef.current; if (!el) return; const ro = new ResizeObserver(() => setVp({ w: el.clientWidth, h: el.clientHeight })); ro.observe(el); setVp({ w: el.clientWidth, h: el.clientHeight }); return () => ro.disconnect(); }, []);
   useEffect(() => { // 初期構図：アバターと次の目的地の間
-    const s = vp.w < 640 ? 1.15 : Math.min(1.6, Math.max(1.05, vp.w / 1100));
+    const s = vp.w < 640 ? 1.15 : Math.min(1.35, Math.max(1.0, vp.w / 1300));
     const t = nextPos ? { x: avatarAt.x * 0.6 + nextPos.x * 0.4, y: avatarAt.y * 0.6 + nextPos.y * 0.4 } : avatarAt;
     setCam(clamp({ s, x: vp.w / 2 - t.x * s, y: vp.h / 2 - t.y * s + 40 }));
     // eslint-disable-next-line react-hooks/exhaustive-deps

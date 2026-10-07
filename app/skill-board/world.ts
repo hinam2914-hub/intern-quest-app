@@ -13,7 +13,7 @@ export const NODE_POS: Record<string, Pt> = {
   mgmt_1: { x: 1250, y: 520 }, mgmt_2: { x: 1380, y: 470 }, mgmt_3: { x: 1510, y: 500 }, mgmt_4: { x: 1640, y: 440 }, mgmt_5: { x: 1770, y: 470 }, mgmt_6: { x: 1890, y: 400 },
   ai_1: { x: 300, y: 330 }, ai_2: { x: 440, y: 280 }, ai_3: { x: 580, y: 320 }, ai_4: { x: 720, y: 260 }, ai_5: { x: 860, y: 300 }, ai_6: { x: 1000, y: 240 },
 };
-export const JOB_POS: Record<string, Pt> = { closer: { x: 1940, y: 880 }, mentor: { x: 1700, y: 760 }, manager: { x: 1900, y: 235 } };
+export const JOB_POS: Record<string, Pt> = { closer: { x: 1940, y: 880 }, mentor: { x: 1700, y: 760 }, manager: { x: 1880, y: 300 } };
 export const JOB_ICON: Record<string, string> = { closer: "🏟️", mentor: "🏛️", manager: "🏯" };
 
 // エリア（地形ブロブ）
