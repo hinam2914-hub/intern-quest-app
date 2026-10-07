@@ -50,7 +50,7 @@ function treeSeeds(): { x: number; y: number; k: number; s: number }[] {
     { cx: 760, cy: 760, rx: 540, ry: 150, n: 46, k: 2 },  // think forest
     { cx: 420, cy: 1100, rx: 300, ry: 120, n: 14, k: 0 }, // comm
     { cx: 1000, cy: 1180, rx: 260, ry: 60, n: 8, k: 0 },
-    { cx: 1520, cy: 1180, rx: 420, ry: 60, n: 10, k: 1 }, // sales edge
+    { cx: 1520, cy: 1180, rx: 420, ry: 60, n: 10, k: 0 }, // sales edge
     { cx: 1480, cy: 600, rx: 340, ry: 90, n: 16, k: 3 },  // mgmt low
     { cx: 1700, cy: 430, rx: 260, ry: 80, n: 8, k: 3 },
     { cx: 560, cy: 960, rx: 200, ry: 70, n: 10, k: 2 },   // think-comm bridge
@@ -202,7 +202,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             <div style={{ position: "absolute", inset: "0 0 45% 0", borderRadius: "50%", background: "radial-gradient(ellipse at 50% 40%, #cfeeb5, #8ecb8c)" }} />
           </div>
         ))}
-        <div style={{ position: "absolute", left: 420, top: 120, fontSize: 46, animation: "swBalloon 16s ease-in-out infinite alternate", filter: "drop-shadow(0 6px 6px rgba(0,0,0,.15))" }}>🎈</div>
+        <img src="/world/balloon.png" alt="" style={{ position: "absolute", left: 1150, top: 60, width: 70, animation: "swBalloon 16s ease-in-out infinite alternate", filter: "drop-shadow(0 6px 6px rgba(0,0,0,.15))", opacity: 0.85 }} />
         {[0, 1].map((i) => <div key={i} style={{ position: "absolute", left: 0, top: 160 + i * 320, fontSize: 15, animation: `swBird ${45 + i * 15}s linear infinite`, animationDelay: `${-i * 12}s`, opacity: 0.8 }}>🕊️</div>)}
       </div>
       {[0, 1].map((i) => (<div key={i} style={{ position: "absolute", top: `${12 + i * 42}%`, left: 0, width: 170, height: 46, background: "rgba(255,255,255,.85)", borderRadius: 999, filter: "blur(2px)", animation: `swCloud ${90 + i * 30}s linear infinite`, animationDelay: `${-i * 30}s`, pointerEvents: "none", boxShadow: "40px -18px 0 -4px rgba(255,255,255,.8), 80px 0 0 -2px rgba(255,255,255,.85)", opacity: 0.55, zIndex: 0 }} />))}
@@ -250,9 +250,6 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           <ellipse cx="1600" cy="470" rx="380" ry="130" fill="none" stroke="#fff" strokeWidth="4" opacity=".5" />
           <ellipse cx="1760" cy="400" rx="290" ry="105" fill="url(#high)" />
           <ellipse cx="1760" cy="400" rx="290" ry="105" fill="none" stroke="#fff" strokeWidth="4" opacity=".6" />
-          {/* 石段 */}
-          {[0, 1, 2, 3].map((i) => <rect key={i} x={1310 + i * 16} y={560 - i * 14} width="34" height="8" rx="2" fill="#e5e7eb" stroke="#94a3b8" strokeWidth="1.5" />)}
-          {[0, 1, 2, 3].map((i) => <rect key={"s" + i} x={1530 + i * 16} y={445 - i * 12} width="34" height="8" rx="2" fill="#e5e7eb" stroke="#94a3b8" strokeWidth="1.5" />)}
           {/* 森（THINKING）地面色 */}
           <ellipse cx="800" cy="780" rx="540" ry="160" fill="url(#forest)" opacity=".85" />
           {/* 花畑（COMM） */}
@@ -271,9 +268,6 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           <path d="M 300 1010 C 420 990, 560 1020, 700 995" fill="none" stroke="#9ed7f7" strokeWidth="14" strokeLinecap="round" opacity=".9" />
           {/* 滝 */}
           <rect x="1088" y="1300" width="30" height="80" rx="8" fill="#cfeeff" opacity=".9" />
-          {/* 橋（comm→sales の川越え） */}
-          <rect x="1086" y="1056" width="60" height="22" rx="4" fill="#c48a4b" stroke="#8a5a2b" strokeWidth="3" />
-          {[0, 1, 2, 3, 4].map((i) => <line key={i} x1={1092 + i * 12} y1="1056" x2={1092 + i * 12} y2="1078" stroke="#8a5a2b" strokeWidth="2" />)}
           {/* THINKING→MANAGEMENT：山道の石橋と坂 */}
           <ellipse cx="1210" cy="665" rx="120" ry="48" fill="url(#high)" opacity=".9" />
           <path d="M 1150 690 Q 1210 640 1270 612" fill="none" stroke="#a8a29e" strokeWidth="34" strokeLinecap="round" />
@@ -281,24 +275,15 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           <path d="M 1160 700 Q 1210 660 1262 625" fill="none" stroke="#a8a29e" strokeWidth="4" strokeDasharray="10 8" />
           <path d="M 1168 714 Q 1210 690 1252 652" fill="none" stroke="#a8a29e" strokeWidth="6" opacity=".7" />
           {[0, 1, 2].map((i) => <ellipse key={"arch" + i} cx={1180 + i * 32} cy={686 - i * 18} rx="9" ry="12" fill="#78716c" opacity=".5" />)}
-          {[0, 1, 2, 3, 4].map((i) => <rect key={"ramp" + i} x={1266 + i * 14} y={606 - i * 11} width="30" height="7" rx="2" fill="#e5e7eb" stroke="#94a3b8" strokeWidth="1.5" />)}
           {/* 街灯（SALES の街道沿い） */}
           {[1120, 1250, 1400, 1560, 1700, 1850].map((x, i) => <g key={"lamp" + i}><rect x={x - 2} y={1020 + (i % 2) * 90} width="4" height="34" fill="#475569" /><circle cx={x} cy={1016 + (i % 2) * 90} r="6" fill="#fde68a" stroke="#475569" strokeWidth="2" style={{ filter: "drop-shadow(0 0 6px #fbbf24)" }} /></g>)}
           {/* 郊外：村→街のあいだ（石畳が薄れる） */}
           <ellipse cx="1060" cy="1095" rx="120" ry="110" fill="url(#cobble)" opacity=".25" />
-          {/* 気球乗り場（THINKING→空へ） */}
+          {/* 気球乗り場の台地 */}
           <ellipse cx="400" cy="606" rx="70" ry="34" fill="url(#grass)" />
-          <ellipse cx="400" cy="600" rx="40" ry="16" fill="#d6b48a" stroke="#8a5a2b" strokeWidth="3" />
-          <rect x="386" y="572" width="28" height="22" rx="4" fill="#b9834a" stroke="#8a5a2b" strokeWidth="2" />
-          <line x1="390" y1="572" x2="378" y2="540" stroke="#8a5a2b" strokeWidth="2" /><line x1="410" y1="572" x2="422" y2="540" stroke="#8a5a2b" strokeWidth="2" />
-          <ellipse cx="400" cy="518" rx="30" ry="34" fill="#f87171" /><path d="M 370 518 a30 34 0 0 1 60 0" fill="#fbbf24" opacity=".8" /><path d="M 385 484 a15 34 0 0 1 30 0 L 400 552 Z" fill="#fff" opacity=".5" />
-          <rect x="358" y="610" width="84" height="18" rx="4" fill="#fff" stroke="#8a5a2b" strokeWidth="2" /><text x="400" y="623" textAnchor="middle" fontSize="10" fontWeight="900" fill="#8a5a2b">🎈 空へ</text>
           {/* 柵（COMM） */}
           <path d="M 240 1215 H 1100" stroke="#c48a4b" strokeWidth="4" />
           {[...Array(30)].map((_, i) => <rect key={i} x={244 + i * 29} y="1206" width="5" height="18" fill="#c48a4b" />)}
-          {/* 城壁（MGMT 上段） */}
-          <path d="M 1500 335 H 1990" stroke="#cbd5e1" strokeWidth="14" />
-          {[...Array(18)].map((_, i) => <rect key={i} x={1504 + i * 28} y="318" width="14" height="12" fill="#e5e7eb" stroke="#94a3b8" strokeWidth="1.5" />)}
 
           {/* 道 */}
           {roadEls}
@@ -306,33 +291,35 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           {nextPos && currentNode && <path d={curve(homePos, nextPos)} fill="none" stroke="#fbbf24" strokeWidth={14} strokeLinecap="round" opacity={0.5} style={{ filter: "drop-shadow(0 0 10px rgba(251,191,36,.9))" }} />}
           {steps.map((s, i) => <text key={i} x={s.x} y={s.y} fontSize="16" textAnchor="middle" dominantBaseline="middle" transform={`rotate(${s.r} ${s.x} ${s.y})`} style={{ animation: "swStep 2.4s ease-in-out infinite", animationDelay: `${i * 0.18}s` }}>👣</text>)}
 
-          {/* 木 */}
-          {trees.map((t, i) => <use key={i} href={`#tree${t.k}`} x={t.x - 16 * t.s} y={t.y - 40 * t.s} width={32 * t.s} height={40 * t.s} style={{ transformOrigin: `${t.x}px ${t.y}px`, animation: `swSway ${3 + (i % 5)}s ease-in-out infinite alternate` }} />)}
+          {/* 木（画像は後段の div 層で描画） */}
 
-          {/* 未探索：雲（矩形なし） */}
-          {AREAS.filter((a) => !explored(a.key) && a.key !== "ai").map((a) => [0, 1, 2].map((i) => (
-            <ellipse key={a.key + i} cx={a.x + a.w * (0.55 + i * 0.16)} cy={a.y + a.h * (0.25 + (i % 2) * 0.45)} rx={120 + i * 20} ry={46} fill="#fff" opacity=".8" filter="url(#cloudf)" />
-          )))}
-          {!explored("ai") && [0, 1, 2].map((i) => <ellipse key={"ai" + i} cx={600 + i * 170} cy={300 - (i % 2) * 40} rx={120} ry={44} fill="#fff" opacity=".85" filter="url(#cloudf)" />)}
         </svg>
 
-        {/* ---------- AI 浮遊島（ノードごと） ---------- */}
+        {/* ---------- AI 浮遊島（ノードごと・画像） ---------- */}
         {res.nodes.filter((n) => n.category === "ai").map((n, i) => {
-          const p = NODE_POS[n.id]; const w = n.kind === "key" ? 200 : 130 + i * 8; const hid = n.is_hidden && n.status === "locked";
-          return (<div key={n.id} style={{ position: "absolute", left: p.x - w / 2, top: p.y - 24, width: w, height: 64, animation: `swFloat ${4 + i * 0.6}s ease-in-out infinite alternate`, opacity: hid ? 0.55 : 1, filter: hid ? "blur(2px)" : "none" }}>
-            <div style={{ position: "absolute", left: "14%", right: "14%", bottom: -26, height: 52, borderRadius: "10% 10% 50% 50% / 20% 20% 100% 100%", background: "linear-gradient(180deg,#8b7fc4,#4c3f8a)" }} />
-            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(ellipse at 50% 40%, #f3f0ff, #c4b5fd 60%, #a5b4fc)", boxShadow: "inset 0 5px 8px rgba(255,255,255,.7), 0 0 26px rgba(167,139,250,.55)" }} />
-            <div style={{ position: "absolute", left: "50%", top: "50%", width: w * 1.25, height: w * 0.5, marginLeft: -w * 0.625, marginTop: -w * 0.25, borderRadius: "50%", border: "2px solid rgba(103,232,249,.5)", animation: `swSpin ${10 + i * 2}s linear infinite` }} />
-          </div>);
+          const p = NODE_POS[n.id]; const w = n.kind === "key" ? 260 : 170 + i * 10; const hid = n.is_hidden && n.status === "locked";
+          return (<img key={n.id} src="/world/crystal_island.png" alt="" style={{ position: "absolute", left: p.x - w / 2, top: p.y - w * 0.42, width: w, pointerEvents: "none", animation: `swFloat ${4 + i * 0.6}s ease-in-out infinite alternate`, opacity: hid ? 0.5 : 1, filter: hid ? "blur(2px)" : "drop-shadow(0 16px 14px rgba(60,40,120,.35))" }} />);
         })}
+        {!explored("ai") && [0, 1, 2, 3].map((i) => <img key={"aic" + i} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: 520 + i * 150, top: 230 - (i % 2) * 50, width: 260, opacity: 0.9, pointerEvents: "none", animation: `swFloat ${5 + i}s ease-in-out infinite alternate`, zIndex: 5 }} />)}
 
-        {/* ---------- START 村 ---------- */}
-        <div style={{ position: "absolute", left: START.x - 90, top: START.y - 90, width: 180, zIndex: 8, pointerEvents: "none" }}>
-          <img src="/island/house/1_cabin.png" alt="" style={{ position: "absolute", left: 40, top: 0, width: 70, filter: "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} />
-          <div style={{ position: "absolute", left: 6, top: 30 }}><LmSvg kind="sign" color="#16a34a" size={44} /></div>
-          <div style={{ position: "absolute", left: 124, top: 66, width: 64, height: 10, background: "repeating-linear-gradient(90deg,#c48a4b 0 8px,#a8713a 8px 10px)", borderRadius: 3, transform: "rotate(10deg)" }} />
-          <div style={{ position: "absolute", left: 176, top: 60, fontSize: 24 }}>⛵</div>
-          <div style={{ position: "absolute", left: 0, right: 0, top: 86, textAlign: "center" }}>
+        {/* 画像パーツ：橋・石段・城壁・気球 */}
+        <img src="/world/bridge_wood.png" alt="" style={{ position: "absolute", left: 1070, top: 1032, width: 100, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.25))", zIndex: 3 }} />
+        <img src="/world/bridge_wood.png" alt="" style={{ position: "absolute", left: 870, top: 846, width: 80, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.25))", zIndex: 3 }} />
+        <img src="/world/stairs_stone.png" alt="" style={{ position: "absolute", left: 1280, top: 540, width: 110, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.2))", zIndex: 3 }} />
+        <img src="/world/stairs_stone.png" alt="" style={{ position: "absolute", left: 1500, top: 410, width: 100, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.2))", zIndex: 3 }} />
+        <img src="/world/wall_castle.png" alt="" style={{ position: "absolute", left: 1480, top: 262, width: 300, pointerEvents: "none", filter: "drop-shadow(0 6px 6px rgba(0,0,0,.2))", zIndex: 3 }} />
+        <img src="/world/wall_castle.png" alt="" style={{ position: "absolute", left: 1740, top: 262, width: 300, pointerEvents: "none", filter: "drop-shadow(0 6px 6px rgba(0,0,0,.2))", zIndex: 3 }} />
+        <img src="/world/balloon.png" alt="" style={{ position: "absolute", left: 356, top: 470, width: 88, pointerEvents: "none", filter: "drop-shadow(0 8px 8px rgba(0,0,0,.25))", zIndex: 6, animation: "swFloat 3s ease-in-out infinite alternate" }} />
+        <div style={{ position: "absolute", left: 356, top: 592, width: 88, textAlign: "center", zIndex: 6, pointerEvents: "none" }}><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: "#a8713a", color: "#fff7e6", fontSize: 10, fontWeight: 900, border: "1.5px solid #6b4423" }}>🎈 空へ</span></div>
+        {/* 未探索：雲（画像） */}
+        {AREAS.filter((a) => !explored(a.key) && a.key !== "ai").map((a) => [0, 1, 2].map((i) => (
+          <img key={a.key + i} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: a.x + a.w * (0.5 + i * 0.16) - 130, top: a.y + a.h * (0.2 + (i % 2) * 0.45) - 50, width: 260 + i * 30, opacity: 0.88, pointerEvents: "none", animation: `swFloat ${5 + i}s ease-in-out infinite alternate`, zIndex: 11 }} />
+        )))}
+
+        {/* ---------- START 村（画像） ---------- */}
+        <div style={{ position: "absolute", left: START.x - 120, top: START.y - 150, width: 240, zIndex: 8, pointerEvents: "none", textAlign: "center" }}>
+          <img src="/world/start_village.png" alt="" style={{ width: 240, display: "block", filter: "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }} />
+          <div style={{ marginTop: -26 }}>
             <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #16a34a", fontSize: 12, fontWeight: 900, color: "#166534", boxShadow: "0 2px 6px rgba(0,0,0,.15)" }}>🌱 START</span>
             <div style={{ fontSize: 10, color: "#166534", fontWeight: 800, marginTop: 2, textShadow: "0 0 4px #fff" }}>冒険のはじまり</div>
           </div>
@@ -353,6 +340,13 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
         {AREAS.map((a) => (
           <div key={a.key} style={{ position: "absolute", left: a.sign.x, top: a.sign.y - (a.key === "ai" ? 70 : 60), padding: "5px 14px", borderRadius: 12, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: `2px solid ${Z(a.key)}`, fontSize: 12, fontWeight: 900, letterSpacing: 1, color: Z(a.key), boxShadow: "0 4px 10px rgba(0,0,0,.15)", whiteSpace: "nowrap", zIndex: 6 }}>{a.emoji} {a.label}</div>
         ))}
+
+        {/* ---------- 木・茂み・岩（画像） ---------- */}
+        {trees.map((t, i) => {
+          const src = t.k === 1 ? "tree_pink" : t.k === 2 ? "tree_pine" : t.k === 3 ? (i % 4 === 0 ? "bush_flowers" : "tree_round") : (i % 5 === 0 ? "bush_flowers" : i % 7 === 0 ? "rock" : "tree_round");
+          const w = (src === "bush_flowers" ? 34 : src === "rock" ? 36 : 46) * t.s;
+          return <img key={i} src={`/world/sm/${src}.png`} alt="" style={{ position: "absolute", left: t.x - w / 2, top: t.y - w * 0.9, width: w, pointerEvents: "none", filter: "drop-shadow(0 3px 3px rgba(0,0,0,.2))", transformOrigin: "50% 100%", animation: src.startsWith("tree") ? `swSway ${3 + (i % 5)}s ease-in-out infinite alternate` : undefined, zIndex: 4 }} />;
+        })}
 
         {/* ---------- スキルノード（ランドマーク） ---------- */}
         {res.nodes.map((n) => {
@@ -405,15 +399,13 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             <div style={{ fontSize: 11.5, fontWeight: 800, color: "#92400e", marginTop: 4, textShadow: "0 0 4px #fff" }}>{j.unlocked ? "👑 到達！" : haze ? "山頂に巨大な城が見える…" : `${done} / ${j.requires.length} skills`}</div>
           </div>);
           if (j.id === "mentor") return (
-            <div key={j.id} style={{ position: "absolute", left: p.x - 120, top: p.y - 190, width: 240, textAlign: "center", zIndex: 9 }}>
-              <div style={{ position: "absolute", left: "15%", right: "15%", bottom: 40, height: 36, borderRadius: "50%", background: j.unlocked ? "rgba(251,191,36,.6)" : "rgba(60,60,80,.25)", filter: "blur(12px)" }} />
-              <div style={{ position: "relative", display: "inline-block", filter: j.unlocked ? "drop-shadow(0 0 28px #fbbf24)" : "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }}>
-                <img src="/island/house/4_mansion.png" alt="" style={{ width: 190, display: "block" }} />
-                {/* 灯り：取得数に応じて点灯 */}
-                {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} style={{ position: "absolute", left: 30 + (i % 3) * 56, top: 66 + Math.floor(i / 3) * 44, width: 14, height: 18, borderRadius: 4, background: i < done ? "#fde68a" : "transparent", boxShadow: i < done ? "0 0 12px #fbbf24" : "none" }} />)}
-                <div style={{ position: "absolute", left: "50%", top: -26, transform: "translateX(-50%)", fontSize: 26 }}>🧭</div>
+            <div key={j.id} style={{ position: "absolute", left: p.x - 150, top: p.y - 230, width: 300, textAlign: "center", zIndex: 9 }}>
+              <div style={{ position: "absolute", left: "15%", right: "15%", bottom: 50, height: 40, borderRadius: "50%", background: j.unlocked ? "rgba(251,191,36,.6)" : "rgba(60,60,80,.25)", filter: "blur(14px)" }} />
+              <div style={{ position: "relative", display: "inline-block", filter: j.unlocked ? "drop-shadow(0 0 30px #fbbf24)" : "drop-shadow(0 12px 12px rgba(0,0,0,.28))" }}>
+                <img src="/world/job_mentor.png" alt="" style={{ width: 280, display: "block" }} />
+                {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} style={{ position: "absolute", left: 60 + (i % 3) * 70, top: 96 + Math.floor(i / 3) * 40, width: 16, height: 16, borderRadius: 8, background: i < done ? "#fde68a" : "transparent", boxShadow: i < done ? "0 0 16px 6px rgba(251,191,36,.7)" : "none" }} />)}
               </div>
-              {label}
+              <div style={{ marginTop: -30 }}>{label}</div>
             </div>
           );
           if (j.id === "closer") return (
@@ -436,12 +428,12 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             </div>
           );
           return (
-            <div key={j.id} style={{ position: "absolute", left: p.x - 150, top: p.y - 240, width: 300, textAlign: "center", zIndex: 9 }}>
-              <div style={{ position: "relative", display: "inline-block", filter: j.unlocked ? "drop-shadow(0 0 30px #fbbf24)" : `brightness(${0.6 + ratio * 0.4}) saturate(${0.25 + ratio * 0.75}) blur(${(1 - ratio) * 1.4}px) opacity(${0.6 + ratio * 0.4})`, transition: "filter .6s" }}>
-                <img src="/island/house/5_castle.png" alt="" style={{ width: 200, display: "block" }} />
+            <div key={j.id} style={{ position: "absolute", left: p.x - 170, top: p.y - 250, width: 340, textAlign: "center", zIndex: 9 }}>
+              <div style={{ position: "relative", display: "inline-block", filter: j.unlocked ? "drop-shadow(0 0 30px #fbbf24)" : `brightness(${0.75 + ratio * 0.25}) saturate(${0.5 + ratio * 0.5}) opacity(${0.75 + ratio * 0.25})`, transition: "filter .6s" }}>
+                <img src="/world/job_manager.png" alt="" style={{ width: 320, display: "block" }} />
               </div>
-              {haze && [0, 1, 2].map((i) => <div key={i} style={{ position: "absolute", left: `${6 + i * 30}%`, top: `${30 + (i % 2) * 28}%`, width: 150, height: 56, borderRadius: 999, background: `rgba(255,255,255,${0.8 - ratio * 0.6})`, filter: "blur(9px)", boxShadow: "50px -14px 0 -6px rgba(255,255,255,.7)", animation: `swFloat ${5 + i}s ease-in-out infinite alternate`, pointerEvents: "none" }} />)}
-              {label}
+              {haze && [0, 1, 2, 3].map((i) => <img key={i} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: -40 + i * 90, top: 120 + (i % 2) * 70, width: 200, opacity: 0.9 - ratio * 0.7, pointerEvents: "none", animation: `swFloat ${5 + i}s ease-in-out infinite alternate` }} />)}
+              <div style={{ marginTop: -40 }}>{label}</div>
             </div>
           );
         })}
