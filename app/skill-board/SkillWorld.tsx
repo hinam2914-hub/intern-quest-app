@@ -300,7 +300,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           const p = NODE_POS[n.id]; const w = n.kind === "key" ? 260 : 170 + i * 10; const hid = n.is_hidden && n.status === "locked";
           return (<img key={n.id} src="/world/crystal_island.png" alt="" style={{ position: "absolute", left: p.x - w / 2, top: p.y - w * 0.42, width: w, pointerEvents: "none", animation: `swFloat ${4 + i * 0.6}s ease-in-out infinite alternate`, opacity: hid ? 0.5 : 1, filter: hid ? "blur(2px)" : "drop-shadow(0 16px 14px rgba(60,40,120,.35))" }} />);
         })}
-        {!explored("ai") && [0, 1, 2, 3].map((i) => <img key={"aic" + i} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: 520 + i * 150, top: 230 - (i % 2) * 50, width: 260, opacity: 0.9, pointerEvents: "none", animation: `swFloat ${5 + i}s ease-in-out infinite alternate`, zIndex: 5 }} />)}
+        {!explored("ai") && [0, 1].map((i) => <img key={"aic" + i} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: 600 + i * 220, top: 240 - (i % 2) * 30, width: 170, opacity: 0.85, pointerEvents: "none", animation: `swFloat ${5 + i}s ease-in-out infinite alternate`, zIndex: 5 }} />)}
 
         {/* 画像パーツ：橋・石段・城壁・気球 */}
         <img src="/world/bridge_wood.png" alt="" style={{ position: "absolute", left: 1070, top: 1032, width: 100, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.25))", zIndex: 3 }} />
@@ -312,8 +312,8 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
         <img src="/world/balloon.png" alt="" style={{ position: "absolute", left: 356, top: 470, width: 88, pointerEvents: "none", filter: "drop-shadow(0 8px 8px rgba(0,0,0,.25))", zIndex: 6, animation: "swFloat 3s ease-in-out infinite alternate" }} />
         <div style={{ position: "absolute", left: 356, top: 592, width: 88, textAlign: "center", zIndex: 6, pointerEvents: "none" }}><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: "#a8713a", color: "#fff7e6", fontSize: 10, fontWeight: 900, border: "1.5px solid #6b4423" }}>🎈 空へ</span></div>
         {/* 未探索：雲（画像） */}
-        {AREAS.filter((a) => !explored(a.key) && a.key !== "ai").map((a) => [0, 1, 2].map((i) => (
-          <img key={a.key + i} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: a.x + a.w * (0.5 + i * 0.16) - 130, top: a.y + a.h * (0.2 + (i % 2) * 0.45) - 50, width: 260 + i * 30, opacity: 0.88, pointerEvents: "none", animation: `swFloat ${5 + i}s ease-in-out infinite alternate`, zIndex: 11 }} />
+        {AREAS.filter((a) => !explored(a.key) && a.key !== "ai").map((a) => [0, 1].map((i) => (
+          <img key={a.key + i} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: a.x + a.w * (0.55 + i * 0.22) - 80, top: a.y + a.h * (0.25 + (i % 2) * 0.4) - 40, width: 160, opacity: 0.8, pointerEvents: "none", animation: `swFloat ${5 + i}s ease-in-out infinite alternate`, zIndex: 11 }} />
         )))}
 
         {/* ---------- START 村（画像） ---------- */}
@@ -432,7 +432,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
               <div style={{ position: "relative", display: "inline-block", filter: j.unlocked ? "drop-shadow(0 0 30px #fbbf24)" : `brightness(${0.75 + ratio * 0.25}) saturate(${0.5 + ratio * 0.5}) opacity(${0.75 + ratio * 0.25})`, transition: "filter .6s" }}>
                 <img src="/world/job_manager.png" alt="" style={{ width: 320, display: "block" }} />
               </div>
-              {haze && [0, 1, 2, 3].map((i) => <img key={i} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: -40 + i * 90, top: 120 + (i % 2) * 70, width: 200, opacity: 0.9 - ratio * 0.7, pointerEvents: "none", animation: `swFloat ${5 + i}s ease-in-out infinite alternate` }} />)}
+              {haze && [0, 1].map((i) => <img key={i} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: 20 + i * 140, top: 150 + (i % 2) * 60, width: 170, opacity: 0.85 - ratio * 0.7, pointerEvents: "none", animation: `swFloat ${5 + i}s ease-in-out infinite alternate` }} />)}
               <div style={{ marginTop: -40 }}>{label}</div>
             </div>
           );
