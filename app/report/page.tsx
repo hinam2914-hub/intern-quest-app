@@ -33,6 +33,7 @@ export default function ReportPage() {
     const [factText, setFactText] = useState("");        // 今日のGood
     const [submittedId, setSubmittedId] = useState<string | null>(null);
     const [expPlan, setExpPlan] = useState("");
+    const [expAi, setExpAi] = useState(false);
     const [expSaved, setExpSaved] = useState(false);
     const [yesterdayExp, setYesterdayExp] = useState<{ id: string; plan: string } | null>(null);
     const [yResult, setYResult] = useState<"better" | "same" | "worse" | null>(null);
@@ -43,7 +44,7 @@ export default function ReportPage() {
         (async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
-            const { data } = await supabase.from("experiments").select("id, plan").eq("user_id", user.id).lte("target_date", getTodayJST()).is("result", null).order("target_date", { ascending: false }).limit(1);
+            const { data } = await supabase.from("experiments").select("id, plan, fb_request_id").eq("user_id", user.id).lte("target_date", getTodayJST()).is("result", null).order("target_date", { ascending: false }).limit(1);
             if (data && data.length > 0) setYesterdayExp(data[0] as any);
             // メンターからのFB（直近7日・返信済み）
             {
@@ -74,8 +75,8 @@ export default function ReportPage() {
         if (!user) return;
         const t = new Date(`${getTodayJST()}T00:00:00+09:00`); t.setDate(t.getDate() + 1);
         const target = t.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
-        await supabase.from("experiments").insert({ user_id: user.id, submission_id: submittedId, plan: expPlan.trim(), target_date: target });
-        await supabase.from("thinking_skill_logs").insert([{ user_id: user.id, skill: "hypothesis", exp: 5, source: "experiment_plan" }]);
+        const { data: newExp } = await supabase.from("experiments").insert({ user_id: user.id, submission_id: submittedId, plan: expPlan.trim(), target_date: target, used_ai: expAi }).select("id").single();
+        await supabase.from("thinking_skill_logs").insert([{ user_id: user.id, skill: "hypothesis", exp: 5, source: "experiment_plan", source_id: newExp?.id ?? null }]);
         setExpSaved(true);
     };
     const saveYesterday = async () => {
@@ -84,6 +85,9 @@ export default function ReportPage() {
         if (!user) return;
         await supabase.from("experiments").update({ result: yResult, reflection: yReflect.trim() || null, reviewed_at: new Date().toISOString() }).eq("id", yesterdayExp.id);
         await supabase.from("thinking_skill_logs").insert([{ user_id: user.id, skill: "improve", exp: 10, source: "experiment_review", source_id: yesterdayExp.id }]);
+        // 代替EXP：結果が良ければ仮説+5、FBをもとにした実験なら原因分析+5
+        if (yResult === "better") await supabase.from("thinking_skill_logs").insert([{ user_id: user.id, skill: "hypothesis", exp: 5, source: "experiment_good", source_id: yesterdayExp.id }]);
+        if ((yesterdayExp as any).fb_request_id) await supabase.from("thinking_skill_logs").insert([{ user_id: user.id, skill: "cause", exp: 5, source: "experiment_fb", source_id: yesterdayExp.id }]);
         setYDone(true);
     };
     const [interpText, setInterpText] = useState("");    // 未使用（空で保存）
@@ -141,6 +145,8 @@ export default function ReportPage() {
             }
 
             const { data: insertedSub, error: submissionError } = await supabase.from("submissions").insert({ user_id: user.id, content: combinedText }).select("id").single();
+            // 代替EXP：日報の振り返りで原因分析+2（1提出につき1回）
+            if (insertedSub?.id) await supabase.from("thinking_skill_logs").insert([{ user_id: user.id, skill: "cause", exp: 2, source: "report", source_id: insertedSub.id }]);
             if (submissionError) { setMessage("提出に失敗しました"); setLoading(false); return; }
 
             const nowIso = new Date().toISOString();
@@ -444,6 +450,7 @@ export default function ReportPage() {
                                 ) : (
                                     <>
                                         <textarea value={expPlan} onChange={e => setExpPlan(e.target.value.slice(0, 200))} placeholder="例：DMを送る時間帯を18〜20時に固定して、返信率を比較する" style={{ width: "100%", minHeight: 64, marginTop: 10, borderRadius: 12, padding: 10, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 13.5, boxSizing: "border-box", resize: "vertical" }} />
+                                        <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 12.5, color: "#c7d2fe", cursor: "pointer" }}><input type="checkbox" checked={expAi} onChange={e => setExpAi(e.target.checked)} style={{ width: 16, height: 16 }} />🤖 AIを使って実験する（AIスキルの条件に加算）</label>
                                         <button onClick={saveExperiment} disabled={!expPlan.trim()} style={{ width: "100%", marginTop: 8, padding: "11px 0", borderRadius: 12, border: "none", background: expPlan.trim() ? "linear-gradient(90deg,#34d399,#10b981)" : "rgba(255,255,255,0.08)", color: expPlan.trim() ? "#0b0b14" : "#6b7280", fontSize: 14, fontWeight: 900, cursor: expPlan.trim() ? "pointer" : "default" }}>明日の実験に登録</button>
                                     </>
                                 )}
