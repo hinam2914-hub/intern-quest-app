@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import type { NodeState, JobState } from "../lib/skills";
+import type { NodeState, JobState, Reco } from "../lib/skills";
 import { AREA_COLOR } from "./world";
 
 const STAGE: Record<string, { icon: string; label: string }> = {
@@ -8,10 +8,10 @@ const STAGE: Record<string, { icon: string; label: string }> = {
 };
 const CAT_LABEL: Record<string, string> = { sales: "SALES", comm: "COMMUNICATION", think: "THINKING", mgmt: "MANAGEMENT", ai: "AI SKILL" };
 
-export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCheck, onClaim, focusState, nextNode, onChallenge, onPromote, onRemoveFocus }: {
+export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCheck, onClaim, focusState, nextNode, onChallenge, onPromote, onRemoveFocus, recos }: {
   node: NodeState; jobs: JobState[]; isMobile: boolean; onClose: () => void;
   onRequestCheck: (n: NodeState) => void; onClaim: (n: NodeState, text: string, url: string) => void;
-  focusState: "none" | "current" | "sub"; nextNode?: NodeState | null;
+  focusState: "none" | "current" | "sub"; nextNode?: NodeState | null; recos?: Reco[];
   onChallenge: (n: NodeState) => void; onPromote: (n: NodeState) => void; onRemoveFocus: (n: NodeState) => void;
 }) {
   const [claimText, setClaimText] = useState(""); const [claimUrl, setClaimUrl] = useState("");
@@ -37,6 +37,12 @@ export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCh
         </div>
       </div>
       {node.description && <div style={{ fontSize: 13, color: "#475569", background: "#ede9fe", borderRadius: 12, padding: "8px 12px", marginBottom: 12 }}>「{node.description}」</div>}
+      {(recos ?? []).filter((r) => r.nodeId === node.id).map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", background: r.source === "mentor" ? "#fdf2f8" : "#f5f3ff", border: `1.5px solid ${r.source === "mentor" ? "#f9a8d4" : "#c4b5fd"}`, borderRadius: 12, padding: "8px 12px", marginBottom: 10 }}>
+          <span style={{ fontSize: 16 }}>✨</span>
+          <div style={{ fontSize: 12.5, color: "#1e293b" }}><b>{r.source === "mentor" ? `${r.by}のおすすめ` : "おすすめルート"}</b>{r.reason ? `：${r.reason}` : ""}</div>
+        </div>
+      ))}
 
       {node.status === "unlocked" ? (
         <div style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)", borderRadius: 14, padding: 14, textAlign: "center", marginBottom: 12 }}>

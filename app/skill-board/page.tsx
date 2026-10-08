@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { evaluateUser, syncUnlocks, requestCheck, getFocus, focusOp, nextQuestCandidates, questText, pickQuestCond, type EvalResult, type NodeState, type Focus } from "../lib/skills";
+import { evaluateUser, syncUnlocks, requestCheck, getFocus, focusOp, nextQuestCandidates, questText, pickQuestCond, ruleRecommendations, getMentorRecommendations, type EvalResult, type NodeState, type Focus, type Reco } from "../lib/skills";
 import SkillWorld, { type Walk } from "./SkillWorld";
 import DetailPanel from "./DetailPanel";
 import { AREAS, NODE_POS, START, AREA_COLOR, type Pt } from "./world";
@@ -15,6 +15,7 @@ export default function SkillBoardPage() {
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [res, setRes] = useState<EvalResult | null>(null);
   const [focus, setFocus] = useState<Focus>({ current: null, subs: [] });
+  const [mentorRecos, setMentorRecos] = useState<Reco[]>([]);
   const [locId, setLocId] = useState<string | null>(null);
   const [sel, setSel] = useState<NodeState | null>(null);
   const [focusTo, setFocusTo] = useState<{ key: number; target: Pt } | undefined>();
@@ -53,6 +54,7 @@ export default function SkillBoardPage() {
       pendingWalks.current = newNodes.map((n) => n.id);
     }
     setRes(r);
+    setMentorRecos(await getMentorRecommendations(supabase, user.id, r));
     const f = newNodes.length ? await getFocus(supabase, user.id) : await refreshFocus(user.id, r);
     if (newNodes.length) setFocus(f);
     if (initial && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("focus") === "1" && f.current && NODE_POS[f.current]) setTimeout(() => setFocusTo({ key: Date.now(), target: NODE_POS[f.current!] }), 50);
@@ -116,11 +118,12 @@ export default function SkillBoardPage() {
   const focusState = sel ? (focus.current === sel.id ? "current" : focus.subs.includes(sel.id) ? "sub" : "none") : "none";
   const nextNode = sel ? res.nodes.find((n) => n.category === sel.category && n.order_no === sel.order_no + 1) ?? null : null;
   const curNode = focus.current ? res.nodes.find((n) => n.id === focus.current) : null;
+  const recos: Reco[] = [...mentorRecos, ...ruleRecommendations(res, [focus.current, ...focus.subs, ...mentorRecos.map((m) => m.nodeId)].filter(Boolean) as string[])];
   const curArea = (locId && res.nodes.find((n) => n.id === locId)?.category) ?? "comm";
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
-      <SkillWorld res={res} avatarId={avatarId} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} />
+      <SkillWorld res={res} avatarId={avatarId} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} />
 
       {/* HUD 上 */}
       <div style={{ position: "absolute", top: 12, left: 12, right: 12, display: "flex", gap: 8, alignItems: "flex-start", zIndex: 40, pointerEvents: "none" }}>
@@ -149,7 +152,7 @@ export default function SkillBoardPage() {
         })}
       </div>
 
-      {sel && <DetailPanel node={sel} jobs={res.jobs} isMobile={isMobile} onClose={() => setSel(null)} onRequestCheck={onRequestCheck} onClaim={onClaim} focusState={focusState} nextNode={nextNode} onChallenge={async (n) => { await onChallenge(n); setSel(null); }} onPromote={async (n) => { await onPromote(n); setSel(null); }} onRemoveFocus={async (n) => { await onRemoveFocus(n); setSel(null); }} />}
+      {sel && <DetailPanel node={sel} jobs={res.jobs} isMobile={isMobile} onClose={() => setSel(null)} onRequestCheck={onRequestCheck} onClaim={onClaim} focusState={focusState} nextNode={nextNode} recos={recos} onChallenge={async (n) => { await onChallenge(n); setSel(null); }} onPromote={async (n) => { await onPromote(n); setSel(null); }} onRemoveFocus={async (n) => { await onRemoveFocus(n); setSel(null); }} />}
 
       {/* SKILL UNLOCKED 演出 */}
       {celebrate.length > 0 && (

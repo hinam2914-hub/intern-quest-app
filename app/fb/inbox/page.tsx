@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import RecommendSkillBox from "../../components/RecommendSkillBox";
 
 type Req = { id: string; user_id: string; submission_id: string | null; thinking_session_id: string | null; target: string; focus: string | null; status: string; fb_good: string | null; fb_think: string | null; fb_next: string | null; issue_quest: boolean; quest_claimed_at: string | null; created_at: string; assignee_id: string | null; name?: string; content?: string };
 
@@ -69,6 +70,7 @@ export default function FbInboxPage() {
                 {allowed === false && <div style={{ color: "#f87171", fontSize: 14, padding: 20, textAlign: "center" }}>このページはFBメンターのみ見られます</div>}
                 {allowed && (
                     <>
+                        <RecommendSkillBox />
                         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
                             <button style={btn(tab === "pending")} onClick={() => setTab("pending")}>未対応 {reqs.filter(r => r.status === "pending").length}</button>
                             <button style={btn(tab === "done")} onClick={() => setTab("done")}>返信済み</button>

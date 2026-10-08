@@ -354,3 +354,32 @@ export function nextQuestCandidates(r: EvalResult, excludeIds: string[], justUnl
 export function nearestJob(r: EvalResult): JobState | null {
   return r.jobs.filter((j) => j.is_obtainable && !j.unlocked).sort((a, b) => a.missing.length - b.missing.length)[0] ?? r.jobs.find((j) => j.unlocked) ?? null;
 }
+
+// ====================== Phase 2-3: RECOMMENDED（おすすめルート） ======================
+export type Reco = { nodeId: string; reason: string; source: "ai" | "mentor"; by?: string; id?: string };
+
+const CAT_JA: Record<string, string> = { sales: "営業力", comm: "コミュニケーション", think: "思考力", mgmt: "マネジメント", ai: "AIスキル" };
+/** ルールベースのおすすめ（APIなし）。最大2件 */
+export function ruleRecommendations(r: EvalResult, excludeIds: string[]): Reco[] {
+  const ex = new Set(excludeIds);
+  const avail = r.nodes.filter((n) => n.status === "available" && !ex.has(n.id));
+  const out: Reco[] = [];
+  const push = (n: NodeState | undefined, reason: string) => { if (n && !out.some((o) => o.nodeId === n.id)) out.push({ nodeId: n.id, reason, source: "ai" }); };
+  const best = [...avail].sort((a, b) => b.progress - a.progress)[0];
+  if (best && best.progress >= 0.5) push(best, "あと少しで解放できます");
+  const job = r.jobs.filter((j) => j.is_obtainable && !j.unlocked).sort((a, b) => a.missing.length - b.missing.length)[0];
+  if (job) push(avail.filter((n) => job.missing.includes(n.id)).sort((a, b) => b.progress - a.progress)[0], `${job.name}への最短ルートです`);
+  const hotCat = Object.entries(r.countsByCat).sort((a, b) => b[1] - a[1])[0];
+  if (hotCat && hotCat[1] > 0) push(avail.filter((n) => n.category === hotCat[0]).sort((a, b) => a.order_no - b.order_no)[0], `伸びている${CAT_JA[hotCat[0]] ?? hotCat[0]}の次のスキルです`);
+  if (!out.length && best) push(best, "最初の一歩におすすめ");
+  return out.slice(0, 2);
+}
+/** メンターからのおすすめ（取得済み・却下済みは除外） */
+export async function getMentorRecommendations(sb: SupabaseClient, uid: string, r: EvalResult): Promise<Reco[]> {
+  const { data } = await sb.from("skill_recommendations").select("id, node_id, reason, created_by").eq("user_id", uid).eq("dismissed", false).order("created_at", { ascending: false });
+  const rows = (data ?? []).filter((x: any) => r.nodes.find((n) => n.id === x.node_id)?.status !== "unlocked");
+  const ids = Array.from(new Set(rows.map((x: any) => x.created_by).filter(Boolean)));
+  const names = new Map<string, string>();
+  if (ids.length) { const { data: ps } = await sb.from("profiles").select("id, name").in("id", ids); (ps ?? []).forEach((p: any) => names.set(p.id, p.name)); }
+  return rows.map((x: any) => ({ id: x.id, nodeId: x.node_id, reason: x.reason ?? "", source: "mentor" as const, by: names.get(x.created_by) ?? "メンター" }));
+}

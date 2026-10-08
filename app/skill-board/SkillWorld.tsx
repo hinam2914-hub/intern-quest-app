@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { pickQuestCond, questText, type EvalResult, type NodeState, type JobState, type Focus } from "../lib/skills";
+import { pickQuestCond, questText, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
 import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, pt, curve, type Pt } from "./world";
 
 type Cam = { x: number; y: number; s: number };
@@ -69,9 +69,9 @@ function treeSeeds(): { x: number; y: number; k: number; s: number }[] {
   return out.sort((a, b) => a.y - b.y);
 }
 
-export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd }: {
+export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos }: {
   res: EvalResult; avatarId: string | null; selectedId: string | null; onSelect: (n: NodeState | null) => void; focusTo?: { key: number; target: Pt };
-  focus: Focus; locNodeId: string | null; walk: Walk | null; onWalkEnd?: () => void;
+  focus: Focus; locNodeId: string | null; walk: Walk | null; onWalkEnd?: () => void; recos?: Reco[];
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [cam, setCam] = useState<Cam>({ x: 0, y: 0, s: 1 });
@@ -357,6 +357,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           const u = n.status === "unlocked", a = n.status === "available";
           const key = n.kind === "key"; const w = key ? 130 : 100; const sel = selectedId === n.id;
           const lm = LANDMARK[n.id] ?? {}; const isCur = focus.current === n.id, isSub = focus.subs.includes(n.id);
+          const reco = !isCur && !isSub && n.status === "available" ? (recos ?? []).find((rc) => rc.nodeId === n.id) : undefined;
           const lmH = key ? 96 : 70;
           const filt = fog ? "grayscale(1) brightness(.55) opacity(.45) blur(1px)" : u ? `drop-shadow(0 0 12px ${color}) drop-shadow(0 6px 5px rgba(0,0,0,.25))` : a ? "drop-shadow(0 6px 5px rgba(0,0,0,.25))" : "saturate(.3) opacity(.8) drop-shadow(0 4px 4px rgba(0,0,0,.2))";
           return (
@@ -369,7 +370,12 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
                 <div style={{ position: "absolute", top: -62, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#92400e", background: "#fde68a", borderRadius: 6, padding: "1px 6px", whiteSpace: "nowrap", zIndex: 3 }}>CURRENT QUEST</div>
               </>}
               {(isCur || isSub) && <div style={{ position: "absolute", top: -44, left: "50%", transform: "translateX(-50%)", fontSize: isCur ? 28 : 18, zIndex: 3, animation: "swBounce 1.4s ease-in-out infinite", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.3))" }}>🎯</div>}
-              {a && !fog && !isCur && <div style={{ position: "absolute", top: -30, left: "50%", transform: "translateX(-50%)", fontSize: 16, fontWeight: 900, color: "#ef4444", animation: "swBounce 1s ease-in-out infinite", textShadow: "0 0 6px #fff, 0 0 2px #fff" }}>！</div>}
+              {reco && <>
+                <div style={{ position: "absolute", left: "50%", bottom: 10, width: w + 20, height: 26, marginLeft: -(w + 20) / 2, borderRadius: "50%", border: "3px solid #c4b5fd", boxShadow: "0 0 14px #a78bfa", pointerEvents: "none", animation: "swPulse 2.4s ease-in-out infinite" }} />
+                <div style={{ position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)", fontSize: 20, zIndex: 3, animation: "swBounce 1.6s ease-in-out infinite", filter: "drop-shadow(0 0 6px #fff)" }}>✨</div>
+                <div style={{ position: "absolute", top: -56, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#fff", background: reco.source === "mentor" ? "linear-gradient(135deg,#f472b6,#ec4899)" : "linear-gradient(135deg,#a78bfa,#8b5cf6)", borderRadius: 6, padding: "1px 7px", whiteSpace: "nowrap", zIndex: 3, boxShadow: "0 2px 6px rgba(0,0,0,.2)" }}>{reco.source === "mentor" ? "メンターのおすすめ" : "おすすめルート"}</div>
+              </>}
+              {a && !fog && !isCur && !reco && <div style={{ position: "absolute", top: -30, left: "50%", transform: "translateX(-50%)", fontSize: 16, fontWeight: 900, color: "#ef4444", animation: "swBounce 1s ease-in-out infinite", textShadow: "0 0 6px #fff, 0 0 2px #fff" }}>！</div>}
               {u && <div style={{ position: "absolute", top: -6, right: 4, fontSize: 18, zIndex: 2, animation: "swFlag 1s ease-in-out infinite alternate" }}>🚩</div>}
               {/* 足元 */}
               <div style={{ position: "absolute", left: "12%", right: "12%", bottom: 10, height: key ? 28 : 20, borderRadius: "50%", background: u ? `radial-gradient(ellipse, ${color}99, ${color}11)` : a ? `radial-gradient(ellipse, ${color}55, transparent 70%)` : "rgba(60,60,80,.18)", filter: "blur(2px)", animation: a && !fog && !isCur ? "swPulse 2s ease-in-out infinite" : undefined }} />
