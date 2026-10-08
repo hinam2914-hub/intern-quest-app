@@ -64,6 +64,7 @@ type Metrics = {
   thanksSent: number; thanksReceived: number;
   personalDone: number;
   routineStreak: number;
+  scheduleDays: number; scheduleDoneDays: number;   // 今日の予定：立てた日数／全部達成した日数
   referralHire: number;
   checks: Set<string>;       // approved node ids
   claims: Set<string>;
@@ -73,7 +74,7 @@ type Metrics = {
 async function loadMetrics(sb: SupabaseClient, uid: string): Promise<Metrics> {
   const [
     prof, st, contents, comps, journey, rookieCh, rookieSub, logs, sessions, exps, sales, subs,
-    fbReq, fbRes, thSent, thRecv, ptasks, rchecks, recruit, checks, claims,
+    fbReq, fbRes, thSent, thRecv, ptasks, rchecks, recruit, checks, claims, sched,
   ] = await Promise.all([
     sb.from("profiles").select("*").eq("id", uid).maybeSingle(),
     sb.from("script_test_progress").select("*").eq("user_id", uid).maybeSingle(),
@@ -96,6 +97,7 @@ async function loadMetrics(sb: SupabaseClient, uid: string): Promise<Metrics> {
     sb.from("recruit_progress").select("count, status").eq("user_id", uid).eq("action_type", "hire"),
     sb.from("skill_checks").select("node_id, status").eq("user_id", uid),
     sb.from("skill_claims").select("node_id, status").eq("user_id", uid),
+    sb.from("daily_schedules").select("date, slots").eq("user_id", uid),
   ]);
 
   const catOf: Record<string, string> = {};
@@ -145,6 +147,14 @@ async function loadMetrics(sb: SupabaseClient, uid: string): Promise<Metrics> {
     run = prev !== null && t - prev === 1 ? run + 1 : 1; prev = t; routineStreak = Math.max(routineStreak, run);
   }
 
+  // 今日の予定：Questを1つ以上立てた日／全部◯にした日
+  let scheduleDays = 0, scheduleDoneDays = 0;
+  (sched.data ?? []).forEach((r: any) => {
+    const sl = r.slots ?? {}; const qs = [...(sl.morning ?? []), ...(sl.afternoon ?? []), ...(sl.night ?? [])];
+    if (qs.length === 0) return; scheduleDays++;
+    if (qs.every((q: any) => q?.done)) scheduleDoneDays++;
+  });
+
   let referralHire = 0;
   (recruit.data ?? []).forEach((r: any) => { if (String(r.status) !== "rejected") referralHire += r.count ?? 1; });
 
@@ -157,7 +167,7 @@ async function loadMetrics(sb: SupabaseClient, uid: string): Promise<Metrics> {
     skillLogCount, skillExp, thinkingSessions: sessions.count ?? 0, exp, sales: sales.count ?? 0,
     reportDays: days.size, fbRequested: (fbReq.data ?? []).length, fbFocused, fbResponded, questsIssued,
     thanksSent: thSent.count ?? 0, thanksReceived: thRecv.count ?? 0, personalDone: ptasks.count ?? 0,
-    routineStreak, referralHire, checks: checksSet, claims: claimsSet, pendingChecks: pending,
+    routineStreak, scheduleDays, scheduleDoneDays, referralHire, checks: checksSet, claims: claimsSet, pendingChecks: pending,
   };
 }
 
@@ -197,6 +207,8 @@ function evalOne(m: Metrics, nodeId: string, type: string, param: string | null,
     }
     case "personal_tasks_done": return m.personalDone;
     case "routine_streak": return m.routineStreak;
+    case "schedule_days": return m.scheduleDays;
+    case "schedule_done_days": return m.scheduleDoneDays;
     case "license": {
       const lic = (m.profile?.licenses ?? {}) as Record<string, boolean>;
       return p.split("|").some((k) => lic[k]) ? 1 : 0;
@@ -369,6 +381,8 @@ export function questDetail(c: CondState | null): string {
     case "sales_count": return c.threshold === 1 ? "初めての獲得を1件" : `獲得をあと${left}件`;
     case "personal_tasks_done": return `個人タスクをあと${left}件完了`;
     case "routine_streak": return `ルーティンをあと${left}日続ける`;
+    case "schedule_days": return `今日の予定をあと${left}日立てる`;
+    case "schedule_done_days": return `予定を全部達成する日をあと${left}日`;
     case "thanks_sent": return `サンキューをあと${left}件送る`;
     case "thanks_received": return `サンキューをあと${left}件もらう`;
     case "fb_requested": return `FB依頼をあと${left}回`;
