@@ -60,7 +60,7 @@ type Metrics = {
   exp: { created: number; reviewed: number; good: number; ai: number; aiGood: number; fromFb: number };
   sales: number;
   reportDays: number;
-  fbRequested: number; fbResponded: number; questsIssued: number;
+  fbRequested: number; fbFocused: number; fbResponded: number; questsIssued: number;
   thanksSent: number; thanksReceived: number;
   personalDone: number;
   routineStreak: number;
@@ -87,7 +87,7 @@ async function loadMetrics(sb: SupabaseClient, uid: string): Promise<Metrics> {
     sb.from("experiments").select("result, reviewed_at, used_ai, fb_request_id").eq("user_id", uid),
     sb.from("sales").select("id", { count: "exact", head: true }).eq("user_id", uid),
     sb.from("submissions").select("created_at").eq("user_id", uid),
-    sb.from("fb_requests").select("id", { count: "exact", head: true }).eq("user_id", uid),
+    sb.from("fb_requests").select("focus").eq("user_id", uid),
     sb.from("fb_requests").select("issue_quest, responded_at").eq("responder_id", uid),
     sb.from("thanks").select("id", { count: "exact", head: true }).eq("from_user_id", uid),
     sb.from("thanks").select("id", { count: "exact", head: true }).eq("to_user_id", uid),
@@ -132,6 +132,8 @@ async function loadMetrics(sb: SupabaseClient, uid: string): Promise<Metrics> {
   const days = new Set<string>();
   (subs.data ?? []).forEach((s: any) => days.add(String(s.created_at).slice(0, 10)));
 
+  // 質問力：FB依頼で「特に見てほしいこと」を書いた回数（＝聞きたいことの言語化）
+  const fbFocused = (fbReq.data ?? []).filter((r: any) => String(r.focus ?? "").trim().length > 0).length;
   let fbResponded = 0, questsIssued = 0;
   (fbRes.data ?? []).forEach((r: any) => { if (r.responded_at) fbResponded++; if (r.issue_quest) questsIssued++; });
 
@@ -153,7 +155,7 @@ async function loadMetrics(sb: SupabaseClient, uid: string): Promise<Metrics> {
   return {
     profile: prof.data ?? null, scriptTest: st.data ?? null, contentCat, journeyMax, rookieApproved, rookieByBlock,
     skillLogCount, skillExp, thinkingSessions: sessions.count ?? 0, exp, sales: sales.count ?? 0,
-    reportDays: days.size, fbRequested: fbReq.count ?? 0, fbResponded, questsIssued,
+    reportDays: days.size, fbRequested: (fbReq.data ?? []).length, fbFocused, fbResponded, questsIssued,
     thanksSent: thSent.count ?? 0, thanksReceived: thRecv.count ?? 0, personalDone: ptasks.count ?? 0,
     routineStreak, referralHire, checks: checksSet, claims: claimsSet, pendingChecks: pending,
   };
@@ -184,6 +186,7 @@ function evalOne(m: Metrics, nodeId: string, type: string, param: string | null,
     case "sales_count": return m.sales;
     case "report_days": return m.reportDays;
     case "fb_requested": return m.fbRequested;
+    case "fb_focused": return m.fbFocused;
     case "fb_responded": return m.fbResponded;
     case "quests_issued": return m.questsIssued;
     case "thanks_sent": return m.thanksSent;
@@ -288,53 +291,118 @@ export async function focusOp(sb: SupabaseClient, action: "add" | "remove" | "pr
 }
 
 const STAGE_ORDER: Record<string, number> = { learn: 0, practice: 1, prove: 2, check: 3 };
-/** 次に行動すべき未達成条件を1件：LEARN→PRACTICE→PROVE→CHECK、同stage内は達成に近いもの */
+const ratioOf = (c: CondState) => (c.threshold > 0 ? Math.min(c.current, c.threshold) / c.threshold : 0);
+/**
+ * CURRENT QUEST に出す未達成条件を1件（表示の選択のみ。解放判定には影響しない）
+ *  1. 着手済み（達成率 > 0）の条件があれば達成率が高いものを優先
+ *  2. 未着手のみなら LEARN → PRACTICE → PROVE の順
+ *  3. CHECK（メンター認定・申告）は他の条件が全て達成されたときだけ
+ *  4. 同点は order_no
+ */
 export function pickQuestCond(n: NodeState): CondState | null {
   const undone = n.conds.filter((c) => !c.done);
   if (!undone.length) return null;
-  undone.sort((a, b) => {
-    const s = (STAGE_ORDER[a.stage] ?? 9) - (STAGE_ORDER[b.stage] ?? 9); if (s) return s;
-    const ra = a.threshold > 0 ? Math.min(a.current, a.threshold) / a.threshold : 0, rb = b.threshold > 0 ? Math.min(b.current, b.threshold) / b.threshold : 0;
-    if (rb !== ra) return rb - ra; return a.order_no - b.order_no;
+  const nonCheck = undone.filter((c) => c.stage !== "check");
+  const pool = nonCheck.length ? nonCheck : undone;
+  pool.sort((a, b) => {
+    const ra = ratioOf(a), rb = ratioOf(b);
+    const sa = ra > 0 ? 1 : 0, sb = rb > 0 ? 1 : 0;
+    if (sa !== sb) return sb - sa;                 // 着手済みを優先
+    if (sa && rb !== ra) return rb - ra;            // 着手済み同士は達成率の高い順
+    const st = (STAGE_ORDER[a.stage] ?? 9) - (STAGE_ORDER[b.stage] ?? 9); if (st) return st; // 未着手は stage 順
+    return a.order_no - b.order_no;
   });
-  return undone[0];
+  return pool[0];
 }
-/** 条件→短いクエスト文 */
-export function questText(c: CondState | null): string {
+
+// ====================== CURRENT QUEST 文言（タイトル＋残り条件の2段） ======================
+export type QuestMission = { title: string; detail: string };
+/** スキルごとのミッションタイトル（冒険の目的。条件が切り替わっても変わらない） */
+export const QUEST_TITLE: Record<string, string> = {
+  sales_1: "📚 営業の基本を身につけよう",
+  sales_2: "👂 相手の話を引き出そう",
+  sales_3: "🧭 課題のありかを見つけよう",
+  sales_4: "💡 提案で最初の1件を取ろう",
+  sales_5: "🤝 商談を決め切る力を試そう",
+  sales_6: "🏆 クローザーの実力を証明しよう",
+  comm_1: "👋 自分のことを伝えよう",
+  comm_2: "❓ 聞きたいことを言葉にしよう",
+  comm_3: "🎧 FBを受け止める力を育てよう",
+  comm_4: "🤝 まわりとの信頼を積み上げよう",
+  comm_5: "🔁 FBを行動に変えよう",
+  comm_6: "🌟 信頼される存在になろう",
+  think_1: "📝 1日の経験を次につなげよう",
+  think_2: "🔍 結果の「なぜ？」を探ろう",
+  think_3: "🧪 仮説を立てて試してみよう",
+  think_4: "🔬 実験の結果を確かめよう",
+  think_5: "♻️ 改善のサイクルを回そう",
+  think_6: "♟️ 長期と利益の視点を持とう",
+  mgmt_1: "⏰ 自分のリズムをつくろう",
+  mgmt_2: "💬 FBを受け取る準備をしよう",
+  mgmt_3: "🌱 仲間の成長を後押ししよう",
+  mgmt_4: "🚩 チームを前に進めよう",
+  mgmt_5: "🗂️ プロジェクトを任される準備をしよう",
+  mgmt_6: "👑 仲間を迎え入れよう",
+  ai_1: "🤖 AIの基礎を学ぼう",
+  ai_2: "✍️ AIへの指示を磨こう",
+  ai_3: "⚙️ AIを実戦で使いこなそう",
+  ai_4: "📈 AIで成果を改善しよう",
+  ai_5: "🔧 業務をAIで自動化しよう",
+  ai_6: "🏗️ AIの仕組みを作り上げよう",
+};
+const THINK_SKILL_JA: Record<string, string> = { cause: "原因分析", hypothesis: "仮説", improve: "振り返り" };
+const THINK_EXP_JA: Record<string, string> = { cause: "原因分析", hypothesis: "仮説思考", improve: "改善力" };
+/** 条件 → 具体的な残り条件（「次に現実で何をすればいいか」） */
+export function questDetail(c: CondState | null): string {
   if (!c) return "";
   const left = Math.max(0, c.threshold - Math.min(c.current, c.threshold));
   const p = c.param ?? "";
+  const testName = c.label.replace(/に合格$/, "").replace(/合格.*$/, "").trim();
   switch (c.type) {
-    case "report_days": return `あと日報${left}日！`;
-    case "experiments_created": return `あと実験${left}回！`;
-    case "experiments_reviewed": return `あと振り返り${left}回！`;
-    case "experiments_good": return `実験で「良くなった」あと${left}回！`;
-    case "experiments_ai": return `AIを使った実験あと${left}回！`;
-    case "experiments_ai_good": return `AI実験で「良くなった」あと${left}回！`;
-    case "experiments_from_fb": return "FBをもとに実験してみよう！";
-    case "sales_count": return `あと獲得${left}件！`;
-    case "personal_tasks_done": return `あと個人タスク${left}件！`;
-    case "routine_streak": return `ルーティンあと${left}日！`;
-    case "thanks_sent": return `サンキューあと${left}件送ろう！`;
-    case "thanks_received": return `サンキューあと${left}件もらおう！`;
-    case "fb_requested": return `FB依頼あと${left}回！`;
-    case "fb_responded": return `FB返信あと${left}件！`;
-    case "quests_issued": return `クエスト発行あと${left}件！`;
-    case "content_category": return `${p}の学習あと${left}本！`;
-    case "thinking_sessions": return `AI作戦会議あと${left}回！`;
-    case "skill_log_count": return `${p === "cause" ? "原因分析" : p === "hypothesis" ? "仮説" : "振り返り"}あと${left}回！`;
-    case "skill_exp": return `${p === "cause" ? "原因分析" : p === "hypothesis" ? "仮説思考" : p === "improve" ? "改善力" : "思考"}EXPあと${left}！`;
-    case "test_flag": case "script_test": case "any_of": return `${c.label.replace(/に合格$/, "").replace(/合格.*$/, "")}をクリアしよう！`;
-    case "journey_step": return `冒険マップSTEP${c.threshold}へ進もう！`;
-    case "rookie_block": return `一人前「${p}」をクリアしよう！`;
-    case "profile_filled": return "プロフィールを入力しよう！";
-    case "license": return "営業免許を取ろう！";
-    case "referral_hire": return `リファラル採用あと${left}人！`;
-    case "mentor_check": return "メンター認定を申請しよう！";
-    case "claim_approved": return "申告してみよう！";
-    default: return c.threshold > 1 ? `${c.label} あと${left}！` : `${c.label}！`;
+    case "report_days": return `日報をあと${left}日提出`;
+    case "experiments_created": return `実験をあと${left}回`;
+    case "experiments_reviewed": return `実験の振り返りをあと${left}回`;
+    case "experiments_good": return `実験で「良くなった」をあと${left}回`;
+    case "experiments_ai": return `AIを使った実験をあと${left}回`;
+    case "experiments_ai_good": return `AI実験で「良くなった」をあと${left}回`;
+    case "experiments_from_fb": return "もらったFBをもとに実験を1回";
+    case "sales_count": return c.threshold === 1 ? "初めての獲得を1件" : `獲得をあと${left}件`;
+    case "personal_tasks_done": return `個人タスクをあと${left}件完了`;
+    case "routine_streak": return `ルーティンをあと${left}日続ける`;
+    case "thanks_sent": return `サンキューをあと${left}件送る`;
+    case "thanks_received": return `サンキューをあと${left}件もらう`;
+    case "fb_requested": return `FB依頼をあと${left}回`;
+    case "fb_focused": return `FB依頼で「見てほしいこと」をあと${left}回書く`;
+    case "fb_responded": return `FBをあと${left}件返す`;
+    case "quests_issued": return `クエスト発行をあと${left}件`;
+    case "content_category": return `${p}をあと${left}本学習`;
+    case "thinking_sessions": return `AI作戦会議をあと${left}回`;
+    case "skill_log_count": return `${THINK_SKILL_JA[p] ?? "思考"}をあと${left}回記録`;
+    case "skill_exp": return `${THINK_EXP_JA[p] ?? "思考"}EXPをあと${left}ためる`;
+    case "test_flag": case "script_test": return `${testName}に挑戦`;
+    case "any_of": return p.includes("sales_passed") ? "営業テストに挑戦（IPはスクリプトテスト）" : `${testName}に挑戦`;
+    case "journey_step": return `冒険マップSTEP${c.threshold}をクリア`;
+    case "rookie_block": return `一人前「${p}」を全てクリア`;
+    case "profile_filled": return "プロフィール（MBTI・部活・趣味）を入力";
+    case "license": return "営業免許を取得";
+    case "referral_hire": return `リファラル採用をあと${left}人`;
+    case "mentor_check": return "メンター認定を申請";
+    case "claim_approved": return "達成したら自己申告";
+    default: return c.threshold > 1 ? `${c.label}をあと${left}` : c.label;
   }
 }
+/** スキル → ミッション（title: 冒険の目的 / detail: 次の具体行動） */
+export function questMission(n: NodeState | null, cond?: CondState | null): QuestMission {
+  if (!n) return { title: "", detail: "" };
+  const title = QUEST_TITLE[n.id] ?? `${n.icon ?? "🎯"} ${n.name}に挑戦しよう`;
+  const c = cond === undefined ? pickQuestCond(n) : cond;
+  if (c) return { title, detail: questDetail(c) };
+  if (n.status === "unlocked") return { title, detail: "取得済み" };
+  if (n.pendingCheck) return { title, detail: "認定・承認を待っています" };
+  return { title, detail: "条件を達成！まもなく解放" };
+}
+/** 旧API互換：条件→短いクエスト文（questDetail と同じ） */
+export function questText(c: CondState | null): string { return questDetail(c); }
 /** 次の冒険候補（ルールベース、最大3） */
 export function nextQuestCandidates(r: EvalResult, excludeIds: string[], justUnlockedId?: string): { node: NodeState; reason: string }[] {
   const out: { node: NodeState; reason: string }[] = [];

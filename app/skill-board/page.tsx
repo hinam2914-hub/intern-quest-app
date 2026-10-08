@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { evaluateUser, syncUnlocks, requestCheck, getFocus, focusOp, nextQuestCandidates, questText, pickQuestCond, ruleRecommendations, getMentorRecommendations, type EvalResult, type NodeState, type Focus, type Reco } from "../lib/skills";
+import { evaluateUser, syncUnlocks, requestCheck, getFocus, focusOp, nextQuestCandidates, questMission, ruleRecommendations, getMentorRecommendations, type EvalResult, type NodeState, type Focus, type Reco } from "../lib/skills";
 import SkillWorld, { type Walk } from "./SkillWorld";
 import DetailPanel from "./DetailPanel";
 import { AREAS, NODE_POS, START, AREA_COLOR, type Pt } from "./world";
@@ -147,8 +147,8 @@ export default function SkillBoardPage() {
         {curNode && (
           <button onClick={() => { jumpTo(NODE_POS[curNode.id]); setSel(curNode); }} style={{ pointerEvents: "auto", border: "2px solid #fde68a", background: "linear-gradient(180deg,#fffbeb,#fef3c7)", borderRadius: 16, padding: "7px 12px", textAlign: "left", cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.2)", maxWidth: isMobile ? 180 : 300 }}>
             <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#b45309" }}>🎯 CURRENT QUEST</div>
-            <div style={{ fontSize: 12.5, fontWeight: 900, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{curNode.name}</div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#92400e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{questText(pickQuestCond(curNode))}</div>
+            <div style={{ fontSize: 12.5, fontWeight: 900, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{questMission(curNode).title}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#92400e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{curNode.name} ・ {questMission(curNode).detail}</div>
           </button>
         )}
       </div>

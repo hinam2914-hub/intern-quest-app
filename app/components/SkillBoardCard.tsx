@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { evaluateUser, syncUnlocks, getFocus, pickQuestCond, questText, nearestJob, CATEGORIES, type EvalResult, type Focus } from "../lib/skills";
+import { evaluateUser, syncUnlocks, getFocus, questMission, nearestJob, CATEGORIES, type EvalResult, type Focus } from "../lib/skills";
 
 export default function SkillBoardCard({ userId, mode = "self" }: { userId?: string; mode?: "self" | "public" }) {
   const router = useRouter();
@@ -48,7 +48,7 @@ export default function SkillBoardCard({ userId, mode = "self" }: { userId?: str
     </div>
   );
 
-  const qc = cur ? pickQuestCond(cur) : null;
+  const qm = cur ? questMission(cur) : null;
   return (
     <div style={card}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -66,7 +66,10 @@ export default function SkillBoardCard({ userId, mode = "self" }: { userId?: str
             </div>
             <span style={{ fontSize: 12, fontWeight: 900, color: "#b45309" }}>{Math.round(cur.progress * 100)}%</span>
           </div>
-          {qc && <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e", marginTop: 6 }}>{questText(qc)}</div>}
+          {qm && <div style={{ marginTop: 6 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 900, color: "#1e293b" }}>{qm.title}</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e", marginTop: 2 }}>{qm.detail}</div>
+          </div>}
         </div>
       ) : (
         <div onClick={() => router.push("/skill-board")} style={{ marginTop: 10, background: "#fffbeb", border: "1.5px dashed #fbbf24", borderRadius: 12, padding: "10px 12px", fontSize: 13, fontWeight: 800, color: "#92400e", cursor: "pointer" }}>🎯 挑戦するスキルを選ぼう →</div>

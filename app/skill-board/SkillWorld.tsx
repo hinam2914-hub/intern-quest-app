@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { pickQuestCond, questText, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
+import { questMission, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
 import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, pt, curve, type Pt } from "./world";
 
 type Cam = { x: number; y: number; s: number };
@@ -106,7 +106,9 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const currentNode = focus.current ? res.nodes.find((n) => n.id === focus.current) ?? null : null;
   const nextBest = currentNode ?? res.nodes.filter((n) => n.status === "available").sort((a, b) => b.progress - a.progress)[0];
   const nextPos = nextBest ? NODE_POS[nextBest.id] : null;
-  const bubble = nextBest ? (questText(pickQuestCond(nextBest)) || `次は「${nextBest.name}」`) : "";
+  const mission = nextBest ? questMission(nextBest) : null;
+  const bubble = mission ? (currentNode ? mission.title : `次は「${nextBest!.name}」`) : "";
+  const bubbleSub = mission && currentNode ? mission.detail : "";
   const facingLeft = nextPos ? nextPos.x < homePos.x : false;
 
   function clamp(c: Cam): Cam { const minX = vp.w - WORLD_W * c.s, minY = vp.h - WORLD_H * c.s; return { s: c.s, x: Math.min(0, Math.max(minX, c.x)), y: Math.min(0, Math.max(minY, c.y)) }; }
@@ -442,9 +444,10 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           <div style={{ position: "absolute", left: 14, right: 14, bottom: -4, height: 40, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(251,191,36,.7), rgba(251,191,36,0) 70%)", animation: "swGlow 1.8s ease-in-out infinite alternate" }} />
           <div style={{ position: "absolute", left: 38, right: 38, bottom: 6, height: 16, borderRadius: "50%", background: "rgba(0,0,0,.25)", filter: "blur(4px)" }} />
           {bubble && (
-            <div style={{ position: "absolute", bottom: 136, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: "linear-gradient(180deg,#fff,#fffbeb)", borderRadius: 16, padding: "7px 14px", fontSize: 13, fontWeight: 900, color: "#1e293b", boxShadow: "0 6px 16px rgba(0,0,0,.2)", border: "2.5px solid #fde68a", textAlign: "center" }}>
+            <div style={{ position: "absolute", bottom: bubbleSub ? 150 : 136, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: "linear-gradient(180deg,#fff,#fffbeb)", borderRadius: 16, padding: "7px 14px", fontSize: 13, fontWeight: 900, color: "#1e293b", boxShadow: "0 6px 16px rgba(0,0,0,.2)", border: "2.5px solid #fde68a", textAlign: "center" }}>
               {currentNode && <div style={{ fontSize: 9, letterSpacing: 1, color: "#b45309" }}>🎯 CURRENT QUEST ・ {currentNode.name}</div>}
               <div>{bubble}</div>
+              {bubbleSub && <div style={{ fontSize: 11, fontWeight: 800, color: "#92400e", marginTop: 2 }}>{bubbleSub}</div>}
               <div style={{ position: "absolute", bottom: -8, left: "50%", marginLeft: -7, width: 14, height: 14, background: "#fffbeb", transform: "rotate(45deg)", borderRight: "2.5px solid #fde68a", borderBottom: "2.5px solid #fde68a" }} />
             </div>
           )}
