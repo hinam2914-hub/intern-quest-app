@@ -399,7 +399,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             <div style={{ fontSize: 11.5, fontWeight: 800, color: "#92400e", marginTop: 4, textShadow: "0 0 4px #fff" }}>{j.unlocked ? "👑 到達！" : haze ? "山頂に巨大な城が見える…" : `${done} / ${j.requires.length} skills`}</div>
           </div>);
           if (j.id === "mentor") return (
-            <div key={j.id} style={{ position: "absolute", left: p.x - 150, top: p.y - 230, width: 300, textAlign: "center", zIndex: 9 }}>
+            <div key={j.id} style={{ position: "absolute", left: p.x - 230, top: p.y - 230, width: 300, textAlign: "center", zIndex: 9 }}>
               <div style={{ position: "absolute", left: "15%", right: "15%", bottom: 50, height: 40, borderRadius: "50%", background: j.unlocked ? "rgba(251,191,36,.6)" : "rgba(60,60,80,.25)", filter: "blur(14px)" }} />
               <div style={{ position: "relative", display: "inline-block", filter: j.unlocked ? "drop-shadow(0 0 30px #fbbf24)" : "drop-shadow(0 12px 12px rgba(0,0,0,.28))" }}>
                 <img src="/world/job_mentor.png" alt="" style={{ width: 280, display: "block" }} />
@@ -409,12 +409,12 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             </div>
           );
           if (j.id === "closer") return (
-            <div key={j.id} style={{ position: "absolute", left: p.x - 250, top: p.y - 250, width: 320, textAlign: "center", zIndex: 9 }}>
+            <div key={j.id} style={{ position: "absolute", left: p.x - 215, top: p.y - 230, width: 260, textAlign: "center", zIndex: 9 }}>
               <div style={{ position: "absolute", left: "15%", right: "15%", bottom: 50, height: 44, borderRadius: "50%", background: j.unlocked ? "rgba(251,191,36,.6)" : "rgba(60,60,80,.25)", filter: "blur(14px)" }} />
               <div style={{ position: "relative", display: "inline-block", filter: j.unlocked ? "drop-shadow(0 0 30px #fbbf24)" : "drop-shadow(0 12px 12px rgba(0,0,0,.28))" }}>
-                <img src="/world/job_closer.png" alt="" style={{ width: 300, display: "block" }} />
+                <img src="/world/job_closer.png" alt="" style={{ width: 250, display: "block" }} />
                 {/* 入口の紋章4つ：取得ごとに点灯 */}
-                {[0, 1, 2, 3].map((i) => <div key={i} style={{ position: "absolute", left: 96 + i * 30, bottom: 34, width: 18, height: 18, borderRadius: 9, background: i < done ? "#fde68a" : "rgba(255,255,255,.35)", border: "2px solid #b45309", boxShadow: i < done ? "0 0 12px 4px rgba(251,191,36,.8)" : "none" }} />)}
+                {[0, 1, 2, 3].map((i) => <div key={i} style={{ position: "absolute", left: 80 + i * 26, bottom: 28, width: 16, height: 16, borderRadius: 9, background: i < done ? "#fde68a" : "rgba(255,255,255,.35)", border: "2px solid #b45309", boxShadow: i < done ? "0 0 12px 4px rgba(251,191,36,.8)" : "none" }} />)}
                 {j.unlocked && <div style={{ position: "absolute", left: "50%", bottom: 40, transform: "translateX(-50%)", width: 60, height: 70, background: "radial-gradient(ellipse at 50% 100%, rgba(251,191,36,.9), rgba(251,191,36,0) 70%)" }} />}
               </div>
               <div style={{ marginTop: -36 }}>{label}</div>
