@@ -16,6 +16,7 @@ export default function SkillBoardPage() {
   const [res, setRes] = useState<EvalResult | null>(null);
   const [focus, setFocus] = useState<Focus>({ current: null, subs: [] });
   const [mentorRecos, setMentorRecos] = useState<Reco[]>([]);
+  const [title, setTitle] = useState<{ name: string; icon: string | null } | null>(null);
   const [locId, setLocId] = useState<string | null>(null);
   const [sel, setSel] = useState<NodeState | null>(null);
   const [focusTo, setFocusTo] = useState<{ key: number; target: Pt } | undefined>();
@@ -55,6 +56,19 @@ export default function SkillBoardPage() {
     }
     setRes(r);
     setMentorRecos(await getMentorRecommendations(supabase, user.id, r));
+    // 称号：直近に獲得したものを装備扱い。新規取得は TITLE UNLOCKED 演出
+    try {
+      const { data: ub } = await supabase.from("user_badges").select("badge_id, granted_at, badges(name, icon)").eq("user_id", user.id).order("granted_at", { ascending: false }).limit(20);
+      const list = (ub ?? []).map((x: any) => ({ id: x.badge_id as string, name: x.badges?.name as string, icon: (x.badges?.icon ?? null) as string | null }));
+      if (list.length) setTitle({ name: list[0].name, icon: list[0].icon });
+      const key = `iq_seen_badges_${user.id}`;
+      const seen: string[] = JSON.parse(localStorage.getItem(key) ?? "null") ?? [];
+      if (localStorage.getItem(key) !== null) {
+        const fresh = list.filter((b) => !seen.includes(b.id));
+        if (fresh.length) setCelebrate((q) => [...q, ...fresh.map((b) => ({ title: b.name, sub: "TITLE UNLOCKED", icon: b.icon ?? "🏆", key: false }))]);
+      }
+      localStorage.setItem(key, JSON.stringify(list.map((b) => b.id)));
+    } catch {}
     const f = newNodes.length ? await getFocus(supabase, user.id) : await refreshFocus(user.id, r);
     if (newNodes.length) setFocus(f);
     if (initial && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("focus") === "1" && f.current && NODE_POS[f.current]) setTimeout(() => setFocusTo({ key: Date.now(), target: NODE_POS[f.current!] }), 50);
@@ -123,7 +137,7 @@ export default function SkillBoardPage() {
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
-      <SkillWorld res={res} avatarId={avatarId} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} />
+      <SkillWorld res={res} avatarId={avatarId} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} />
 
       {/* HUD 上 */}
       <div style={{ position: "absolute", top: 12, left: 12, right: 12, display: "flex", gap: 8, alignItems: "flex-start", zIndex: 40, pointerEvents: "none" }}>
@@ -158,9 +172,10 @@ export default function SkillBoardPage() {
       {celebrate.length > 0 && (
         <div onClick={closeCelebration} style={{ position: "fixed", inset: 0, background: "rgba(255,255,255,.72)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, cursor: "pointer" }}>
           <div style={{ textAlign: "center", background: "linear-gradient(135deg,#fffbeb,#fef3c7)", borderRadius: 28, padding: "32px 44px", boxShadow: "0 20px 60px rgba(200,150,0,.35)", animation: "swPop .5s ease-out" }}>
-            <div style={{ fontSize: 13, letterSpacing: 4, color: celebrate[0].key ? "#b45309" : "#7c3aed", fontWeight: 900 }}>✨ {celebrate[0].sub} ✨</div>
+            <div style={{ fontSize: 13, letterSpacing: 4, color: celebrate[0].key ? "#b45309" : "#7c3aed", fontWeight: 900 }}>{celebrate[0].sub === "TITLE UNLOCKED" ? "🏆" : "✨"} {celebrate[0].sub} {celebrate[0].sub === "TITLE UNLOCKED" ? "🏆" : "✨"}</div>
             <div style={{ fontSize: celebrate[0].key ? 96 : 76, margin: "8px 0", filter: "drop-shadow(0 0 24px #fbbf24)" }}>{celebrate[0].icon}</div>
             <div style={{ fontSize: celebrate[0].key ? 30 : 24, fontWeight: 900, color: "#1e293b" }}>《{celebrate[0].title}》</div>
+            {celebrate[0].sub === "TITLE UNLOCKED" && <div style={{ fontSize: 13, color: "#92400e", marginTop: 4 }}>称号を獲得しました</div>}
             <div style={{ fontSize: 11, color: "#92400e", marginTop: 16 }}>タップして進む{celebrate.length > 1 ? `（あと${celebrate.length - 1}）` : ""}</div>
           </div>
           <style>{`@keyframes swPop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}`}</style>

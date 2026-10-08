@@ -69,9 +69,9 @@ function treeSeeds(): { x: number; y: number; k: number; s: number }[] {
   return out.sort((a, b) => a.y - b.y);
 }
 
-export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos }: {
+export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title }: {
   res: EvalResult; avatarId: string | null; selectedId: string | null; onSelect: (n: NodeState | null) => void; focusTo?: { key: number; target: Pt };
-  focus: Focus; locNodeId: string | null; walk: Walk | null; onWalkEnd?: () => void; recos?: Reco[];
+  focus: Focus; locNodeId: string | null; walk: Walk | null; onWalkEnd?: () => void; recos?: Reco[]; title?: { name: string; icon: string | null } | null;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [cam, setCam] = useState<Cam>({ x: 0, y: 0, s: 1 });
@@ -447,6 +447,9 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
               <div>{bubble}</div>
               <div style={{ position: "absolute", bottom: -8, left: "50%", marginLeft: -7, width: 14, height: 14, background: "#fffbeb", transform: "rotate(45deg)", borderRight: "2.5px solid #fde68a", borderBottom: "2.5px solid #fde68a" }} />
             </div>
+          )}
+          {title && (
+            <div style={{ position: "absolute", top: -4, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", padding: "2px 9px", borderRadius: 999, background: "linear-gradient(135deg,#fde68a,#f59e0b)", color: "#78350f", fontSize: 10.5, fontWeight: 900, border: "1.5px solid #fff", boxShadow: "0 2px 8px rgba(180,120,0,.35)", zIndex: 2 }}>{title.icon ?? "🏅"} {title.name}</div>
           )}
           <div style={{ animation: "swBob 2.4s ease-in-out infinite", position: "relative", transform: facingLeft ? "scaleX(-1)" : "none" }}>
             {avatarId ? <img src={`/avatars/${avatarId}.png`} alt="" style={{ width: 128, display: "block", filter: "drop-shadow(0 10px 10px rgba(0,0,0,.28))" }} /> : <div style={{ fontSize: 100, textAlign: "center" }}>🧑‍🚀</div>}
