@@ -108,7 +108,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const nextPos = nextBest ? NODE_POS[nextBest.id] : null;
   const mission = nextBest ? questMission(nextBest) : null;
   const bubble = mission ? (currentNode ? mission.title : `次は「${nextBest!.name}」`) : "";
-  const bubbleSub = mission && currentNode ? mission.detail : "";
+  const bubbleSub = mission ? mission.detail : "";
   const facingLeft = nextPos ? nextPos.x < homePos.x : false;
 
   function clamp(c: Cam): Cam { const minX = vp.w - WORLD_W * c.s, minY = vp.h - WORLD_H * c.s; return { s: c.s, x: Math.min(0, Math.max(minX, c.x)), y: Math.min(0, Math.max(minY, c.y)) }; }
