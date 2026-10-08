@@ -409,22 +409,15 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             </div>
           );
           if (j.id === "closer") return (
-            <div key={j.id} style={{ position: "absolute", left: p.x - 170, top: p.y - 200, width: 340, textAlign: "center", zIndex: 9 }}>
-              <div style={{ position: "absolute", left: "15%", right: "15%", bottom: 44, height: 44, borderRadius: "50%", background: j.unlocked ? "rgba(251,191,36,.6)" : "rgba(60,60,80,.25)", filter: "blur(14px)" }} />
-              <svg width="300" height="190" viewBox="0 0 300 190" style={{ filter: j.unlocked ? "drop-shadow(0 0 30px #fbbf24)" : "drop-shadow(0 10px 10px rgba(0,0,0,.28))" }}>
-                <ellipse cx="150" cy="120" rx="140" ry="58" fill="#e8dcc0" stroke="#b9834a" strokeWidth="5" />
-                <ellipse cx="150" cy="112" rx="112" ry="42" fill="#d9c7a0" />
-                <ellipse cx="150" cy="112" rx="80" ry="28" fill="#86d36f" />
-                <rect x="120" y="100" width="60" height="26" rx="3" fill="none" stroke="#fff" strokeWidth="2" />
-                <path d="M 10 120 a140 58 0 0 1 280 0" fill="none" stroke="#ef4444" strokeWidth="18" opacity=".9" />
-                <path d="M 30 120 a120 48 0 0 1 240 0" fill="none" stroke="#fbbf24" strokeWidth="6" />
-                {[0, 1, 2].map((i) => <g key={i}><rect x={70 + i * 80} y="40" width="4" height="40" fill="#8a5a2b" /><polygon points={`${74 + i * 80},40 ${98 + i * 80},48 ${74 + i * 80},56`} fill={["#ef4444", "#fbbf24", "#3b82f6"][i]} /></g>)}
-                <rect x="228" y="6" width="26" height="110" rx="4" fill="#f3e2c3" stroke="#b9834a" strokeWidth="3" /><polygon points="224,10 241,-14 258,10" fill="#ef4444" />
-                {/* 紋章 4つ */}
-                {[0, 1, 2, 3].map((i) => <circle key={i} cx={96 + i * 36} cy="166" r="12" fill={i < done ? "#fbbf24" : "#e2e8f0"} stroke="#92400e" strokeWidth="2.5" style={i < done ? { filter: "drop-shadow(0 0 6px #fbbf24)" } : undefined} />)}
-                <text x="150" y="171" textAnchor="middle" fontSize="11" fontWeight="900" fill="#92400e">{"⚜".repeat(0)}</text>
-              </svg>
-              {label}
+            <div key={j.id} style={{ position: "absolute", left: p.x - 250, top: p.y - 250, width: 320, textAlign: "center", zIndex: 9 }}>
+              <div style={{ position: "absolute", left: "15%", right: "15%", bottom: 50, height: 44, borderRadius: "50%", background: j.unlocked ? "rgba(251,191,36,.6)" : "rgba(60,60,80,.25)", filter: "blur(14px)" }} />
+              <div style={{ position: "relative", display: "inline-block", filter: j.unlocked ? "drop-shadow(0 0 30px #fbbf24)" : "drop-shadow(0 12px 12px rgba(0,0,0,.28))" }}>
+                <img src="/world/job_closer.png" alt="" style={{ width: 300, display: "block" }} />
+                {/* 入口の紋章4つ：取得ごとに点灯 */}
+                {[0, 1, 2, 3].map((i) => <div key={i} style={{ position: "absolute", left: 96 + i * 30, bottom: 34, width: 18, height: 18, borderRadius: 9, background: i < done ? "#fde68a" : "rgba(255,255,255,.35)", border: "2px solid #b45309", boxShadow: i < done ? "0 0 12px 4px rgba(251,191,36,.8)" : "none" }} />)}
+                {j.unlocked && <div style={{ position: "absolute", left: "50%", bottom: 40, transform: "translateX(-50%)", width: 60, height: 70, background: "radial-gradient(ellipse at 50% 100%, rgba(251,191,36,.9), rgba(251,191,36,0) 70%)" }} />}
+              </div>
+              <div style={{ marginTop: -36 }}>{label}</div>
             </div>
           );
           return (
