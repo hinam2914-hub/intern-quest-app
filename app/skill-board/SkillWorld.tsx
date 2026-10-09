@@ -50,6 +50,13 @@ function treeSeeds(): { x: number; y: number; k: number; s: number }[] {
   return clusterItems(COMM_CLUSTERS.concat(WORLD_CLUSTERS)).filter((t) => !nodes.some((p) => Math.hypot(p.x - t.x, p.y - t.y) < 58));
 }
 
+/** 地形の塗り（CSS clip-path ＋ background-image）。SVG <pattern> は iOS Safari で黒くなるため使わない */
+function Fill({ d, dy = 0, img, size, pos, color, mask, opacity }: { d: string; dy?: number; img?: string; size?: number | string; pos?: string; color?: string; mask?: string; opacity?: number }) {
+  const bg = [img ? `url(${img})` : "", color ?? ""].filter(Boolean).join(",");
+  const clip = `path("${d}")`;
+  return <div style={{ position: "absolute", left: 0, top: dy, width: WORLD_W, height: WORLD_H, clipPath: clip, WebkitClipPath: clip, backgroundImage: bg || undefined, backgroundSize: img ? `${typeof size === "number" ? `${size}px ${size}px` : size}, auto` : undefined, backgroundPosition: pos, backgroundRepeat: "repeat", opacity, WebkitMaskImage: mask, maskImage: mask, pointerEvents: "none" }} />;
+}
+
 /** 地形タイル画像のうち実在するもの（未配置なら SVG グラデにフォールバック） */
 function useTerrainImages(): Record<string, boolean> {
   const [ok, setOk] = useState<Record<string, boolean>>({});
@@ -70,7 +77,6 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const [vp, setVp] = useState({ w: 1200, h: 800 });
   const trees = useMemo(treeSeeds, []);
   const tx = useTerrainImages();
-  const T = (k: keyof typeof TERRAIN_IMG, id: string) => (tx[k] ? `url(#${id})` : "none");
 
   const byId = new Map(res.nodes.map((n) => [n.id, n]));
   const unlockedByCat: Record<string, number> = {};
@@ -207,7 +213,48 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
       {/* ===== ワールド ===== */}
       <div style={{ position: "absolute", left: 0, top: 0, width: WORLD_W, height: WORLD_H, transform: `translate(${cam.x}px,${cam.y}px) scale(${cam.s})`, transformOrigin: "0 0", willChange: "transform", zIndex: 1 }}>
 
-        {/* ---------- 地形 SVG ---------- */}
+        {/* ---------- 遠景 SVG（山・大陸の影） ---------- */}
+        <svg width={WORLD_W} height={WORLD_H} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
+          <defs>
+            <linearGradient id="mtA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#dbe9f5" /><stop offset="1" stopColor="#a9c6e0" /></linearGradient>
+            <filter id="softA"><feGaussianBlur stdDeviation="6" /></filter>
+          </defs>
+          {/* 山（MGMT奥）＋MANAGERの峰 */}
+          <path d="M 1150 560 L 1350 300 L 1470 400 L 1620 220 L 1760 360 L 1880 180 L 2000 360 L 2000 640 L 1150 640 Z" fill="#bcd3e6" />
+          <path d="M 1620 220 L 1560 320 L 1690 320 Z M 1880 180 L 1820 280 L 1940 280 Z" fill="#f1f6fb" />
+          <ellipse cx="1880" cy="360" rx="130" ry="36" fill="#cfe0ee" />
+
+          <path d={blobPath(LAND_PTS)} transform="translate(0,88)" fill="#000" opacity=".16" filter="url(#softA)" />
+          <path d={blobPath(HIGHLAND_PTS)} transform="translate(0,30)" fill="#000" opacity=".14" filter="url(#softA)" />
+          <path d={blobPath(UPPER_PTS)} transform="translate(0,22)" fill="#000" opacity=".14" filter="url(#softA)" />
+          <path d={blobPath(AI_DECK_PTS)} transform="translate(0,26)" fill="#1e1b4b" opacity=".18" filter="url(#softA)" />
+        </svg>
+
+        {/* ---------- Layer2 ベース地形（CSS塗り：iOS対応） ---------- */}
+        {/* 大陸：崖 → 草原 */}
+        <Fill d={blobPath(LAND_PTS)} dy={64} color="linear-gradient(180deg,#b08a5c 0%,#8b6a44 40%,#4b3626 100%)" />
+        <Fill d={blobPath(LAND_PTS)} dy={64} img={TERRAIN_IMG.cliff} size="1130px 260px" pos="0 1096px" />
+        <Fill d={blobPath(LAND_PTS)} img={TERRAIN_IMG.grass} size={384} color="linear-gradient(180deg,#b9ea95,#7fcc74)" />
+        {/* THINKING：森（縁ぼかし） */}
+        <Fill d={blobPath(FOREST_PTS)} img={TERRAIN_IMG.forest} size={360} color="linear-gradient(180deg,#a6e29a,#6fbf72)" mask="radial-gradient(ellipse 940px 330px at 757px 767px, #000 58%, transparent 100%)" />
+        {/* MANAGEMENT：段丘 */}
+        <Fill d={blobPath(HIGHLAND_PTS)} dy={20} color="linear-gradient(180deg,#b08a5c 0%,#8b6a44 40%,#4b3626 100%)" />
+        <Fill d={blobPath(HIGHLAND_PTS)} img={TERRAIN_IMG.highland} size={380} color="linear-gradient(180deg,#e6f6d6,#a9d49a)" />
+        <Fill d={blobPath(UPPER_PTS)} dy={16} color="linear-gradient(180deg,#b08a5c 0%,#8b6a44 40%,#4b3626 100%)" />
+        <Fill d={blobPath(UPPER_PTS)} img={TERRAIN_IMG.highland} size={380} color="linear-gradient(180deg,#e6f6d6,#a9d49a)" />
+        {/* AI：研究デッキ */}
+        <Fill d={blobPath(AI_DECK_PTS)} dy={12} color="#7c6fb0" opacity={0.9} />
+        <Fill d={blobPath(AI_DECK_PTS)} img={TERRAIN_IMG.ai} size={220} color="#ede9fe" />
+        {/* COMM：丘・花畑 */}
+        <Fill d={blobPath(HILL_PTS)} color="#8fd47a" opacity={0.55} />
+        <Fill d={blobPath(MEADOW_PTS)} img={TERRAIN_IMG.meadow} size={384} color="linear-gradient(180deg,#c9f3a8,#b6e89a)" mask="radial-gradient(ellipse 760px 140px at 685px 1185px, #000 60%, transparent 100%)" />
+        {/* SALES：石畳（西端は草へ溶ける） */}
+        <Fill d={blobPath(STONE_PTS)} img={TERRAIN_IMG.stone} size={200} color="linear-gradient(180deg,#f7e9cf,#e5cfa5)" mask="linear-gradient(90deg, transparent 1080px, #000 1280px)" />
+        {/* 湖 */}
+        <div style={{ position: "absolute", left: 802, top: 812, width: 256, height: 116, borderRadius: "50%", background: "#e6dcc0", opacity: 0.9, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", left: 810, top: 818, width: 240, height: 104, borderRadius: "50%", backgroundImage: `url(${TERRAIN_IMG.water}), radial-gradient(ellipse at 50% 35%, #d8f1ff, #5fb0f0)`, backgroundSize: "220px 220px, auto", boxShadow: "inset 0 0 0 3px rgba(255,255,255,.8)", pointerEvents: "none" }} />
+
+        {/* ---------- 地形 SVG（縁・水・道・装飾） ---------- */}
         <svg width={WORLD_W} height={WORLD_H} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
           <defs>
             <radialGradient id="grass" cx="45%" cy="35%" r="75%"><stop offset="0" stopColor="#c9f3a8" /><stop offset=".6" stopColor="#8fd47a" /><stop offset="1" stopColor="#5fb56a" /></radialGradient>
@@ -222,14 +269,6 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             <filter id="cloudf"><feGaussianBlur stdDeviation="9" /></filter>
             <filter id="shadowSoft"><feGaussianBlur stdDeviation="3" /></filter>
             {/* 地形タイル（画像が無ければ透明＝下のグラデーションが見える） */}
-            {tx.grass && <pattern id="txGrass" width="384" height="384" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.grass} width="384" height="384" /></pattern>}
-            {tx.meadow && <pattern id="txMeadow" width="384" height="384" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.meadow} width="384" height="384" /></pattern>}
-            {tx.stone && <pattern id="txStone" width="200" height="200" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.stone} width="200" height="200" /></pattern>}
-            {tx.water && <pattern id="txWater" width="220" height="220" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.water} width="220" height="220" /></pattern>}
-            {tx.cliff && <pattern id="txCliff" x="0" y="1160" width="1130" height="260" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.cliff} width="1130" height="260" preserveAspectRatio="none" /></pattern>}
-            {tx.forest && <pattern id="txForest" width="360" height="360" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.forest} width="360" height="360" /></pattern>}
-            {tx.highland && <pattern id="txHighland" width="380" height="380" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.highland} width="380" height="380" /></pattern>}
-            {tx.ai && <pattern id="txAi" width="220" height="220" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.ai} width="220" height="220" /></pattern>}
             <radialGradient id="forestFade" cx="50%" cy="50%" r="50%"><stop offset=".55" stopColor="#fff" /><stop offset="1" stopColor="#000" /></radialGradient>
             <mask id="forestMask"><path d={blobPath(FOREST_PTS)} fill="url(#forestFade)" /></mask>
             <linearGradient id="aiGlow" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#67e8f9" /><stop offset=".5" stopColor="#c4b5fd" /><stop offset="1" stopColor="#67e8f9" /></linearGradient>
@@ -250,62 +289,17 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             <clipPath id="clipComm"><ellipse cx="680" cy="1095" rx="540" ry="150" /></clipPath>
           </defs>
 
-          {/* 山（MGMT奥）＋MANAGERの峰 */}
-          <path d="M 1150 560 L 1350 300 L 1470 400 L 1620 220 L 1760 360 L 1880 180 L 2000 360 L 2000 640 L 1150 640 Z" fill="#bcd3e6" />
-          <path d="M 1620 220 L 1560 320 L 1690 320 Z M 1880 180 L 1820 280 L 1940 280 Z" fill="#f1f6fb" />
-          <ellipse cx="1880" cy="360" rx="130" ry="36" fill="#cfe0ee" />
-
-          {/* ===== Layer2 ベース地形：大陸（1本の輪郭。楕円は使わない） ===== */}
-          <path d={blobPath(LAND_PTS)} transform="translate(0,88)" fill="#000" opacity=".16" filter="url(#soft)" />
-          <path d={blobPath(LAND_PTS)} transform="translate(0,64)" fill="url(#cliffV)" />
-          {tx.cliff && <path d={blobPath(LAND_PTS)} transform="translate(0,64)" fill="url(#txCliff)" />}
+          {/* 縁のライン・影（塗り本体は下の DIV 層） */}
           <path d={blobPath(LAND_PTS)} transform="translate(0,64)" fill="none" stroke="#3b2a1c" strokeWidth="2" opacity=".3" />
-          {!tx.cliff && <g clipPath="url(#clipLand)" transform="translate(0,64)" opacity=".25">
-            {[8, 20, 34, 48].map((o) => <path key={o} d={blobPath(LAND_PTS)} transform={`translate(0,${o})`} fill="none" stroke="#f5deb3" strokeWidth="2" />)}
-          </g>}
-          <path d={blobPath(LAND_PTS)} fill="url(#grassBase)" />
-          <path d={blobPath(LAND_PTS)} fill={T("grass", "txGrass")} />
-          {!tx.grass && <path d={blobPath(LAND_PTS)} fill="url(#grassDots)" opacity=".28" />}
-          {/* 草地の縁（崖との境に明るいライン） */}
           <path d={blobPath(LAND_PTS)} fill="none" stroke="#dfffb8" strokeWidth="5" opacity=".7" />
           <path d={blobPath(LAND_PTS)} transform="translate(0,6)" fill="none" stroke="#5a9a52" strokeWidth="3" opacity=".35" clipPath="url(#clipLand)" />
-
-          {/* ===== THINKING：知恵の森（濃い床、縁はぼかし） ===== */}
-          {tx.forest ? <path d={blobPath(FOREST_PTS)} fill="url(#txForest)" mask="url(#forestMask)" /> : <path d={blobPath(FOREST_PTS)} fill="url(#forest)" opacity=".85" />}
           <path d={blobPath(FOREST_PTS)} fill="none" stroke="#2f6b3a" strokeWidth="10" opacity=".12" filter="url(#soft)" />
-
-          {/* ===== MANAGEMENT：高原（下段→上段の段丘） ===== */}
-          <path d={blobPath(HIGHLAND_PTS)} transform="translate(0,30)" fill="#000" opacity=".14" filter="url(#soft)" />
-          <path d={blobPath(HIGHLAND_PTS)} transform="translate(0,20)" fill="url(#cliffV)" />
           <path d={blobPath(HIGHLAND_PTS)} transform="translate(0,20)" fill="none" stroke="#f5deb3" strokeWidth="2" opacity=".25" />
-          <path d={blobPath(HIGHLAND_PTS)} fill="url(#high)" />
-          {tx.highland && <path d={blobPath(HIGHLAND_PTS)} fill="url(#txHighland)" />}
           <path d={blobPath(HIGHLAND_PTS)} fill="none" stroke="#f3f8e8" strokeWidth="4" opacity=".7" />
-          <path d={blobPath(UPPER_PTS)} transform="translate(0,22)" fill="#000" opacity=".14" filter="url(#soft)" />
-          <path d={blobPath(UPPER_PTS)} transform="translate(0,16)" fill="url(#cliffV)" />
-          <path d={blobPath(UPPER_PTS)} fill="url(#high)" />
-          {tx.highland && <path d={blobPath(UPPER_PTS)} fill="url(#txHighland)" />}
           <path d={blobPath(UPPER_PTS)} fill="none" stroke="#f3f8e8" strokeWidth="4" opacity=".75" />
-
-          {/* ===== AI：空中研究デッキ（浮島をつなぐ床） ===== */}
-          <path d={blobPath(AI_DECK_PTS)} transform="translate(0,26)" fill="#1e1b4b" opacity=".18" filter="url(#cloudf)" />
-          <path d={blobPath(AI_DECK_PTS)} transform="translate(0,12)" fill="#7c6fb0" opacity=".9" />
-          <path d={blobPath(AI_DECK_PTS)} fill="#ede9fe" />
-          {tx.ai && <path d={blobPath(AI_DECK_PTS)} fill="url(#txAi)" opacity=".95" />}
           <path d={blobPath(AI_DECK_PTS)} fill="none" stroke="url(#aiGlow)" strokeWidth="4" opacity=".9" style={{ filter: "drop-shadow(0 0 6px #67e8f9)" }} />
-
-          {/* ===== COMM：丘・花畑（不定形） ===== */}
-          <path d={blobPath(HILL_PTS)} fill="#8fd47a" opacity=".55" />
           <path d={blobPath(HILL_PTS)} fill="none" stroke="#dfffb8" strokeWidth="3" opacity=".5" />
-          {tx.meadow ? <path d={blobPath(MEADOW_PTS)} fill="url(#txMeadow)" mask="url(#meadowMask)" /> : <>
-            <path d={blobPath(MEADOW_PTS)} fill="#c9f3a8" opacity=".6" />
-            <path d={blobPath(MEADOW_PTS)} fill="url(#flowers)" opacity=".7" /></>}
-
-          {/* ===== SALES 入口：石畳（西端は草へ溶ける） ===== */}
           <g mask="url(#stoneMask)">
-            <path d={blobPath(STONE_PTS)} fill="url(#sand)" />
-            <path d={blobPath(STONE_PTS)} fill="url(#cobble)" opacity=".7" />
-            <path d={blobPath(STONE_PTS)} fill={T("stone", "txStone")} />
             <path d={blobPath(STONE_PTS)} fill="none" stroke="#d6c39a" strokeWidth="6" opacity=".8" />
             <ellipse cx="1520" cy="1150" rx="120" ry="40" fill="#f6ecd6" opacity=".55" stroke="#cdb98c" strokeWidth="3" strokeDasharray="10 8" />
           </g>
@@ -314,16 +308,12 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260 C 1140 1300, 1120 1330, 1100 1340" fill="none" stroke="#3b7fc4" strokeWidth="36" strokeLinecap="round" opacity=".35" />
           <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260 C 1140 1300, 1120 1330, 1100 1340" fill="none" stroke="#4f9ee0" strokeWidth="30" strokeLinecap="round" opacity=".9" />
           <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260 C 1140 1300, 1120 1330, 1100 1340" fill="none" stroke="#9ed7f7" strokeWidth="20" strokeLinecap="round" />
-          <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260 C 1140 1300, 1120 1330, 1100 1340" fill="none" stroke={T("water", "txWater")} strokeWidth="20" strokeLinecap="round" />
+          <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260 C 1140 1300, 1120 1330, 1100 1340" fill="none" stroke="#cdeeff" strokeWidth="8" strokeLinecap="round" opacity=".7" />
           <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260" fill="none" stroke="#e0f4ff" strokeWidth="5" strokeDasharray="26 34" strokeLinecap="round" opacity=".9" style={{ animation: "swFlow 3s linear infinite" }} />
-          <ellipse cx="930" cy="870" rx="128" ry="58" fill="#e6dcc0" opacity=".9" />
-          <ellipse cx="930" cy="870" rx="120" ry="52" fill="url(#lake)" />
-          {tx.water && <ellipse cx="930" cy="870" rx="120" ry="52" fill="url(#txWater)" opacity=".9" />}
-          <ellipse cx="930" cy="870" rx="120" ry="52" fill="none" stroke="#fff" strokeWidth="3" opacity=".8" />
+
           <path d={STREAM_D} fill="none" stroke="#3b7fc4" strokeWidth="22" strokeLinecap="round" opacity=".3" />
           <path d={STREAM_D} fill="none" stroke="#5fb0f0" strokeWidth="18" strokeLinecap="round" opacity=".95" />
           <path d={STREAM_D} fill="none" stroke="#b3e3ff" strokeWidth="10" strokeLinecap="round" />
-          <path d={STREAM_D} fill="none" stroke={T("water", "txWater")} strokeWidth="12" strokeLinecap="round" />
           <path d={STREAM_D} fill="none" stroke="#fff" strokeWidth="2.5" strokeDasharray="18 26" strokeLinecap="round" opacity=".8" style={{ animation: "swFlow 4s linear infinite" }} />
           {/* 滝 */}
           <rect x="1088" y="1300" width="30" height="80" rx="8" fill="#cfeeff" opacity=".9" />
