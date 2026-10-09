@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { questMission, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
 import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, pt, curve, type Pt } from "./world";
+import { AREA_BOX, fitBox, centerCam, clampCam, tweenCam, areaAt, type CamCmd, type CamMode, type Insets } from "./camera";
 import { TERRAIN_IMG, blobPath, LAND_PTS, MEADOW_PTS, HILL_PTS, STONE_PTS, STREAM_D, COMM_CLUSTERS, WORLD_CLUSTERS, PILLARS, FOREST_PTS, HIGHLAND_PTS, UPPER_PTS, AI_DECK_PTS, clusterItems } from "./terrain";
 
 type Cam = { x: number; y: number; s: number };
@@ -66,15 +67,26 @@ function useTerrainImages(): Record<string, boolean> {
   return ok;
 }
 
-export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title }: {
+export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title, camCmd, onAreaTap, onCamMode, hud }: {
   res: EvalResult; avatarId: string | null; selectedId: string | null; onSelect: (n: NodeState | null) => void; focusTo?: { key: number; target: Pt };
   focus: Focus; locNodeId: string | null; walk: Walk | null; onWalkEnd?: () => void; recos?: Reco[]; title?: { name: string; icon: string | null } | null;
+  /** カメラ指示（WORLD / AREA / QUEST）。key が変わるたびに実行 */
+  camCmd?: CamCmd; onAreaTap?: (area: string) => void; onCamMode?: (mode: CamMode, area: string | null) => void;
+  /** HUD が占める領域（fit の計算から除外） */
+  hud?: Insets;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [cam, setCam] = useState<Cam>({ x: 0, y: 0, s: 1 });
   const drag = useRef<{ x: number; y: number; cx: number; cy: number; moved: boolean } | null>(null);
   const pinch = useRef<{ d: number; s: number } | null>(null);
   const [vp, setVp] = useState({ w: 1200, h: 800 });
+  const isMobile = vp.w < 640;
+  const ins: Insets = hud ?? (isMobile ? { top: 64, bottom: 84, left: 0, right: 0 } : { top: 0, bottom: 0, left: 0, right: 0 });
+  const camRef = useRef<Cam>({ x: 0, y: 0, s: 1 });
+  const tweenCancel = useRef<(() => void) | null>(null);
+  const modeRef = useRef<CamMode>("free");
+  const areaRef = useRef<string | null>(null);
+  const nodeClicked = useRef(false);
   const trees = useMemo(treeSeeds, []);
   const tx = useTerrainImages();
 
@@ -109,29 +121,63 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const bubbleSub = mission ? mission.detail : "";
   const facingLeft = nextPos ? nextPos.x < homePos.x : false;
 
-  function clamp(c: Cam): Cam { const minX = vp.w - WORLD_W * c.s, minY = vp.h - WORLD_H * c.s; return { s: c.s, x: Math.min(0, Math.max(minX, c.x)), y: Math.min(0, Math.max(minY, c.y)) }; }
-  function centerOn(p: Pt, s?: number) { const sc = s ?? cam.s; setCam(clamp({ s: sc, x: vp.w / 2 - p.x * sc, y: vp.h / 2 - p.y * sc })); }
+  function clamp(c: Cam): Cam { return clampCam(c, vp); }
+  function setCamNow(c: Cam) { const k = clamp(c); camRef.current = k; setCam(k); }
+  function stopTween() { tweenCancel.current?.(); tweenCancel.current = null; }
+  /** 滑らかにカメラ移動（ユーザー操作で中断） */
+  function animateTo(c: Cam, ms = 600) {
+    stopTween(); const to = clamp(c), from = camRef.current;
+    if (ms <= 0) { setCamNow(to); return; }
+    tweenCancel.current = tweenCam(from, to, ms, (k) => { camRef.current = k; setCam(k); }, () => { tweenCancel.current = null; });
+  }
+  function centerOn(p: Pt, s?: number) { const sc = s ?? camRef.current.s; animateTo({ s: sc, x: vp.w / 2 - p.x * sc, y: vp.h / 2 - p.y * sc }, walk ? 0 : 500); }
+  function setMode(m: CamMode, area: string | null) { modeRef.current = m; areaRef.current = area; onCamMode?.(m, area); }
+  function goWorld() { setMode("world", null); animateTo(fitBox(AREA_BOX.world, vp, ins, 0.92, minS), 650); }
+  function goArea(k: string) { const b = AREA_BOX[k]; if (!b) return; setMode("area", k); animateTo(fitBox(b, vp, ins, 0.94, minS), 650); }
+  function goQuest(p: Pt) { setMode("quest", areaRef.current); animateTo(centerCam(p, isMobile ? 1.5 : Math.max(1.5, camRef.current.s), vp, ins), 650); }
   useEffect(() => { const el = wrapRef.current; if (!el) return; const ro = new ResizeObserver(() => setVp({ w: el.clientWidth, h: el.clientHeight })); ro.observe(el); setVp({ w: el.clientWidth, h: el.clientHeight }); return () => ro.disconnect(); }, []);
+  const minS = isMobile ? 0.12 : Math.max(0.4, Math.max(vp.w / WORLD_W, vp.h / WORLD_H));
   useEffect(() => {
-    const s = vp.w < 640 ? 1.3 : Math.min(2.0, Math.max(1.5, vp.w / 850));
-    const k = vp.w < 640 ? 0.88 : 0.65;
+    if (isMobile) {
+      // スマホ：CURRENT QUEST のエリア → 現在地のエリア → comm を画面に収める
+      const curCat = focus.current ? res.nodes.find((n) => n.id === focus.current)?.category : undefined;
+      const locCat = locNodeId ? res.nodes.find((n) => n.id === locNodeId)?.category : undefined;
+      const k = (modeRef.current === "area" && areaRef.current) || curCat || locCat || "comm";
+      setMode("area", k); setCamNow(fitBox(AREA_BOX[k], vp, ins, 0.94, minS));
+      return;
+    }
+    const s = Math.min(2.0, Math.max(1.5, vp.w / 850));
+    const k = 0.65;
     const av = { x: homePos.x - 74, y: homePos.y - 60 };
     const t = nextPos ? { x: av.x * k + nextPos.x * (1 - k), y: av.y * k + nextPos.y * (1 - k) } : av;
-    setCam(clamp({ s, x: vp.w / 2 - t.x * s, y: vp.h / 2 - t.y * s + 30 }));
+    setCamNow({ s, x: vp.w / 2 - t.x * s, y: vp.h / 2 - t.y * s + 30 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vp.w, vp.h]);
   useEffect(() => { if (focusTo) centerOn(focusTo.target); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusTo?.key]);
-  const minS = Math.max(0.4, Math.max(vp.w / WORLD_W, vp.h / WORLD_H));
-  function onPointerDown(e: React.PointerEvent) { if (pinch.current) return; drag.current = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false }; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); }
-  function onPointerMove(e: React.PointerEvent) { if (!drag.current) return; const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y; if (Math.abs(dx) + Math.abs(dy) > 4) drag.current.moved = true; setCam(clamp({ s: cam.s, x: drag.current.cx + dx, y: drag.current.cy + dy })); }
+  useEffect(() => {
+    if (!camCmd) return;
+    if (camCmd.mode === "world") goWorld(); else if (camCmd.mode === "area" && camCmd.area) goArea(camCmd.area); else if (camCmd.mode === "quest" && camCmd.target) goQuest(camCmd.target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camCmd?.key]);
+  function userTakesOver() { if (tweenCancel.current) stopTween(); if (modeRef.current !== "free") setMode("free", areaRef.current); }
+  function onPointerDown(e: React.PointerEvent) { if (pinch.current) return; stopTween(); drag.current = { x: e.clientX, y: e.clientY, cx: camRef.current.x, cy: camRef.current.y, moved: false }; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); }
+  function onPointerMove(e: React.PointerEvent) { if (!drag.current) return; const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y; if (Math.abs(dx) + Math.abs(dy) > 4) { if (!drag.current.moved) userTakesOver(); drag.current.moved = true; } setCamNow({ s: camRef.current.s, x: drag.current.cx + dx, y: drag.current.cy + dy }); }
   function onPointerUp() { setTimeout(() => { drag.current = null; }, 0); }
-  function zoomAt(ns: number, mx: number, my: number) { const wx = (mx - cam.x) / cam.s, wy = (my - cam.y) / cam.s; setCam(clamp({ s: ns, x: mx - wx * ns, y: my - wy * ns })); }
-  function onWheel(e: React.WheelEvent) { const ns = Math.min(2.2, Math.max(minS, cam.s * (e.deltaY > 0 ? 0.9 : 1.1))); const r = wrapRef.current!.getBoundingClientRect(); zoomAt(ns, e.clientX - r.left, e.clientY - r.top); }
-  function onTouchStart(e: React.TouchEvent) { if (e.touches.length === 2) { pinch.current = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), s: cam.s }; drag.current = null; } }
+  function zoomAt(ns: number, mx: number, my: number) { userTakesOver(); const c = camRef.current; const wx = (mx - c.x) / c.s, wy = (my - c.y) / c.s; setCamNow({ s: ns, x: mx - wx * ns, y: my - wy * ns }); }
+  function onWheel(e: React.WheelEvent) { const ns = Math.min(2.2, Math.max(minS, camRef.current.s * (e.deltaY > 0 ? 0.9 : 1.1))); const r = wrapRef.current!.getBoundingClientRect(); zoomAt(ns, e.clientX - r.left, e.clientY - r.top); }
+  function onTouchStart(e: React.TouchEvent) { if (e.touches.length === 2) { pinch.current = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), s: camRef.current.s }; drag.current = null; stopTween(); } }
   function onTouchMove(e: React.TouchEvent) { if (e.touches.length === 2 && pinch.current) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); const ns = Math.min(2.2, Math.max(minS, pinch.current.s * (d / pinch.current.d))); const r = wrapRef.current!.getBoundingClientRect(); zoomAt(ns, (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left, (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top); } }
   function onTouchEnd(e: React.TouchEvent) { if (e.touches.length < 2) pinch.current = null; }
-  function clickNode(n: NodeState) { if (drag.current?.moved) return; onSelect(n); }
+  function clickNode(n: NodeState) { if (drag.current?.moved) return; nodeClicked.current = true; onSelect(n); if (isMobile && modeRef.current === "world") { const nd = res.nodes.find((x) => x.id === n.id); if (nd) goArea(nd.category); } }
+  /** WORLD VIEW：エリアをタップでそのエリアへ */
+  function onWrapClick(e: React.MouseEvent) {
+    if (nodeClicked.current) { nodeClicked.current = false; return; }
+    if (modeRef.current !== "world" || drag.current?.moved) return;
+    const r = wrapRef.current!.getBoundingClientRect(); const c = camRef.current;
+    const k = areaAt({ x: (e.clientX - r.left - c.x) / c.s, y: (e.clientY - r.top - c.y) / c.s });
+    if (k) { onAreaTap?.(k); goArea(k); }
+  }
 
   /* ---------------- 道 ---------------- */
   const ROAD_STYLE: Record<string, { base: string; top: string; dash?: string; w: number }> = {
@@ -188,7 +234,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const Z = (k: string) => AREA_COLOR[k];
 
   return (
-    <div ref={wrapRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+    <div ref={wrapRef} onClick={onWrapClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
       style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: drag.current ? "grabbing" : "grab", touchAction: "none", background: sky, userSelect: "none", fontFamily: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif' }}>
 
       {/* 遠景（パララックス） */}
@@ -415,6 +461,8 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           const lm = LANDMARK[n.id] ?? {}; const isCur = focus.current === n.id, isSub = focus.subs.includes(n.id);
           const reco = !isCur && !isSub && n.status === "available" ? (recos ?? []).find((rc) => rc.nodeId === n.id) : undefined;
           const lmH = key ? 96 : 70;
+          const locked = n.status === "locked";
+          const quiet = isMobile && locked && !isCur && !sel;   // スマホ：ロック中は看板を出さない
           const filt = fog ? "grayscale(1) brightness(.55) opacity(.45) blur(1px)" : u ? `drop-shadow(0 0 12px ${color}) drop-shadow(0 6px 5px rgba(0,0,0,.25))` : a ? "drop-shadow(0 6px 5px rgba(0,0,0,.25))" : "saturate(.3) opacity(.8) drop-shadow(0 4px 4px rgba(0,0,0,.2))";
           return (
             <div key={n.id} onClick={() => clickNode(n)} style={{ position: "absolute", left: p.x - w / 2, top: p.y - lmH - 18, width: w, cursor: "pointer", zIndex: sel ? 20 : isCur ? 12 : 10, transition: "transform .2s", transform: sel ? "scale(1.1)" : "none", textAlign: "center" }}>
@@ -441,10 +489,12 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
                 {!fog && (lm.badge || !lm.img) && <span style={{ position: "absolute", right: 4, top: 6, width: 24, height: 24, borderRadius: 12, background: u ? color : "#fff", border: `2px solid ${u ? "#fff" : color}`, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 5px rgba(0,0,0,.2)" }}>{lm.badge ?? n.icon}</span>}
               </div>
               <div style={{ marginTop: 2, whiteSpace: "nowrap" }}>
-                {isCur || sel ? (
-                  <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fef3c7)", color: "#1e293b", fontSize: 13, fontWeight: 900, boxShadow: "0 3px 8px rgba(0,0,0,.2)", border: "2px solid #fbbf24" }}>{fog ? "？？？" : n.name}</span>
+                {quiet ? (
+                  <span style={{ display: "inline-block", width: 18, height: 18, borderRadius: 9, background: "rgba(255,255,255,.75)", fontSize: 10, lineHeight: "18px", boxShadow: "0 1px 3px rgba(0,0,0,.25)" }}>{fog ? "☁️" : "🔒"}</span>
+                ) : isCur || sel ? (
+                  <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fef3c7)", color: "#1e293b", fontSize: isMobile ? 15 : 13, fontWeight: 900, boxShadow: "0 3px 8px rgba(0,0,0,.2)", border: "2px solid #fbbf24" }}>{fog ? "？？？" : n.name}</span>
                 ) : (
-                  <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: fog ? "#b9a68a" : u ? "#8a5a2b" : "#a8713a", color: fog ? "#efe6d6" : "#fff7e6", fontSize: key ? 10.5 : 9.5, fontWeight: 800, boxShadow: "0 2px 3px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.25)", border: "1.5px solid #6b4423", opacity: fog ? 0.7 : n.status === "locked" ? 0.75 : 1, letterSpacing: 0.3 }}>{fog ? "？？？" : n.name}</span>
+                  <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: fog ? "#b9a68a" : u ? "#8a5a2b" : "#a8713a", color: fog ? "#efe6d6" : "#fff7e6", fontSize: isMobile ? (isSub ? 13 : a ? 12.5 : 11) : key ? 10.5 : 9.5, fontWeight: 800, boxShadow: "0 2px 3px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.25)", border: "1.5px solid #6b4423", opacity: fog ? 0.7 : n.status === "locked" ? 0.75 : 1, letterSpacing: 0.3 }}>{fog ? "？？？" : n.name}</span>
                 )}
               </div>
             </div>

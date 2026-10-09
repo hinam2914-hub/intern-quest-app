@@ -6,6 +6,7 @@ import { evaluateUser, syncUnlocks, requestCheck, getFocus, focusOp, nextQuestCa
 import SkillWorld, { type Walk } from "./SkillWorld";
 import DetailPanel from "./DetailPanel";
 import { AREAS, NODE_POS, START, AREA_COLOR, type Pt } from "./world";
+import type { CamCmd } from "./camera";
 
 type Celebration = { id?: string; title: string; sub: string; icon: string; key: boolean };
 
@@ -25,6 +26,9 @@ export default function SkillBoardPage() {
   const pendingWalks = useRef<string[]>([]);
   const [chooser, setChooser] = useState<{ node: NodeState; reason: string }[] | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [camCmd, setCamCmd] = useState<CamCmd | undefined>();
+  const [navArea, setNavArea] = useState<string | null>(null);   // 下部ナビの強調（world | area key）
+  const [questOpen, setQuestOpen] = useState(false);
   const locRef = useRef<string | null>(null);
 
   function lastUnlockedId(r: EvalResult) {
@@ -71,7 +75,7 @@ export default function SkillBoardPage() {
     } catch {}
     const f = newNodes.length ? await getFocus(supabase, user.id) : await refreshFocus(user.id, r);
     if (newNodes.length) setFocus(f);
-    if (initial && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("focus") === "1" && f.current && NODE_POS[f.current]) setTimeout(() => setFocusTo({ key: Date.now(), target: NODE_POS[f.current!] }), 50);
+    if (initial && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("focus") === "1" && f.current && NODE_POS[f.current]) setTimeout(() => { setCamCmd({ key: Date.now(), mode: "quest", target: NODE_POS[f.current!] }); setNavArea(r.nodes.find((n) => n.id === f.current)?.category ?? null); }, 300);
     if (sel) setSel(r.nodes.find((n) => n.id === sel.id) ?? null);
   }
   useEffect(() => { load(true); const f = () => setIsMobile(window.innerWidth < 640); f(); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,6 +130,14 @@ export default function SkillBoardPage() {
   }
   function jumpTo(p: Pt) { setFocusTo({ key: Date.now(), target: p }); }
   function jumpToAvatar() { jumpTo(locId && NODE_POS[locId] ? NODE_POS[locId] : START); }
+  function goArea(k: string) { setNavArea(k); setCamCmd({ key: Date.now(), mode: "area", area: k }); }
+  function goWorld() { setNavArea("world"); setCamCmd({ key: Date.now(), mode: "world" }); }
+  function goQuest() {
+    const id = focus.current; const p = id && NODE_POS[id] ? NODE_POS[id] : null;
+    if (!p) { jumpToAvatar(); return; }
+    const cat = res?.nodes.find((n) => n.id === id)?.category ?? null; setNavArea(cat);
+    setCamCmd({ key: Date.now(), mode: "quest", target: p });
+  }
 
   if (!res) return <div style={{ minHeight: "100vh", background: "linear-gradient(180deg,#8fd3ff,#e6f6ff)", display: "flex", alignItems: "center", justifyContent: "center", color: "#1e3a5f", fontWeight: 800 }}>🌱 スキルワールドを読み込み中...</div>;
   const total = res.nodes.filter((n) => n.status === "unlocked").length;
@@ -137,34 +149,73 @@ export default function SkillBoardPage() {
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
-      <SkillWorld res={res} avatarId={avatarId} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} />
+      <SkillWorld res={res} avatarId={avatarId} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} camCmd={camCmd} onAreaTap={(k) => setNavArea(k)} onCamMode={(m, a) => { if (m === "area" && a) setNavArea(a); }} />
 
       {/* HUD 上 */}
-      <div style={{ position: "absolute", top: 12, left: 12, right: 12, display: "flex", gap: 8, alignItems: "flex-start", zIndex: 40, pointerEvents: "none" }}>
-        <button onClick={() => router.back()} style={{ pointerEvents: "auto", border: "2px solid #fff", background: "linear-gradient(180deg,#fff,#eef6ff)", borderRadius: 999, padding: "9px 14px", fontWeight: 900, fontSize: 13, color: "#1e3a5f", cursor: "pointer", boxShadow: "0 4px 12px rgba(30,58,95,.18)" }}>← 戻る</button>
-        <div style={{ background: "linear-gradient(180deg,#fff,#eef6ff)", border: "2px solid #fff", borderRadius: 999, padding: "9px 16px", fontWeight: 900, fontSize: 13, color: "#1e3a5f", boxShadow: "0 4px 12px rgba(30,58,95,.18)", whiteSpace: "nowrap" }}>🌱 SKILL WORLD <span style={{ color: "#8b5cf6", marginLeft: 6 }}>{total} / {res.nodes.length}</span></div>
-        <div style={{ flex: 1 }} />
-        {curNode && (
-          <button onClick={() => { jumpTo(NODE_POS[curNode.id]); setSel(curNode); }} style={{ pointerEvents: "auto", border: "2px solid #fde68a", background: "linear-gradient(180deg,#fffbeb,#fef3c7)", borderRadius: 16, padding: "7px 12px", textAlign: "left", cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.2)", maxWidth: isMobile ? 180 : 300 }}>
-            <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#b45309" }}>🎯 CURRENT QUEST</div>
-            <div style={{ fontSize: 12.5, fontWeight: 900, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{questMission(curNode).title}</div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#92400e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{curNode.name} ・ {questMission(curNode).detail}</div>
-          </button>
-        )}
-      </div>
+      {isMobile ? (
+        <div style={{ position: "absolute", top: 10, left: 10, right: 10, display: "flex", gap: 8, alignItems: "flex-start", zIndex: 40, pointerEvents: "none" }}>
+          <button onClick={() => router.back()} style={{ pointerEvents: "auto", width: 38, height: 38, borderRadius: 19, border: "2px solid #fff", background: "linear-gradient(180deg,#fff,#eef6ff)", fontWeight: 900, fontSize: 16, color: "#1e3a5f", cursor: "pointer", boxShadow: "0 4px 12px rgba(30,58,95,.18)" }}>←</button>
+          <div style={{ background: "linear-gradient(180deg,#fff,#eef6ff)", border: "2px solid #fff", borderRadius: 999, padding: "8px 12px", fontWeight: 900, fontSize: 12, color: "#1e3a5f", boxShadow: "0 4px 12px rgba(30,58,95,.18)", whiteSpace: "nowrap" }}>🌱 SKILL WORLD <span style={{ color: "#8b5cf6", marginLeft: 4 }}>{total}/{res.nodes.length}</span></div>
+          <div style={{ flex: 1 }} />
+          {curNode && !questOpen && (
+            <button onClick={() => setQuestOpen(true)} style={{ pointerEvents: "auto", height: 38, borderRadius: 19, border: "2px solid #fde68a", background: "linear-gradient(180deg,#fffbeb,#fef3c7)", padding: "0 12px", fontWeight: 900, fontSize: 12, color: "#92400e", cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.25)", whiteSpace: "nowrap" }}>🎯 QUEST</button>
+          )}
+          {curNode && questOpen && (
+            <div style={{ pointerEvents: "auto", width: "min(300px, 78vw)", border: "2px solid #fde68a", background: "linear-gradient(180deg,#fffbeb,#fef3c7)", borderRadius: 16, padding: "10px 12px", boxShadow: "0 6px 16px rgba(180,120,0,.25)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#b45309" }}>🎯 CURRENT QUEST</div>
+                <button onClick={() => setQuestOpen(false)} style={{ border: "none", background: "transparent", fontSize: 16, color: "#92400e", cursor: "pointer", padding: 0 }}>✕</button>
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#1e293b", marginTop: 2 }}>{questMission(curNode).title}</div>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748b", marginTop: 2 }}>{curNode.name}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: "#92400e", marginTop: 2 }}>{questMission(curNode).detail}</div>
+              <div style={{ height: 6, borderRadius: 3, background: "#fde68a", marginTop: 6, overflow: "hidden" }}><div style={{ width: `${Math.round(curNode.progress * 100)}%`, height: "100%", background: "linear-gradient(90deg,#fbbf24,#f59e0b)" }} /></div>
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                <button onClick={() => { goQuest(); setQuestOpen(false); }} style={{ flex: 1, border: "none", background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", borderRadius: 10, padding: "8px 10px", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>🎯 目的地を見る</button>
+                <button onClick={() => { setSel(curNode); setQuestOpen(false); }} style={{ border: "1.5px solid #fbbf24", background: "#fff", color: "#92400e", borderRadius: 10, padding: "8px 10px", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>詳細</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ position: "absolute", top: 12, left: 12, right: 12, display: "flex", gap: 8, alignItems: "flex-start", zIndex: 40, pointerEvents: "none" }}>
+          <button onClick={() => router.back()} style={{ pointerEvents: "auto", border: "2px solid #fff", background: "linear-gradient(180deg,#fff,#eef6ff)", borderRadius: 999, padding: "9px 14px", fontWeight: 900, fontSize: 13, color: "#1e3a5f", cursor: "pointer", boxShadow: "0 4px 12px rgba(30,58,95,.18)" }}>← 戻る</button>
+          <div style={{ background: "linear-gradient(180deg,#fff,#eef6ff)", border: "2px solid #fff", borderRadius: 999, padding: "9px 16px", fontWeight: 900, fontSize: 13, color: "#1e3a5f", boxShadow: "0 4px 12px rgba(30,58,95,.18)", whiteSpace: "nowrap" }}>🌱 SKILL WORLD <span style={{ color: "#8b5cf6", marginLeft: 6 }}>{total} / {res.nodes.length}</span></div>
+          <div style={{ flex: 1 }} />
+          {curNode && (
+            <button onClick={() => { goQuest(); setSel(curNode); }} style={{ pointerEvents: "auto", border: "2px solid #fde68a", background: "linear-gradient(180deg,#fffbeb,#fef3c7)", borderRadius: 16, padding: "7px 12px", textAlign: "left", cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.2)", maxWidth: 300 }}>
+              <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#b45309" }}>🎯 CURRENT QUEST</div>
+              <div style={{ fontSize: 12.5, fontWeight: 900, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{questMission(curNode).title}</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#92400e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{curNode.name} ・ {questMission(curNode).detail}</div>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* HUD 下：地域ナビ */}
-      <div style={{ position: "absolute", bottom: isMobile ? 12 : 18, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, alignItems: "center", zIndex: 40, background: "linear-gradient(180deg,rgba(255,255,255,.95),rgba(239,246,255,.95))", border: "2px solid #fff", borderRadius: 999, padding: "6px 8px", boxShadow: "0 8px 22px rgba(30,58,95,.22)", maxWidth: "96vw", overflowX: "auto" }}>
-        <button onClick={jumpToAvatar} style={{ border: "none", background: "linear-gradient(135deg,#8b5cf6,#6366f1)", color: "#fff", borderRadius: 999, padding: "9px 13px", fontWeight: 900, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 3px 8px rgba(99,102,241,.4)" }}>📍 現在地</button>
-        {AREAS.map((a) => {
-          const here = curArea === a.key;
-          return (
-            <button key={a.key} onClick={() => jumpTo({ x: a.x + a.w / 2, y: a.y + a.h / 2 })} style={{ border: `2px solid ${AREA_COLOR[a.key]}`, background: here ? AREA_COLOR[a.key] : "#fff", color: here ? "#fff" : AREA_COLOR[a.key], borderRadius: 999, padding: here ? "9px 13px" : "6px 10px", fontWeight: 900, fontSize: here ? 13 : 12, cursor: "pointer", whiteSpace: "nowrap", transform: here ? "scale(1.06)" : "none", boxShadow: here ? `0 3px 10px ${AREA_COLOR[a.key]}66` : "none" }}>
-              {a.emoji}{isMobile && !here ? "" : " " + (a.key === "comm" ? "COMM" : a.key === "think" ? "THINK" : a.key === "mgmt" ? "MGMT" : a.key === "ai" ? "AI" : "SALES")}
-            </button>
-          );
-        })}
-      </div>
+      {isMobile ? (
+        <div style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, alignItems: "center", zIndex: 40, background: "linear-gradient(180deg,rgba(255,255,255,.95),rgba(239,246,255,.95))", border: "2px solid #fff", borderRadius: 999, padding: "6px 8px", boxShadow: "0 8px 22px rgba(30,58,95,.22)" }}>
+          <button onClick={goWorld} title="WORLD" style={{ width: 40, height: 40, borderRadius: 20, border: `2px solid ${navArea === "world" ? "#6366f1" : "#c7d2fe"}`, background: navArea === "world" ? "linear-gradient(135deg,#8b5cf6,#6366f1)" : "#fff", fontSize: 18, cursor: "pointer", boxShadow: navArea === "world" ? "0 3px 10px rgba(99,102,241,.45)" : "none", transform: navArea === "world" ? "scale(1.1)" : "none" }}>🌍</button>
+          {AREAS.map((a) => {
+            const here = (navArea ?? curArea) === a.key; const col = AREA_COLOR[a.key];
+            return <button key={a.key} onClick={() => goArea(a.key)} title={a.label} style={{ width: 40, height: 40, borderRadius: 20, border: `2px solid ${col}`, background: here ? col : "#fff", fontSize: 18, cursor: "pointer", transform: here ? "scale(1.12)" : "none", boxShadow: here ? `0 3px 10px ${col}66` : "none" }}>{a.emoji}</button>;
+          })}
+          {curNode && <button onClick={goQuest} title="次のクエストへ" style={{ width: 40, height: 40, borderRadius: 20, border: "2px solid #fbbf24", background: "linear-gradient(135deg,#f59e0b,#f97316)", fontSize: 18, cursor: "pointer", boxShadow: "0 3px 10px rgba(245,158,11,.45)" }}>🎯</button>}
+        </div>
+      ) : (
+        <div style={{ position: "absolute", bottom: 18, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, alignItems: "center", zIndex: 40, background: "linear-gradient(180deg,rgba(255,255,255,.95),rgba(239,246,255,.95))", border: "2px solid #fff", borderRadius: 999, padding: "6px 8px", boxShadow: "0 8px 22px rgba(30,58,95,.22)", maxWidth: "96vw", overflowX: "auto" }}>
+          <button onClick={goWorld} style={{ border: "2px solid #c7d2fe", background: navArea === "world" ? "linear-gradient(135deg,#8b5cf6,#6366f1)" : "#fff", color: navArea === "world" ? "#fff" : "#6366f1", borderRadius: 999, padding: "6px 10px", fontWeight: 900, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>🌍 WORLD</button>
+          <button onClick={curNode ? goQuest : jumpToAvatar} style={{ border: "none", background: curNode ? "linear-gradient(135deg,#f59e0b,#f97316)" : "linear-gradient(135deg,#8b5cf6,#6366f1)", color: "#fff", borderRadius: 999, padding: "9px 13px", fontWeight: 900, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", boxShadow: curNode ? "0 3px 8px rgba(245,158,11,.4)" : "0 3px 8px rgba(99,102,241,.4)" }}>{curNode ? "🎯 次のクエストへ" : "📍 現在地"}</button>
+          {AREAS.map((a) => {
+            const here = (navArea ?? curArea) === a.key;
+            return (
+              <button key={a.key} onClick={() => goArea(a.key)} style={{ border: `2px solid ${AREA_COLOR[a.key]}`, background: here ? AREA_COLOR[a.key] : "#fff", color: here ? "#fff" : AREA_COLOR[a.key], borderRadius: 999, padding: here ? "9px 13px" : "6px 10px", fontWeight: 900, fontSize: here ? 13 : 12, cursor: "pointer", whiteSpace: "nowrap", transform: here ? "scale(1.06)" : "none", boxShadow: here ? `0 3px 10px ${AREA_COLOR[a.key]}66` : "none" }}>
+                {a.emoji} {a.key === "comm" ? "COMM" : a.key === "think" ? "THINK" : a.key === "mgmt" ? "MGMT" : a.key === "ai" ? "AI" : "SALES"}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {sel && <DetailPanel node={sel} jobs={res.jobs} isMobile={isMobile} onClose={() => setSel(null)} onRequestCheck={onRequestCheck} onClaim={onClaim} focusState={focusState} nextNode={nextNode} recos={recos} onChallenge={async (n) => { await onChallenge(n); setSel(null); }} onPromote={async (n) => { await onPromote(n); setSel(null); }} onRemoveFocus={async (n) => { await onRemoveFocus(n); setSel(null); }} />}
 
