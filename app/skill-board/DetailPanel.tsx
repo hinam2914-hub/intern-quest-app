@@ -1,20 +1,25 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { NodeState, JobState, Reco } from "../lib/skills";
 import { AREA_COLOR } from "./world";
+import { SKILL_DESC, condGuide } from "./guide";
 
 const STAGE: Record<string, { icon: string; label: string }> = {
   learn: { icon: "📖", label: "LEARN" }, practice: { icon: "🧪", label: "PRACTICE" }, prove: { icon: "🏆", label: "PROVE" }, check: { icon: "🙋", label: "CHECK" },
 };
 const CAT_LABEL: Record<string, string> = { sales: "SALES", comm: "COMMUNICATION", think: "THINKING", mgmt: "MANAGEMENT", ai: "AI SKILL" };
 
-export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCheck, onClaim, focusState, nextNode, onChallenge, onPromote, onRemoveFocus, recos }: {
+export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCheck, onClaim, focusState, nextNode, prevNode, onChallenge, onPromote, onRemoveFocus, recos }: {
   node: NodeState; jobs: JobState[]; isMobile: boolean; onClose: () => void;
   onRequestCheck: (n: NodeState) => void; onClaim: (n: NodeState, text: string, url: string) => void;
-  focusState: "none" | "current" | "sub"; nextNode?: NodeState | null; recos?: Reco[];
+  focusState: "none" | "current" | "sub"; nextNode?: NodeState | null; prevNode?: NodeState | null; recos?: Reco[];
   onChallenge: (n: NodeState) => void; onPromote: (n: NodeState) => void; onRemoveFocus: (n: NodeState) => void;
 }) {
+  const router = useRouter();
   const [claimText, setClaimText] = useState(""); const [claimUrl, setClaimUrl] = useState("");
+  const hidden = node.is_hidden && node.status === "locked";
+  const desc = hidden ? "" : (node.description || SKILL_DESC[node.id] || "");
   const color = AREA_COLOR[node.category] ?? "#8b5cf6";
   const remaining = node.conds.filter((c) => !c.done).length;
   const nonCheckDone = node.conds.filter((c) => c.type !== "mentor_check" && c.type !== "claim_approved").every((c) => c.done);
@@ -36,7 +41,7 @@ export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCh
           <div style={{ fontSize: 11, fontWeight: 800, color, letterSpacing: 1 }}>{CAT_LABEL[node.category]} {node.kind === "key" && <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 6, background: "#fbbf24", color: "#1e293b" }}>KEY</span>}</div>
         </div>
       </div>
-      {node.description && <div style={{ fontSize: 13, color: "#475569", background: "#ede9fe", borderRadius: 12, padding: "8px 12px", marginBottom: 12 }}>「{node.description}」</div>}
+      {desc && <div style={{ fontSize: 13, lineHeight: 1.6, color: "#334155", background: "#f5f3ff", borderRadius: 12, padding: "9px 12px", marginBottom: 12 }}>{desc}</div>}
       {(recos ?? []).filter((r) => r.nodeId === node.id).map((r, i) => (
         <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", background: r.source === "mentor" ? "#fdf2f8" : "#f5f3ff", border: `1.5px solid ${r.source === "mentor" ? "#f9a8d4" : "#c4b5fd"}`, borderRadius: 12, padding: "8px 12px", marginBottom: 10 }}>
           <span style={{ fontSize: 16 }}>✨</span>
@@ -52,7 +57,7 @@ export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCh
           {nextNode && <div style={{ fontSize: 12, color: "#78350f", marginTop: 6 }}>次に繋がるスキル：{nextNode.icon} {nextNode.name}</div>}
         </div>
       ) : node.status === "locked" ? (
-        <div style={{ fontSize: 12, color: "#b45309", background: "#fef3c7", borderRadius: 10, padding: "8px 12px", marginBottom: 12 }}>🔒 前のスキルを取得するとここに来られます</div>
+        <div style={{ fontSize: 12.5, color: "#b45309", background: "#fef3c7", borderRadius: 10, padding: "8px 12px", marginBottom: 12 }}>🔒 {prevNode ? <>まず <b>{prevNode.icon} {prevNode.name}</b> を取得するとここに来られます</> : "前のスキルを取得するとここに来られます"}</div>
       ) : null}
 
       {(["learn", "practice", "prove", "check"] as const).map((st) => {
@@ -60,13 +65,26 @@ export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCh
         return (
           <div key={st} style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: "#64748b", marginBottom: 4 }}>{STAGE[st].icon} {STAGE[st].label}</div>
-            {cs.map((c) => (
-              <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 10, background: c.done ? "#dcfce7" : "#fff", border: `1px solid ${c.done ? "#86efac" : "#e2e8f0"}`, marginBottom: 4 }}>
-                <span style={{ fontSize: 15 }}>{c.done ? "✓" : c.type === "mentor_check" || c.type === "claim_approved" ? "🔒" : "○"}</span>
-                <span style={{ flex: 1, fontSize: 13, fontWeight: c.done ? 500 : 700 }}>{c.label}</span>
-                {c.threshold > 1 && <span style={{ fontSize: 12, fontWeight: 800, color: c.done ? "#16a34a" : color }}>{Math.min(c.current, c.threshold)} / {c.threshold}</span>}
-              </div>
-            ))}
+            {cs.map((c) => {
+              const g = condGuide(c); const go = !!g.href && !c.done && !hidden;
+              return (
+                <div key={c.id} onClick={go ? () => router.push(g.href!) : undefined} role={go ? "button" : undefined}
+                  style={{ padding: "8px 10px", borderRadius: 10, background: c.done ? "#dcfce7" : "#fff", border: `1px solid ${c.done ? "#86efac" : go ? color + "66" : "#e2e8f0"}`, marginBottom: 6, cursor: go ? "pointer" : "default", boxShadow: go ? "0 2px 6px rgba(30,58,95,.06)" : "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 15 }}>{c.done ? "✓" : c.type === "mentor_check" || c.type === "claim_approved" ? "🔒" : "○"}</span>
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: c.done ? 500 : 700 }}>{c.label}</span>
+                    {c.threshold > 1 && <span style={{ fontSize: 12, fontWeight: 800, color: c.done ? "#16a34a" : color }}>{Math.min(c.current, c.threshold)} / {c.threshold}</span>}
+                    {go && <span style={{ fontSize: 14, color, fontWeight: 900 }}>›</span>}
+                  </div>
+                  {!c.done && !hidden && g.how && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 5, paddingLeft: 23 }}>
+                      <span style={{ fontSize: 11.5, color: "#64748b", lineHeight: 1.5 }}>{g.how}</span>
+                      {go && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 900, color, background: color + "14", borderRadius: 8, padding: "3px 8px", whiteSpace: "nowrap" }}>{g.cta} →</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         );
       })}

@@ -143,6 +143,7 @@ export default function SkillBoardPage() {
   const total = res.nodes.filter((n) => n.status === "unlocked").length;
   const focusState = sel ? (focus.current === sel.id ? "current" : focus.subs.includes(sel.id) ? "sub" : "none") : "none";
   const nextNode = sel ? res.nodes.find((n) => n.category === sel.category && n.order_no === sel.order_no + 1) ?? null : null;
+  const prevNode = sel ? res.nodes.find((n) => n.category === sel.category && n.order_no === sel.order_no - 1) ?? null : null;
   const curNode = focus.current ? res.nodes.find((n) => n.id === focus.current) : null;
   const recos: Reco[] = [...mentorRecos, ...ruleRecommendations(res, [focus.current, ...focus.subs, ...mentorRecos.map((m) => m.nodeId)].filter(Boolean) as string[])];
   const curArea = (locId && res.nodes.find((n) => n.id === locId)?.category) ?? "comm";
@@ -217,7 +218,7 @@ export default function SkillBoardPage() {
         </div>
       )}
 
-      {sel && <DetailPanel node={sel} jobs={res.jobs} isMobile={isMobile} onClose={() => setSel(null)} onRequestCheck={onRequestCheck} onClaim={onClaim} focusState={focusState} nextNode={nextNode} recos={recos} onChallenge={async (n) => { await onChallenge(n); setSel(null); }} onPromote={async (n) => { await onPromote(n); setSel(null); }} onRemoveFocus={async (n) => { await onRemoveFocus(n); setSel(null); }} />}
+      {sel && <DetailPanel node={sel} jobs={res.jobs} isMobile={isMobile} onClose={() => setSel(null)} onRequestCheck={onRequestCheck} onClaim={onClaim} focusState={focusState} nextNode={nextNode} prevNode={prevNode} recos={recos} onChallenge={async (n) => { await onChallenge(n); setSel(null); }} onPromote={async (n) => { await onPromote(n); setSel(null); }} onRemoveFocus={async (n) => { await onRemoveFocus(n); setSel(null); }} />}
 
       {/* SKILL UNLOCKED 演出 */}
       {celebrate.length > 0 && (
