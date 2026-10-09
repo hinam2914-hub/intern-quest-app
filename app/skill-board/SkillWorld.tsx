@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { questMission, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
 import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, pt, curve, type Pt } from "./world";
+import { TERRAIN_IMG, blobPath, LAND_PTS, MEADOW_PTS, HILL_PTS, STONE_PTS, STREAM_D, COMM_CLUSTERS, clusterItems } from "./terrain";
 
 type Cam = { x: number; y: number; s: number };
 export type Walk = { key: number; from: Pt; to: Pt };
@@ -48,12 +49,9 @@ function treeSeeds(): { x: number; y: number; k: number; s: number }[] {
   let seed = 7; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
   const zones: { cx: number; cy: number; rx: number; ry: number; n: number; k: number }[] = [
     { cx: 760, cy: 760, rx: 540, ry: 150, n: 46, k: 2 },  // think forest
-    { cx: 420, cy: 1100, rx: 300, ry: 120, n: 14, k: 0 }, // comm
-    { cx: 1000, cy: 1180, rx: 260, ry: 60, n: 8, k: 0 },
     { cx: 1520, cy: 1180, rx: 420, ry: 60, n: 10, k: 0 }, // sales edge
     { cx: 1480, cy: 600, rx: 340, ry: 90, n: 16, k: 3 },  // mgmt low
     { cx: 1700, cy: 430, rx: 260, ry: 80, n: 8, k: 3 },
-    { cx: 560, cy: 960, rx: 200, ry: 70, n: 10, k: 2 },   // think-comm bridge
     { cx: 1260, cy: 660, rx: 150, ry: 60, n: 8, k: 2 },
   ];
   const nodes = Object.values(NODE_POS).concat(Object.values(JOB_POS), [START]);
@@ -66,7 +64,16 @@ function treeSeeds(): { x: number; y: number; k: number; s: number }[] {
       out.push({ x, y, k: z.k, s: 0.75 + rnd() * 0.6 });
     }
   });
-  return out.sort((a, b) => a.y - b.y);
+  return out.concat(clusterItems(COMM_CLUSTERS)).sort((a, b) => a.y - b.y);
+}
+
+/** 地形タイル画像のうち実在するもの（未配置なら SVG グラデにフォールバック） */
+function useTerrainImages(): Record<string, boolean> {
+  const [ok, setOk] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    Object.entries(TERRAIN_IMG).forEach(([k, src]) => { const im = new Image(); im.onload = () => setOk((o) => ({ ...o, [k]: true })); im.src = src; });
+  }, []);
+  return ok;
 }
 
 export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title }: {
@@ -79,6 +86,8 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const pinch = useRef<{ d: number; s: number } | null>(null);
   const [vp, setVp] = useState({ w: 1200, h: 800 });
   const trees = useMemo(treeSeeds, []);
+  const tx = useTerrainImages();
+  const T = (k: keyof typeof TERRAIN_IMG, id: string) => (tx[k] ? `url(#${id})` : "none");
 
   const byId = new Map(res.nodes.map((n) => [n.id, n]));
   const unlockedByCat: Record<string, number> = {};
@@ -137,7 +146,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
 
   /* ---------------- 道 ---------------- */
   const ROAD_STYLE: Record<string, { base: string; top: string; dash?: string; w: number }> = {
-    comm: { base: "#b98a5a", top: "#e9c99a", dash: "8 10", w: 26 },
+    comm: { base: "#b08552", top: "#e6c38f", dash: "8 10", w: 30 },
     sales: { base: "#9a9a9a", top: "#d9d4c8", dash: "3 7", w: 28 },
     think: { base: "#8a6a48", top: "#d6b48a", dash: "10 12", w: 24 },
     mgmt: { base: "#8c8c8c", top: "#e5e7eb", dash: "6 6", w: 26 },
@@ -155,6 +164,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
         roadEls.push(<path key={`a${i}`} d={d} fill="none" stroke={lit ? "#fde68a" : "#c4b5fd"} strokeWidth={lit ? 10 : 7} strokeLinecap="round" strokeDasharray="16 12" opacity={ex ? 0.95 : 0.5} style={{ filter: `drop-shadow(0 0 8px ${lit ? "#fbbf24" : "#a78bfa"})` }} />);
         continue;
       }
+      roadEls.push(<path key={`s${c}${i}`} d={d} fill="none" stroke="#5a4a33" strokeWidth={st.w + 10} strokeLinecap="round" opacity={ex ? 0.22 : 0.12} filter="url(#shadowSoft)" />);
       roadEls.push(<path key={`b${c}${i}`} d={d} fill="none" stroke={st.base} strokeWidth={st.w} strokeLinecap="round" opacity={ex ? 0.95 : 0.55} />);
       roadEls.push(<path key={`t${c}${i}`} d={d} fill="none" stroke={lit ? "#fde68a" : st.top} strokeWidth={st.w - 10} strokeLinecap="round" opacity={ex ? 1 : 0.6} style={lit ? { filter: "drop-shadow(0 0 8px rgba(251,191,36,.8))" } : undefined} />);
       if (st.dash) roadEls.push(<path key={`d${c}${i}`} d={d} fill="none" stroke={lit ? "#f59e0b" : st.base} strokeWidth={c === "sales" ? 4 : 3} strokeDasharray={st.dash} strokeLinecap="round" opacity={0.6} />);
@@ -165,8 +175,10 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
     const d = curve(a, b, r.via); const air = r.to.startsWith("ai");
     if (air) { roadEls.push(<path key={`l${i}`} d={d} fill="none" stroke="#c4b5fd" strokeWidth={6} strokeDasharray="4 16" strokeLinecap="round" opacity={0.7} />); return; }
     const mountain = r.to.startsWith("mgmt");
-    roadEls.push(<path key={`l${i}`} d={d} fill="none" stroke={mountain ? "#8c8c8c" : "#b98a5a"} strokeWidth={mountain ? 24 : 20} strokeLinecap="round" opacity={0.9} />);
-    roadEls.push(<path key={`lt${i}`} d={d} fill="none" stroke={lit ? "#fde68a" : mountain ? "#e5e7eb" : "#e9c99a"} strokeWidth={mountain ? 14 : 12} strokeLinecap="round" opacity={0.95} />);
+    const narrow = r.from === "START";
+    roadEls.push(<path key={`ls0${i}`} d={d} fill="none" stroke="#5a4a33" strokeWidth={(mountain ? 24 : narrow ? 16 : 20) + 10} strokeLinecap="round" opacity={0.2} filter="url(#shadowSoft)" />);
+    roadEls.push(<path key={`l${i}`} d={d} fill="none" stroke={mountain ? "#8c8c8c" : "#b98a5a"} strokeWidth={mountain ? 24 : narrow ? 16 : 20} strokeLinecap="round" opacity={0.9} />);
+    roadEls.push(<path key={`lt${i}`} d={d} fill="none" stroke={lit ? "#fde68a" : mountain ? "#e5e7eb" : "#e9c99a"} strokeWidth={mountain ? 14 : narrow ? 8 : 12} strokeLinecap="round" opacity={0.95} />);
     if (mountain) roadEls.push(<path key={`ls${i}`} d={d} fill="none" stroke="#9ca3af" strokeWidth={14} strokeDasharray="4 12" strokeLinecap="butt" opacity={0.6} />);
   });
   res.jobs.forEach((j) => {
@@ -225,6 +237,22 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
             <pattern id="flowers" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="8" cy="10" r="3" fill="#f472b6" /><circle cx="26" cy="22" r="2.5" fill="#fbbf24" /><circle cx="14" cy="32" r="2.5" fill="#fff" /><circle cx="34" cy="6" r="2" fill="#f472b6" /></pattern>
             <filter id="soft"><feGaussianBlur stdDeviation="6" /></filter>
             <filter id="cloudf"><feGaussianBlur stdDeviation="9" /></filter>
+            <filter id="shadowSoft"><feGaussianBlur stdDeviation="3" /></filter>
+            {/* 地形タイル（画像が無ければ透明＝下のグラデーションが見える） */}
+            {tx.grass && <pattern id="txGrass" width="384" height="384" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.grass} width="384" height="384" /></pattern>}
+            {tx.meadow && <pattern id="txMeadow" width="384" height="384" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.meadow} width="384" height="384" /></pattern>}
+            {tx.stone && <pattern id="txStone" width="320" height="320" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.stone} width="320" height="320" /></pattern>}
+            {tx.water && <pattern id="txWater" width="220" height="220" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.water} width="220" height="220" /></pattern>}
+            {tx.cliff && <pattern id="txCliff" x="0" y="1160" width="1130" height="260" patternUnits="userSpaceOnUse"><image href={TERRAIN_IMG.cliff} width="1130" height="260" preserveAspectRatio="none" /></pattern>}
+            <clipPath id="clipCliffBand"><path d={blobPath(LAND_PTS)} transform="translate(0,64)" /></clipPath>
+            <radialGradient id="meadowFade" cx="50%" cy="50%" r="50%"><stop offset=".6" stopColor="#fff" /><stop offset="1" stopColor="#000" /></radialGradient>
+            <mask id="meadowMask"><path d={blobPath(MEADOW_PTS)} fill="url(#meadowFade)" /></mask>
+            <linearGradient id="grassBase" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#b9ea95" /><stop offset="1" stopColor="#7fcc74" /></linearGradient>
+            <linearGradient id="cliffV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#b08a5c" /><stop offset=".35" stopColor="#8b6a44" /><stop offset="1" stopColor="#4b3626" /></linearGradient>
+            <linearGradient id="stoneFade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#000" /><stop offset="1" stopColor="#fff" /></linearGradient>
+            <mask id="stoneMask"><rect x="1080" y="900" width="200" height="400" fill="url(#stoneFade)" /><rect x="1280" y="900" width="800" height="400" fill="#fff" /></mask>
+            <pattern id="grassDots" width="34" height="34" patternUnits="userSpaceOnUse"><path d="M6 20 l2 -6 l2 6 M22 10 l2 -6 l2 6 M14 30 l2 -5 l2 5" stroke="#5fb56a" strokeWidth="1.6" fill="none" opacity=".55" /></pattern>
+            <clipPath id="clipLand"><path d={blobPath(LAND_PTS)} /></clipPath>
             <symbol id="tree0" viewBox="0 0 40 50"><rect x="17" y="34" width="6" height="16" rx="2" fill="#8a5a2b" /><circle cx="20" cy="22" r="16" fill="#86d36f" /><circle cx="13" cy="26" r="10" fill="#6fc45f" /><circle cx="26" cy="18" r="9" fill="#a3e58a" /></symbol>
             <symbol id="tree1" viewBox="0 0 40 50"><rect x="17" y="34" width="6" height="16" rx="2" fill="#8a5a2b" /><circle cx="20" cy="22" r="16" fill="#f9a8d4" /><circle cx="12" cy="26" r="10" fill="#f472b6" /><circle cx="27" cy="18" r="9" fill="#fbcfe8" /></symbol>
             <symbol id="tree2" viewBox="0 0 40 50"><rect x="17" y="36" width="6" height="14" rx="2" fill="#6b4423" /><polygon points="20,2 36,26 4,26" fill="#3f9a5a" /><polygon points="20,12 38,38 2,38" fill="#4caf50" /></symbol>
@@ -238,36 +266,56 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           <path d="M 1620 220 L 1560 320 L 1690 320 Z M 1880 180 L 1820 280 L 1940 280 Z" fill="#f1f6fb" />
           <ellipse cx="1880" cy="360" rx="130" ry="36" fill="#cfe0ee" />
 
-          {/* 大陸：崖（下側） */}
-          <g fill="url(#cliff)">
-            {[[680, 1140, 560, 170], [1500, 1140, 520, 170], [800, 820, 560, 180], [560, 985, 230, 120], [1450, 600, 430, 160], [1600, 510, 380, 140], [1750, 440, 300, 120], [1240, 690, 210, 120], [1700, 830, 230, 120], [1900, 970, 190, 120], [160, 1225, 120, 60], [1250, 800, 270, 130], [1450, 920, 340, 130], [1800, 940, 240, 120], [1100, 970, 230, 110], [1150, 740, 270, 120], [1350, 760, 230, 110]].map(([cx, cy, rx, ry], i) => <ellipse key={i} cx={cx} cy={cy + 10} rx={rx} ry={ry} />)}
-          </g>
-          <ellipse cx="1060" cy="1330" rx="1000" ry="60" fill="#000" opacity=".12" filter="url(#soft)" />
-          {/* 大陸：地面 */}
-          <g fill="url(#grass)">
-            {[[680, 1095, 560, 165], [1500, 1095, 520, 165], [800, 780, 560, 175], [560, 940, 230, 120], [1450, 560, 430, 150], [1600, 470, 380, 130], [1750, 400, 300, 110], [1240, 640, 210, 110], [1700, 790, 230, 110], [1900, 930, 190, 110], [160, 1180, 120, 60], [1250, 760, 270, 120], [1450, 880, 340, 120], [1800, 900, 240, 110], [1100, 930, 230, 100], [1150, 700, 270, 110], [1350, 720, 230, 100]].map(([cx, cy, rx, ry], i) => <ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} />)}
-          </g>
-          {/* 段丘（MGMT：右上へ登る） */}
+          {/* ===== Layer2 ベース地形：大陸（1本の輪郭。楕円は使わない） ===== */}
+          <path d={blobPath(LAND_PTS)} transform="translate(0,88)" fill="#000" opacity=".16" filter="url(#soft)" />
+          <path d={blobPath(LAND_PTS)} transform="translate(0,64)" fill="url(#cliffV)" />
+          {tx.cliff && <path d={blobPath(LAND_PTS)} transform="translate(0,64)" fill="url(#txCliff)" />}
+          <path d={blobPath(LAND_PTS)} transform="translate(0,64)" fill="none" stroke="#3b2a1c" strokeWidth="2" opacity=".3" />
+          {!tx.cliff && <g clipPath="url(#clipLand)" transform="translate(0,64)" opacity=".25">
+            {[8, 20, 34, 48].map((o) => <path key={o} d={blobPath(LAND_PTS)} transform={`translate(0,${o})`} fill="none" stroke="#f5deb3" strokeWidth="2" />)}
+          </g>}
+          <path d={blobPath(LAND_PTS)} fill="url(#grassBase)" />
+          <path d={blobPath(LAND_PTS)} fill={T("grass", "txGrass")} />
+          {!tx.grass && <path d={blobPath(LAND_PTS)} fill="url(#grassDots)" opacity=".28" />}
+          {/* 草地の縁（崖との境に明るいライン） */}
+          <path d={blobPath(LAND_PTS)} fill="none" stroke="#dfffb8" strokeWidth="5" opacity=".7" />
+          <path d={blobPath(LAND_PTS)} transform="translate(0,6)" fill="none" stroke="#5a9a52" strokeWidth="3" opacity=".35" clipPath="url(#clipLand)" />
+
+          {/* ===== 旧方式（SALES 以東・THINK・MGMT は次フェーズで置換） ===== */}
           <ellipse cx="1600" cy="470" rx="380" ry="130" fill="url(#high)" opacity=".9" />
           <ellipse cx="1600" cy="470" rx="380" ry="130" fill="none" stroke="#fff" strokeWidth="4" opacity=".5" />
           <ellipse cx="1760" cy="400" rx="290" ry="105" fill="url(#high)" />
           <ellipse cx="1760" cy="400" rx="290" ry="105" fill="none" stroke="#fff" strokeWidth="4" opacity=".6" />
-          {/* 森（THINKING）地面色 */}
           <ellipse cx="800" cy="780" rx="540" ry="160" fill="url(#forest)" opacity=".85" />
-          {/* 花畑（COMM） */}
-          <ellipse cx="680" cy="1095" rx="520" ry="140" fill="url(#flowers)" opacity=".55" clipPath="url(#clipComm)" />
-          {/* 石畳の街（SALES） */}
-          <g clipPath="url(#clipSales)">
-            <ellipse cx="1500" cy="1095" rx="500" ry="150" fill="url(#sand)" />
-            <ellipse cx="1500" cy="1095" rx="480" ry="135" fill="url(#cobble)" opacity=".7" />
+
+          {/* ===== COMM：丘・花畑（不定形） ===== */}
+          <path d={blobPath(HILL_PTS)} fill="#8fd47a" opacity=".55" />
+          <path d={blobPath(HILL_PTS)} fill="none" stroke="#dfffb8" strokeWidth="3" opacity=".5" />
+          {tx.meadow ? <path d={blobPath(MEADOW_PTS)} fill="url(#txMeadow)" mask="url(#meadowMask)" /> : <>
+            <path d={blobPath(MEADOW_PTS)} fill="#c9f3a8" opacity=".6" />
+            <path d={blobPath(MEADOW_PTS)} fill="url(#flowers)" opacity=".7" /></>}
+
+          {/* ===== SALES 入口：石畳（西端は草へ溶ける） ===== */}
+          <g mask="url(#stoneMask)">
+            <path d={blobPath(STONE_PTS)} fill="url(#sand)" />
+            <path d={blobPath(STONE_PTS)} fill="url(#cobble)" opacity=".7" />
+            <path d={blobPath(STONE_PTS)} fill={T("stone", "txStone")} />
+            <path d={blobPath(STONE_PTS)} fill="none" stroke="#d6c39a" strokeWidth="6" opacity=".8" />
             <ellipse cx="1520" cy="1150" rx="120" ry="40" fill="#f3e6c8" stroke="#d6c39a" strokeWidth="4" />
           </g>
-          {/* 湖・川 */}
+
+          {/* ===== 水：湖・川・小川 ===== */}
+          <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260 C 1140 1300, 1120 1330, 1100 1340" fill="none" stroke="#3b7fc4" strokeWidth="36" strokeLinecap="round" opacity=".35" />
           <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260 C 1140 1300, 1120 1330, 1100 1340" fill="none" stroke="#4f9ee0" strokeWidth="30" strokeLinecap="round" opacity=".9" />
           <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260 C 1140 1300, 1120 1330, 1100 1340" fill="none" stroke="#9ed7f7" strokeWidth="20" strokeLinecap="round" />
+          <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260 C 1140 1300, 1120 1330, 1100 1340" fill="none" stroke={T("water", "txWater")} strokeWidth="20" strokeLinecap="round" />
           <path d="M 930 880 C 960 930, 1060 950, 1110 1010 C 1140 1050, 1120 1150, 1135 1260" fill="none" stroke="#e0f4ff" strokeWidth="5" strokeDasharray="26 34" strokeLinecap="round" opacity=".9" style={{ animation: "swFlow 3s linear infinite" }} />
           <ellipse cx="930" cy="870" rx="120" ry="52" fill="url(#lake)" stroke="#fff" strokeWidth="5" opacity=".95" />
-          <path d="M 300 1010 C 420 990, 560 1020, 700 995" fill="none" stroke="#9ed7f7" strokeWidth="14" strokeLinecap="round" opacity=".9" />
+          <path d={STREAM_D} fill="none" stroke="#3b7fc4" strokeWidth="22" strokeLinecap="round" opacity=".3" />
+          <path d={STREAM_D} fill="none" stroke="#5fb0f0" strokeWidth="18" strokeLinecap="round" opacity=".95" />
+          <path d={STREAM_D} fill="none" stroke="#b3e3ff" strokeWidth="10" strokeLinecap="round" />
+          <path d={STREAM_D} fill="none" stroke={T("water", "txWater")} strokeWidth="12" strokeLinecap="round" />
+          <path d={STREAM_D} fill="none" stroke="#fff" strokeWidth="2.5" strokeDasharray="18 26" strokeLinecap="round" opacity=".8" style={{ animation: "swFlow 4s linear infinite" }} />
           {/* 滝 */}
           <rect x="1088" y="1300" width="30" height="80" rx="8" fill="#cfeeff" opacity=".9" />
           {/* THINKING→MANAGEMENT：山道の石橋と坂 */}
@@ -279,13 +327,18 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           {[0, 1, 2].map((i) => <ellipse key={"arch" + i} cx={1180 + i * 32} cy={686 - i * 18} rx="9" ry="12" fill="#78716c" opacity=".5" />)}
           {/* 街灯（SALES の街道沿い） */}
           {[1120, 1250, 1400, 1560, 1700, 1850].map((x, i) => <g key={"lamp" + i}><rect x={x - 2} y={1020 + (i % 2) * 90} width="4" height="34" fill="#475569" /><circle cx={x} cy={1016 + (i % 2) * 90} r="6" fill="#fde68a" stroke="#475569" strokeWidth="2" style={{ filter: "drop-shadow(0 0 6px #fbbf24)" }} /></g>)}
-          {/* 郊外：村→街のあいだ（石畳が薄れる） */}
-          <ellipse cx="1060" cy="1095" rx="120" ry="110" fill="url(#cobble)" opacity=".25" />
           {/* 気球乗り場の台地 */}
           <ellipse cx="400" cy="606" rx="70" ry="34" fill="url(#grass)" />
-          {/* 柵（COMM） */}
-          <path d="M 240 1215 H 1100" stroke="#c48a4b" strokeWidth="4" />
-          {[...Array(30)].map((_, i) => <rect key={i} x={244 + i * 29} y="1206" width="5" height="18" fill="#c48a4b" />)}
+          {/* 柵（花畑の縁・短く2本） */}
+          {[[330, 1160, 6], [720, 1210, 5]].map(([x, y, n], j) => <g key={"fence" + j}><path d={`M ${x} ${y + 9} H ${x + n * 26}`} stroke="#c48a4b" strokeWidth="3.5" />{[...Array(n)].map((_, i) => <rect key={i} x={x + i * 26} y={y} width="4.5" height="16" fill="#c48a4b" />)}</g>)}
+
+          {/* ===== ノード足元の広場（踏み固めた土） ===== */}
+          {res.nodes.filter((n) => n.category === "comm" || n.id === "sales_1").map((n) => { const p = NODE_POS[n.id]; if (!p) return null; const stone = n.id === "sales_1"; return (
+            <g key={"plaza" + n.id}>
+              {(!tx.plaza || stone) && <><ellipse cx={p.x} cy={p.y - 4} rx="54" ry="20" fill={stone ? "#e7dcc4" : "#d8b98a"} opacity=".9" />
+              <ellipse cx={p.x} cy={p.y - 4} rx="42" ry="14" fill={stone ? "#f1e8d6" : "#e9cfa4"} opacity=".9" /></>}
+              {tx.plaza && !stone && <image href={TERRAIN_IMG.plaza} x={p.x - 80} y={p.y - 44} width="160" height="80" preserveAspectRatio="none" />}
+            </g>); })}
 
           {/* 道 */}
           {roadEls}
@@ -306,6 +359,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
 
         {/* 画像パーツ：橋・石段・城壁・気球 */}
         <img src="/world/bridge_wood.png" alt="" style={{ position: "absolute", left: 1070, top: 1032, width: 100, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.25))", zIndex: 3 }} />
+        <img src="/world/bridge_wood.png" alt="" style={{ position: "absolute", left: 212, top: 972, width: 70, transform: "rotate(-62deg)", pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.25))", zIndex: 3 }} />
         <img src="/world/bridge_wood.png" alt="" style={{ position: "absolute", left: 870, top: 846, width: 80, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.25))", zIndex: 3 }} />
         <img src="/world/stairs_stone.png" alt="" style={{ position: "absolute", left: 1280, top: 540, width: 110, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.2))", zIndex: 3 }} />
         <img src="/world/stairs_stone.png" alt="" style={{ position: "absolute", left: 1500, top: 410, width: 100, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.2))", zIndex: 3 }} />
@@ -332,8 +386,6 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
         <img src="/island/animals/cat.png" alt="" style={{ position: "absolute", left: 1380, top: 1160, width: 28 }} />
         <div style={{ position: "absolute", left: 500, top: 1040, fontSize: 16, animation: "swButterfly 7s ease-in-out infinite alternate" }}>🦋</div>
         <div style={{ position: "absolute", left: 860, top: 1060, fontSize: 14, animation: "swButterfly 9s ease-in-out infinite alternate-reverse" }}>🦋</div>
-        <img src="/island/trees/tree_sakura.png" alt="" style={{ position: "absolute", left: 250, top: 1000, width: 70, filter: "drop-shadow(0 4px 4px rgba(0,0,0,.2))" }} />
-        <img src="/island/trees/tree_sakura.png" alt="" style={{ position: "absolute", left: 1000, top: 1120, width: 56, filter: "drop-shadow(0 4px 4px rgba(0,0,0,.2))" }} />
         <div style={{ position: "absolute", left: 1296, top: 1060, fontSize: 18 }}>🪔</div>
         <div style={{ position: "absolute", left: 1668, top: 1070, fontSize: 18 }}>🪔</div>
         <div style={{ position: "absolute", left: 1392, top: 1090, fontSize: 20 }}>🛒</div>
@@ -345,9 +397,12 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
 
         {/* ---------- 木・茂み・岩（画像） ---------- */}
         {trees.map((t, i) => {
-          const src = t.k === 1 ? "tree_pink" : t.k === 2 ? "tree_pine" : t.k === 3 ? (i % 4 === 0 ? "bush_flowers" : "tree_round") : (i % 5 === 0 ? "bush_flowers" : i % 7 === 0 ? "rock" : "tree_round");
+          const src = t.k === 1 ? "tree_pink" : t.k === 2 ? "tree_pine" : t.k === 4 ? "rock" : t.k === 3 ? (i % 4 === 0 ? "tree_round" : "bush_flowers") : (i % 5 === 0 ? "bush_flowers" : i % 7 === 0 ? "rock" : "tree_round");
           const w = (src === "bush_flowers" ? 34 : src === "rock" ? 36 : 46) * t.s;
-          return <img key={i} src={`/world/sm/${src}.png`} alt="" style={{ position: "absolute", left: t.x - w / 2, top: t.y - w * 0.9, width: w, pointerEvents: "none", filter: "drop-shadow(0 3px 3px rgba(0,0,0,.2))", transformOrigin: "50% 100%", animation: src.startsWith("tree") ? `swSway ${3 + (i % 5)}s ease-in-out infinite alternate` : undefined, zIndex: 4 }} />;
+          return (<div key={i} style={{ position: "absolute", left: t.x - w / 2, top: t.y - w * 0.9, width: w, pointerEvents: "none", zIndex: 4 }}>
+            <div style={{ position: "absolute", left: "18%", right: "18%", bottom: -3, height: w * 0.16, borderRadius: "50%", background: "rgba(40,60,30,.28)", filter: "blur(2px)" }} />
+            <img src={`/world/sm/${src}.png`} alt="" style={{ width: w, display: "block", position: "relative", transformOrigin: "50% 100%", animation: src.startsWith("tree") ? `swSway ${3 + (i % 5)}s ease-in-out infinite alternate` : undefined }} />
+          </div>);
         })}
 
         {/* ---------- スキルノード（ランドマーク） ---------- */}
