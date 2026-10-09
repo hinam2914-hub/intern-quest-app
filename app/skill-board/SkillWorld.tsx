@@ -384,7 +384,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
         {/* ---------- START 村（画像） ---------- */}
         <div style={{ position: "absolute", left: START.x - 120, top: START.y - 150, width: 240, zIndex: 8, pointerEvents: "none", textAlign: "center" }}>
           <img src="/world/start_village.png" alt="" style={{ width: 240, display: "block", filter: "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }} />
-          <div style={{ marginTop: -26 }}>
+          <div style={{ marginTop: 2 }}>
             <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #16a34a", fontSize: 12, fontWeight: 900, color: "#166534", boxShadow: "0 2px 6px rgba(0,0,0,.15)" }}>🌱 START</span>
             <div style={{ fontSize: 10, color: "#166534", fontWeight: 800, marginTop: 2, textShadow: "0 0 4px #fff" }}>冒険のはじまり</div>
           </div>
