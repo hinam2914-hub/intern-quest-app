@@ -176,8 +176,11 @@ export default function SkillBoardPage() {
           <button onClick={() => router.back()} style={{ pointerEvents: "auto", width: 38, height: 38, borderRadius: 19, border: "2px solid #fff", background: "linear-gradient(180deg,#fff,#eef6ff)", fontWeight: 900, fontSize: 16, color: "#1e3a5f", cursor: "pointer", boxShadow: "0 4px 12px rgba(30,58,95,.18)" }}>←</button>
           <div style={{ background: "linear-gradient(180deg,#fff,#eef6ff)", border: "2px solid #fff", borderRadius: 999, padding: "8px 12px", fontWeight: 900, fontSize: 12, color: "#1e3a5f", boxShadow: "0 4px 12px rgba(30,58,95,.18)", whiteSpace: "nowrap" }}>🌱 SKILL WORLD <span style={{ color: "#8b5cf6", marginLeft: 4 }}>{total}/{res.nodes.length}</span></div>
           <div style={{ flex: 1 }} />
+          {!curNode && stageRes && (
+            <button onClick={() => setStageOpen(true)} style={{ pointerEvents: "auto", width: 40, height: 40, borderRadius: 20, border: "2px solid #fbbf24", background: "#fff", fontSize: 18, cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.2)" }}>🏁</button>
+          )}
           {curNode && !questOpen && (
-            <button onClick={() => setQuestOpen(true)} style={{ pointerEvents: "auto", height: 38, borderRadius: 19, border: "2px solid #fde68a", background: "linear-gradient(180deg,#fffbeb,#fef3c7)", padding: "0 12px", fontWeight: 900, fontSize: 12, color: "#92400e", cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.25)", whiteSpace: "nowrap" }}>🎯 QUEST</button>
+            <button onClick={() => setQuestOpen(true)} style={{ pointerEvents: "auto", position: "relative", width: 40, height: 40, borderRadius: 20, border: "2px solid #fde68a", background: "linear-gradient(180deg,#fffbeb,#fef3c7)", fontSize: 19, cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.25)" }}>🎯<span style={{ position: "absolute", top: -2, right: -2, width: 10, height: 10, borderRadius: 5, background: "#ef4444", border: "2px solid #fff" }} /></button>
           )}
           {curNode && questOpen && (
             <div style={{ pointerEvents: "auto", width: "min(300px, 78vw)", border: "2px solid #fde68a", background: "linear-gradient(180deg,#fffbeb,#fef3c7)", borderRadius: 16, padding: "10px 12px", boxShadow: "0 6px 16px rgba(180,120,0,.25)" }}>
@@ -220,14 +223,18 @@ export default function SkillBoardPage() {
 
       {/* HUD 下：地域ナビ */}
       {isMobile ? (
-        <div style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, alignItems: "center", zIndex: 40, background: "linear-gradient(180deg,rgba(255,255,255,.95),rgba(239,246,255,.95))", border: "2px solid #fff", borderRadius: 999, padding: "6px 8px", boxShadow: "0 8px 22px rgba(30,58,95,.22)" }}>
-          <button onClick={goWorld} title="WORLD" style={{ width: 40, height: 40, borderRadius: 20, border: `2px solid ${navArea === "world" ? "#6366f1" : "#c7d2fe"}`, background: navArea === "world" ? "linear-gradient(135deg,#8b5cf6,#6366f1)" : "#fff", fontSize: 18, cursor: "pointer", boxShadow: navArea === "world" ? "0 3px 10px rgba(99,102,241,.45)" : "none", transform: navArea === "world" ? "scale(1.1)" : "none" }}>🌍</button>
-          {AREAS.map((a) => {
-            const here = (navArea ?? curArea) === a.key; const col = AREA_COLOR[a.key];
-            return <button key={a.key} onClick={() => goArea(a.key)} title={a.label} style={{ width: 40, height: 40, borderRadius: 20, border: `2px solid ${col}`, background: here ? col : "#fff", fontSize: 18, cursor: "pointer", transform: here ? "scale(1.12)" : "none", boxShadow: here ? `0 3px 10px ${col}66` : "none" }}>{a.emoji}</button>;
-          })}
-          {curNode && <button onClick={goQuest} title="次のクエストへ" style={{ width: 40, height: 40, borderRadius: 20, border: "2px solid #fbbf24", background: "linear-gradient(135deg,#f59e0b,#f97316)", fontSize: 18, cursor: "pointer", boxShadow: "0 3px 10px rgba(245,158,11,.45)" }}>🎯</button>}
-          {stageRes && <button onClick={() => setStageOpen(true)} title="STAGE" style={{ width: 40, height: 40, borderRadius: 20, border: "2px solid #fbbf24", background: "#fff", fontSize: 18, cursor: "pointer" }}>🏁</button>}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 40, display: "flex", justifyContent: "center", padding: "0 8px calc(10px + env(safe-area-inset-bottom, 0px))", pointerEvents: "none" }}>
+          <div style={{ pointerEvents: "auto", display: "flex", gap: 2, alignItems: "stretch", background: "linear-gradient(180deg,rgba(255,255,255,.96),rgba(239,246,255,.96))", border: "2px solid #fff", borderRadius: 22, padding: "5px 6px", boxShadow: "0 8px 22px rgba(30,58,95,.22)", width: "100%", maxWidth: 420 }}>
+            {[{ key: "world", emoji: "🌍", label: "WORLD", col: "#6366f1" }, ...AREAS.map((a) => ({ key: a.key, emoji: a.emoji, label: a.key === "comm" ? "COMM" : a.key === "think" ? "THINK" : a.key === "mgmt" ? "MGMT" : a.key === "ai" ? "AI" : "SALES", col: AREA_COLOR[a.key] }))].map((b) => {
+              const here = b.key === "world" ? navArea === "world" : (navArea ?? curArea) === b.key;
+              return (
+                <button key={b.key} onClick={() => (b.key === "world" ? goWorld() : goArea(b.key))} style={{ flex: 1, minWidth: 0, height: 50, borderRadius: 16, border: "none", background: here ? b.col : "transparent", color: here ? "#fff" : b.col, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, boxShadow: here ? `0 3px 10px ${b.col}66` : "none", transition: "background .2s" }}>
+                  <span style={{ fontSize: 20, lineHeight: 1 }}>{b.emoji}</span>
+                  <span style={{ fontSize: 9, fontWeight: 900, letterSpacing: .3, opacity: here ? 1 : .85 }}>{b.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       ) : (
         <div style={{ position: "absolute", bottom: 18, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, alignItems: "center", zIndex: 40, background: "linear-gradient(180deg,rgba(255,255,255,.95),rgba(239,246,255,.95))", border: "2px solid #fff", borderRadius: 999, padding: "6px 8px", boxShadow: "0 8px 22px rgba(30,58,95,.22)", maxWidth: "96vw", overflowX: "auto" }}>

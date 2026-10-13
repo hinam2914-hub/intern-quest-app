@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { questMission, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
 import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, pt, curve, type Pt } from "./world";
 import type { StageState } from "../lib/stages";
-import { AREA_BOX, fitBox, centerCam, clampCam, tweenCam, areaAt, type CamCmd, type CamMode, type Insets } from "./camera";
+import { AREA_BOX, AREA_FOCUS, fitBox, centerCam, clampCam, tweenCam, areaAt, type CamCmd, type CamMode, type Insets } from "./camera";
 import { TERRAIN_IMG, blobPath, LAND_PTS, MEADOW_PTS, HILL_PTS, STONE_PTS, STREAM_D, COMM_CLUSTERS, WORLD_CLUSTERS, PILLARS, FOREST_PTS, HIGHLAND_PTS, UPPER_PTS, AI_DECK_PTS, clusterItems } from "./terrain";
 
 type Cam = { x: number; y: number; s: number };
@@ -92,6 +92,8 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const nodeClicked = useRef(false);
   const trees = useMemo(treeSeeds, []);
   const tx = useTerrainImages();
+  /** スマホ：ズームアウトしても看板が読める大きさを保つ（倍率の逆数で補正） */
+  const inv = isMobile ? Math.min(2.4, Math.max(1, 1 / cam.s)) : 1;
 
   const byId = new Map(res.nodes.map((n) => [n.id, n]));
   const unlockedByCat: Record<string, number> = {};
@@ -124,7 +126,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const bubbleSub = mission ? mission.detail : "";
   const facingLeft = nextPos ? nextPos.x < homePos.x : false;
 
-  function clamp(c: Cam): Cam { return clampCam(c, vp); }
+  function clamp(c: Cam): Cam { return clampCam(c, vp, isMobile ? { x: vp.w * 0.25, y: vp.h * 0.42 } : { x: 0, y: 0 }); }
   function setCamNow(c: Cam) { const k = clamp(c); camRef.current = k; setCam(k); }
   function stopTween() { tweenCancel.current?.(); tweenCancel.current = null; }
   /** 滑らかにカメラ移動（ユーザー操作で中断） */
@@ -136,7 +138,8 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   function centerOn(p: Pt, s?: number) { const sc = s ?? camRef.current.s; animateTo({ s: sc, x: vp.w / 2 - p.x * sc, y: vp.h / 2 - p.y * sc }, walk ? 0 : 500); }
   function setMode(m: CamMode, area: string | null) { modeRef.current = m; areaRef.current = area; onCamMode?.(m, area); }
   function goWorld() { setMode("world", null); animateTo(fitBox(AREA_BOX.world, vp, ins, 0.92, minS), 650); }
-  function goArea(k: string) { const b = AREA_BOX[k]; if (!b) return; setMode("area", k); animateTo(fitBox(b, vp, ins, 0.94, minS), 650); }
+  function areaCam(k: string): Cam { return isMobile ? fitBox(AREA_FOCUS[k] ?? AREA_BOX[k], vp, ins, 0.98, 0.62, 0.75) : fitBox(AREA_BOX[k], vp, ins, 0.94, minS); }
+  function goArea(k: string) { if (!AREA_BOX[k]) return; setMode("area", k); animateTo(areaCam(k), 650); }
   function goQuest(p: Pt) { setMode("quest", areaRef.current); animateTo(centerCam(p, isMobile ? 1.5 : Math.max(1.5, camRef.current.s), vp, ins), 650); }
   useEffect(() => { const el = wrapRef.current; if (!el) return; const ro = new ResizeObserver(() => setVp({ w: el.clientWidth, h: el.clientHeight })); ro.observe(el); setVp({ w: el.clientWidth, h: el.clientHeight }); return () => ro.disconnect(); }, []);
   const minS = isMobile ? 0.12 : Math.max(0.4, Math.max(vp.w / WORLD_W, vp.h / WORLD_H));
@@ -146,7 +149,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
       const curCat = focus.current ? res.nodes.find((n) => n.id === focus.current)?.category : undefined;
       const locCat = locNodeId ? res.nodes.find((n) => n.id === locNodeId)?.category : undefined;
       const k = (modeRef.current === "area" && areaRef.current) || curCat || locCat || "comm";
-      setMode("area", k); setCamNow(fitBox(AREA_BOX[k], vp, ins, 0.94, minS));
+      setMode("area", k); setCamNow(areaCam(k));
       return;
     }
     const s = Math.min(2.0, Math.max(1.5, vp.w / 850));
@@ -440,7 +443,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
 
         {/* 地域看板 */}
         {AREAS.map((a) => (
-          <div key={a.key} style={{ position: "absolute", left: a.sign.x, top: a.sign.y - (a.key === "ai" ? 70 : 60), padding: "5px 14px", borderRadius: 12, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: `2px solid ${Z(a.key)}`, fontSize: 12, fontWeight: 900, letterSpacing: 1, color: Z(a.key), boxShadow: "0 4px 10px rgba(0,0,0,.15)", whiteSpace: "nowrap", zIndex: 6 }}>{a.emoji} {a.label}</div>
+          <div key={a.key} style={{ position: "absolute", left: a.sign.x, top: a.sign.y - (a.key === "ai" ? 70 : 60), transform: `scale(${Math.min(inv, 1.8)})`, transformOrigin: "0 100%", padding: "5px 14px", borderRadius: 12, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: `2px solid ${Z(a.key)}`, fontSize: 12, fontWeight: 900, letterSpacing: 1, color: Z(a.key), boxShadow: "0 4px 10px rgba(0,0,0,.15)", whiteSpace: "nowrap", zIndex: 6 }}>{a.emoji} {a.label}</div>
         ))}
 
         {/* ---------- 木・茂み・岩（画像） ---------- */}
@@ -474,15 +477,15 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
                 <div style={{ position: "absolute", left: "50%", bottom: 8, width: 84, height: 320, marginLeft: -42, background: "linear-gradient(180deg, rgba(251,191,36,0) 0%, rgba(253,224,71,.45) 55%, rgba(251,191,36,.75) 100%)", filter: "blur(5px)", pointerEvents: "none", animation: "swGlow 2s ease-in-out infinite alternate" }} />
                 <div style={{ position: "absolute", left: "50%", bottom: 6, width: w + 40, height: 30, marginLeft: -(w + 40) / 2, borderRadius: "50%", border: "4px solid #fbbf24", boxShadow: "0 0 18px #fbbf24, inset 0 0 18px rgba(251,191,36,.6)", pointerEvents: "none", animation: "swPulse 2s ease-in-out infinite" }} />
                 {[0, 1, 2, 3].map((i) => <div key={i} style={{ position: "absolute", left: 8 + i * 28, top: -10 + (i % 2) * 30, fontSize: 12, animation: `swTwinkle ${1 + i * 0.3}s ease-in-out infinite alternate` }}>✨</div>)}
-                <div style={{ position: "absolute", top: -62, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#92400e", background: "#fde68a", borderRadius: 6, padding: "1px 6px", whiteSpace: "nowrap", zIndex: 3 }}>CURRENT QUEST</div>
+                <div style={{ position: "absolute", top: -62, left: "50%", transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 100%", fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#92400e", background: "#fde68a", borderRadius: 6, padding: "1px 6px", whiteSpace: "nowrap", zIndex: 3 }}>CURRENT QUEST</div>
               </>}
-              {(isCur || isSub) && <div style={{ position: "absolute", top: -44, left: "50%", transform: "translateX(-50%)", fontSize: isCur ? 28 : 18, zIndex: 3, animation: "swBounce 1.4s ease-in-out infinite", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.3))" }}>🎯</div>}
+              {(isCur || isSub) && <div style={{ position: "absolute", top: -44, left: "50%", transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 100%", fontSize: isCur ? 28 : 18, zIndex: 3, animation: "swBounce 1.4s ease-in-out infinite", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.3))" }}>🎯</div>}
               {reco && <>
                 <div style={{ position: "absolute", left: "50%", bottom: 10, width: w + 20, height: 26, marginLeft: -(w + 20) / 2, borderRadius: "50%", border: "3px solid #c4b5fd", boxShadow: "0 0 14px #a78bfa", pointerEvents: "none", animation: "swPulse 2.4s ease-in-out infinite" }} />
                 <div style={{ position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)", fontSize: 20, zIndex: 3, animation: "swBounce 1.6s ease-in-out infinite", filter: "drop-shadow(0 0 6px #fff)" }}>✨</div>
-                <div style={{ position: "absolute", top: -56, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#fff", background: reco.source === "mentor" ? "linear-gradient(135deg,#f472b6,#ec4899)" : "linear-gradient(135deg,#a78bfa,#8b5cf6)", borderRadius: 6, padding: "1px 7px", whiteSpace: "nowrap", zIndex: 3, boxShadow: "0 2px 6px rgba(0,0,0,.2)" }}>{reco.source === "mentor" ? "メンターのおすすめ" : "おすすめルート"}</div>
+                <div style={{ position: "absolute", top: -56, left: "50%", transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 100%", fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#fff", background: reco.source === "mentor" ? "linear-gradient(135deg,#f472b6,#ec4899)" : "linear-gradient(135deg,#a78bfa,#8b5cf6)", borderRadius: 6, padding: "1px 7px", whiteSpace: "nowrap", zIndex: 3, boxShadow: "0 2px 6px rgba(0,0,0,.2)" }}>{reco.source === "mentor" ? "メンターのおすすめ" : "おすすめルート"}</div>
               </>}
-              {a && !fog && !isCur && !reco && <div style={{ position: "absolute", top: -30, left: "50%", transform: "translateX(-50%)", fontSize: 16, fontWeight: 900, color: "#ef4444", animation: "swBounce 1s ease-in-out infinite", textShadow: "0 0 6px #fff, 0 0 2px #fff" }}>！</div>}
+              {a && !fog && !isCur && !reco && <div style={{ position: "absolute", top: -30, left: "50%", transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 100%", fontSize: 16, fontWeight: 900, color: "#ef4444", animation: "swBounce 1s ease-in-out infinite", textShadow: "0 0 6px #fff, 0 0 2px #fff" }}>！</div>}
               {u && <div style={{ position: "absolute", top: -6, right: 4, fontSize: 18, zIndex: 2, animation: "swFlag 1s ease-in-out infinite alternate" }}>🚩</div>}
               {/* 足元 */}
               <div style={{ position: "absolute", left: "12%", right: "12%", bottom: 10, height: key ? 28 : 20, borderRadius: "50%", background: u ? `radial-gradient(ellipse, ${color}99, ${color}11)` : a ? `radial-gradient(ellipse, ${color}55, transparent 70%)` : "rgba(60,60,80,.18)", filter: "blur(2px)", animation: a && !fog && !isCur ? "swPulse 2s ease-in-out infinite" : undefined }} />
@@ -491,7 +494,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
                 {fog ? <div style={{ fontSize: 40 }}>☁️</div> : lm.img ? <img src={lm.img} alt="" style={{ width: (lm.w ?? 70) * (key ? 1.15 : 1), display: "block" }} /> : lm.svg ? <LmSvg kind={lm.svg} color={color} size={key ? 64 : 48} /> : <div style={{ fontSize: 40 }}>{n.icon}</div>}
                 {!fog && (lm.badge || !lm.img) && <span style={{ position: "absolute", right: 4, top: 6, width: 24, height: 24, borderRadius: 12, background: u ? color : "#fff", border: `2px solid ${u ? "#fff" : color}`, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 5px rgba(0,0,0,.2)" }}>{lm.badge ?? n.icon}</span>}
               </div>
-              <div style={{ marginTop: 2, whiteSpace: "nowrap" }}>
+              <div style={{ marginTop: 2, whiteSpace: "nowrap", transform: `scale(${inv})`, transformOrigin: "50% 0" }}>
                 {quiet ? (
                   <span style={{ display: "inline-block", width: 18, height: 18, borderRadius: 9, background: "rgba(255,255,255,.75)", fontSize: 10, lineHeight: "18px", boxShadow: "0 1px 3px rgba(0,0,0,.25)" }}>{fog ? "☁️" : "🔒"}</span>
                 ) : isCur || sel ? (
@@ -511,7 +514,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           return (
             <div key={"stage" + s.id} onClick={(e) => { e.stopPropagation(); nodeClicked.current = true; onStageTap?.(); }} style={{ position: "absolute", left: g.x - 40, top: g.y - 64, width: 80, textAlign: "center", zIndex: 9, cursor: "pointer", opacity: hide ? 0.55 : 1 }}>
               <div style={{ fontSize: isCur ? 30 : 24, filter: s.cleared ? "drop-shadow(0 0 8px #fbbf24)" : isCur ? "drop-shadow(0 0 6px #fde68a)" : "grayscale(1) opacity(.7)", animation: isCur ? "swFlag 1s ease-in-out infinite alternate" : undefined, lineHeight: 1 }}>{s.cleared ? "🏁" : "🚩"}</div>
-              {(!hide) && <div style={{ display: "inline-block", marginTop: 2, padding: "2px 7px", borderRadius: 6, background: s.cleared ? "#fbbf24" : isCur ? "#fff7ed" : "#e2e8f0", color: s.cleared ? "#1e293b" : isCur ? "#92400e" : "#64748b", fontSize: isCur ? 11 : 9.5, fontWeight: 900, border: `1.5px solid ${s.cleared || isCur ? "#f59e0b" : "#cbd5e1"}`, whiteSpace: "nowrap", boxShadow: "0 2px 4px rgba(0,0,0,.2)" }}>{s.icon} {s.name}</div>}
+              {(!hide) && <div style={{ display: "inline-block", marginTop: 2, transform: `scale(${inv})`, transformOrigin: "50% 0", padding: "2px 7px", borderRadius: 6, background: s.cleared ? "#fbbf24" : isCur ? "#fff7ed" : "#e2e8f0", color: s.cleared ? "#1e293b" : isCur ? "#92400e" : "#64748b", fontSize: isCur ? 11 : 9.5, fontWeight: 900, border: `1.5px solid ${s.cleared || isCur ? "#f59e0b" : "#cbd5e1"}`, whiteSpace: "nowrap", boxShadow: "0 2px 4px rgba(0,0,0,.2)" }}>{s.icon} {s.name}</div>}
             </div>
           );
         })}
