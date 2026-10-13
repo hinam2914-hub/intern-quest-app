@@ -82,7 +82,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     const drag = useRef<{ x: number; y: number; cx: number; cy: number; moved: boolean } | null>(null);
     const pinch = useRef<{ d: number; s: number } | null>(null);
     const tapped = useRef(false);
-    const minS = Math.max(0.04, Math.min(0.2, (vp.w || 1000) / worldW * 0.9));
+    const minS = Math.max(0.03, Math.min((vp.w || 1000) / worldW, (vp.h || 800) / worldH) * 0.8);   // 全体が収まる倍率より少し引ける程度まで
     const maxS = 2.0;
     const slack = isMobile ? { x: vp.w * 0.3, y: vp.h * 0.5 } : { x: 0, y: 0 };
     const [mode, setModeState] = useState<LobbyMode>("free");
@@ -273,7 +273,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                                 </div>
                             ) : <IslandMini i={i} leader={sl.isLeader} />}
                             {/* 名前プレート（スマホの WORLD では代表の島だけ） */}
-                            {(detail || sl.isLeader || isFocus || !isMobile) && <div style={{ position: "absolute", left: 0, top: 14, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", whiteSpace: "nowrap", textAlign: "center", pointerEvents: "none" }}>
+                            {(sl.isLeader || isFocus || (detail && cam.s > 0.42)) && <div style={{ position: "absolute", left: 0, top: 14, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", whiteSpace: "nowrap", textAlign: "center", pointerEvents: "none" }}>
                                 <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 8, background: isFocus ? "linear-gradient(180deg,#fff7ed,#fde68a)" : "rgba(255,255,255,.92)", border: `2px solid ${isFocus ? "#f59e0b" : sl.isLeader ? "#f59e0b" : "#cbd5e1"}`, fontSize: 12.5, fontWeight: 900, color: "#1e293b", boxShadow: "0 2px 6px rgba(0,0,0,.2)" }}>{sl.isLeader ? "👑 " : ""}{i.name} <span style={{ color: "#b45309", fontSize: 11 }}>Lv.{i.level}</span></span>
                             </div>}
                         </div>

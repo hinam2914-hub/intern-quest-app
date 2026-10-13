@@ -62,25 +62,29 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
 
     // 2) エリアを中央広場の周りに配置（極座標。楕円に潰して横長に）
     const EX = 1.25, EY = 0.82;
-    let ringR = Math.max(...tmp.map((a) => PLAZA_R + AREA_GAP + a.r), PLAZA_R + AREA_GAP + 340);
+    let ringR = Math.max(...tmp.map((a) => (PLAZA_R + AREA_GAP + a.r) / EY), (PLAZA_R + AREA_GAP + 340) / EY);
     const chord = tmp.reduce((s, a) => s + a.r * 2 + AREA_GAP, 0);
     ringR = Math.max(ringR, chord / (2 * Math.PI));
     const centers: Pt[] = [];
-    // 角度幅は「弦の長さ／半径」。楕円で潰す分は角度の余白 k で補い、1周に収まらなければ半径を広げる
-    const place = (R: number, k: number) => {
+    // 重なり判定（縦に並ぶ隣同士は看板・崖の厚みの分だけ余計に離す：縦距離を 1.35 で割って評価）
+    const clash = (p: Pt, r: number, q: Pt, rq: number) => Math.hypot(p.x - q.x, (p.y - q.y) / 1.35) < r + rq + AREA_GAP * 0.8;
+    const onRing = (R: number, ang: number): Pt => ({ x: Math.cos(ang) * R * EX, y: Math.sin(ang) * R * EY });
+    // 貪欲配置：真上から時計回りに、前のエリアと重ならない最小の角度に置いていく。1周に収まらなければ半径を広げる
+    const tryPlace = (R: number): boolean => {
         centers.length = 0;
         let ang = -Math.PI / 2;
-        const first = tmp[0] ? ((tmp[0].r * 2 + AREA_GAP) / R) * k : 0; ang -= first / 2;
-        for (const a of tmp) { const w = ((a.r * 2 + AREA_GAP) / R) * k; ang += w / 2; centers.push({ x: Math.cos(ang) * R * EX, y: Math.sin(ang) * R * EY }); ang += w / 2; }
+        for (let i = 0; i < tmp.length; i++) {
+            if (i > 0) {
+                let a = ang + 0.02;
+                while (a < ang + Math.PI * 2 && centers.some((c, j) => clash(onRing(R, a), tmp[i].r, c, tmp[j].r))) a += 0.02;
+                ang = a;
+            }
+            centers.push(onRing(R, ang));
+        }
+        // 最後と最初が重ならないか（1周の閉じ）
+        return !(tmp.length > 1 && clash(centers[centers.length - 1], tmp[tmp.length - 1].r, centers[0], tmp[0].r)) && ang < -Math.PI / 2 + Math.PI * 2 - 0.3;
     };
-    const overlaps = () => { for (let i = 0; i < tmp.length; i++) for (let j = i + 1; j < tmp.length; j++) { const d = Math.hypot(centers[i].x - centers[j].x, centers[i].y - centers[j].y); if (d < tmp[i].r + tmp[j].r + AREA_GAP * 0.6) return true; } return false; };
-    let k = 1; place(ringR, k);
-    for (let it = 0; it < 80 && tmp.length > 1 && overlaps(); it++) {
-        k *= 1.04;
-        const total = tmp.reduce((s, a) => s + ((a.r * 2 + AREA_GAP) / ringR) * k, 0);
-        if (total > Math.PI * 2) { ringR *= 1.05; k = 1; }
-        place(ringR, k);
-    }
+    for (let it = 0; it < 60 && !tryPlace(ringR); it++) ringR *= 1.04;
     // 1エリアだけなら広場の下に置く
     if (tmp.length === 1) centers[0] = { x: 0, y: PLAZA_R + AREA_GAP + tmp[0].r };
 
