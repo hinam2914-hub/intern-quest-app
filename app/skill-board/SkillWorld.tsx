@@ -137,7 +137,8 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   }
   function centerOn(p: Pt, s?: number) { const sc = s ?? camRef.current.s; animateTo({ s: sc, x: vp.w / 2 - p.x * sc, y: vp.h / 2 - p.y * sc }, walk ? 0 : 500); }
   function setMode(m: CamMode, area: string | null) { modeRef.current = m; areaRef.current = area; onCamMode?.(m, area); }
-  function goWorld() { setMode("world", null); animateTo(fitBox(AREA_BOX.world, vp, ins, 0.92, minS), 650); }
+  function worldCam(): Cam { return fitBox(AREA_BOX.world, vp, ins, 0.92, minS); }
+  function goWorld() { setMode("world", null); animateTo(worldCam(), 650); }
   function areaCam(k: string): Cam {
     if (!isMobile) return fitBox(AREA_BOX[k], vp, ins, 0.94, minS);
     // スマホ：選択エリアを主役に。高さ基準で倍率を決め（0.85〜1.0）、横はエリア内の目的地→現在地→中央に寄せる
@@ -159,7 +160,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
       // 2回目以降のリサイズ（iOS のアドレスバー出入りなど）：今のモードを維持して再フィットするだけ
       if (initDone.current) {
         if (modeRef.current === "area" && areaRef.current) setCamNow(areaCam(areaRef.current));
-        else if (modeRef.current === "world") setCamNow(fitBox(AREA_BOX.world, vp, ins, 0.92, minS));
+        else if (modeRef.current === "world") setCamNow(worldCam());
         else setCamNow(camRef.current);
         return;
       }
@@ -265,7 +266,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
       style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: drag.current ? "grabbing" : "grab", touchAction: "none", background: sky, userSelect: "none", fontFamily: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif' }}>
 
       {/* 遠景（パララックス） */}
-      <div style={{ position: "absolute", left: 0, top: 0, width: WORLD_W, height: WORLD_H, transform: `translate(${cam.x * 0.3}px,${cam.y * 0.3}px)`, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", left: 0, top: 0, width: WORLD_W, height: WORLD_H, transform: `translate(${cam.x * 0.3 + (vp.w / 2 - (WORLD_W * cam.s) / 2) * 0.7}px,${cam.y * 0.3 + (vp.h / 2 - (WORLD_H * cam.s) / 2) * 0.7}px) scale(${cam.s})`, transformOrigin: "0 0", pointerEvents: "none" }}>
         <svg width={WORLD_W} height={WORLD_H} style={{ position: "absolute", left: 0, top: 0 }}>
           <defs><linearGradient id="mt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#dbe9f5" /><stop offset="1" stopColor="#a9c6e0" /></linearGradient></defs>
           <path d="M 1100 520 L 1320 230 L 1420 330 L 1560 150 L 1700 300 L 1820 120 L 1960 310 L 2100 220 L 2100 620 L 1100 620 Z" fill="url(#mt)" opacity=".9" />
