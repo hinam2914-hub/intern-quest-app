@@ -234,7 +234,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
             </div>
 
             {/* ===== ワールド ===== */}
-            <div style={{ position: "absolute", left: 0, top: 0, width: worldW, height: worldH, transform: `translate(${cam.x}px,${cam.y}px) scale(${cam.s})`, transformOrigin: "0 0", willChange: "transform" }}>
+            <div style={{ position: "absolute", left: 0, top: 0, width: worldW, height: worldH, transform: `translate(${cam.x}px,${cam.y}px) scale(${cam.s})`, transformOrigin: "0 0" }}>
                 {/* 影（浮島の下） */}
                 <svg width={worldW} height={worldH} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
                     <defs><filter id="lbSoft"><feGaussianBlur stdDeviation="14" /></filter></defs>
