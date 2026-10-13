@@ -126,7 +126,7 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const bubbleSub = mission ? mission.detail : "";
   const facingLeft = nextPos ? nextPos.x < homePos.x : false;
 
-  function clamp(c: Cam): Cam { return clampCam(c, vp, isMobile ? { x: vp.w * 0.25, y: vp.h * 0.42 } : { x: 0, y: 0 }); }
+  function clamp(c: Cam): Cam { return clampCam(c, vp, isMobile ? { x: vp.w * 0.3, y: vp.h * 0.5 } : { x: 0, y: 0 }); }
   function setCamNow(c: Cam) { const k = clamp(c); camRef.current = k; setCam(k); }
   function stopTween() { tweenCancel.current?.(); tweenCancel.current = null; }
   /** 滑らかにカメラ移動（ユーザー操作で中断） */
@@ -138,7 +138,16 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   function centerOn(p: Pt, s?: number) { const sc = s ?? camRef.current.s; animateTo({ s: sc, x: vp.w / 2 - p.x * sc, y: vp.h / 2 - p.y * sc }, walk ? 0 : 500); }
   function setMode(m: CamMode, area: string | null) { modeRef.current = m; areaRef.current = area; onCamMode?.(m, area); }
   function goWorld() { setMode("world", null); animateTo(fitBox(AREA_BOX.world, vp, ins, 0.92, minS), 650); }
-  function areaCam(k: string): Cam { return isMobile ? fitBox(AREA_FOCUS[k] ?? AREA_BOX[k], vp, ins, 0.98, 0.62, 0.75) : fitBox(AREA_BOX[k], vp, ins, 0.94, minS); }
+  function areaCam(k: string): Cam {
+    if (!isMobile) return fitBox(AREA_BOX[k], vp, ins, 0.94, minS);
+    // スマホ：選択エリアを主役に。高さ基準で倍率を決め（0.85〜1.0）、横はエリア内の目的地→現在地→中央に寄せる
+    const box = AREA_FOCUS[k] ?? AREA_BOX[k];
+    const uh = Math.max(80, vp.h - ins.top - ins.bottom);
+    const s = Math.min(1.0, Math.max(0.85, (uh * 0.9) / (box.h + 220)));
+    const inArea = (id: string | null | undefined) => !!id && id.startsWith(k + "_") && !!NODE_POS[id];
+    const cx = inArea(focus.current) ? NODE_POS[focus.current!].x : inArea(locNodeId) ? NODE_POS[locNodeId!].x : box.x + box.w / 2;
+    return centerCam({ x: cx, y: box.y + box.h / 2 }, s, vp, ins);
+  }
   function goArea(k: string) { if (!AREA_BOX[k]) return; setMode("area", k); animateTo(areaCam(k), 650); }
   function goQuest(p: Pt) { setMode("quest", areaRef.current); animateTo(centerCam(p, isMobile ? 1.5 : Math.max(1.5, camRef.current.s), vp, ins), 650); }
   useEffect(() => { const el = wrapRef.current; if (!el) return; const ro = new ResizeObserver(() => setVp({ w: el.clientWidth, h: el.clientHeight })); ro.observe(el); setVp({ w: el.clientWidth, h: el.clientHeight }); return () => ro.disconnect(); }, []);
