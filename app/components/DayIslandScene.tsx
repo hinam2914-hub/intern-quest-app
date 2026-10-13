@@ -7,12 +7,14 @@ const HOUSE_W: number[] = [104, 112, 120, 128, 134, 130];
 
 export type PetState = { say: string; hop: boolean; onTap: () => void };
 
-export default function DayIslandScene({ config, totalEarned, onHouseClick, pet }: {
+export default function DayIslandScene({ config, totalEarned, onHouseClick, pet, width = "min(88vw, 420px)" }: {
     config: IslandConfig;
     totalEarned: number;
     onHouseClick?: () => void;
     /** どうぶつのタップ反応（HomeIsland が状態を持つ） */
     pet?: PetState;
+    /** 島の横幅（home は画面幅に追従、ロビーでは固定幅で使う） */
+    width?: string | number;
 }) {
     const view = config;
     const stage = getHouseStage(totalEarned);
@@ -26,7 +28,7 @@ export default function DayIslandScene({ config, totalEarned, onHouseClick, pet 
                 @keyframes dsHop { 0%{transform:translateY(0)} 40%{transform:translateY(-14px)} 100%{transform:translateY(0)} }
                 @keyframes dsPop { 0%{transform:scale(.2);opacity:0} 70%{transform:scale(1.14)} 100%{transform:scale(1);opacity:1} }
             `}</style>
-            <div style={{ position: "relative", minHeight: 265, width: "min(88vw, 420px)", margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", animation: "dsFloat 6s ease-in-out infinite" }}>
+            <div style={{ position: "relative", minHeight: 265, width, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", animation: "dsFloat 6s ease-in-out infinite" }}>
                 {/* 空アイテム */}
                 {view.sky && (SKY_IMG[view.sky] ? (view.sky === "sky_niji" ? <img key={"sky" + view.sky} src={SKY_IMG[view.sky]} alt="" style={{ position: "absolute", bottom: 112, left: "50%", transform: "translateX(-50%)", width: "96%", zIndex: 2, pointerEvents: "none", opacity: .92, animation: "dsPop .5s ease-out" }} /> : <img key={"sky" + view.sky} src={SKY_IMG[view.sky]} alt="" style={{ position: "absolute", top: "6%", right: "10%", width: "16%", zIndex: 6, pointerEvents: "none", animation: "dsFloat 5s ease-in-out infinite, dsPop .5s ease-out" }} />) : (SKY_EMOJI[view.sky] && <div key={"sky" + view.sky} style={{ position: "absolute", top: 0, right: "24%", fontSize: 42, zIndex: 1, animation: "dsFloat 5s ease-in-out infinite, dsPop .5s ease-out" }}>{SKY_EMOJI[view.sky]}</div>))}
 

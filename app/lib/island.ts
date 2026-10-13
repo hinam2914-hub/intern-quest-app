@@ -47,3 +47,15 @@ export const ANIMAL_IMG: Record<string, string> = { animal_neko: "/island/animal
 export const ITEM_IMG: Record<string, string> = { ...TREE_IMG, ...DECO_IMG, ...SKY_IMG, ...GROUND_IMG, ...ANIMAL_IMG };
 
 export type IslandConfig = Record<string, string>;
+
+/** みんなの島カードの称号（最大2つ）。islands 一覧とロビーの島フォーカスで共用 */
+export function titleBadges(i: { stepNo: number; streak: number; level: number }): string[] {
+    const t: string[] = [];
+    if (i.stepNo >= 6) t.push("⚔️ 営業デビュー");
+    if (i.streak >= 30) t.push("🔥 30日連続");
+    else if (i.streak >= 7) t.push("🔥 " + i.streak + "日連続");
+    if (i.level >= 20) t.push("⭐ トップランカー");
+    else if (i.level >= 10) t.push("💎 努力家");
+    if (t.length === 0) t.push("🌱 かけだし冒険者");
+    return t.slice(0, 2);
+}
