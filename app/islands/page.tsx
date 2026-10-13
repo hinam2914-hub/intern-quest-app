@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { getHouseStage } from "../components/DotHouse";
+import IslandScene, { IslandSceneStyle } from "../components/IslandScene";
+import { STEP_TITLE, getLevel, avatarIdOf } from "../lib/island";
 
 type Island = {
     id: string;
@@ -16,10 +17,6 @@ type Island = {
     licenses: Record<string, boolean>;
 };
 
-const STEP_TITLE: Record<number, string> = { 0: "冒険の始まり", 1: "入社・研修", 2: "登竜門", 3: "プレイヤー昇格", 4: "DRMスタート", 5: "キャリア面談", 6: "営業デビュー" };
-const HOUSE_IMG: Record<number, string> = { 0: "/island/house/0_tent.png", 1: "/island/house/1_cabin.png", 2: "/island/house/2_house.png", 3: "/island/house/3_big.png", 4: "/island/house/4_mansion.png", 5: "/island/house/5_castle.png" };
-const HOUSE_W: Record<number, number> = { 0: 84, 1: 98, 2: 110, 3: 120, 4: 134, 5: 128 };
-
 function titleBadges(i: Island): string[] {
     const t: string[] = [];
     if (i.stepNo >= 6) t.push("⚔️ 営業デビュー");
@@ -32,85 +29,6 @@ function titleBadges(i: Island): string[] {
 }
 
 const OFFSETS = [0, 30, 14];
-
-const GROUND_BG: Record<string, string> = {
-    ground_hanabatake: "linear-gradient(180deg, #86efac, #4ade80)",
-    ground_yukihara: "linear-gradient(180deg, #f8fafc, #cbd5e1)",
-    ground_sunahama: "linear-gradient(180deg, #fde68a, #f59e0b)",
-    ground_momiji: "linear-gradient(180deg, #fdba74, #ea580c)",
-};
-const TREE_EMOJI: Record<string, string> = { tree_sakura: "🌸", tree_yashi: "🌴", tree_momi: "🎄", tree_momiji: "🍁" };
-const DECO_EMOJI: Record<string, string> = { deco_funsui: "⛲", deco_bench: "🪑", deco_gaitou: "💡", deco_yukidaruma: "⛄", deco_torii: "⛩️" };
-const SKY_EMOJI: Record<string, string> = { sky_niji: "🌈", sky_chocho: "🦋", sky_fuusen: "🎈" };
-const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "🐈", animal_inu: "🐕" };
-const FLOWER_COLORS = ["#f472b6", "#fbbf24", "#f87171", "#c084fc", "#fb923c"];
-
-function IslandScene({ i, idx }: { i: Island; idx: number }) {
-    const stage = getHouseStage(i.totalEarned);
-    const rare60 = i.level >= 60, rare80 = i.level >= 80, rare100 = i.level >= 100;
-    const r = (n: number) => ((idx * 73 + n * 137) % 100) / 100;
-    return (
-        <div style={{ position: "relative", height: 215, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-            {/* 魔法陣 Lv100+ */}
-            {rare100 && <div style={{ position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)", width: 250, height: 66, borderRadius: "50%", border: "2px solid rgba(167,139,250,.55)", boxShadow: "0 0 26px rgba(167,139,250,.5), inset 0 0 22px rgba(167,139,250,.3)", animation: "iqLantern 3.2s ease-in-out infinite" }} />}
-            {/* 地面 */}
-            <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", width: 210, height: 54, borderRadius: "50%", background: "linear-gradient(180deg, #4ade80, #22a05a)", boxShadow: "inset 0 -9px 13px rgba(0,0,0,.25)" }} />
-            {i.config.ground && GROUND_BG[i.config.ground] && <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", width: 210, height: 54, borderRadius: "50%", background: GROUND_BG[i.config.ground], boxShadow: "inset 0 -9px 13px rgba(0,0,0,.2)" }} />}
-            {/* 道 */}
-            <div style={{ position: "absolute", bottom: 22, left: "50%", transform: "translateX(-8px)", width: 34, height: 34, borderRadius: "50% 50% 60% 60%", background: "linear-gradient(180deg, #d9c49a, #bfa87e)", opacity: .9, zIndex: 1 }} />
-            {/* 土台 */}
-            <div style={{ position: "absolute", bottom: -22, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "74px solid transparent", borderRight: "74px solid transparent", borderTop: "62px solid #6b4a34" }} />
-            <div style={{ position: "absolute", bottom: -40, left: "50%", transform: "translateX(-50%)", width: 130, height: 18, borderRadius: "50%", background: "rgba(0,0,0,.45)", filter: "blur(9px)" }} />
-            {/* 木 x2 */}
-            {[{ l: 42, s: 1 }, { l: 152, s: .8 }].map((tr, k) => (
-                <div key={k} style={{ position: "absolute", bottom: 34, left: tr.l, transform: `scale(${tr.s})`, zIndex: 1 }}>
-                    <div style={{ width: 0, height: 0, borderLeft: "13px solid transparent", borderRight: "13px solid transparent", borderBottom: "26px solid #16a34a" }} />
-                    <div style={{ width: 0, height: 0, marginTop: -14, borderLeft: "16px solid transparent", borderRight: "16px solid transparent", borderBottom: "24px solid #15803d", transform: "translateX(-3px)" }} />
-                    <div style={{ width: 6, height: 9, background: "#7c4a2d", margin: "0 auto" }} />
-                </div>
-            ))}
-            {/* 岩 */}
-            <div style={{ position: "absolute", bottom: 26, left: 44, width: 15, height: 10, borderRadius: "50% 50% 40% 40%", background: "#9ca3af", zIndex: 1 }} />
-            {/* 花 */}
-            {[0, 1, 2, 3, 4].map((k) => (
-                <div key={k} style={{ position: "absolute", bottom: 24 + r(k) * 16, left: 34 + r(k + 9) * 150, width: 5, height: 5, borderRadius: "50%", background: FLOWER_COLORS[(idx + k) % FLOWER_COLORS.length], boxShadow: "0 0 4px rgba(255,255,255,.4)", zIndex: 1 }} />
-            ))}
-            {/* ランタン */}
-            <div style={{ position: "absolute", bottom: 30, left: "50%", transform: "translateX(36px)", zIndex: 3 }}>
-                <div style={{ width: 2, height: 17, background: "#7c5a3a", margin: "0 auto" }} />
-                <div style={{ width: 9, height: 11, borderRadius: 3, background: "#ffe08a", boxShadow: "0 0 12px rgba(255,224,138,.9)", animation: "iqLantern 2.6s ease-in-out infinite" }} />
-            </div>
-            {/* ホタル */}
-            {[0, 1, 2].map((k) => (
-                <div key={k} style={{ position: "absolute", bottom: 46 + r(k + 3) * 60, left: 26 + r(k + 6) * 165, width: 3, height: 3, borderRadius: "50%", background: "#d9f99d", boxShadow: "0 0 6px #d9f99d", animation: `iqFirefly ${3 + k}s ease-in-out ${k * .8}s infinite`, zIndex: 3 }} />
-            ))}
-            {/* クリスタル Lv60+ */}
-            {rare60 && [{ l: 20, d: 0 }, { l: 178, d: 1.3 }].map((c, k) => (
-                <div key={k} style={{ position: "absolute", bottom: 62 + k * 24, left: c.l, width: 12, height: 12, background: "linear-gradient(135deg, #c4b5fd, #8b5cf6)", transform: "rotate(45deg)", boxShadow: "0 0 12px rgba(167,139,250,.8)", animation: `iqCrystal 3.4s ease-in-out ${c.d}s infinite`, zIndex: 3 }} />
-            ))}
-            {/* 桜吹雪 Lv80+ */}
-            {rare80 && [0, 1, 2, 3].map((k) => (
-                <div key={k} style={{ position: "absolute", top: 12 + r(k) * 30, left: 24 + r(k + 4) * 160, width: 6, height: 5, borderRadius: "60% 40% 60% 40%", background: "#fbcfe8", opacity: .9, animation: `iqPetal ${4.5 + k * .7}s linear ${k * 1.1}s infinite`, zIndex: 4 }} />
-            ))}
-            {/* 家 */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={HOUSE_IMG[stage.idx]} alt="house" style={{ width: HOUSE_W[stage.idx], position: "relative", zIndex: 2, marginBottom: 42, filter: "drop-shadow(0 7px 12px rgba(0,0,0,.4))" }} />
-            {/* 窓の灯り */}
-            <div className="iq-window" style={{ position: "absolute", bottom: 42 + HOUSE_W[stage.idx] * .3, left: "50%", transform: "translateX(-50%)", width: HOUSE_W[stage.idx] * .55, height: HOUSE_W[stage.idx] * .32, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,224,138,.5), transparent 70%)", opacity: 0, transition: "opacity .3s", zIndex: 2, pointerEvents: "none" }} />
-            {/* 煙 */}
-            {stage.idx >= 3 && [0, 1].map((k) => (
-                <div key={k} style={{ position: "absolute", bottom: 46 + HOUSE_W[stage.idx] * .62, left: "50%", transform: "translateX(" + (HOUSE_W[stage.idx] * .22) + "px)", width: 8 + k * 3, height: 8 + k * 3, borderRadius: "50%", background: "rgba(255,255,255,.4)", filter: "blur(1.5px)", animation: `iqSmoke 3.4s ease-out ${k * 1.4}s infinite`, zIndex: 1 }} />
-            ))}
-            {/* アバター（主人公） */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={"/avatars/" + i.avatarId + ".png"} alt={i.name} style={{ position: "absolute", bottom: 26, left: "50%", transform: "translateX(-80px)", width: 48, height: 48, objectFit: "cover", borderRadius: "50%", zIndex: 4, border: "2px solid rgba(255,255,255,.55)", boxShadow: "0 4px 9px rgba(0,0,0,.45)" }} />
-            {i.config.tree && TREE_EMOJI[i.config.tree] && <div style={{ position: "absolute", bottom: 40, right: 20, fontSize: 40, zIndex: 3, filter: "drop-shadow(0 3px 4px rgba(0,0,0,.4))" }}>{TREE_EMOJI[i.config.tree]}</div>}
-            {i.config.deco && DECO_EMOJI[i.config.deco] && <div style={{ position: "absolute", bottom: 30, left: 30, fontSize: 30, zIndex: 3, filter: "drop-shadow(0 2px 3px rgba(0,0,0,.4))" }}>{DECO_EMOJI[i.config.deco]}</div>}
-            {i.config.sky && SKY_EMOJI[i.config.sky] && <div style={{ position: "absolute", top: 6, right: 26, fontSize: 34, zIndex: 3, opacity: .95, animation: "iqFar 6s ease-in-out infinite" }}>{SKY_EMOJI[i.config.sky]}</div>}
-            {i.config.animal && ANIMAL_EMOJI[i.config.animal] && <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(52px)", fontSize: 24, zIndex: 4, animation: "iqBob 2.6s ease-in-out infinite", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.4))" }}>{ANIMAL_EMOJI[i.config.animal]}</div>}
-        </div>
-    );
-}
 
 export default function IslandsPage() {
     const router = useRouter();
@@ -134,15 +52,14 @@ export default function IslandsPage() {
             const stepMap: Record<string, number> = {};
             (jsubs || []).forEach((s: any) => { stepMap[s.user_id] = Math.max(stepMap[s.user_id] || 0, s.step_no); });
             const list: Island[] = (profiles || []).map((p: any) => {
-                const cfg = p.avatar_config;
-                const avatarId = (cfg && cfg.id) ? cfg.id : "girl_bob_brown";
+                const avatarId = avatarIdOf(p.avatar_config);
                 const te = ptMap[p.id] || 0;
                 return {
                     id: p.id,
                     name: p.name || "名無し",
                     streak: p.streak || 0,
                     avatarId,
-                    level: Math.floor(te / 100) + 1,
+                    level: getLevel(te),
                     stepNo: stepMap[p.id] || 0,
                     totalEarned: te,
                     config: (p.island_config || {}) as Record<string, string>,
@@ -183,6 +100,7 @@ export default function IslandsPage() {
 
     return (
         <div style={{ minHeight: "100vh", background: "#0b0b14", padding: "24px 16px 90px", position: "relative", overflow: "hidden" }}>
+            <IslandSceneStyle />
             <style>{`
                 @keyframes iqTwinkle { 0%,100%{opacity:.12} 50%{opacity:.9} }
                 @keyframes iqBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
@@ -191,12 +109,6 @@ export default function IslandsPage() {
                 @keyframes iqShip { 0%{transform:translateX(-160px)} 100%{transform:translateX(110vw)} }
                 @keyframes iqFar { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-16px)} }
                 @keyframes iqCloud { 0%{transform:translateX(-120px)} 100%{transform:translateX(110vw)} }
-                @keyframes iqLantern { 0%,100%{opacity:.75} 50%{opacity:1} }
-                @keyframes iqFirefly { 0%,100%{transform:translate(0,0);opacity:.3} 30%{opacity:1} 50%{transform:translate(9px,-13px);opacity:.7} 80%{opacity:1} }
-                @keyframes iqCrystal { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(-9px)} }
-                @keyframes iqPetal { 0%{transform:translate(0,0) rotate(0)} 100%{transform:translate(-26px,130px) rotate(300deg);opacity:0} }
-                @keyframes iqSmoke { 0%{transform:translateY(0) scale(.6);opacity:0} 15%{opacity:.7} 100%{transform:translateY(-38px) scale(1.5);opacity:0} }
-                @keyframes iqSpin { 0%{transform:translateX(-50%) rotate(0)} 100%{transform:translateX(-50%) rotate(360deg)} }
                 .iq-isle { position:relative; cursor:pointer; transition: transform .35s ease, filter .35s ease, opacity .4s ease; }
                 .iq-isle:hover { transform: translateY(-8px); filter: drop-shadow(0 0 26px rgba(139,92,246,.55)); z-index: 5; }
                 .iq-isle:hover .iq-window { opacity: 1 !important; }
@@ -265,7 +177,7 @@ export default function IslandsPage() {
                                     <span className="iq-spark" style={{ top: 8, left: "16%" }}>✦</span>
                                     <span className="iq-spark" style={{ top: 34, right: "12%" }}>✦</span>
                                     <div style={{ animation: `iqBob ${4.6 + (idx % 4) * .5}s ease-in-out ${(idx % 5) * .4}s infinite` }}>
-                                        <IslandScene i={i} idx={idx} />
+                                        <IslandScene variant="card" totalEarned={i.totalEarned} avatarId={i.avatarId} name={i.name} config={i.config} seed={idx} />
                                     </div>
                                     {/* 情報パネル（島から離して浮遊感） */}
                                     <div style={{ marginTop: 40, textAlign: "center", padding: "13px 10px 13px", borderRadius: 18, background: "rgba(30,25,55,.5)", border: "1px solid rgba(139,92,246,.2)", backdropFilter: "blur(6px)" }}>

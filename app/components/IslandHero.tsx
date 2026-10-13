@@ -1,21 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { getHouseStage } from "./DotHouse";
-
-const STEP_TITLE: Record<number, string> = { 0: "冒険の始まり", 1: "入社・研修", 2: "登竜門", 3: "プレイヤー昇格", 4: "DRMスタート", 5: "キャリア面談", 6: "営業デビュー" };
-const HOUSE_IMG: Record<number, string> = { 0: "/island/house/0_tent.png", 1: "/island/house/1_cabin.png", 2: "/island/house/2_house.png", 3: "/island/house/3_big.png", 4: "/island/house/4_mansion.png", 5: "/island/house/5_castle.png" };
-const HOUSE_W: Record<number, number> = { 0: 100, 1: 116, 2: 130, 3: 142, 4: 158, 5: 152 };
-const GROUND_BG: Record<string, string> = {
-    ground_hanabatake: "linear-gradient(180deg, #86efac, #4ade80)",
-    ground_yukihara: "linear-gradient(180deg, #f8fafc, #cbd5e1)",
-    ground_sunahama: "linear-gradient(180deg, #fde68a, #f59e0b)",
-    ground_momiji: "linear-gradient(180deg, #fdba74, #ea580c)",
-};
-const TREE_EMOJI: Record<string, string> = { tree_sakura: "🌸", tree_yashi: "🌴", tree_momi: "🎄", tree_momiji: "🍁" };
-const DECO_EMOJI: Record<string, string> = { deco_funsui: "⛲", deco_bench: "🪑", deco_gaitou: "💡", deco_yukidaruma: "⛄", deco_torii: "⛩️" };
-const SKY_EMOJI: Record<string, string> = { sky_niji: "🌈", sky_chocho: "🦋", sky_fuusen: "🎈" };
-const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "🐈", animal_inu: "🐕" };
+import IslandScene, { IslandSceneStyle } from "./IslandScene";
+import { STEP_TITLE, getHouseStage, getLevel } from "../lib/island";
 
 const TIRED_WORDS = ["疲れ", "つかれ", "しんど", "だるい", "ねむい", "眠い"];
 
@@ -108,7 +95,7 @@ export default function IslandHero({ userId, name, avatarId, streak, totalEarned
     }, [userId]);
 
     const stage = getHouseStage(totalEarned);
-    const level = Math.floor(totalEarned / 100) + 1;
+    const level = getLevel(totalEarned);
     const bubble = titles.length ? "👑 昨日の" + titles.map(s => s.slice(s.indexOf(" ") + 1)).join("・") + "！" : "ようこそ、" + name + "の島へ！";
 
     return (
@@ -117,6 +104,7 @@ export default function IslandHero({ userId, name, avatarId, streak, totalEarned
             {Array.from({ length: 26 }, (_, i) => (
                 <div key={i} style={{ position: "absolute", left: ((i * 137) % 100) + "%", top: ((i * 53) % 55) + "%", width: 1 + (i % 3), height: 1 + (i % 3), borderRadius: "50%", background: "#fff", opacity: .55, animation: `ihTwinkle ${2 + (i % 4)}s ease-in-out ${(i % 30) / 10}s infinite` }} />
             ))}
+            <IslandSceneStyle />
             <style>{`
                 @keyframes ihTwinkle { 0%,100%{opacity:.1} 50%{opacity:.85} }
                 @keyframes ihBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
@@ -131,19 +119,9 @@ export default function IslandHero({ userId, name, avatarId, streak, totalEarned
                 </div>
             </div>
 
-            {/* 島シーン */}
-            <div style={{ position: "relative", height: 235, display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "ihBob 5s ease-in-out infinite" }}>
-                <div style={{ position: "absolute", bottom: 26, left: "50%", transform: "translateX(-50%)", width: 260, height: 62, borderRadius: "50%", background: "linear-gradient(180deg, #4ade80, #22a05a)", boxShadow: "inset 0 -10px 14px rgba(0,0,0,.25)" }} />
-                {config.ground && GROUND_BG[config.ground] && <div style={{ position: "absolute", bottom: 26, left: "50%", transform: "translateX(-50%)", width: 260, height: 62, borderRadius: "50%", background: GROUND_BG[config.ground], boxShadow: "inset 0 -10px 14px rgba(0,0,0,.2)" }} />}
-                <div style={{ position: "absolute", bottom: -14, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "88px solid transparent", borderRight: "88px solid transparent", borderTop: "72px solid #6b4a34" }} />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={HOUSE_IMG[stage.idx]} alt="house" style={{ width: HOUSE_W[stage.idx], position: "relative", zIndex: 1, marginBottom: 52, filter: "drop-shadow(0 8px 14px rgba(0,0,0,.45))" }} />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={"/avatars/" + avatarId + ".png"} alt={name} style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(26px)", width: 64, height: 64, objectFit: "cover", borderRadius: "50%", zIndex: 2, border: "2px solid rgba(255,255,255,.55)", boxShadow: "0 4px 10px rgba(0,0,0,.45)" }} />
-                {config.tree && TREE_EMOJI[config.tree] && <div style={{ position: "absolute", bottom: 52, right: 46, fontSize: 52, zIndex: 2, filter: "drop-shadow(0 3px 5px rgba(0,0,0,.4))" }}>{TREE_EMOJI[config.tree]}</div>}
-                {config.deco && DECO_EMOJI[config.deco] && <div style={{ position: "absolute", bottom: 40, left: 52, fontSize: 38, zIndex: 2, filter: "drop-shadow(0 2px 4px rgba(0,0,0,.4))" }}>{DECO_EMOJI[config.deco]}</div>}
-                {config.sky && SKY_EMOJI[config.sky] && <div style={{ position: "absolute", top: 10, right: 40, fontSize: 44, zIndex: 2, opacity: .95 }}>{SKY_EMOJI[config.sky]}</div>}
-                {config.animal && ANIMAL_EMOJI[config.animal] && <div style={{ position: "absolute", bottom: 34, left: "50%", transform: "translateX(66px)", fontSize: 30, zIndex: 3, animation: "ihBob 2.6s ease-in-out infinite", filter: "drop-shadow(0 2px 4px rgba(0,0,0,.4))" }}>{ANIMAL_EMOJI[config.animal]}</div>}
+            {/* 島シーン（共通描画：IslandScene の hero プリセット） */}
+            <div style={{ animation: "ihBob 5s ease-in-out infinite" }}>
+                <IslandScene variant="hero" totalEarned={totalEarned} avatarId={avatarId} name={name} config={config} />
             </div>
 
             {/* ステータス帯 */}
