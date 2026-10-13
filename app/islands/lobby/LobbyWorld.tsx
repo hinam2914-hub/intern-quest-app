@@ -57,10 +57,10 @@ function clampTo(c: Cam, vp: Viewport, ww: number, wh: number, slack: { x: numbe
 }
 
 /** 地形の塗り（clip-path ＋ タイル画像）。SKILL WORLD と同じ方式（iOS Safari 対応） */
-function Fill({ d, w, h, dy = 0, img, size = 384, sizeH, pos, color, opacity, blend }: { d: string; w: number; h: number; dy?: number; img?: string; size?: number; sizeH?: number; pos?: string; color?: string; opacity?: number; blend?: any }) {
+function Fill({ d, w, h, ox = 0, oy = 0, dy = 0, img, size = 384, sizeH, pos, color, opacity, blend }: { d: string; w: number; h: number; ox?: number; oy?: number; dy?: number; img?: string; size?: number; sizeH?: number; pos?: string; color?: string; opacity?: number; blend?: any }) {
     const bg = [img ? `url(${img})` : "", color ?? ""].filter(Boolean).join(",");
     const clip = `path("${d}")`;
-    return <div style={{ position: "absolute", left: 0, top: dy, width: w, height: h, clipPath: clip, WebkitClipPath: clip, backgroundImage: bg || undefined, backgroundSize: img ? `${size}px ${sizeH ?? size}px, auto` : undefined, backgroundPosition: pos, backgroundRepeat: "repeat", opacity, mixBlendMode: blend, pointerEvents: "none" }} />;
+    return <div style={{ position: "absolute", left: ox, top: oy + dy, width: w, height: h, clipPath: clip, WebkitClipPath: clip, backgroundImage: bg || undefined, backgroundSize: img ? `${size}px ${sizeH ?? size}px, auto` : undefined, backgroundPosition: pos, backgroundRepeat: "repeat", opacity, mixBlendMode: blend, pointerEvents: "none" }} />;
 }
 
 /** 簡易描画の島（スマホ WORLD 用：DOM 4 つ） */
@@ -199,6 +199,11 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     const slotById = useMemo(() => new Map(slots.map((s) => [s.userId, s])), [slots]);
     const plazaD = useMemo(() => { const pts: Pt[] = []; for (let i = 0; i < 18; i++) { const t = (i / 18) * Math.PI * 2; pts.push({ x: plaza.cx + Math.cos(t) * plaza.r * 0.96, y: plaza.cy + Math.sin(t) * plaza.r * 0.9 }); } return blobPath(pts); }, [plaza]);
     const areaD = useMemo(() => Object.fromEntries(areas.map((a) => [a.key, blobPath(a.outline)])), [areas]);
+    // 塗りレイヤーはエリアの大きさだけにする（ワールド全体サイズの div を重ねると Chrome で描画落ちする）
+    type Loc = { x: number; y: number; w: number; h: number; d: string };
+    const locOf = (pts: Pt[], padB: number): Loc => { const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y); const x = Math.floor(Math.min(...xs)) - 40, y = Math.floor(Math.min(...ys)) - 40; const w = Math.ceil(Math.max(...xs)) + 40 - x, h = Math.ceil(Math.max(...ys)) + 40 + padB - y; return { x, y, w, h, d: blobPath(pts.map((p) => ({ x: p.x - x, y: p.y - y }))) }; };
+    const areaL = useMemo(() => Object.fromEntries(areas.map((a) => [a.key, locOf(a.outline, SIDE_H + 60)])), [areas]);
+    const plazaL = useMemo(() => { const pts: Pt[] = []; for (let i = 0; i < 18; i++) { const t = (i / 18) * Math.PI * 2; pts.push({ x: plaza.cx + Math.cos(t) * plaza.r * 0.96, y: plaza.cy + Math.sin(t) * plaza.r * 0.9 }); } return locOf(pts, SIDE_H + 60); }, [plaza]);
 
     return (
         <div ref={wrapRef} onClick={onWrapClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
@@ -229,24 +234,24 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 </svg>
                 {/* 側面（崖）：輪郭を下にずらして茶色で塗る */}
                 {areas.map((a) => lobbyImg.cliff
-                    ? (() => { /* 帯の上端〜下端が岩の範囲（タイルの 105px 以降）に収まる高さにする。Fill は dy だけ下にずれているので位置から引く */ const th = Math.max(420, Math.round(0.45 * a.r + 320)); const posY = a.cy + 1.116 * a.r + 20 - th; return <Fill key={"side" + a.key} d={areaD[a.key]} w={worldW} h={worldH} dy={SIDE_H} img={LOBBY_IMG.cliff} size={th * 3} sizeH={th} pos={`0 ${Math.round(posY - SIDE_H)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />; })()
-                    : <Fill key={"side" + a.key} d={areaD[a.key]} w={worldW} h={worldH} dy={78} color="linear-gradient(180deg,#a5814f 0%,#8a6a48 40%,#5c4330 80%,#4a3626 100%)" />)}
+                    ? (() => { /* 帯の上端〜下端が岩の範囲（タイルの 105px 以降）に収まる高さにする。Fill は dy だけ下にずれているので位置から引く */ const th = Math.max(420, Math.round(0.45 * a.r + 320)); const posY = a.cy + 1.116 * a.r + 20 - th; return <Fill key={"side" + a.key} d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} dy={SIDE_H} img={LOBBY_IMG.cliff} size={th * 3} sizeH={th} pos={`0 ${Math.round(posY - SIDE_H - areaL[a.key].y)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />; })()
+                    : <Fill key={"side" + a.key} d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} dy={78} color="linear-gradient(180deg,#a5814f 0%,#8a6a48 40%,#5c4330 80%,#4a3626 100%)" />)}
                 {lobbyImg.cliff
-                    ? <Fill d={plazaD} w={worldW} h={worldH} dy={SIDE_H} img={LOBBY_IMG.cliff} size={1260} sizeH={420} pos={`0 ${Math.round(plaza.cy + plaza.r * 0.9 + 20 - 420 - SIDE_H)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />
-                    : <Fill d={plazaD} w={worldW} h={worldH} dy={78} color="linear-gradient(180deg,#9a8a74 0%,#7b6a55 45%,#55483a 100%)" />}
+                    ? <Fill d={plazaL.d} w={plazaL.w} h={plazaL.h} ox={plazaL.x} oy={plazaL.y} dy={SIDE_H} img={LOBBY_IMG.cliff} size={1260} sizeH={420} pos={`0 ${Math.round(plaza.cy + plaza.r * 0.9 + 20 - 420 - SIDE_H - plazaL.y)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />
+                    : <Fill d={plazaL.d} w={plazaL.w} h={plazaL.h} ox={plazaL.x} oy={plazaL.y} dy={78} color="linear-gradient(180deg,#9a8a74 0%,#7b6a55 45%,#55483a 100%)" />}
                 {/* 上面：草地タイル＋事業部色の薄い着色 */}
                 {areas.map((a) => (
                     <div key={"top" + a.key}>
                         {(() => { const th = themeOf(areas.indexOf(a)); return <>
-                            <Fill d={areaD[a.key]} w={worldW} h={worldH} img={th.base} size={th.baseSize} color="linear-gradient(180deg,#b9ec8f,#7ccb6a)" />
-                            {th.overlay && lobbyImg[th.overlay] && <Fill d={areaD[a.key]} w={worldW} h={worldH} img={LOBBY_IMG[th.overlay]} size={448} opacity={th.overlayOpacity} />}
-                            <Fill d={areaD[a.key]} w={worldW} h={worldH} color={th.tint} />
+                            <Fill d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} img={th.base} size={th.baseSize} color="linear-gradient(180deg,#b9ec8f,#7ccb6a)" />
+                            {th.overlay && lobbyImg[th.overlay] && <Fill d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} img={LOBBY_IMG[th.overlay]} size={448} opacity={th.overlayOpacity} />}
+                            <Fill d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} color={th.tint} />
                             {/* 縁をわずかに暗くして立体感（内側へのビネット） */}
-                            <Fill d={areaD[a.key]} w={worldW} h={worldH} color={`radial-gradient(ellipse ${Math.round(a.r * 1.1)}px ${Math.round(a.r)}px at ${a.cx}px ${a.cy}px, rgba(0,0,0,0) 60%, rgba(40,60,20,.22) 100%)`} />
+                            <Fill d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} color={`radial-gradient(ellipse ${Math.round(a.r * 1.1)}px ${Math.round(a.r)}px at ${a.cx - areaL[a.key].x}px ${a.cy - areaL[a.key].y}px, rgba(0,0,0,0) 60%, rgba(40,60,20,.22) 100%)`} />
                         </>; })()}
                     </div>
                 ))}
-                <Fill d={plazaD} w={worldW} h={worldH} img={lobbyImg.tile_plaza ? LOBBY_IMG.tile_plaza : TERRAIN_IMG.stone} size={lobbyImg.tile_plaza ? 512 : 320} color="linear-gradient(180deg,#e8dcc4,#cdbfa3)" />
+                <Fill d={plazaL.d} w={plazaL.w} h={plazaL.h} ox={plazaL.x} oy={plazaL.y} img={lobbyImg.tile_plaza ? LOBBY_IMG.tile_plaza : TERRAIN_IMG.stone} size={lobbyImg.tile_plaza ? 512 : 320} color="linear-gradient(180deg,#e8dcc4,#cdbfa3)" />
                 {/* エリア内の道（中心→橋のたもと）＋ 画像が無い環境だけ線の橋 */}
                 <svg width={worldW} height={worldH} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
                     {areas.map((a) => (
