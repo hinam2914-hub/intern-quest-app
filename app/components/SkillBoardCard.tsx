@@ -3,18 +3,20 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { evaluateUser, syncUnlocks, getFocus, questMission, nearestJob, CATEGORIES, type EvalResult, type Focus } from "../lib/skills";
+import { evaluateStages, stageText, type StageResult } from "../lib/stages";
 
 export default function SkillBoardCard({ userId, mode = "self" }: { userId?: string; mode?: "self" | "public" }) {
   const router = useRouter();
   const [res, setRes] = useState<EvalResult | null>(null);
   const [focus, setFocus] = useState<Focus>({ current: null, subs: [] });
+  const [stage, setStage] = useState<StageResult | null>(null);
   useEffect(() => {
     (async () => {
       let uid = userId;
       if (!uid) { const { data: { user } } = await supabase.auth.getUser(); uid = user?.id; }
       if (!uid) return;
       let r = await evaluateUser(supabase, uid);
-      if (mode === "self") { const { newNodes, newJobs } = await syncUnlocks(supabase, uid, r); if (newNodes.length || newJobs.length) r = await evaluateUser(supabase, uid); setFocus(await getFocus(supabase, uid)); }
+      if (mode === "self") { const { newNodes, newJobs } = await syncUnlocks(supabase, uid, r); if (newNodes.length || newJobs.length) r = await evaluateUser(supabase, uid); try { setStage(await evaluateStages(supabase, uid)); } catch {} setFocus(await getFocus(supabase, uid)); }
       setRes(r);
     })();
   }, [userId, mode]);
@@ -74,6 +76,7 @@ export default function SkillBoardCard({ userId, mode = "self" }: { userId?: str
       ) : (
         <div onClick={() => router.push("/skill-board")} style={{ marginTop: 10, background: "#fffbeb", border: "1.5px dashed #fbbf24", borderRadius: 12, padding: "10px 12px", fontSize: 13, fontWeight: 800, color: "#92400e", cursor: "pointer" }}>🎯 挑戦するスキルを選ぼう →</div>
       )}
+      {stage && <div onClick={() => router.push("/skill-board")} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 12, fontWeight: 800, color: "#475569", cursor: "pointer" }}><span>🏁 STAGE</span><span style={{ color: "#1e293b", fontWeight: 900 }}>{stage.current ? `${stage.current.icon} ${stageText(stage.current)}` : "👑 全STAGEクリア"}</span><span style={{ color: "#94a3b8" }}>{stage.stages.filter((x) => x.cleared).length} / {stage.stages.length}</span></div>}
       {job && <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 12, fontWeight: 800, color: "#475569" }}><span>👑 目標JOB</span><span style={{ color: "#1e293b", fontWeight: 900 }}>{job.name}</span><span style={{ color: "#94a3b8" }}>{job.unlocked ? "取得済み" : `${job.requires.length - job.missing.length} / ${job.requires.length}`}</span></div>}
       {lvRow}
       <button onClick={() => router.push(cur ? "/skill-board?focus=1" : "/skill-board")} style={{ width: "100%", marginTop: 10, padding: 10, borderRadius: 12, border: "none", background: "linear-gradient(135deg,#8b5cf6,#6366f1)", color: "#fff", fontWeight: 900, fontSize: 13, cursor: "pointer" }}>スキルワールドへ →</button>

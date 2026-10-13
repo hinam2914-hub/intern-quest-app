@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { questMission, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
 import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, pt, curve, type Pt } from "./world";
+import type { StageState } from "../lib/stages";
 import { AREA_BOX, fitBox, centerCam, clampCam, tweenCam, areaAt, type CamCmd, type CamMode, type Insets } from "./camera";
 import { TERRAIN_IMG, blobPath, LAND_PTS, MEADOW_PTS, HILL_PTS, STONE_PTS, STREAM_D, COMM_CLUSTERS, WORLD_CLUSTERS, PILLARS, FOREST_PTS, HIGHLAND_PTS, UPPER_PTS, AI_DECK_PTS, clusterItems } from "./terrain";
 
@@ -67,11 +68,13 @@ function useTerrainImages(): Record<string, boolean> {
   return ok;
 }
 
-export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title, camCmd, onAreaTap, onCamMode, hud }: {
+export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title, camCmd, onAreaTap, onCamMode, hud, stages, onStageTap }: {
   res: EvalResult; avatarId: string | null; selectedId: string | null; onSelect: (n: NodeState | null) => void; focusTo?: { key: number; target: Pt };
   focus: Focus; locNodeId: string | null; walk: Walk | null; onWalkEnd?: () => void; recos?: Reco[]; title?: { name: string; icon: string | null } | null;
   /** カメラ指示（WORLD / AREA / QUEST）。key が変わるたびに実行 */
   camCmd?: CamCmd; onAreaTap?: (area: string) => void; onCamMode?: (mode: CamMode, area: string | null) => void;
+  /** STAGE ゲート（旗） */
+  stages?: StageState[]; onStageTap?: () => void;
   /** HUD が占める領域（fit の計算から除外） */
   hud?: Insets;
 }) {
@@ -497,6 +500,18 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
                   <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: fog ? "#b9a68a" : u ? "#8a5a2b" : "#a8713a", color: fog ? "#efe6d6" : "#fff7e6", fontSize: isMobile ? (isSub ? 13 : a ? 12.5 : 11) : key ? 10.5 : 9.5, fontWeight: 800, boxShadow: "0 2px 3px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.25)", border: "1.5px solid #6b4423", opacity: fog ? 0.7 : n.status === "locked" ? 0.75 : 1, letterSpacing: 0.3 }}>{fog ? "？？？" : n.name}</span>
                 )}
               </div>
+            </div>
+          );
+        })}
+
+        {/* ---------- STAGE ゲート（旗） ---------- */}
+        {(stages ?? []).filter((s) => s.gate).map((s) => {
+          const g = s.gate!; const isCur = !s.cleared && (stages ?? []).find((x) => !x.cleared)?.id === s.id;
+          const hide = isMobile && !s.cleared && !isCur;
+          return (
+            <div key={"stage" + s.id} onClick={(e) => { e.stopPropagation(); nodeClicked.current = true; onStageTap?.(); }} style={{ position: "absolute", left: g.x - 40, top: g.y - 64, width: 80, textAlign: "center", zIndex: 9, cursor: "pointer", opacity: hide ? 0.55 : 1 }}>
+              <div style={{ fontSize: isCur ? 30 : 24, filter: s.cleared ? "drop-shadow(0 0 8px #fbbf24)" : isCur ? "drop-shadow(0 0 6px #fde68a)" : "grayscale(1) opacity(.7)", animation: isCur ? "swFlag 1s ease-in-out infinite alternate" : undefined, lineHeight: 1 }}>{s.cleared ? "🏁" : "🚩"}</div>
+              {(!hide) && <div style={{ display: "inline-block", marginTop: 2, padding: "2px 7px", borderRadius: 6, background: s.cleared ? "#fbbf24" : isCur ? "#fff7ed" : "#e2e8f0", color: s.cleared ? "#1e293b" : isCur ? "#92400e" : "#64748b", fontSize: isCur ? 11 : 9.5, fontWeight: 900, border: `1.5px solid ${s.cleared || isCur ? "#f59e0b" : "#cbd5e1"}`, whiteSpace: "nowrap", boxShadow: "0 2px 4px rgba(0,0,0,.2)" }}>{s.icon} {s.name}</div>}
             </div>
           );
         })}
