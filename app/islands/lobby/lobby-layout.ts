@@ -18,9 +18,13 @@ export type LobbyArea = {
     focus: Box;      // 島スロットの範囲（スマホ AREA VIEW 用）
     outline: Pt[];   // 大陸の輪郭（blobPath に渡す）
     bridge: { from: Pt; to: Pt };   // エリア縁 → 中央広場縁
+    landmark: Pt;                   // テーマのランドマーク（島はここを避ける）
+    waterfall: { p: Pt; ang: number };   // 滝の位置（輪郭の下半分）
+    rad: (t: number) => number;     // 輪郭の半径関数（角度→半径）
 };
 export type LobbySlot = { userId: string; areaKey: string; x: number; y: number; ring: number; z: number; isLeader: boolean };
-export type LobbyDecor = { x: number; y: number; kind: "tree_round" | "tree_pine" | "bush" | "rock"; s: number; z: number };
+/** 装飾の位置。kind は 0〜1 の乱数で、どの画像にするかはテーマ（描画側）が決める */
+export type LobbyDecor = { x: number; y: number; k: number; s: number; z: number; areaKey: string; edge: boolean };
 export type LobbyLayout = {
     worldW: number; worldH: number;
     plaza: { cx: number; cy: number; r: number; box: Box };
@@ -32,9 +36,9 @@ export type LobbyLayout = {
 export const SLOT_W = 300;          // 島1つの占有幅
 export const SLOT_H = 260;          // 島1つの占有高さ
 export const MIN_DIST = 250;        // 島同士の最低間隔（中心間）
-export const PLAZA_R = 420;         // 中央広場の半径（闘技場・掲示板の専用区画）
-export const AREA_GAP = 200;        // エリア同士／エリアと広場の隙間
-export const MARGIN = { top: 320, bottom: 240, side: 220 };
+export const PLAZA_R = 520;         // 中央広場の半径（闘技場・掲示板の専用区画）
+export const AREA_GAP = 150;        // エリア同士／エリアと広場の隙間
+export const MARGIN = { top: 300, bottom: 220, side: 200 };
 export const NO_DEPT_KEY = "__none__";
 
 // ---- 決定的な乱数（配置が毎回同じになるように）
@@ -61,7 +65,7 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
     tmp.sort((a, b) => b.members.length - a.members.length);
 
     // 2) エリアを中央広場の周りに配置（極座標。楕円に潰して横長に）
-    const EX = 1.25, EY = 0.82;
+    const EX = 1.45, EY = 0.78;   // PC の横長画面に合わせて横に広げる
     let ringR = Math.max(...tmp.map((a) => (PLAZA_R + AREA_GAP + a.r) / EY), (PLAZA_R + AREA_GAP + 340) / EY);
     const chord = tmp.reduce((s, a) => s + a.r * 2 + AREA_GAP, 0);
     ringR = Math.max(ringR, chord / (2 * Math.PI));
@@ -70,21 +74,26 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
     const clash = (p: Pt, r: number, q: Pt, rq: number) => Math.hypot(p.x - q.x, (p.y - q.y) / 1.35) < r + rq + AREA_GAP * 0.8;
     const onRing = (R: number, ang: number): Pt => ({ x: Math.cos(ang) * R * EX, y: Math.sin(ang) * R * EY });
     // 貪欲配置：真上から時計回りに、前のエリアと重ならない最小の角度に置いていく。1周に収まらなければ半径を広げる
-    const tryPlace = (R: number): boolean => {
+    // 小さいエリアは広場に近く置く（橋が長くなりすぎない）：各エリアの半径を全体の R に比例させる
+    const rmax = Math.max(...tmp.map((a) => a.r));
+    const Ri = (R: number, i: number) => R * (PLAZA_R + AREA_GAP + tmp[i].r) / (PLAZA_R + AREA_GAP + rmax);
+    const tryPlace = (R: number, extra = 0): boolean => {
         centers.length = 0;
         let ang = -Math.PI / 2;
         for (let i = 0; i < tmp.length; i++) {
             if (i > 0) {
-                let a = ang + 0.02;
-                while (a < ang + Math.PI * 2 && centers.some((c, j) => clash(onRing(R, a), tmp[i].r, c, tmp[j].r))) a += 0.02;
+                let a = ang + 0.02 + extra;
+                while (a < ang + Math.PI * 2 && centers.some((c, j) => clash(onRing(Ri(R, i), a), tmp[i].r, c, tmp[j].r))) a += 0.02;
                 ang = a;
             }
-            centers.push(onRing(R, ang));
+            centers.push(onRing(Ri(R, i), ang));
         }
         // 最後と最初が重ならないか（1周の閉じ）
         return !(tmp.length > 1 && clash(centers[centers.length - 1], tmp[tmp.length - 1].r, centers[0], tmp[0].r)) && ang < -Math.PI / 2 + Math.PI * 2 - 0.3;
     };
     for (let it = 0; it < 60 && !tryPlace(ringR); it++) ringR *= 1.04;
+    // 1周に余りがあれば、余りを等分して配置を広げる（片側に寄らないように）
+    { let best = 0; for (let g = 0.02; g < 1.5; g += 0.02) { if (tryPlace(ringR, g)) best = g; else break; } tryPlace(ringR, best); }
     // 1エリアだけなら広場の下に置く
     if (tmp.length === 1) centers[0] = { x: 0, y: PLAZA_R + AREA_GAP + tmp[0].r };
 
@@ -118,6 +127,9 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
         const ph = rng(hash(a.key + "p")); const p1 = ph() * Math.PI * 2, p2 = ph() * Math.PI * 2, p3 = ph() * Math.PI * 2;
         const rad = (t: number) => a.r * (1 + 0.12 * Math.sin(2 * t + p1) + 0.07 * Math.sin(3 * t + p2) + 0.05 * Math.sin(5 * t + p3));
         const corridor = 165;
+        // ランドマークの予約位置：橋の反対側、半径の 0.55 倍（島はここから 230 離す）
+        const la = Math.atan2(dir.y, dir.x) + Math.PI + (rnd() - 0.5) * 0.8;
+        const lmk = { x: Math.cos(la) * rad(la) * 0.55, y: Math.sin(la) * rad(la) * 0.55 * 0.92 };
         for (let it = 0; it < 80; it++) {
             for (let i = 1; i < pts.length; i++) {
                 for (let j = 0; j < pts.length; j++) {
@@ -128,6 +140,8 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
                 // 道の帯（中心から広場方向）から離す
                 const t = pts[i].x * dir.x + pts[i].y * dir.y;
                 if (t > 120) { const px = pts[i].x - dir.x * t, py = pts[i].y - dir.y * t; const dist = Math.hypot(px, py); if (dist < corridor) { const f = (corridor - dist) * 0.9; const nx = dist > 1 ? px / dist : -dir.y, ny = dist > 1 ? py / dist : dir.x; pts[i].x += nx * f; pts[i].y += ny * f; } }
+                // ランドマークから離す
+                { const ddx = pts[i].x - lmk.x, ddy = (pts[i].y - lmk.y) * 1.1; const dd = Math.hypot(ddx, ddy) || 0.01; if (dd < 230) { const f = (230 - dd); pts[i].x += ddx / dd * f; pts[i].y += ddy / dd / 1.1 * f; } }
                 // エリア内に収める
                 const rr = Math.hypot(pts[i].x, pts[i].y / 0.92); const lim = rad(Math.atan2(pts[i].y / 0.92, pts[i].x)) - 150; if (rr > lim) { const f = lim / rr; pts[i].x *= f; pts[i].y *= f; }
             }
@@ -145,18 +159,27 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
         const rb = rad(Math.atan2(dir.y, dir.x)) * 0.93;
         const from = { x: Math.round(cx + dir.x * rb), y: Math.round(cy + dir.y * rb * 0.9) };
         const to = { x: Math.round(plazaC.x - dir.x * PLAZA_R * 0.92), y: Math.round(plazaC.y - dir.y * PLAZA_R * 0.92) };
-        // 装飾：外周に木・茂み・岩（島から離れた位置だけ）
-        const dr = rng(hash(a.key + "d")); const dn = 10 + Math.round(a.r / 45);
-        for (let i = 0; i < dn; i++) {
-            const t = dr() * Math.PI * 2, rr = rad(t) * (0.74 + dr() * 0.16); const x = Math.round(cx + Math.cos(t) * rr), y = Math.round(cy + Math.sin(t) * rr * 0.9);
-            if (pts.some((p) => Math.hypot(cx + p.x - x, cy + p.y - y) < 210)) continue;
-            const tt = Math.hypot(x - from.x, y - from.y); if (tt < 120) continue;
-            const k = dr(); decor.push({ x, y, kind: k < 0.4 ? "tree_round" : k < 0.7 ? "tree_pine" : k < 0.88 ? "bush" : "rock", s: 0.7 + dr() * 0.5, z: y });
+        // 装飾：外周（edge）と内側の隙間（島・道・ランドマークから離れた位置だけ）
+        const dr = rng(hash(a.key + "d")); const dn = 14 + Math.round(a.r / 32);
+        const lmW = { x: cx + lmk.x, y: cy + lmk.y };
+        for (let i = 0; i < dn * 3 && decor.filter((d) => d.areaKey === a.key).length < dn; i++) {
+            const edge = dr() < 0.6;
+            const t = dr() * Math.PI * 2, rr = rad(t) * (edge ? 0.78 + dr() * 0.14 : 0.2 + dr() * 0.55);
+            const x = Math.round(cx + Math.cos(t) * rr), y = Math.round(cy + Math.sin(t) * rr * 0.9);
+            if (pts.some((p) => Math.hypot(cx + p.x - x, (cy + p.y - y) * 1.2) < 190)) continue;
+            if (Math.hypot(x - from.x, y - from.y) < 130) continue;
+            if (Math.hypot(x - lmW.x, y - lmW.y) < 170) continue;
+            // 道の帯を避ける
+            const tt = (x - cx) * dir.x + (y - cy) * dir.y; if (tt > 60) { const px = (x - cx) - dir.x * tt, py = (y - cy) - dir.y * tt; if (Math.hypot(px, py) < 110) continue; }
+            decor.push({ x, y, k: dr(), s: 0.7 + dr() * 0.5, z: y, areaKey: a.key, edge });
         }
+        // 滝：輪郭の下半分（橋と反対寄り）のどこか
+        const wa = Math.PI / 2 + (dr() - 0.5) * 1.6;
+        const waterfall = { p: { x: Math.round(cx + Math.cos(wa) * rad(wa) * 0.97), y: Math.round(cy + Math.sin(wa) * rad(wa) * 0.9 * 0.97) }, ang: wa };
         areas.push({ key: a.key, label: a.label, short: a.short, color: a.color, count: members.length, cx, cy, r: a.r,
             box: { x: cx - a.r, y: cy - a.r * 0.9 - 90, w: a.r * 2, h: a.r * 1.8 + 90 },
             focus: { x: fx0 - 40, y: fy0 - 60, w: fx1 - fx0 + 80, h: fy1 - fy0 + 80 },
-            outline, bridge: { from, to } });
+            outline, bridge: { from, to }, landmark: lmW, waterfall, rad });
     });
     const plaza = { cx: plazaC.x, cy: plazaC.y, r: PLAZA_R, box: { x: plazaC.x - PLAZA_R, y: plazaC.y - PLAZA_R, w: PLAZA_R * 2, h: PLAZA_R * 2 } };
     return { worldW, worldH, plaza, areas, slots, decor, worldBox: { x: 0, y: 0, w: worldW, h: worldH } };

@@ -21,8 +21,30 @@ const LOBBY_IMG = {
     tile_flower: "/world/lobby_tile_flower.png", tile_stone: "/world/lobby_tile_stone.png", tile_plaza: "/world/lobby_tile_plaza.png", tile_crystal: "/world/lobby_tile_crystal.png",
     far_a: "/world/lobby_bg_island_a.png", far_b: "/world/lobby_bg_island_b.png", far_c: "/world/lobby_bg_island_c.png",
 };
-/** 事業部ごとの地面差分（種類で持ち、エリアの並び順で割り当てる。事業部名には依存しない） */
-const AREA_TILES = ["tile_flower", "tile_stone", "tile_plaza", "tile_crystal"] as const;
+/** エリアのテーマ（街の個性）。事業部名には固定せず、エリアの並び順で循環して割り当てる。
+ *  base：地面タイル（既存 /world/）、overlay：GPT 差分タイル、decor：装飾画像の候補（k 0〜1 で選ぶ）、landmark：目印 */
+type Theme = { key: string; label: string; base: string; baseSize: number; overlay?: keyof typeof LOBBY_IMG; overlayOpacity: number; tint: string; road: string;
+    decor: { src: string; w: number; min: number }[]; edgeDecor: { src: string; w: number; min: number }[]; landmark: { src: string; w: number; dy: number }[] };
+const T = (src: string, w: number, min: number) => ({ src, w, min });
+const THEMES: Theme[] = [
+    { key: "meadow", label: "草原の村", base: "/world/lobby_tile_grass.png", baseSize: 460, overlay: "tile_flower", overlayOpacity: 0.45, tint: "rgba(255,230,120,.08)", road: "#e6d3a8",
+      decor: [T("/world/sm/bush_flowers.png", 90, 0), T("/world/sm/tree_round.png", 120, 0.35), T("/world/sm/rock.png", 70, 0.8)], edgeDecor: [T("/world/sm/tree_round.png", 130, 0), T("/world/sm/bush_flowers.png", 90, 0.6)],
+      landmark: [{ src: "/world/start_village.png", w: 300, dy: 20 }] },
+    { key: "town", label: "商業都市", base: "/world/terrain_city_stone.png", baseSize: 420, overlay: "tile_stone", overlayOpacity: 0.55, tint: "rgba(255,255,255,.06)", road: "#f1e6cf",
+      decor: [T("/world/ruin_pillar.png", 70, 0), T("/world/sm/bush_flowers.png", 80, 0.4), T("/world/sm/rock.png", 60, 0.8)], edgeDecor: [T("/world/sm/tree_round.png", 110, 0), T("/world/ruin_pillar.png", 70, 0.6)],
+      landmark: [{ src: "/world/plaza_round.png", w: 360, dy: 60 }, { src: "/island/deco/deco_funsui.png", w: 150, dy: 10 }] },
+    { key: "forest", label: "森の集落", base: "/world/terrain_forest_floor.png", baseSize: 400, overlay: undefined, overlayOpacity: 0, tint: "rgba(20,90,40,.12)", road: "#d9c49a",
+      decor: [T("/world/sm/tree_pine.png", 130, 0), T("/world/sm/tree_round.png", 130, 0.4), T("/world/sm/tree_pink.png", 140, 0.75), T("/world/sm/bush_flowers.png", 80, 0.92)], edgeDecor: [T("/world/sm/tree_pine.png", 150, 0), T("/world/sm/tree_round.png", 150, 0.5)],
+      landmark: [{ src: "/world/tree_round.png", w: 360, dy: 0 }, { src: "/world/tree_pink.png", w: 220, dy: 30 }] },
+    { key: "castle", label: "王都", base: "/world/terrain_highland.png", baseSize: 420, overlay: "tile_stone", overlayOpacity: 0.35, tint: "rgba(120,140,200,.10)", road: "#e8dcc4",
+      decor: [T("/world/ruin_pillar.png", 70, 0), T("/world/sm/tree_pine.png", 110, 0.4), T("/world/sm/rock.png", 70, 0.8)], edgeDecor: [T("/world/stairs_stone.png", 110, 0), T("/world/sm/tree_pine.png", 120, 0.4)],
+      landmark: [{ src: "/world/wall_castle.png", w: 360, dy: 0 }] },
+    { key: "crystal", label: "研究都市", base: "/world/terrain_ai_floor.png", baseSize: 420, overlay: "tile_crystal", overlayOpacity: 0.5, tint: "rgba(120,160,255,.12)", road: "#cfe3ff",
+      decor: [T("/world/crystal_island.png", 110, 0), T("/world/ruin_pillar.png", 70, 0.5), T("/world/sm/rock.png", 60, 0.85)], edgeDecor: [T("/world/crystal_island.png", 140, 0), T("/world/sm/tree_pine.png", 110, 0.7)],
+      landmark: [{ src: "/world/crystal_island.png", w: 300, dy: 0 }] },
+];
+const themeOf = (i: number) => THEMES[i % THEMES.length];
+const pick = (list: { src: string; w: number; min: number }[], k: number) => { let c = list[0]; for (const it of list) if (k >= it.min) c = it; return c; };
 const SIDE_H = 150;   // 浮島の厚み（崖テクスチャの高さに合わせる）
 const BR_H = 120;     // 橋の高さ（幅は全区間で同じ）
 const DECOR_IMG: Record<string, string> = { tree_round: "/world/sm/tree_round.png", tree_pine: "/world/sm/tree_pine.png", bush: "/world/sm/bush_flowers.png", rock: "/world/sm/rock.png" };
@@ -104,7 +126,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
         tweenCancel.current = tweenCam(from, to, ms, (k) => { camRef.current = k; setCam(k); }, () => { tweenCancel.current = null; });
     }
     function setMode(m: LobbyMode, area: string | null, focus: string | null) { modeRef.current = m; areaRef.current = area; focusRef.current = focus; setModeState(m); onCamMode?.(m, area); }
-    function worldCam(): Cam { return fitBox(layout.worldBox, vp, ins, isMobile ? 0.98 : 0.9, minS, maxS); }
+    function worldCam(): Cam { return fitBox(layout.worldBox, vp, ins, isMobile ? 0.98 : 0.96, minS, maxS); }
     function areaCam(key: string): Cam {
         const a = areas.find((x) => x.key === key); if (!a) return worldCam();
         if (!isMobile) return fitBox(a.box, vp, ins, 0.92, minS, maxS);
@@ -181,7 +203,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     return (
         <div ref={wrapRef} onClick={onWrapClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
             style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: drag.current ? "grabbing" : "grab", touchAction: "none", background: sky, userSelect: "none", fontFamily: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif' }}>
-            <style>{`@keyframes lbCloud { 0%{transform:translateX(-200px)} 100%{transform:translateX(110vw)} } @keyframes lbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} } @keyframes lbFlag { 0%{transform:rotate(-4deg)} 100%{transform:rotate(4deg)} }`}</style>
+            <style>{`@keyframes lbCloud { 0%{transform:translateX(-200px)} 100%{transform:translateX(110vw)} } @keyframes lbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} } @keyframes lbFlag { 0%{transform:rotate(-4deg)} 100%{transform:rotate(4deg)} } @keyframes lbWater { 0%{background-position:0 0} 100%{background-position:0 140px} }`}</style>
             {lobbyImg.sky && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(235,245,255,.55), rgba(255,255,255,.42) 60%, rgba(255,255,255,.5))", pointerEvents: "none" }} />}
             {/* 遠景の雲（画面固定）＋ 遠景の浮き島（カメラ 0.3 倍追従・倍率連動） */}
             {[0, 1, 2].map((i) => (<div key={i} style={{ position: "absolute", top: `${8 + i * 30}%`, left: 0, width: 190, height: 50, background: "rgba(255,255,255,.85)", borderRadius: 999, filter: "blur(2px)", animation: `lbCloud ${100 + i * 35}s linear infinite`, animationDelay: `${-i * 40}s`, pointerEvents: "none", boxShadow: "50px -20px 0 -4px rgba(255,255,255,.8), 100px 0 0 -2px rgba(255,255,255,.85)", opacity: 0.6 }} />))}
@@ -215,10 +237,13 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 {/* 上面：草地タイル＋事業部色の薄い着色 */}
                 {areas.map((a) => (
                     <div key={"top" + a.key}>
-                        <Fill d={areaD[a.key]} w={worldW} h={worldH} img={lobbyImg.grass ? LOBBY_IMG.grass : TERRAIN_IMG.grass} size={lobbyImg.grass ? 460 : 384} color="linear-gradient(180deg,#b9ec8f,#7ccb6a)" />
-                        {(() => { const tk = AREA_TILES[areas.indexOf(a) % AREA_TILES.length]; return lobbyImg[tk]
-                            ? <Fill d={areaD[a.key]} w={worldW} h={worldH} img={(LOBBY_IMG as any)[tk]} size={448} opacity={0.88} />
-                            : <Fill d={areaD[a.key]} w={worldW} h={worldH} color={a.color} opacity={0.14} blend="multiply" />; })()}
+                        {(() => { const th = themeOf(areas.indexOf(a)); return <>
+                            <Fill d={areaD[a.key]} w={worldW} h={worldH} img={th.base} size={th.baseSize} color="linear-gradient(180deg,#b9ec8f,#7ccb6a)" />
+                            {th.overlay && lobbyImg[th.overlay] && <Fill d={areaD[a.key]} w={worldW} h={worldH} img={LOBBY_IMG[th.overlay]} size={448} opacity={th.overlayOpacity} />}
+                            <Fill d={areaD[a.key]} w={worldW} h={worldH} color={th.tint} />
+                            {/* 縁をわずかに暗くして立体感（内側へのビネット） */}
+                            <Fill d={areaD[a.key]} w={worldW} h={worldH} color={`radial-gradient(ellipse ${Math.round(a.r * 1.1)}px ${Math.round(a.r)}px at ${a.cx}px ${a.cy}px, rgba(0,0,0,0) 60%, rgba(40,60,20,.22) 100%)`} />
+                        </>; })()}
                     </div>
                 ))}
                 <Fill d={plazaD} w={worldW} h={worldH} img={lobbyImg.tile_plaza ? LOBBY_IMG.tile_plaza : TERRAIN_IMG.stone} size={lobbyImg.tile_plaza ? 512 : 320} color="linear-gradient(180deg,#e8dcc4,#cdbfa3)" />
@@ -228,24 +253,26 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                         <g key={"br" + a.key}>
                             {!lobbyImg.bridge_mid && <><line x1={a.bridge.from.x} y1={a.bridge.from.y} x2={a.bridge.to.x} y2={a.bridge.to.y} stroke="#6b4a34" strokeWidth="46" strokeLinecap="round" />
                             <line x1={a.bridge.from.x} y1={a.bridge.from.y} x2={a.bridge.to.x} y2={a.bridge.to.y} stroke="#c9a46a" strokeWidth="34" strokeLinecap="round" strokeDasharray="22 10" /></>}
-                            <line x1={a.cx} y1={a.cy + 20} x2={a.bridge.from.x} y2={a.bridge.from.y} stroke="#e6d3a8" strokeWidth="26" strokeLinecap="round" opacity=".85" />
+                            <line x1={a.cx} y1={a.cy + 20} x2={a.bridge.from.x} y2={a.bridge.from.y} stroke={themeOf(areas.indexOf(a)).road} strokeWidth="26" strokeLinecap="round" opacity=".85" />
+                            <ellipse cx={a.cx} cy={a.cy + 10} rx={Math.min(a.r * 0.5, 330)} ry={Math.min(a.r * 0.5, 330) * 0.8} fill="none" stroke={themeOf(areas.indexOf(a)).road} strokeWidth="18" strokeDasharray="30 26" opacity=".55" />
                         </g>
                     ))}
                 </svg>
                 {/* 中央広場：闘技場（近日公開）・掲示板 */}
                 {!lobbyImg.arena && <img src={TERRAIN_IMG.plaza} alt="" style={{ position: "absolute", left: plaza.cx - 260, top: plaza.cy - 150, width: 520, pointerEvents: "none", opacity: .9 }} />}
-                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("arena"); }} style={{ position: "absolute", left: plaza.cx, top: plaza.cy + 110, width: 0, cursor: "pointer", zIndex: 3 }}>
+                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("arena"); }} style={{ position: "absolute", left: plaza.cx, top: plaza.cy + 150, width: 0, cursor: "pointer", zIndex: 3 }}>
                     {lobbyImg.arena
-                        ? <img src={LOBBY_IMG.arena} alt="" style={{ position: "absolute", left: -390, bottom: 0, width: 780, filter: "drop-shadow(0 16px 16px rgba(0,0,0,.28)) drop-shadow(0 0 40px rgba(255,210,90,.55))", animation: "lbFloat 7s ease-in-out infinite" }} />
+                        ? <img src={LOBBY_IMG.arena} alt="" style={{ position: "absolute", left: -470, bottom: 0, width: 940, filter: "drop-shadow(0 16px 16px rgba(0,0,0,.28)) drop-shadow(0 0 40px rgba(255,210,90,.55))", animation: "lbFloat 7s ease-in-out infinite" }} />
                         : <div style={{ position: "absolute", left: -60, bottom: 0, fontSize: 120, lineHeight: 1, filter: "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }}>🏟️</div>}
                     <div style={{ position: "absolute", left: 0, top: 8, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", padding: "6px 16px", borderRadius: 12, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #b45309", fontSize: 14, fontWeight: 900, color: "#7c2d12", boxShadow: "0 4px 10px rgba(0,0,0,.2)", whiteSpace: "nowrap" }}>🏟️ 闘技場 <span style={{ fontSize: 11, color: "#b45309" }}>近日公開</span></div>
                 </div>
-                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("board"); }} style={{ position: "absolute", left: plaza.cx - 250, top: plaza.cy + 150, width: 0, cursor: "pointer", zIndex: 4 }}>
+                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("board"); }} style={{ position: "absolute", left: plaza.cx - 330, top: plaza.cy + 210, width: 0, cursor: "pointer", zIndex: 4 }}>
                     {lobbyImg.board
                         ? <img src={LOBBY_IMG.board} alt="" style={{ position: "absolute", left: -110, bottom: 0, width: 220, filter: "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }} />
                         : <div style={{ position: "absolute", left: -36, bottom: 0, fontSize: 72, lineHeight: 1, filter: "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }}>📋</div>}
                     <div style={{ position: "absolute", left: 0, top: 6, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", padding: "5px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #8b5cf6", fontSize: 13, fontWeight: 900, color: "#4c1d95", boxShadow: "0 4px 10px rgba(0,0,0,.2)", whiteSpace: "nowrap" }}>📋 掲示板・ランキング</div>
                 </div>
+                {lobbyImg.arena && <><img src="/island/deco/deco_funsui.png" alt="" style={{ position: "absolute", left: plaza.cx + 180, top: plaza.cy + 120, width: 120, pointerEvents: "none", zIndex: 4, filter: "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} /><img src="/world/sm/bush_flowers.png" alt="" style={{ position: "absolute", left: plaza.cx + 300, top: plaza.cy + 200, width: 90, pointerEvents: "none", zIndex: 4 }} /><img src="/world/sm/bush_flowers.png" alt="" style={{ position: "absolute", left: plaza.cx - 420, top: plaza.cy + 120, width: 90, pointerEvents: "none", zIndex: 4 }} /></>}
                 {!lobbyImg.arena && <img src="/world/ruin_pillar.png" alt="" style={{ position: "absolute", left: plaza.cx + 170, top: plaza.cy - 120, width: 90, pointerEvents: "none", filter: "drop-shadow(0 6px 5px rgba(0,0,0,.25))" }} />}
                 {/* 橋：両端の装飾は固定、中央の床板は繰り返し（長さに合わせて引き伸ばさない） */}
                 {areas.map((a) => {
@@ -266,7 +293,13 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                     );
                 })}
                 {/* 装飾（木・茂み・岩） */}
-                {showDecor && decor.map((d, i) => <img key={"dc" + i} src={DECOR_IMG[d.kind]} alt="" style={{ position: "absolute", left: d.x - 60 * d.s, top: d.y - 110 * d.s, width: 120 * d.s, zIndex: d.z, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.2))" }} />)}
+                {showDecor && decor.map((d, i) => { const ai = areas.findIndex((a) => a.key === d.areaKey); const th = themeOf(ai); const it = pick(d.edge ? th.edgeDecor : th.decor, d.k); const w = it.w * d.s; return <img key={"dc" + i} src={it.src} alt="" style={{ position: "absolute", left: d.x - w / 2, top: d.y - w * 0.9, width: w, zIndex: d.z, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.2))" }} />; })}
+                {/* テーマのランドマーク（WORLD でも見える街の目印） */}
+                {areas.map((a, ai) => themeOf(ai).landmark.map((lm, k) => { const w = lm.w * Math.min(1.5, Math.max(0.85, a.r / 650)); return <img key={"lm" + a.key + k} src={lm.src} alt="" style={{ position: "absolute", left: a.landmark.x - w / 2, top: a.landmark.y - w * 0.78 + lm.dy, width: w, zIndex: Math.round(a.landmark.y) + k, pointerEvents: "none", filter: "drop-shadow(0 8px 8px rgba(0,0,0,.25))" }} />; }))}
+                {/* 滝（崖から落ちる水：水タイル＋ぼかし） */}
+                {areas.map((a) => <div key={"wf" + a.key} style={{ position: "absolute", left: a.waterfall.p.x - 34, top: a.waterfall.p.y - 10, width: 68, height: SIDE_H + 170, backgroundImage: `url(${TERRAIN_IMG.water})`, backgroundSize: "140px 140px", borderRadius: "30% 30% 50% 50%", opacity: .85, pointerEvents: "none", zIndex: 1, WebkitMaskImage: "linear-gradient(180deg,#000 0%,#000 55%,transparent 100%)", maskImage: "linear-gradient(180deg,#000 0%,#000 55%,transparent 100%)", filter: "blur(.6px) brightness(1.15)", animation: "lbWater 1.6s linear infinite" }}><div style={{ position: "absolute", left: 4, right: 4, bottom: 24, height: 46, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(255,255,255,.95), rgba(255,255,255,0) 70%)", filter: "blur(4px)" }} /></div>)}
+                {/* 島のまわりの雲（軽く浮遊感） */}
+                {areas.map((a, ai) => [0, 1].map((k) => { const t = (ai * 1.7 + k * 2.4) % (Math.PI * 2); const x = a.cx + Math.cos(t) * a.r * 1.05, y = a.cy + Math.sin(t) * a.r * 0.9 + SIDE_H * 0.6; return <img key={"cl" + a.key + k} src="/world/sm/cloud_soft.png" alt="" style={{ position: "absolute", left: x - 150, top: y - 40, width: 300, opacity: .8, pointerEvents: "none", zIndex: 1, animation: `lbFloat ${7 + k * 2}s ease-in-out infinite alternate` }} />; }))}
                 {/* エリア看板（木の看板画像＋事業部名はコードで描く） */}
                 {areas.map((a) => (
                     <div key={"sg" + a.key} onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} style={{ position: "absolute", left: a.cx, top: a.cy - a.r * 0.9 - 10, transform: `translateX(-50%) scale(${Math.min(inv, 3.2)})`, transformOrigin: "50% 100%", zIndex: 5, cursor: "pointer", width: lobbyImg.sign ? 260 : "auto", height: lobbyImg.sign ? 158 : "auto" }}>
