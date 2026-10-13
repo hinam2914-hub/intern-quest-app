@@ -17,13 +17,14 @@ const ISLAND_SCALE = 0.62;   // ロビー内での縮小率
 /** ロビー専用素材（GPT 制作）。未配置なら既存 /world/ 素材にフォールバック */
 const LOBBY_IMG = {
     grass: "/world/lobby_tile_grass.png", cliff: "/world/lobby_cliff_side.png", sky: "/world/lobby_sky.jpg",
-    arena: "/world/lobby_central_arena.png", board: "/world/lobby_notice_board.png", bridge: "/world/lobby_bridge_wood.png", sign: "/world/lobby_area_sign.png",
+    arena: "/world/lobby_central_arena.png", board: "/world/lobby_notice_board.png", bridge: "/world/lobby_bridge_wood.png", bridge_end_l: "/world/lobby_bridge_end_l.png", bridge_mid: "/world/lobby_bridge_mid.png", bridge_end_r: "/world/lobby_bridge_end_r.png", sign: "/world/lobby_area_sign.png",
     tile_flower: "/world/lobby_tile_flower.png", tile_stone: "/world/lobby_tile_stone.png", tile_plaza: "/world/lobby_tile_plaza.png", tile_crystal: "/world/lobby_tile_crystal.png",
     far_a: "/world/lobby_bg_island_a.png", far_b: "/world/lobby_bg_island_b.png", far_c: "/world/lobby_bg_island_c.png",
 };
 /** 事業部ごとの地面差分（種類で持ち、エリアの並び順で割り当てる。事業部名には依存しない） */
 const AREA_TILES = ["tile_flower", "tile_stone", "tile_plaza", "tile_crystal"] as const;
 const SIDE_H = 150;   // 浮島の厚み（崖テクスチャの高さに合わせる）
+const BR_H = 120;     // 橋の高さ（幅は全区間で同じ）
 const DECOR_IMG: Record<string, string> = { tree_round: "/world/sm/tree_round.png", tree_pine: "/world/sm/tree_pine.png", bush: "/world/sm/bush_flowers.png", rock: "/world/sm/rock.png" };
 
 function clampTo(c: Cam, vp: Viewport, ww: number, wh: number, slack: { x: number; y: number }): Cam {
@@ -206,10 +207,10 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 </svg>
                 {/* 側面（崖）：輪郭を下にずらして茶色で塗る */}
                 {areas.map((a) => lobbyImg.cliff
-                    ? (() => { const span = 0.46 * a.r * 0.9 + SIDE_H + 60; const th = Math.max(384, Math.round(span / 0.7)); return <Fill key={"side" + a.key} d={areaD[a.key]} w={worldW} h={worldH} dy={SIDE_H} img={LOBBY_IMG.cliff} size={th * 3} sizeH={th} pos={`0 ${Math.round(a.cy + 1.24 * a.r * 0.9 + SIDE_H + 30 - th)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />; })()
+                    ? (() => { /* 帯の上端〜下端が岩の範囲（タイルの 105px 以降）に収まる高さにする。Fill は dy だけ下にずれているので位置から引く */ const th = Math.max(420, Math.round(0.45 * a.r + 320)); const posY = a.cy + 1.116 * a.r + 20 - th; return <Fill key={"side" + a.key} d={areaD[a.key]} w={worldW} h={worldH} dy={SIDE_H} img={LOBBY_IMG.cliff} size={th * 3} sizeH={th} pos={`0 ${Math.round(posY - SIDE_H)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />; })()
                     : <Fill key={"side" + a.key} d={areaD[a.key]} w={worldW} h={worldH} dy={78} color="linear-gradient(180deg,#a5814f 0%,#8a6a48 40%,#5c4330 80%,#4a3626 100%)" />)}
                 {lobbyImg.cliff
-                    ? <Fill d={plazaD} w={worldW} h={worldH} dy={SIDE_H} img={LOBBY_IMG.cliff} size={1152} sizeH={384} pos={`0 ${Math.round(plaza.cy + plaza.r * 0.9 + SIDE_H + 45 - 384)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />
+                    ? <Fill d={plazaD} w={worldW} h={worldH} dy={SIDE_H} img={LOBBY_IMG.cliff} size={1260} sizeH={420} pos={`0 ${Math.round(plaza.cy + plaza.r * 0.9 + 20 - 420 - SIDE_H)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />
                     : <Fill d={plazaD} w={worldW} h={worldH} dy={78} color="linear-gradient(180deg,#9a8a74 0%,#7b6a55 45%,#55483a 100%)" />}
                 {/* 上面：草地タイル＋事業部色の薄い着色 */}
                 {areas.map((a) => (
@@ -221,13 +222,12 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                     </div>
                 ))}
                 <Fill d={plazaD} w={worldW} h={worldH} img={lobbyImg.tile_plaza ? LOBBY_IMG.tile_plaza : TERRAIN_IMG.stone} size={lobbyImg.tile_plaza ? 512 : 320} color="linear-gradient(180deg,#e8dcc4,#cdbfa3)" />
-                {/* 橋・道 */}
+                {/* エリア内の道（中心→橋のたもと）＋ 画像が無い環境だけ線の橋 */}
                 <svg width={worldW} height={worldH} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
                     {areas.map((a) => (
                         <g key={"br" + a.key}>
-                            <line x1={a.bridge.from.x} y1={a.bridge.from.y} x2={a.bridge.to.x} y2={a.bridge.to.y} stroke="#6b4a34" strokeWidth="46" strokeLinecap="round" />
-                            <line x1={a.bridge.from.x} y1={a.bridge.from.y} x2={a.bridge.to.x} y2={a.bridge.to.y} stroke="#c9a46a" strokeWidth="34" strokeLinecap="round" strokeDasharray="22 10" />
-                            {/* エリア内の道（中心→橋） */}
+                            {!lobbyImg.bridge_mid && <><line x1={a.bridge.from.x} y1={a.bridge.from.y} x2={a.bridge.to.x} y2={a.bridge.to.y} stroke="#6b4a34" strokeWidth="46" strokeLinecap="round" />
+                            <line x1={a.bridge.from.x} y1={a.bridge.from.y} x2={a.bridge.to.x} y2={a.bridge.to.y} stroke="#c9a46a" strokeWidth="34" strokeLinecap="round" strokeDasharray="22 10" /></>}
                             <line x1={a.cx} y1={a.cy + 20} x2={a.bridge.from.x} y2={a.bridge.from.y} stroke="#e6d3a8" strokeWidth="26" strokeLinecap="round" opacity=".85" />
                         </g>
                     ))}
@@ -247,8 +247,24 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                     <div style={{ position: "absolute", left: 0, top: 6, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", padding: "5px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #8b5cf6", fontSize: 13, fontWeight: 900, color: "#4c1d95", boxShadow: "0 4px 10px rgba(0,0,0,.2)", whiteSpace: "nowrap" }}>📋 掲示板・ランキング</div>
                 </div>
                 {!lobbyImg.arena && <img src="/world/ruin_pillar.png" alt="" style={{ position: "absolute", left: plaza.cx + 170, top: plaza.cy - 120, width: 90, pointerEvents: "none", filter: "drop-shadow(0 6px 5px rgba(0,0,0,.25))" }} />}
-                {/* 橋の板 */}
-                {areas.map((a) => { const mx = (a.bridge.from.x + a.bridge.to.x) / 2, my = (a.bridge.from.y + a.bridge.to.y) / 2; const ang = Math.atan2(a.bridge.to.y - a.bridge.from.y, a.bridge.to.x - a.bridge.from.x) * 180 / Math.PI; return lobbyImg.bridge ? <img key={"bw" + a.key} src={LOBBY_IMG.bridge} alt="" style={{ position: "absolute", left: mx - 150, top: my - 62, width: 300, transform: `rotate(${ang}deg)`, pointerEvents: "none", filter: "drop-shadow(0 8px 8px rgba(0,0,0,.25))" }} /> : <img key={"bw" + a.key} src="/world/bridge_wood.png" alt="" style={{ position: "absolute", left: mx - 70, top: my - 48, width: 140, transform: `rotate(${ang}deg)`, pointerEvents: "none", filter: "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} />; })}
+                {/* 橋：両端の装飾は固定、中央の床板は繰り返し（長さに合わせて引き伸ばさない） */}
+                {areas.map((a) => {
+                    const dx = a.bridge.to.x - a.bridge.from.x, dy = a.bridge.to.y - a.bridge.from.y; const len = Math.hypot(dx, dy); const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+                    if (!lobbyImg.bridge_mid) {
+                        const mx = (a.bridge.from.x + a.bridge.to.x) / 2, my = (a.bridge.from.y + a.bridge.to.y) / 2;
+                        return <img key={"bw" + a.key} src="/world/bridge_wood.png" alt="" style={{ position: "absolute", left: mx - 70, top: my - 48, width: 140, transform: `rotate(${ang}deg)`, pointerEvents: "none", filter: "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} />;
+                    }
+                    // 画像は 1024×337。高さ BR_H に合わせた幅：左端 409、中央タイル 225、右端 369（px → ×scale）
+                    const sc = BR_H / 337, wl = 409 * sc, wm = 225 * sc, wr = 369 * sc;
+                    const mid = Math.max(0, len - wl - wr);
+                    return (
+                        <div key={"bw" + a.key} style={{ position: "absolute", left: a.bridge.from.x, top: a.bridge.from.y - BR_H * 0.58, width: len, height: BR_H, transform: `rotate(${ang}deg)`, transformOrigin: `0 ${BR_H * 0.58}px`, pointerEvents: "none", zIndex: 2, filter: "drop-shadow(0 10px 8px rgba(0,0,0,.28))" }}>
+                            <div style={{ position: "absolute", left: 0, top: 0, width: wl, height: BR_H, backgroundImage: `url(${LOBBY_IMG.bridge_end_l})`, backgroundSize: `${wl}px ${BR_H}px`, backgroundRepeat: "no-repeat" }} />
+                            <div style={{ position: "absolute", left: wl - 1, top: 0, width: mid + 2, height: BR_H, backgroundImage: `url(${LOBBY_IMG.bridge_mid})`, backgroundSize: `${wm}px ${BR_H}px`, backgroundRepeat: "repeat-x", backgroundPosition: "0 0" }} />
+                            <div style={{ position: "absolute", left: wl + mid, top: 0, width: wr, height: BR_H, backgroundImage: `url(${LOBBY_IMG.bridge_end_r})`, backgroundSize: `${wr}px ${BR_H}px`, backgroundRepeat: "no-repeat" }} />
+                        </div>
+                    );
+                })}
                 {/* 装飾（木・茂み・岩） */}
                 {showDecor && decor.map((d, i) => <img key={"dc" + i} src={DECOR_IMG[d.kind]} alt="" style={{ position: "absolute", left: d.x - 60 * d.s, top: d.y - 110 * d.s, width: 120 * d.s, zIndex: d.z, pointerEvents: "none", filter: "drop-shadow(0 4px 4px rgba(0,0,0,.2))" }} />)}
                 {/* エリア看板（木の看板画像＋事業部名はコードで描く） */}
