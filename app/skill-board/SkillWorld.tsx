@@ -82,8 +82,8 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   const [cam, setCam] = useState<Cam>({ x: 0, y: 0, s: 1 });
   const drag = useRef<{ x: number; y: number; cx: number; cy: number; moved: boolean } | null>(null);
   const pinch = useRef<{ d: number; s: number } | null>(null);
-  const [vp, setVp] = useState({ w: 1200, h: 800 });
-  const isMobile = vp.w < 640;
+  const [vp, setVp] = useState({ w: 0, h: 0 });   // 計測前は 0（初期カメラは計測後に1回だけ決める）
+  const isMobile = vp.w > 0 && vp.w < 640;
   const ins: Insets = hud ?? (isMobile ? { top: 64, bottom: 84, left: 0, right: 0 } : { top: 0, bottom: 0, left: 0, right: 0 });
   const camRef = useRef<Cam>({ x: 0, y: 0, s: 1 });
   const tweenCancel = useRef<(() => void) | null>(null);
@@ -152,15 +152,27 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
   function goQuest(p: Pt) { setMode("quest", areaRef.current); animateTo(centerCam(p, isMobile ? 1.5 : Math.max(1.5, camRef.current.s), vp, ins), 650); }
   useEffect(() => { const el = wrapRef.current; if (!el) return; const ro = new ResizeObserver(() => setVp({ w: el.clientWidth, h: el.clientHeight })); ro.observe(el); setVp({ w: el.clientWidth, h: el.clientHeight }); return () => ro.disconnect(); }, []);
   const minS = isMobile ? 0.12 : Math.max(0.4, Math.max(vp.w / WORLD_W, vp.h / WORLD_H));
+  const initDone = useRef(false);
   useEffect(() => {
+    if (!vp.w || !vp.h) return;   // 未計測
     if (isMobile) {
-      // スマホ：CURRENT QUEST のエリア → 現在地のエリア → comm を画面に収める
+      // 2回目以降のリサイズ（iOS のアドレスバー出入りなど）：今のモードを維持して再フィットするだけ
+      if (initDone.current) {
+        if (modeRef.current === "area" && areaRef.current) setCamNow(areaCam(areaRef.current));
+        else if (modeRef.current === "world") setCamNow(fitBox(AREA_BOX.world, vp, ins, 0.92, minS));
+        else setCamNow(camRef.current);
+        return;
+      }
+      initDone.current = true;
+      // 初回：CURRENT QUEST のエリア → 現在地のエリア → comm を画面に収める
       const curCat = focus.current ? res.nodes.find((n) => n.id === focus.current)?.category : undefined;
       const locCat = locNodeId ? res.nodes.find((n) => n.id === locNodeId)?.category : undefined;
-      const k = (modeRef.current === "area" && areaRef.current) || curCat || locCat || "comm";
+      const k = curCat || locCat || "comm";
       setMode("area", k); setCamNow(areaCam(k));
       return;
     }
+    if (initDone.current) { setCamNow(camRef.current); return; }
+    initDone.current = true;
     const s = Math.min(2.0, Math.max(1.5, vp.w / 850));
     const k = 0.65;
     const av = { x: homePos.x - 74, y: homePos.y - 60 };
