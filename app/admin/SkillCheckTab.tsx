@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { STAGES } from "../lib/stages";
+import { STAGES, evaluateStages } from "../lib/stages";
+import { evaluateUser, syncUnlocks } from "../lib/skills";
 
 type Row = {
   id: string; kind: "check" | "claim" | "stage"; user_id: string; node_id: string; status: string;
@@ -14,6 +15,35 @@ export default function SkillCheckTab({ onChanged }: { onChanged?: () => void })
   const [filter, setFilter] = useState<"pending" | "done">("pending");
   const [comment, setComment] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [reeval, setReeval] = useState<{ running: boolean; done: number; total: number; log: string[] }>({ running: false, done: 0, total: 0, log: [] });
+
+  /** 全メンバーを再評価：取れているのに未取得のスキル・STAGE を一括で解除する（告知前などに実行） */
+  async function reevaluateAll() {
+    if (reeval.running) return;
+    if (!confirm("全メンバーのスキル・STAGE を再評価して、条件を満たしているものを一括で解除します。実行しますか？")) return;
+    const { data: profiles } = await supabase.from("profiles").select("id, name").order("name");
+    const list = profiles ?? [];
+    setReeval({ running: true, done: 0, total: list.length, log: [] });
+    const log: string[] = [];
+    for (let i = 0; i < list.length; i++) {
+      const p: any = list[i];
+      try {
+        const r = await evaluateUser(supabase, p.id);
+        const { newNodes, newJobs } = await syncUnlocks(supabase, p.id, r);
+        const st = await evaluateStages(supabase, p.id);
+        const parts: string[] = [];
+        if (newNodes.length) parts.push(`スキル ${newNodes.map((n) => n.name).join("・")}`);
+        if (newJobs.length) parts.push(`称号 ${newJobs.map((j) => j.name).join("・")}`);
+        if (st.newCleared.length) parts.push(`STAGE ${st.newCleared.map((s) => s.name).join("・")}`);
+        if (parts.length) log.push(`✅ ${p.name ?? p.id}：${parts.join(" / ")}`);
+      } catch (e: any) {
+        log.push(`⚠️ ${p.name ?? p.id}：${e?.message ?? "エラー"}`);
+      }
+      setReeval({ running: true, done: i + 1, total: list.length, log: [...log] });
+    }
+    setReeval({ running: false, done: list.length, total: list.length, log: log.length ? log : ["新しく解除されたものはありませんでした"] });
+    onChanged?.();
+  }
 
   async function load() {
     setLoading(true);
@@ -70,13 +100,22 @@ export default function SkillCheckTab({ onChanged }: { onChanged?: () => void })
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
         {(["pending", "done"] as const).map((f) => (
           <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 20, border: "1px solid #cbd5e1", background: filter === f ? "#1e293b" : "#fff", color: filter === f ? "#fff" : "#334155", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
             {f === "pending" ? `審査待ち (${pendingCount})` : "対応済み"}
           </button>
         ))}
+        <button onClick={reevaluateAll} disabled={reeval.running} style={{ marginLeft: "auto", padding: "6px 14px", borderRadius: 20, border: "1px solid #f59e0b", background: reeval.running ? "#fef3c7" : "#fff7ed", color: "#92400e", fontWeight: 800, fontSize: 13, cursor: reeval.running ? "wait" : "pointer" }}>
+          {reeval.running ? `再評価中… ${reeval.done}/${reeval.total}` : "🔄 全員を再評価"}
+        </button>
       </div>
+      {reeval.log.length > 0 && (
+        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "#78350f", maxHeight: 220, overflowY: "auto" }}>
+          <div style={{ fontWeight: 800, marginBottom: 4 }}>再評価の結果（{reeval.done}/{reeval.total}人）</div>
+          {reeval.log.map((l, i) => <div key={i}>{l}</div>)}
+        </div>
+      )}
       {loading ? <div style={{ color: "#64748b" }}>読み込み中...</div> : shown.length === 0 ? <div style={{ color: "#64748b", padding: 20, textAlign: "center" }}>なし</div> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {shown.map((r) => (
