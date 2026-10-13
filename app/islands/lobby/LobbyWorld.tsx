@@ -166,8 +166,10 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     }
 
     // ---- 描画の切り替え（スマホ WORLD は簡易描画）
-    const detailAll = !isMobile || cam.s > 0.55;
-    const detailFor = (sl: LobbySlot) => detailAll || (mode === "area" && sl.areaKey === areaRef.current) || (mode === "island" && sl.userId === focusRef.current) || (mode === "free" && sl.areaKey === areaRef.current && cam.s > 0.3);
+    // WORLD（引き）では家・名前を主張させずエリアを主役に：PC でも簡易描画。寄ったら詳細
+    const detailAll = cam.s > 0.5;
+    const inCurArea = (sl: LobbySlot) => sl.areaKey === areaRef.current && (mode === "area" || mode === "island" || (mode === "free" && cam.s > 0.3));
+    const detailFor = (sl: LobbySlot) => detailAll || inCurArea(sl) || (mode === "island" && sl.userId === focusRef.current);
     const showDecor = !isMobile || cam.s > 0.3;
     const inv = isMobile ? Math.min(3.2, Math.max(1, 0.45 / cam.s)) : Math.min(2.2, Math.max(1, 0.5 / cam.s));
     const sky = lobbyImg.sky ? `url(${LOBBY_IMG.sky}) center / cover no-repeat, linear-gradient(180deg, #9fd3ff 0%, #c9e9ff 45%, #e6f5ff 100%)` : "linear-gradient(180deg, #9fd3ff 0%, #c9e9ff 45%, #e6f5ff 100%)";
@@ -179,7 +181,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
         <div ref={wrapRef} onClick={onWrapClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
             style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: drag.current ? "grabbing" : "grab", touchAction: "none", background: sky, userSelect: "none", fontFamily: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif' }}>
             <style>{`@keyframes lbCloud { 0%{transform:translateX(-200px)} 100%{transform:translateX(110vw)} } @keyframes lbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} } @keyframes lbFlag { 0%{transform:rotate(-4deg)} 100%{transform:rotate(4deg)} }`}</style>
-            {lobbyImg.sky && <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,.22)", pointerEvents: "none" }} />}
+            {lobbyImg.sky && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(235,245,255,.55), rgba(255,255,255,.42) 60%, rgba(255,255,255,.5))", pointerEvents: "none" }} />}
             {/* 遠景の雲（画面固定）＋ 遠景の浮き島（カメラ 0.3 倍追従・倍率連動） */}
             {[0, 1, 2].map((i) => (<div key={i} style={{ position: "absolute", top: `${8 + i * 30}%`, left: 0, width: 190, height: 50, background: "rgba(255,255,255,.85)", borderRadius: 999, filter: "blur(2px)", animation: `lbCloud ${100 + i * 35}s linear infinite`, animationDelay: `${-i * 40}s`, pointerEvents: "none", boxShadow: "50px -20px 0 -4px rgba(255,255,255,.8), 100px 0 0 -2px rgba(255,255,255,.85)", opacity: 0.6 }} />))}
             <div style={{ position: "absolute", left: 0, top: 0, width: worldW, height: worldH, transform: `translate(${cam.x * 0.3 + (vp.w / 2 - (worldW * cam.s) / 2) * 0.7}px,${cam.y * 0.3 + (vp.h / 2 - (worldH * cam.s) / 2) * 0.7}px) scale(${cam.s})`, transformOrigin: "0 0", pointerEvents: "none" }}>
@@ -204,7 +206,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 </svg>
                 {/* 側面（崖）：輪郭を下にずらして茶色で塗る */}
                 {areas.map((a) => lobbyImg.cliff
-                    ? <Fill key={"side" + a.key} d={areaD[a.key]} w={worldW} h={worldH} dy={SIDE_H} img={LOBBY_IMG.cliff} size={1152} sizeH={384} pos={`0 ${Math.round(a.cy + a.r * 0.9 + SIDE_H + 45 - 384)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />
+                    ? (() => { const span = 0.46 * a.r * 0.9 + SIDE_H + 60; const th = Math.max(384, Math.round(span / 0.7)); return <Fill key={"side" + a.key} d={areaD[a.key]} w={worldW} h={worldH} dy={SIDE_H} img={LOBBY_IMG.cliff} size={th * 3} sizeH={th} pos={`0 ${Math.round(a.cy + 1.24 * a.r * 0.9 + SIDE_H + 30 - th)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />; })()
                     : <Fill key={"side" + a.key} d={areaD[a.key]} w={worldW} h={worldH} dy={78} color="linear-gradient(180deg,#a5814f 0%,#8a6a48 40%,#5c4330 80%,#4a3626 100%)" />)}
                 {lobbyImg.cliff
                     ? <Fill d={plazaD} w={worldW} h={worldH} dy={SIDE_H} img={LOBBY_IMG.cliff} size={1152} sizeH={384} pos={`0 ${Math.round(plaza.cy + plaza.r * 0.9 + SIDE_H + 45 - 384)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />
@@ -214,7 +216,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                     <div key={"top" + a.key}>
                         <Fill d={areaD[a.key]} w={worldW} h={worldH} img={lobbyImg.grass ? LOBBY_IMG.grass : TERRAIN_IMG.grass} size={lobbyImg.grass ? 460 : 384} color="linear-gradient(180deg,#b9ec8f,#7ccb6a)" />
                         {(() => { const tk = AREA_TILES[areas.indexOf(a) % AREA_TILES.length]; return lobbyImg[tk]
-                            ? <Fill d={areaD[a.key]} w={worldW} h={worldH} img={(LOBBY_IMG as any)[tk]} size={512} opacity={0.5} />
+                            ? <Fill d={areaD[a.key]} w={worldW} h={worldH} img={(LOBBY_IMG as any)[tk]} size={448} opacity={0.88} />
                             : <Fill d={areaD[a.key]} w={worldW} h={worldH} color={a.color} opacity={0.14} blend="multiply" />; })()}
                     </div>
                 ))}
@@ -232,9 +234,9 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 </svg>
                 {/* 中央広場：闘技場（近日公開）・掲示板 */}
                 {!lobbyImg.arena && <img src={TERRAIN_IMG.plaza} alt="" style={{ position: "absolute", left: plaza.cx - 260, top: plaza.cy - 150, width: 520, pointerEvents: "none", opacity: .9 }} />}
-                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("arena"); }} style={{ position: "absolute", left: plaza.cx, top: plaza.cy + 40, width: 0, cursor: "pointer", zIndex: 3 }}>
+                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("arena"); }} style={{ position: "absolute", left: plaza.cx, top: plaza.cy + 110, width: 0, cursor: "pointer", zIndex: 3 }}>
                     {lobbyImg.arena
-                        ? <img src={LOBBY_IMG.arena} alt="" style={{ position: "absolute", left: -340, bottom: 0, width: 680, filter: "drop-shadow(0 14px 14px rgba(0,0,0,.25))" }} />
+                        ? <img src={LOBBY_IMG.arena} alt="" style={{ position: "absolute", left: -390, bottom: 0, width: 780, filter: "drop-shadow(0 16px 16px rgba(0,0,0,.28)) drop-shadow(0 0 40px rgba(255,210,90,.55))", animation: "lbFloat 7s ease-in-out infinite" }} />
                         : <div style={{ position: "absolute", left: -60, bottom: 0, fontSize: 120, lineHeight: 1, filter: "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }}>🏟️</div>}
                     <div style={{ position: "absolute", left: 0, top: 8, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", padding: "6px 16px", borderRadius: 12, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #b45309", fontSize: 14, fontWeight: 900, color: "#7c2d12", boxShadow: "0 4px 10px rgba(0,0,0,.2)", whiteSpace: "nowrap" }}>🏟️ 闘技場 <span style={{ fontSize: 11, color: "#b45309" }}>近日公開</span></div>
                 </div>
@@ -273,7 +275,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                                 </div>
                             ) : <IslandMini i={i} leader={sl.isLeader} />}
                             {/* 名前プレート（スマホの WORLD では代表の島だけ） */}
-                            {(sl.isLeader || isFocus || (detail && cam.s > 0.42)) && <div style={{ position: "absolute", left: 0, top: 14, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", whiteSpace: "nowrap", textAlign: "center", pointerEvents: "none" }}>
+                            {(sl.isLeader || isFocus || inCurArea(sl) || cam.s > 0.42) && <div style={{ position: "absolute", left: 0, top: 14, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", whiteSpace: "nowrap", textAlign: "center", pointerEvents: "none" }}>
                                 <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 8, background: isFocus ? "linear-gradient(180deg,#fff7ed,#fde68a)" : "rgba(255,255,255,.92)", border: `2px solid ${isFocus ? "#f59e0b" : sl.isLeader ? "#f59e0b" : "#cbd5e1"}`, fontSize: 12.5, fontWeight: 900, color: "#1e293b", boxShadow: "0 2px 6px rgba(0,0,0,.2)" }}>{sl.isLeader ? "👑 " : ""}{i.name} <span style={{ color: "#b45309", fontSize: 11 }}>Lv.{i.level}</span></span>
                             </div>}
                         </div>

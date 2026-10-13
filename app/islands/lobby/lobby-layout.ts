@@ -44,7 +44,7 @@ export function rng(seed: number) { let t = seed || 1; return () => { t = (t * 1
 /** n 島を六角リングで収めるのに必要なリング数（中心1＋6k） */
 export function ringsFor(n: number): number { if (n <= 1) return 0; return Math.ceil((-3 + Math.sqrt(9 + 12 * (n - 1))) / 6); }
 /** エリアの半径（島数から） */
-export function areaRadius(n: number): number { const k = ringsFor(n); return Math.max(330, (k + 0.45) * MIN_DIST + 70); }
+export function areaRadius(n: number): number { const k = ringsFor(n); return Math.max(340, (k + 0.6) * MIN_DIST + 90); }
 
 const DEPT_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ec4899", "#8b5cf6", "#14b8a6", "#ef4444", "#64748b"];
 
@@ -114,7 +114,10 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
             pts.push({ x: Math.cos(ang) * rad, y: Math.sin(ang) * rad * 0.92 });
         });
         // 衝突解消（中心の島は固定）：最低間隔・エリア内・道の帯を避ける
-        const inner = a.r - 150, corridor = 165;
+        // 輪郭の半径関数（角度→半径）：低周波のうねり＋細かい凹凸で円盤に見えないようにする。島・橋・装飾はこの関数を基準にする
+        const ph = rng(hash(a.key + "p")); const p1 = ph() * Math.PI * 2, p2 = ph() * Math.PI * 2, p3 = ph() * Math.PI * 2;
+        const rad = (t: number) => a.r * (1 + 0.12 * Math.sin(2 * t + p1) + 0.07 * Math.sin(3 * t + p2) + 0.05 * Math.sin(5 * t + p3));
+        const corridor = 165;
         for (let it = 0; it < 80; it++) {
             for (let i = 1; i < pts.length; i++) {
                 for (let j = 0; j < pts.length; j++) {
@@ -126,7 +129,7 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
                 const t = pts[i].x * dir.x + pts[i].y * dir.y;
                 if (t > 120) { const px = pts[i].x - dir.x * t, py = pts[i].y - dir.y * t; const dist = Math.hypot(px, py); if (dist < corridor) { const f = (corridor - dist) * 0.9; const nx = dist > 1 ? px / dist : -dir.y, ny = dist > 1 ? py / dist : dir.x; pts[i].x += nx * f; pts[i].y += ny * f; } }
                 // エリア内に収める
-                const rr = Math.hypot(pts[i].x, pts[i].y / 0.92); if (rr > inner) { const f = inner / rr; pts[i].x *= f; pts[i].y *= f; }
+                const rr = Math.hypot(pts[i].x, pts[i].y / 0.92); const lim = rad(Math.atan2(pts[i].y / 0.92, pts[i].x)) - 150; if (rr > lim) { const f = lim / rr; pts[i].x *= f; pts[i].y *= f; }
             }
         }
         let fx0 = Infinity, fy0 = Infinity, fx1 = -Infinity, fy1 = -Infinity;
@@ -136,15 +139,16 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
             fx0 = Math.min(fx0, x - SLOT_W / 2); fx1 = Math.max(fx1, x + SLOT_W / 2); fy0 = Math.min(fy0, y - SLOT_H); fy1 = Math.max(fy1, y + 60);
         });
         // 輪郭（円を 16 点で崩す）
-        const outline: Pt[] = []; const n = 16; const or = rng(hash(a.key + "o"));
-        for (let i = 0; i < n; i++) { const t = (i / n) * Math.PI * 2; const rr = a.r * (1 + (or() - 0.5) * 0.14); outline.push({ x: Math.round(cx + Math.cos(t) * rr), y: Math.round(cy + Math.sin(t) * rr * 0.9) }); }
+        const outline: Pt[] = []; const n = 28; const or = rng(hash(a.key + "o"));
+        for (let i = 0; i < n; i++) { const t = (i / n) * Math.PI * 2; const rr = rad(t) * (1 + (or() - 0.5) * 0.06); outline.push({ x: Math.round(cx + Math.cos(t) * rr), y: Math.round(cy + Math.sin(t) * rr * 0.9) }); }
         // 橋：エリア縁 → 広場縁
-        const from = { x: Math.round(cx + dir.x * a.r * 0.9), y: Math.round(cy + dir.y * a.r * 0.9 * 0.9) };
+        const rb = rad(Math.atan2(dir.y, dir.x)) * 0.93;
+        const from = { x: Math.round(cx + dir.x * rb), y: Math.round(cy + dir.y * rb * 0.9) };
         const to = { x: Math.round(plazaC.x - dir.x * PLAZA_R * 0.92), y: Math.round(plazaC.y - dir.y * PLAZA_R * 0.92) };
         // 装飾：外周に木・茂み・岩（島から離れた位置だけ）
         const dr = rng(hash(a.key + "d")); const dn = 10 + Math.round(a.r / 45);
         for (let i = 0; i < dn; i++) {
-            const t = dr() * Math.PI * 2, rr = a.r * (0.72 + dr() * 0.2); const x = Math.round(cx + Math.cos(t) * rr), y = Math.round(cy + Math.sin(t) * rr * 0.9);
+            const t = dr() * Math.PI * 2, rr = rad(t) * (0.74 + dr() * 0.16); const x = Math.round(cx + Math.cos(t) * rr), y = Math.round(cy + Math.sin(t) * rr * 0.9);
             if (pts.some((p) => Math.hypot(cx + p.x - x, cy + p.y - y) < 210)) continue;
             const tt = Math.hypot(x - from.x, y - from.y); if (tt < 120) continue;
             const k = dr(); decor.push({ x, y, kind: k < 0.4 ? "tree_round" : k < 0.7 ? "tree_pine" : k < 0.88 ? "bush" : "rock", s: 0.7 + dr() * 0.5, z: y });
