@@ -14,6 +14,8 @@ export type LobbyCamCmd = { key: number; mode: "world" | "area" | "island"; area
 
 const ISLAND_W = 420;        // DayIslandScene の描画幅（固定）
 const ISLAND_SCALE = 0.62;   // ロビー内での縮小率
+/** ロビー専用素材（GPT 制作）。未配置なら既存 /world/ 素材にフォールバック */
+const LOBBY_IMG = { grass: "/world/lobby_tile_grass.png" };
 const DECOR_IMG: Record<string, string> = { tree_round: "/world/sm/tree_round.png", tree_pine: "/world/sm/tree_pine.png", bush: "/world/sm/bush_flowers.png", rock: "/world/sm/rock.png" };
 
 function clampTo(c: Cam, vp: Viewport, ww: number, wh: number, slack: { x: number; y: number }): Cam {
@@ -43,6 +45,12 @@ function IslandMini({ i, leader }: { i: LobbyIsland; leader: boolean }) {
     );
 }
 
+function useLobbyImages(): Record<string, boolean> {
+    const [ok, setOk] = useState<Record<string, boolean>>({});
+    useEffect(() => { Object.entries(LOBBY_IMG).forEach(([k, src]) => { const im = new Image(); im.onload = () => setOk((o) => ({ ...o, [k]: true })); im.src = src; }); }, []);
+    return ok;
+}
+
 export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandTap, onAreaTap, onPlazaTap, onBackgroundTap, onCamMode, hud }: {
     layout: LobbyLayout; islands: Map<string, LobbyIsland>;
     camCmd?: LobbyCamCmd; focusId: string | null;
@@ -70,6 +78,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     const maxS = 2.0;
     const slack = isMobile ? { x: vp.w * 0.3, y: vp.h * 0.5 } : { x: 0, y: 0 };
     const [mode, setModeState] = useState<LobbyMode>("free");
+    const lobbyImg = useLobbyImages();
 
     useEffect(() => {
         const el = wrapRef.current; if (!el) return;
@@ -189,7 +198,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 {/* 上面：草地タイル＋事業部色の薄い着色 */}
                 {areas.map((a) => (
                     <div key={"top" + a.key}>
-                        <Fill d={areaD[a.key]} w={worldW} h={worldH} img={TERRAIN_IMG.grass} size={384} color="linear-gradient(180deg,#b9ec8f,#7ccb6a)" />
+                        <Fill d={areaD[a.key]} w={worldW} h={worldH} img={lobbyImg.grass ? LOBBY_IMG.grass : TERRAIN_IMG.grass} size={lobbyImg.grass ? 460 : 384} color="linear-gradient(180deg,#b9ec8f,#7ccb6a)" />
                         <Fill d={areaD[a.key]} w={worldW} h={worldH} color={a.color} opacity={0.14} blend="multiply" />
                     </div>
                 ))}
