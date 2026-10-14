@@ -26,7 +26,15 @@ export default function LobbyView({ islands, depts, meId, initialUserId }: { isl
     const goArea = (k: string) => { setFocusId(null); setRanking(false); cmd({ mode: "area", area: k }); };
     const goIsland = (id: string) => { setFocusId(id); setRanking(false); setSearchOpen(false); setQ(""); cmd({ mode: "island", userId: id }); };
     const focus = focusId ? byId.get(focusId) ?? null : null;
-    const focusArea = focus ? layout.areas.find((a) => a.key === (layout.slots.find((s) => s.userId === focus.id)?.areaKey))?.label ?? "" : "";
+    const focusAreaObj = focus ? layout.areas.find((a) => a.key === (layout.slots.find((s) => s.userId === focus.id)?.areaKey)) ?? null : null;
+    const focusArea = focusAreaObj?.label ?? "";
+    // お隣さん：同じ村で、座標が近い順に 4 人
+    const neighbors = useMemo(() => {
+        if (!focus || !focusAreaObj) return [] as LobbyIsland[];
+        const me = layout.slots.find((s) => s.userId === focus.id); if (!me) return [] as LobbyIsland[];
+        return layout.slots.filter((s) => s.areaKey === me.areaKey && s.userId !== me.userId).sort((a, b) => Math.hypot(a.x - me.x, a.y - me.y) - Math.hypot(b.x - me.x, b.y - me.y)).slice(0, 4).map((s) => byId.get(s.userId)!).filter(Boolean);
+    }, [focus, focusAreaObj, layout, byId]);
+    const curArea = area ? layout.areas.find((a) => a.key === area) ?? null : null;
     const hits = q.trim() ? islands.filter((i) => i.name.includes(q.trim())).slice(0, 8) : [];
     const cardH = isMobile ? FOCUS_CARD_H.mobile : FOCUS_CARD_H.pc;
     const hud = { top: isMobile ? 64 : 72, bottom: focus ? cardH + (isMobile ? 24 : 40) : (isMobile ? 84 : 72) };
@@ -35,22 +43,29 @@ export default function LobbyView({ islands, depts, meId, initialUserId }: { isl
     const circleBtn = (label: string, onClick: () => void, active = false) => (
         <button onClick={onClick} style={{ ...pill, width: 44, height: 44, borderRadius: 22, border: active ? "2px solid #8b5cf6" : pill.border, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{label}</button>
     );
-    const chip = (label: string, onClick: () => void, active: boolean, color = "#1e293b", key?: string) => (
-        <button key={key ?? label} onClick={onClick} style={{ ...pill, padding: "8px 14px", borderRadius: 999, border: active ? `2px solid ${color}` : pill.border, background: active ? color : pill.background, color: active ? "#fff" : color, fontWeight: 900, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>{label}</button>
+    const chip = (label: string, onClick: () => void, active: boolean, color = "#1e293b", key?: string, count?: number) => (
+        <button key={key ?? label} onClick={onClick} style={{ ...pill, padding: "8px 13px", borderRadius: 999, border: active ? `2px solid ${color}` : pill.border, background: active ? color : pill.background, color: active ? "#fff" : "#1e293b", fontWeight: 900, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: 6, transform: active ? "translateY(-2px)" : "none", transition: "transform .15s" }}>
+            {count !== undefined && <span style={{ width: 9, height: 9, borderRadius: 5, background: active ? "#fff" : color, boxShadow: active ? "none" : `0 0 0 2px ${color}44` }} />}
+            {label}{count !== undefined && <span style={{ fontSize: 11, fontWeight: 800, opacity: .8 }}>{count}</span>}
+        </button>
     );
 
     return (
         <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
             <LobbyWorld layout={layout} islands={byId} camCmd={camCmd} focusId={focusId} hud={hud}
                 onIslandTap={goIsland} onAreaTap={goArea} onPlazaTap={(k) => { if (k === "board") setRanking(true); }}
-                onBackgroundTap={() => { if (focus) goWorld(); }}
+                onBackgroundTap={() => { if (focus) { if (focusAreaObj) goArea(focusAreaObj.key); else goWorld(); } }}
                 onCamMode={(m, a) => { setMode(m); setArea(a); if (m !== "island") setFocusId((f) => (m === "free" ? f : null)); }} />
 
             {/* ---- 上部 HUD */}
             <div style={{ position: "fixed", top: "max(10px, env(safe-area-inset-top))", left: 10, right: 10, display: "flex", alignItems: "center", gap: 8, zIndex: 50, pointerEvents: "none" }}>
                 <div style={{ pointerEvents: "auto", display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 0 }}>
-                    {circleBtn("←", () => { if (focus) goWorld(); else if (mode === "area" || mode === "free") goWorld(); else router.push("/home"); })}
-                    <div style={{ ...pill, padding: "8px 14px", borderRadius: 999, fontWeight: 900, fontSize: 13.5, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🌍 みんなの島 <span style={{ color: "#8b5cf6" }}>{islands.length}人</span></div>
+                    {circleBtn("←", () => { if (focus) { if (focusAreaObj) goArea(focusAreaObj.key); else goWorld(); } else if (mode === "area" || mode === "free") goWorld(); else router.push("/home"); })}
+                    <div style={{ ...pill, padding: "8px 14px", borderRadius: 999, fontWeight: 900, fontSize: 13.5, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
+                        <button onClick={goWorld} style={{ border: "none", background: "transparent", padding: 0, fontWeight: 900, fontSize: 13.5, cursor: "pointer", color: mode === "world" ? "#1e293b" : "#64748b" }}>🌍 みんなの島{mode === "world" && <span style={{ color: "#8b5cf6" }}> {islands.length}人</span>}</button>
+                        {curArea && (mode === "area" || mode === "island") && <><span style={{ color: "#94a3b8" }}>›</span><button onClick={() => goArea(curArea.key)} style={{ border: "none", background: "transparent", padding: 0, fontWeight: 900, fontSize: 13.5, cursor: "pointer", color: mode === "area" ? curArea.color : "#64748b" }}>{curArea.short}の村{mode === "area" && <span style={{ color: "#64748b", fontWeight: 700 }}> {curArea.count}人</span>}</button></>}
+                        {focus && mode === "island" && <><span style={{ color: "#94a3b8" }}>›</span><span style={{ color: "#1e293b" }}>{focus.name}</span></>}
+                    </div>
                 </div>
                 <div style={{ pointerEvents: "auto", display: "flex", gap: 8, alignItems: "center" }}>
                     {!isMobile && (
@@ -75,12 +90,12 @@ export default function LobbyView({ islands, depts, meId, initialUserId }: { isl
             {!focus && (
                 <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, padding: `8px 10px max(10px, env(safe-area-inset-bottom))`, display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", pointerEvents: "auto" }}>
                     {chip("🌍 WORLD", goWorld, mode === "world", "#4f46e5")}
-                    {layout.areas.map((a) => chip(`${a.short}・${a.count}`, () => goArea(a.key), mode === "area" && area === a.key, a.color, a.key))}
+                    {layout.areas.map((a) => chip(a.short, () => goArea(a.key), mode === "area" && area === a.key, a.color, a.key, a.count))}
                     {meId && byId.has(meId) && chip("🏠 自分の島", () => goIsland(meId), false, "#0f766e")}
                 </div>
             )}
 
-            {focus && <IslandFocusCard i={focus} areaLabel={focusArea} isMobile={isMobile} isMe={focus.id === meId} onProfile={() => router.push("/profile/" + focus.id)} onClose={goWorld} />}
+            {focus && <IslandFocusCard i={focus} areaLabel={focusArea} areaColor={focusAreaObj?.color} isMobile={isMobile} isMe={focus.id === meId} neighbors={neighbors} onPick={goIsland} onProfile={() => router.push("/profile/" + focus.id)} onClose={() => (focusAreaObj ? goArea(focusAreaObj.key) : goWorld())} />}
             {ranking && <RankingPanel islands={islands} meId={meId} isMobile={isMobile} onPick={goIsland} onRandom={() => { const l = islands; if (l.length) goIsland(l[Math.floor(Math.random() * l.length)].id); }} onClose={() => setRanking(false)} />}
         </div>
     );
