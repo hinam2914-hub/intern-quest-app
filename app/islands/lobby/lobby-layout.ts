@@ -57,7 +57,7 @@ export function rng(seed: number) { let t = seed || 1; return () => { t = (t * 1
 /** n 島を六角リングで収めるのに必要なリング数（中心1＋6k） */
 export function ringsFor(n: number): number { if (n <= 1) return 0; return Math.ceil((-3 + Math.sqrt(9 + 12 * (n - 1))) / 6); }
 /** エリアの半径（島数から） */
-export function areaRadius(n: number): number { return Math.round(Math.max(430, 400 + 165 * Math.sqrt(n))); }
+export function areaRadius(n: number): number { return Math.round(Math.max(430, 420 + 185 * Math.sqrt(n))); }
 
 const DEPT_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ec4899", "#8b5cf6", "#14b8a6", "#ef4444", "#64748b"];
 
@@ -249,8 +249,8 @@ export type VillageHouse = { x: number; y: number; street: number; side: -1 | 1;
 export type VillageDecor = { x: number; y: number; k: number; s: number; edge: boolean; kind: LobbyDecor["kind"] };
 export type Village = { plazaR: number; gate: Pt; roads: { pts: Pt[]; w: number; main: boolean }[]; houses: VillageHouse[]; decor: VillageDecor[] };
 
-const HOUSE_STEP = 295;      // 通り沿いの家の間隔
-const HOUSE_OFF = 175;       // 通りの中心線から家までの距離
+const HOUSE_STEP = 340;      // 通り沿いの家の間隔（庭・木が見える余白を確保）
+const HOUSE_OFF = 190;       // 通りの中心線から家までの距離
 const ROAD_W_MAIN = 64, ROAD_W = 40;
 
 function bezier3(p0: Pt, p1: Pt, p2: Pt, p3: Pt, n: number): Pt[] {
@@ -295,14 +295,30 @@ export function layoutVillage(n: number, r: number, rad: (t: number) => number, 
         const nx = -Math.sin(gateAng), ny = Math.cos(gateAng); const L = Math.hypot(p3.x - p0.x, p3.y - p0.y); const b = L * 0.16 * (rnd() < 0.5 ? -1 : 1);
         roads.push({ pts: bezier3(p0, { x: p0.x + (p3.x - p0.x) * 0.3 + nx * b, y: p0.y + (p3.y - p0.y) * 0.3 + ny * b }, { x: p0.x + (p3.x - p0.x) * 0.7 - nx * b, y: p0.y + (p3.y - p0.y) * 0.7 - ny * b }, p3, 10), w: ROAD_W_MAIN, main: true });
     }
-    // 住宅街の通り：門の方向 ±0.75rad を避けた弧に等間隔
+    // 住宅街の通り：放射状に見えないよう、
+    //  (a) 広場から出る通りは本数を抑え、長さ・曲がりをばらつかせる
+    //  (b) 中くらい以上の村には「環状の裏道」を広場の外側に回し、そこから枝道を外へ伸ばす
     const k = Math.max(2, Math.min(8, Math.ceil((n - 1) / 4)));
     const avoid = 0.65; const span = Math.PI * 2 - avoid * 2;
+    const hasRing = r >= 820 && n >= 8;
+    const ringR = plazaR + 400 + (r - 800) * 0.12;    // 環状道の半径（広場から 1 軒分ほど外）
+    const ringPts: Pt[] = [];
+    if (hasRing) {
+        // 門側は大通りがあるので、門の方向 ±0.5rad は環状道を通さない（C 字）
+        const a0 = gateAng + 0.55, a1 = gateAng + Math.PI * 2 - 0.55; const m = 22;
+        for (let i = 0; i <= m; i++) { const t = a0 + (a1 - a0) * i / m; const rr = ringR * (1 + 0.08 * Math.sin(3 * t + 1.3) + 0.05 * Math.sin(5 * t)); ringPts.push({ x: Math.cos(t) * rr, y: Math.sin(t) * rr * 0.9 }); }
+        roads.push({ pts: ringPts, w: ROAD_W, main: false });
+    }
     for (let i = 0; i < k; i++) {
-        const t = gateAng + avoid + span * (i + 0.5) / k + (rnd() - 0.5) * 0.12;
-        const p0 = { x: Math.cos(t) * plazaR * 0.95, y: Math.sin(t) * plazaR * 0.95 * 0.9 }, p3 = edge(t + (rnd() - 0.5) * 0.4, 0.9);
-        const nx = -Math.sin(t), ny = Math.cos(t); const L = Math.hypot(p3.x - p0.x, p3.y - p0.y); const b = L * (0.22 + rnd() * 0.12) * (i % 2 ? -1 : 1);
-        roads.push({ pts: bezier3(p0, { x: p0.x + (p3.x - p0.x) * 0.33 + nx * b, y: p0.y + (p3.y - p0.y) * 0.33 + ny * b }, { x: p0.x + (p3.x - p0.x) * 0.66 - nx * b * 0.6, y: p0.y + (p3.y - p0.y) * 0.66 - ny * b * 0.6 }, p3, 10), w: ROAD_W, main: false });
+        const t = gateAng + avoid + span * (i + 0.5) / k + (rnd() - 0.5) * 0.25;
+        // 偶数番は広場から、奇数番は環状道から（枝道）。環状道が無い村は全部広場から
+        const fromRing = hasRing && i % 2 === 1;
+        const startR = fromRing ? ringR * (1 + 0.08 * Math.sin(3 * t + 1.3) + 0.05 * Math.sin(5 * t)) : plazaR * 0.95;
+        const p0 = { x: Math.cos(t) * startR, y: Math.sin(t) * startR * 0.9 };
+        const reach = 0.78 + rnd() * 0.16;                                   // 長さをばらつかせる
+        const p3 = edge(t + (rnd() - 0.5) * 0.7, reach);
+        const nx = -Math.sin(t), ny = Math.cos(t); const L = Math.hypot(p3.x - p0.x, p3.y - p0.y); const b = L * (0.26 + rnd() * 0.16) * (i % 2 ? -1 : 1);
+        roads.push({ pts: bezier3(p0, { x: p0.x + (p3.x - p0.x) * 0.3 + nx * b, y: p0.y + (p3.y - p0.y) * 0.3 + ny * b }, { x: p0.x + (p3.x - p0.x) * 0.7 - nx * b * 0.7, y: p0.y + (p3.y - p0.y) * 0.7 - ny * b * 0.7 }, p3, 12), w: ROAD_W, main: false });
     }
     // 家の候補：各通りの両側、広場側から外へ。大通りは門の近く（手前）だけ両側に少し
     type Cand = VillageHouse & { rank: number };
@@ -327,7 +343,7 @@ export function layoutVillage(n: number, r: number, rad: (t: number) => number, 
     });
     // 候補同士の間引き（近すぎる候補を落とす）
     const kept: Cand[] = [];
-    for (const c of cands.sort((a, b) => a.rank - b.rank)) { if (kept.every((o) => Math.hypot(o.x - c.x, (o.y - c.y) * 1.15) >= MIN_DIST * 0.95)) kept.push(c); }
+    for (const c of cands.sort((a, b) => a.rank - b.rank)) { if (kept.every((o) => Math.hypot(o.x - c.x, (o.y - c.y) * 1.15) >= MIN_DIST * 1.05)) kept.push(c); }
     // 村長の家：広場の奥（門の反対側）、広場の縁
     const la = gateAng + Math.PI;
     const ld = Math.min(plazaR + 170, rad(la) * 0.62);

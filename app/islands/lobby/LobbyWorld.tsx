@@ -75,11 +75,13 @@ const PLAZA_SIDE = 280;   // 中央広場の崖の厚み（広場は大きいの
 const BR_H = 120;     // 橋の高さ（幅は全区間で同じ）
 const DECOR_IMG: Record<string, string> = { tree_round: "/world/sm/tree_round.png", tree_pine: "/world/sm/tree_pine.png", bush: "/world/sm/bush_flowers.png", rock: "/world/sm/rock.png" };
 
-function clampTo(c: Cam, vp: Viewport, ww: number, wh: number, slack: { x: number; y: number }): Cam {
-    const sw = ww * c.s, sh = wh * c.s;
+function clampTo(c: Cam, vp: Viewport, ww: number, wh: number, slack: { x: number; y: number }): Cam { return clampBox(c, vp, { x: 0, y: 0, w: ww, h: wh }, slack); }
+/** 指定の範囲（ワールド座標の箱）から外へ出すぎないようにカメラを制限する。箱が画面より小さい倍率なら画面内で中央寄せ */
+function clampBox(c: Cam, vp: Viewport, box: Box, slack: { x: number; y: number }): Cam {
+    const sw = box.w * c.s, sh = box.h * c.s, ox = box.x * c.s, oy = box.y * c.s;
     const lo = (size: number, view: number, sl: number) => (size + sl <= view ? [0, view - size] : [view - size - sl, sl]);
     const [xmin, xmax] = lo(sw, vp.w, slack.x), [ymin, ymax] = lo(sh, vp.h, slack.y);
-    return { s: c.s, x: Math.min(xmax, Math.max(xmin, c.x)), y: Math.min(ymax, Math.max(ymin, c.y)) };
+    return { s: c.s, x: Math.min(xmax - ox, Math.max(xmin - ox, c.x)), y: Math.min(ymax - oy, Math.max(ymin - oy, c.y)) };
 }
 
 /** 地形の塗り（clip-path ＋ タイル画像）。SKILL WORLD と同じ方式（iOS Safari 対応） */
@@ -158,17 +160,27 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
         m(); const ro = new ResizeObserver(m); ro.observe(el); return () => ro.disconnect();
     }, []);
 
-    function clamp(c: Cam): Cam { return clampTo(c, vp, worldW, worldH, slack); }
+    /** カメラの可動範囲：村の中（AREA / ISLAND / その後の自由操作）は村の縁＋少し外まで。WORLD はワールド全体 */
+    function clamp(c: Cam): Cam {
+        const ak = areaRef.current; const m = modeRef.current;
+        if (ak && (m === "area" || m === "island" || m === "free")) {
+            const a = areas.find((x) => x.key === ak);
+            if (a) { const pad = a.r * 0.35; return clampBox(c, vp, { x: a.cx - a.r - pad, y: a.cy - a.r * 0.9 - pad - 160, w: a.r * 2 + pad * 2, h: a.r * 1.8 + pad * 2 + 320 }, { x: vp.w * 0.25, y: vp.h * 0.25 }); }
+        }
+        return clampTo(c, vp, worldW, worldH, slack);
+    }
     function applyDom(c: Cam) {
         if (worldRef.current) { const el = worldRef.current; el.style.transform = `translate(${c.x}px,${c.y}px) scale(${c.s})`; const iv = isMobile ? Math.min(3.2, Math.max(1, 0.45 / c.s)) : Math.min(2.6, Math.max(1, 0.55 / c.s)); el.style.setProperty("--inv", String(iv)); el.style.setProperty("--invs", String(Math.min(isMobile ? 3.4 : 3.2, Math.max(1.2, iv * 1.1)))); }
         if (farRef.current) farRef.current.style.transform = `translate(${c.x * 0.3 + (vp.w / 2 - (worldW * c.s) / 2) * 0.7}px,${c.y * 0.3 + (vp.h / 2 - (worldH * c.s) / 2) * 0.7}px) scale(${c.s})`;
     }
-    function setCamNow(c: Cam) { const k = clamp(c); camRef.current = k; applyDom(k); setCam(k); }
+    function setCamNow(c: Cam) { navSeq.current++; const k = clamp(c); camRef.current = k; applyDom(k); setCam(k); }
     function stopTween() { tweenCancel.current?.(); tweenCancel.current = null; tweenTarget.current = null; }
     /** from→to を ms かけて ease-in-out で補間。毎フレーム DOM に書き、React の状態は 90ms ごと＋最後に更新 */
     const [moving, setMoving] = useState(false);   // トゥイーン中（ビネットなど画面座標依存の演出を止める）
     function setAnimating(on: boolean) { setMoving(on); const el = worldRef.current; if (!el) return; el.classList.toggle("lb-anim", on); el.style.willChange = on ? "transform" : ""; }
+    const navSeq = useRef(0);   // 新しい目的地が設定されるたびに増える（割り込み再開の判定用）
     function animateTo(c: Cam, ms = 600, onDone?: () => void) {
+        navSeq.current++;
         stopTween(); const to = clamp(c), from = camRef.current;
         if (ms <= 0 || !vp.w || reduceMotion) { setCamNow(to); onDone?.(); return; }
         setAnimating(true);
@@ -198,13 +210,20 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
         const s = Math.max(ov.s, Math.min(SCALE.world, maxS));
         return centerCam({ x: plaza.cx, y: plaza.cy + (isMobile ? 260 : 140) }, s, vp, ins);
     }
-    /** AREA：村の広場をやや上に置き、手前の家並みが見える位置。倍率は固定、ただし小さな村は村全体が収まる倍率まで */
+    /** AREA：中央広場を画面の中心に置き、「広場＋主要な住宅街（中心から半径の 72% 以内の家）」が収まる倍率。
+     *  島全体を小さく収めず、上下が大きく見切れない範囲で寄る（PC 0.30〜0.50、スマホ 0.26〜0.42） */
     function areaCam(key: string): Cam {
         const a = areas.find((x) => x.key === key); if (!a) return worldCam();
-        const fit = fitBox(a.box, vp, ins, 0.95, minS, maxS);   // 村全体が収まる倍率
-        const s = Math.min(maxS, Math.max(SCALE.area, fit.s * 0.9));   // 小さい村でも寄りすぎない：全体が収まる倍率×0.9 と SCALE.area の大きい方
-        const c = { x: a.village.cx, y: a.village.cy + a.r * (isMobile ? 0.12 : 0.02) };
-        return centerCam(c, s, vp, ins);
+        const v = a.village;
+        const core = slots.filter((sl) => sl.areaKey === key && Math.hypot(sl.x - v.cx, (sl.y - v.cy) / 0.9) < a.r * 0.72);
+        let x0 = v.cx - v.r - 80, y0 = v.cy - v.r * 0.9 - 80, x1 = v.cx + v.r + 80, y1 = v.cy + v.r * 0.9 + 80;
+        for (const sl of core) { x0 = Math.min(x0, sl.x - 170); x1 = Math.max(x1, sl.x + 170); y0 = Math.min(y0, sl.y - 250); y1 = Math.max(y1, sl.y + 70); }
+        // 広場を中心に置くので、広場からの最大距離×2 を箱の大きさとする（左右・上下で非対称でも中心がずれない）
+        const hw = Math.max(v.cx - x0, x1 - v.cx), hh = Math.max(v.cy - y0, y1 - v.cy);
+        const fit = fitBox({ x: v.cx - hw, y: v.cy - hh, w: hw * 2, h: hh * 2 }, vp, ins, 0.94, minS, maxS);
+        const lim = isMobile ? [0.26, 0.42] : [0.3, 0.5];
+        const s = Math.min(lim[1], Math.max(lim[0], fit.s));
+        return centerCam({ x: v.cx, y: v.cy + (isMobile ? 30 : 0) }, s, vp, ins);
     }
     function islandCam(userId: string): Cam {
         const sl = slots.find((x) => x.userId === userId); if (!sl) return worldCam();
@@ -283,7 +302,8 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     function onPointerUp() {
         // 移動中に触れただけ（ドラッグしていない）なら、止めたトゥイーンを残り時間で再開する（途中で止まったままにしない）
         const it = interrupted.current; interrupted.current = null;
-        if (it && !drag.current?.moved) { const left = Math.max(220, it.ms - (performance.now() - it.t0)); setTimeout(() => { if (!tweenTarget.current && !drag.current?.moved) animateTo(it.cam, left); }, 0); }
+        // タップで別の目的地（家・村・看板）が設定された場合は再開しない：少し待ってから、その間に navSeq が進んでいなければ再開する
+        if (it && !drag.current?.moved) { const seq = navSeq.current, left = Math.max(220, it.ms - (performance.now() - it.t0)); setTimeout(() => { if (navSeq.current === seq && !tweenTarget.current && !drag.current?.moved) animateTo(it.cam, left); }, 120); }
         setTimeout(() => { drag.current = null; }, 0);
     }
     function onWheel(e: React.WheelEvent) { const ns = Math.min(maxS, Math.max(minS, camRef.current.s * (e.deltaY > 0 ? 0.9 : 1.1))); const r = wrapRef.current!.getBoundingClientRect(); zoomAt(ns, e.clientX - r.left, e.clientY - r.top); }
@@ -324,7 +344,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     const plazaL = useMemo(() => { const pts: Pt[] = []; for (let i = 0; i < 18; i++) { const t = (i / 18) * Math.PI * 2; pts.push({ x: plaza.cx + Math.cos(t) * plaza.r * 0.96, y: plaza.cy + Math.sin(t) * plaza.r * 0.9 }); } return locOf(pts, PLAZA_SIDE + 60); }, [plaza]);
 
     return (
-        <div ref={wrapRef} onClick={onWrapClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        <div ref={wrapRef} onScroll={(e) => { const el = e.currentTarget; if (el.scrollLeft || el.scrollTop) el.scrollTo(0, 0); }} onClick={onWrapClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
             style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: drag.current ? "grabbing" : "grab", touchAction: "none", background: sky, userSelect: "none", fontFamily: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif' }}>
             <style>{`.lb-anim img, .lb-anim [data-fx] { filter: none !important; } .lb-anim * { animation-play-state: paused !important; } @keyframes lbCloud { 0%{transform:translateX(-200px)} 100%{transform:translateX(110vw)} } @keyframes lbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} } @keyframes lbFlag { 0%{transform:rotate(-4deg)} 100%{transform:rotate(4deg)} } @keyframes lbWater { 0%{background-position:0 0} 100%{background-position:0 140px} } @keyframes lbGlow { 0%{opacity:.6} 100%{opacity:1} } @keyframes lbFadeIn { from{opacity:0} to{opacity:1} } @keyframes lbRing { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} } @keyframes lbSpark { 0%{transform:translateY(0) scale(.6);opacity:.4} 100%{transform:translateY(-26px) scale(1.1);opacity:1} }`}</style>
             {lobbyImg.sky && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(235,245,255,.55), rgba(255,255,255,.42) 60%, rgba(255,255,255,.5))", pointerEvents: "none" }} />}
