@@ -7,7 +7,7 @@ const HOUSE_W: number[] = [104, 112, 120, 128, 134, 130];
 
 export type PetState = { say: string; hop: boolean; onTap: () => void };
 
-export default function DayIslandScene({ config, totalEarned, onHouseClick, pet, width = "min(88vw, 420px)", flat = false }: {
+export default function DayIslandScene({ config, totalEarned, onHouseClick, pet, width = "min(88vw, 420px)", flat = false, houseSm = false }: {
     config: IslandConfig;
     totalEarned: number;
     onHouseClick?: () => void;
@@ -17,6 +17,8 @@ export default function DayIslandScene({ config, totalEarned, onHouseClick, pet,
     width?: string | number;
     /** ロビー AREA 用：島の台座（影・側面・上面）を描かず、家と飾りを地面に直接置く */
     flat?: boolean;
+    /** 家画像の 512px 版（/island/house/sm/）を使う */
+    houseSm?: boolean;
 }) {
     const view = config;
     const stage = getHouseStage(totalEarned);
@@ -79,7 +81,7 @@ export default function DayIslandScene({ config, totalEarned, onHouseClick, pet,
                 {/* 家（中央より少し奥＝上面の上寄り） */}
                 <div onClick={onHouseClick} style={{ position: "relative", zIndex: 4, marginBottom: 62, cursor: onHouseClick ? "pointer" : "default" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={HOUSE_IMG[stage.idx]} alt="house" style={{ width: HOUSE_W[stage.idx], display: "block", filter: "drop-shadow(0 6px 9px rgba(60,50,30,.26))" }} />
+                    <img src={houseSm ? HOUSE_IMG[stage.idx].replace("/island/house/", "/island/house/sm/") : HOUSE_IMG[stage.idx]} alt="house" style={{ width: HOUSE_W[stage.idx], display: "block", filter: "drop-shadow(0 6px 9px rgba(60,50,30,.26))" }} />
                 </div>
                 {/* 小道（家の扉下→手前、遠近台形） */}
                 <div style={{ position: "absolute", bottom: 48, left: "50%", transform: "translateX(-50%)", width: 58, height: 42, clipPath: "polygon(38% 0, 62% 0, 92% 100%, 8% 100%)", background: "linear-gradient(180deg, #e6d3a8, #d4bc8a)", opacity: .92, zIndex: 3 }} />
