@@ -46,21 +46,21 @@ export default function VillageHouse({ i, isLeader, focus, dim, houseSm, lite, f
             {/* STAGE5 以上：生垣（左右） */}
             {k >= 4 && [-1, 1].map((sd) => <div key={sd} style={{ position: "absolute", left: `calc(50% + ${sd * lot.w * 0.43}px - 16px)`, bottom: 22, width: 32, height: 22, borderRadius: 12, background: "linear-gradient(180deg,#86d36a,#4e9f48)", boxShadow: "0 2px 3px rgba(0,0,0,.25)" }} />)}
             {/* STAGE6：旗 */}
-            {k === 5 && <img src="/world/sm/lobby_flag_pole.png" alt="" style={{ position: "absolute", left: "50%", bottom: 40, transform: "translateX(70px)", width: 44, filter: sh }} />}
+            {k === 5 && <img decoding="async" src="/world/sm/lobby_flag_pole.png" alt="" style={{ position: "absolute", left: "50%", bottom: 40, transform: "translateX(70px)", width: 44, filter: sh }} />}
             {/* 家の足元影 */}
             <div style={{ position: "absolute", left: "50%", bottom: 30, transform: "translateX(-50%)", width: hw * .8, height: 16, borderRadius: "50%", background: "rgba(50,70,35,.32)", filter: lite ? undefined : "blur(5px)" }} />
             {/* 木（左奥） */}
-            {tree && <img src={tree} alt="" style={{ position: "absolute", left: 28, bottom: 52, width: 92, filter: sh }} />}
+            {tree && <img decoding="async" src={tree} alt="" style={{ position: "absolute", left: 28, bottom: 52, width: 92, filter: sh }} />}
             {/* 家 */}
-            <img src={sm(HOUSE_IMG[k], houseSm)} alt="" style={{ position: "absolute", left: "50%", bottom: 36, transform: `translateX(-50%)${flip ? " scaleX(-1)" : ""}`, width: hw, pointerEvents: "auto", cursor: "pointer", filter: focus ? "drop-shadow(0 0 14px rgba(255,220,100,.9)) drop-shadow(0 8px 10px rgba(50,40,20,.3))" : sh }} />
+            <img decoding="async" src={sm(HOUSE_IMG[k], houseSm)} alt="" style={{ position: "absolute", left: "50%", bottom: 36, transform: `translateX(-50%)${flip ? " scaleX(-1)" : ""}`, width: hw, pointerEvents: "auto", cursor: "pointer", filter: focus ? "drop-shadow(0 0 14px rgba(255,220,100,.9)) drop-shadow(0 8px 10px rgba(50,40,20,.3))" : sh }} />
             {/* 小道（玄関→通り側） */}
             <div style={{ position: "absolute", left: "50%", bottom: 10, transform: "translateX(-50%)", width: 54, height: 34, clipPath: "polygon(36% 0, 64% 0, 92% 100%, 8% 100%)", background: "linear-gradient(180deg,#e6d3a8,#d4bc8a)", opacity: .95 }} />
             {/* デコ（右手前） */}
-            {deco && <img src={deco} alt="" style={{ position: "absolute", right: 34, bottom: 22, width: 58, filter: sh }} />}
+            {deco && <img decoding="async" src={deco} alt="" style={{ position: "absolute", right: 34, bottom: 22, width: 58, filter: sh }} />}
             {/* どうぶつ */}
-            {animal && <img src={animal} alt="" style={{ position: "absolute", left: "50%", bottom: 18, transform: "translateX(40px)", width: 38, filter: sh }} />}
+            {animal && <img decoding="async" src={animal} alt="" style={{ position: "absolute", left: "50%", bottom: 18, transform: "translateX(40px)", width: 38, filter: sh }} />}
             {/* アバター（玄関前） */}
-            <img src={sm(avatarSrc(i.avatarId), houseSm)} alt="" style={{ position: "absolute", left: "50%", bottom: 26, transform: "translateX(-96px)", width: 50, height: 50, objectFit: "cover", borderRadius: "50%", border: `3px solid ${isLeader ? "#fbbf24" : "#fff"}`, boxShadow: "0 3px 6px rgba(0,0,0,.35)" }} />
+            <img decoding="async" src={sm(avatarSrc(i.avatarId), houseSm)} alt="" style={{ position: "absolute", left: "50%", bottom: 26, transform: "translateX(-96px)", width: 50, height: 50, objectFit: "cover", borderRadius: "50%", border: `3px solid ${isLeader ? "#fbbf24" : "#fff"}`, boxShadow: "0 3px 6px rgba(0,0,0,.35)" }} />
             {/* 成長段階ピップ（6 段階） */}
             <div style={{ position: "absolute", left: "50%", bottom: 0, transform: "translateX(-50%)", display: "flex", gap: 3 }}>
                 {[0, 1, 2, 3, 4, 5].map((j) => <div key={j} style={{ width: 9, height: 5, borderRadius: 3, background: j <= k ? (k === 5 ? "#f59e0b" : "#22c55e") : "rgba(255,255,255,.55)", boxShadow: "0 1px 2px rgba(0,0,0,.3)" }} />)}

@@ -10,7 +10,18 @@ import { getHouseStage, HOUSE_IMG, avatarSrc } from "../../lib/island";
 import { TOWN_ANCHOR, type LobbyLayout, type LobbyIsland, type LobbySlot, type LobbyArea, type Pt } from "./lobby-layout";
 
 export type LobbyMode = "free" | "world" | "area" | "island";
-export type LobbyCamCmd = { key: number; mode: "world" | "area" | "island"; area?: string; userId?: string };
+export type LobbyCamCmd = { key: number; mode: "world" | "area" | "island" | "back"; area?: string; userId?: string };
+/** カメラの履歴（戻る操作で直前の位置・倍率へ復帰する） */
+type CamHist = { cam: Cam; mode: LobbyMode; area: string | null; focus: string | null };
+const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+/** 画面中央に見えるワールド座標と倍率を補間してカメラを組み立てる（ズームしながらの移動で中心が流れない） */
+function lerpCam(from: Cam, to: Cam, e: number, vp: Viewport): Cam {
+    const cx = vp.w / 2, cy = vp.h / 2;
+    const f = { x: (cx - from.x) / from.s, y: (cy - from.y) / from.s }, t = { x: (cx - to.x) / to.s, y: (cy - to.y) / to.s };
+    const s = from.s * Math.pow(to.s / from.s, e);
+    const wx = f.x + (t.x - f.x) * e, wy = f.y + (t.y - f.y) * e;
+    return { s, x: cx - wx * s, y: cy - wy * s };
+}
 
 const ISLAND_W = 420;        // DayIslandScene の描画幅（固定）
 const ISLAND_SCALE = 0.62;   // ロビー内での縮小率
@@ -119,6 +130,11 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     const [cam, setCam] = useState<Cam>({ x: 0, y: 0, s: 0.2 });
     const camRef = useRef<Cam>(cam);
     const tweenCancel = useRef<(() => void) | null>(null);
+    const tweenTarget = useRef<{ cam: Cam; ms: number; t0: number } | null>(null);   // 進行中のトゥイーンの目的地（割り込み後の再開・リサイズ時の再ターゲット用）
+    const worldRef = useRef<HTMLDivElement>(null);     // トゥイーン中は DOM に直接 transform を書く（毎フレームの再レンダーを避ける）
+    const farRef = useRef<HTMLDivElement>(null);
+    const histRef = useRef<CamHist[]>([]);             // 戻る用の履歴
+    const leavingArea = useRef<string | null>(null);   // WORLD へ戻るトゥイーン中も村を描き続けるためのエリア
     const modeRef = useRef<LobbyMode>("free");
     const areaRef = useRef<string | null>(null);
     const focusRef = useRef<string | null>(null);
@@ -143,67 +159,133 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     }, []);
 
     function clamp(c: Cam): Cam { return clampTo(c, vp, worldW, worldH, slack); }
-    function setCamNow(c: Cam) { const k = clamp(c); camRef.current = k; setCam(k); }
-    function stopTween() { tweenCancel.current?.(); tweenCancel.current = null; }
-    function animateTo(c: Cam, ms = 600) {
+    function applyDom(c: Cam) {
+        if (worldRef.current) { const el = worldRef.current; el.style.transform = `translate(${c.x}px,${c.y}px) scale(${c.s})`; const iv = isMobile ? Math.min(3.2, Math.max(1, 0.45 / c.s)) : Math.min(2.6, Math.max(1, 0.55 / c.s)); el.style.setProperty("--inv", String(iv)); el.style.setProperty("--invs", String(Math.min(isMobile ? 3.4 : 3.2, Math.max(1.2, iv * 1.1)))); }
+        if (farRef.current) farRef.current.style.transform = `translate(${c.x * 0.3 + (vp.w / 2 - (worldW * c.s) / 2) * 0.7}px,${c.y * 0.3 + (vp.h / 2 - (worldH * c.s) / 2) * 0.7}px) scale(${c.s})`;
+    }
+    function setCamNow(c: Cam) { const k = clamp(c); camRef.current = k; applyDom(k); setCam(k); }
+    function stopTween() { tweenCancel.current?.(); tweenCancel.current = null; tweenTarget.current = null; }
+    /** from→to を ms かけて ease-in-out で補間。毎フレーム DOM に書き、React の状態は 90ms ごと＋最後に更新 */
+    const [moving, setMoving] = useState(false);   // トゥイーン中（ビネットなど画面座標依存の演出を止める）
+    function setAnimating(on: boolean) { setMoving(on); const el = worldRef.current; if (!el) return; el.classList.toggle("lb-anim", on); el.style.willChange = on ? "transform" : ""; }
+    function animateTo(c: Cam, ms = 600, onDone?: () => void) {
         stopTween(); const to = clamp(c), from = camRef.current;
-        if (ms <= 0 || !vp.w || reduceMotion) { setCamNow(to); return; }
-        tweenCancel.current = tweenCam(from, to, ms, (k) => { camRef.current = k; setCam(k); }, () => { tweenCancel.current = null; });
+        if (ms <= 0 || !vp.w || reduceMotion) { setCamNow(to); onDone?.(); return; }
+        setAnimating(true);
+        const t0 = performance.now(); let raf = 0;
+        tweenTarget.current = { cam: to, ms, t0 };
+        const step = (now: number) => {
+            const t = Math.min(1, (now - t0) / ms); const k = lerpCam(from, to, easeInOutCubic(t), vp);
+            camRef.current = k; applyDom(k);
+            if (t >= 1) { tweenCancel.current = null; tweenTarget.current = null; setAnimating(false); setCam(k); onDone?.(); return; }
+            raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+        tweenCancel.current = () => { cancelAnimationFrame(raf); setAnimating(false); };
     }
     function setMode(m: LobbyMode, area: string | null, focus: string | null) { modeRef.current = m; areaRef.current = area; focusRef.current = focus; setModeState(m); onCamMode?.(m, area); }
-    function worldCam(): Cam { return fitBox(layout.contentBox, vp, ins, isMobile ? 0.96 : 0.97, minS, maxS); }
+    // ---- 画角の設計（各画面の倍率差を小さく、近めの視点で探索する）
+    //  WORLD  ：全島を一画面に収めず、中央の闘技場と手前の街が大きく見える距離。周囲はドラッグで探索（全体は「俯瞰」で）
+    //  AREA   ：村全体を小さく収めるのではなく、家・道・木の立体感が伝わる倍率（家 1 軒 ≒ PC 130px / スマホ 110px）
+    //  ISLAND ：家だけを拡大せず、敷地・小道・お隣まで入る倍率。カードを除いた領域の中央に家
+    //  倍率の目安（PC）：WORLD 0.27 → AREA 0.45 → ISLAND 0.72（各段 1.6〜1.7 倍）
+    const SCALE = isMobile ? { world: 0.16, area: 0.38, island: 0.62 } : { world: 0.22, area: 0.45, island: 0.72 };
+    /** 全体俯瞰（全島が収まる） */
+    function overviewCam(): Cam { return fitBox(layout.contentBox, vp, ins, isMobile ? 0.96 : 0.97, minS, maxS); }
+    /** WORLD：闘技場を中心に、少し上（奥の街）が見える位置。倍率は固定（画面が狭ければ全体俯瞰まで引く） */
+    function worldCam(): Cam {
+        const ov = overviewCam();
+        const s = Math.max(ov.s, Math.min(SCALE.world, maxS));
+        return centerCam({ x: plaza.cx, y: plaza.cy + (isMobile ? 260 : 140) }, s, vp, ins);
+    }
+    /** AREA：村の広場をやや上に置き、手前の家並みが見える位置。倍率は固定、ただし小さな村は村全体が収まる倍率まで */
     function areaCam(key: string): Cam {
         const a = areas.find((x) => x.key === key); if (!a) return worldCam();
-        if (!isMobile) return fitBox(a.box, vp, ins, 0.92, minS, maxS);
-        // スマホ：島スロットの範囲を主役に（高さ基準）、中心はエリア中心
-        const uh = Math.max(80, vp.h - ins.top - ins.bottom), uw = Math.max(80, vp.w);
-        const s = Math.min(0.9, Math.max(0.28, Math.min((uh * 0.92) / a.focus.h, (uw * 0.96) / a.focus.w)));
-        return centerCam({ x: a.focus.x + a.focus.w / 2, y: a.focus.y + a.focus.h / 2 }, s, vp, ins);
+        const fit = fitBox(a.box, vp, ins, 0.95, minS, maxS);   // 村全体が収まる倍率
+        const s = Math.min(maxS, Math.max(SCALE.area, fit.s * 0.9));   // 小さい村でも寄りすぎない：全体が収まる倍率×0.9 と SCALE.area の大きい方
+        const c = { x: a.village.cx, y: a.village.cy + a.r * (isMobile ? 0.12 : 0.02) };
+        return centerCam(c, s, vp, ins);
     }
     function islandCam(userId: string): Cam {
         const sl = slots.find((x) => x.userId === userId); if (!sl) return worldCam();
-        // 中心は島の座標から（家の足元 y から少し上）。ISLAND 中はカード分を bottom に足して呼ばれる
-        return centerCam({ x: sl.x, y: sl.y - 120 }, isMobile ? 1.2 : 1.3, vp, ins);
+        // 家の足元（sl.y）から少し上を、カードを除いた領域の中央に。倍率は AREA の 1.6 倍程度
+        return centerCam({ x: sl.x, y: sl.y - 70 }, SCALE.island, vp, ins);
     }
-    function goWorld() { setMode("world", null, null); animateTo(worldCam(), 650); }
-    function goArea(key: string) { setMode("area", key, null); animateTo(areaCam(key), 650); }
-    function goIsland(userId: string) { const sl = slots.find((x) => x.userId === userId); setMode("island", sl?.areaKey ?? null, userId); animateTo(islandCam(userId), 650); }
+    function snapshot(): CamHist { return { cam: camRef.current, mode: modeRef.current, area: areaRef.current, focus: focusRef.current }; }
+    function goWorld(overview = false) {
+        histRef.current = [];
+        // WORLD へ引くあいだも村を描き続け、終わってから街画像に切り替える（寄った状態で急に街画像にならないように）
+        leavingArea.current = areaRef.current;
+        const wasWorld = modeRef.current === "world" || modeRef.current === "free";
+        setMode("world", null, null);
+        animateTo(overview ? overviewCam() : worldCam(), wasWorld ? 650 : 800, () => { leavingArea.current = null; setCam((c) => ({ ...c })); });
+    }
+    function goArea(key: string) {
+        const m = modeRef.current;
+        if (m === "world" || m === "free") histRef.current = [snapshot()];           // WORLD から：戻り先は今の WORLD カメラ
+        else if (m === "island") histRef.current = histRef.current.slice(0, 1);        // 家から村へ：履歴を WORLD だけに
+        // 村→別の村：履歴はそのまま（戻ると WORLD）
+        leavingArea.current = null;
+        setMode("area", key, null);
+        animateTo(areaCam(key), m === "world" || m === "free" ? 850 : 750);
+    }
+    function goIsland(userId: string) {
+        const sl = slots.find((x) => x.userId === userId); const m = modeRef.current;
+        if (m === "world") histRef.current = [snapshot()];
+        if (m === "area" || (m === "free" && areaRef.current === sl?.areaKey)) histRef.current = [...histRef.current.slice(0, 1), snapshot()];   // 戻り先＝今の村カメラ（ユーザーが動かした位置も含む）
+        leavingArea.current = null;
+        setMode("island", sl?.areaKey ?? null, userId);
+        animateTo(islandCam(userId), m === "island" ? 550 : m === "area" || m === "free" ? 600 : 950);
+    }
+    /** 戻る：直前のカメラへ。履歴が無ければ村→WORLD の順に戻る */
+    function goBack() {
+        const h = histRef.current.pop();
+        if (h) { if (h.mode === "world") { leavingArea.current = areaRef.current; setMode("world", null, null); animateTo(h.cam, 700, () => { leavingArea.current = null; setCam((c) => ({ ...c })); }); } else { setMode(h.mode === "free" ? "area" : h.mode, h.area, h.focus); animateTo(h.cam, 650); } return; }
+        if (modeRef.current === "island" && areaRef.current) { const k = areaRef.current; setMode("area", k, null); animateTo(areaCam(k), 650); return; }
+        goWorld();
+    }
 
-    // 初期カメラ：計測後に1回。以降のリサイズ（iOS アドレスバー等）はモードを維持して再フィット
+    // 初期カメラ：計測後に1回。以降の「画面サイズ」の変化（iOS アドレスバー等）はモードを維持して再フィット。
+    // HUD の高さ（カードの出入り）は依存に入れない：目的地は go* の時点で計算済みなので、ここで snap させると移動中に跳ぶ
     useEffect(() => {
         if (!vp.w || !vp.h) return;
         if (initDone.current) {
-            if (modeRef.current === "area" && areaRef.current) setCamNow(areaCam(areaRef.current));
-            else if (modeRef.current === "island" && focusRef.current) setCamNow(islandCam(focusRef.current));
-            else if (modeRef.current === "world") setCamNow(worldCam());
-            else setCamNow(camRef.current);
+            const target = modeRef.current === "area" && areaRef.current ? areaCam(areaRef.current) : modeRef.current === "island" && focusRef.current ? islandCam(focusRef.current) : modeRef.current === "world" ? worldCam() : null;
+            if (!target) { setCamNow(camRef.current); return; }
+            if (tweenTarget.current) animateTo(target, Math.max(200, tweenTarget.current.ms - (performance.now() - tweenTarget.current.t0))); else setCamNow(target);
             return;
         }
         initDone.current = true;
         if (camCmd?.mode === "island" && camCmd.userId) { setMode("island", null, camCmd.userId); setCamNow(islandCam(camCmd.userId)); }
         else if (camCmd?.mode === "area" && camCmd.area) { setMode("area", camCmd.area, null); setCamNow(areaCam(camCmd.area)); }
         else {
-            // 入場演出：闘技場に寄った状態から引いて、ワールド全体を見せる（reduceMotion なら即時）
+            // 入場演出：闘技場に寄った状態から引いて、ワールド全体を見せる（reduceMotion／スマホは即時）
             setMode("world", null, null);
             const w = worldCam();
             if (reduceMotion || lite) setCamNow(w);
-            else { const start = clamp(centerCam({ x: plaza.cx, y: plaza.cy - 100 }, Math.min(maxS, w.s * 2.1), vp, ins)); setCamNow(start); setTimeout(() => animateTo(w, 1400), 250); }
+            else { const start = clamp(centerCam({ x: plaza.cx, y: plaza.cy - 40 }, Math.max(minS, w.s * 0.72), vp, ins)); setCamNow(start); setTimeout(() => { if (modeRef.current === "world" && !tweenTarget.current) animateTo(w, 1200); }, 200); }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [vp.w, vp.h, ins.top, ins.bottom]);
+    }, [vp.w, vp.h]);
     // カメラ指示
     useEffect(() => {
         if (!camCmd || !initDone.current) return;
-        if (camCmd.mode === "world") goWorld(); else if (camCmd.mode === "area" && camCmd.area) goArea(camCmd.area); else if (camCmd.mode === "island" && camCmd.userId) goIsland(camCmd.userId);
+        if (camCmd.mode === "world") goWorld(camCmd.area === "overview"); else if (camCmd.mode === "area" && camCmd.area) goArea(camCmd.area); else if (camCmd.mode === "island" && camCmd.userId) goIsland(camCmd.userId); else if (camCmd.mode === "back") goBack();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [camCmd?.key]);
 
     // ---- 入力（ドラッグ／ホイール／ピンチ）
-    function userTakesOver() { if (tweenCancel.current) stopTween(); if (modeRef.current !== "free") setMode("free", areaRef.current, focusRef.current); }
+    function userTakesOver() { interrupted.current = null; if (tweenCancel.current) stopTween(); if (modeRef.current !== "free") setMode("free", areaRef.current, focusRef.current); }
     function zoomAt(ns: number, mx: number, my: number) { userTakesOver(); const c = camRef.current; const wx = (mx - c.x) / c.s, wy = (my - c.y) / c.s; setCamNow({ s: ns, x: mx - wx * ns, y: my - wy * ns }); }
-    function onPointerDown(e: React.PointerEvent) { if (pinch.current) return; stopTween(); drag.current = { x: e.clientX, y: e.clientY, cx: camRef.current.x, cy: camRef.current.y, moved: false }; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); }
+    const interrupted = useRef<{ cam: Cam; ms: number; t0: number } | null>(null);
+    function onPointerDown(e: React.PointerEvent) { if (pinch.current) return; interrupted.current = tweenTarget.current; stopTween(); drag.current = { x: e.clientX, y: e.clientY, cx: camRef.current.x, cy: camRef.current.y, moved: false }; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); }
     function onPointerMove(e: React.PointerEvent) { if (!drag.current) return; const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y; if (Math.abs(dx) + Math.abs(dy) > 4) { if (!drag.current.moved) userTakesOver(); drag.current.moved = true; } setCamNow({ s: camRef.current.s, x: drag.current.cx + dx, y: drag.current.cy + dy }); }
-    function onPointerUp() { setTimeout(() => { drag.current = null; }, 0); }
+    function onPointerUp() {
+        // 移動中に触れただけ（ドラッグしていない）なら、止めたトゥイーンを残り時間で再開する（途中で止まったままにしない）
+        const it = interrupted.current; interrupted.current = null;
+        if (it && !drag.current?.moved) { const left = Math.max(220, it.ms - (performance.now() - it.t0)); setTimeout(() => { if (!tweenTarget.current && !drag.current?.moved) animateTo(it.cam, left); }, 0); }
+        setTimeout(() => { drag.current = null; }, 0);
+    }
     function onWheel(e: React.WheelEvent) { const ns = Math.min(maxS, Math.max(minS, camRef.current.s * (e.deltaY > 0 ? 0.9 : 1.1))); const r = wrapRef.current!.getBoundingClientRect(); zoomAt(ns, e.clientX - r.left, e.clientY - r.top); }
     function onTouchStart(e: React.TouchEvent) { if (e.touches.length === 2) { pinch.current = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), s: camRef.current.s }; drag.current = null; stopTween(); } }
     function onTouchMove(e: React.TouchEvent) { if (e.touches.length === 2 && pinch.current) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); const ns = Math.min(maxS, Math.max(minS, pinch.current.s * (d / pinch.current.d))); const r = wrapRef.current!.getBoundingClientRect(); zoomAt(ns, (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left, (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top); } }
@@ -226,9 +308,11 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     const detailFor = (sl: LobbySlot) => detailAll || inCurArea(sl) || (mode === "island" && sl.userId === focusRef.current);
     const showDecor = !isMobile || cam.s > 0.3;
     // WORLD：街並み画像があるエリアは、個々の家の代わりに街1枚で表示（AREA/ISLAND で見ているエリアと、寄っているときは家を出す）
-    const areaActive = (key: string) => key === areaRef.current && (mode === "area" || mode === "island" || mode === "free");
+    const areaActive = (key: string) => (key === areaRef.current && (mode === "area" || mode === "island" || mode === "free")) || key === leavingArea.current;
     const townFor = (a: LobbyArea, ai: number) => { const th = themeOf(ai); return !!TOWN_IMG[th.key] && !!lobbyImg["town:" + th.key] && !areaActive(a.key) && cam.s < 0.5; };
-    const inv = isMobile ? Math.min(3.2, Math.max(1, 0.45 / cam.s)) : Math.min(2.6, Math.max(1, 0.55 / cam.s));
+    // 倍率に反比例するラベルの拡大率。トゥイーン中は React を再レンダーせず CSS 変数（--inv / --invs）だけ更新する
+    const invOf = (sc: number) => (isMobile ? Math.min(3.2, Math.max(1, 0.45 / sc)) : Math.min(2.6, Math.max(1, 0.55 / sc)));
+    const inv = invOf(cam.s);
     const sky = lobbyImg.sky ? `url(${smPath(LOBBY_IMG.sky, isMobile)}) center / cover no-repeat, linear-gradient(180deg, #9fd3ff 0%, #c9e9ff 45%, #e6f5ff 100%)` : "linear-gradient(180deg, #9fd3ff 0%, #c9e9ff 45%, #e6f5ff 100%)";
     const slotById = useMemo(() => new Map(slots.map((s) => [s.userId, s])), [slots]);
     const plazaD = useMemo(() => { const pts: Pt[] = []; for (let i = 0; i < 18; i++) { const t = (i / 18) * Math.PI * 2; pts.push({ x: plaza.cx + Math.cos(t) * plaza.r * 0.96, y: plaza.cy + Math.sin(t) * plaza.r * 0.9 }); } return blobPath(pts); }, [plaza]);
@@ -242,11 +326,11 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     return (
         <div ref={wrapRef} onClick={onWrapClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
             style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: drag.current ? "grabbing" : "grab", touchAction: "none", background: sky, userSelect: "none", fontFamily: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif' }}>
-            <style>{`@keyframes lbCloud { 0%{transform:translateX(-200px)} 100%{transform:translateX(110vw)} } @keyframes lbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} } @keyframes lbFlag { 0%{transform:rotate(-4deg)} 100%{transform:rotate(4deg)} } @keyframes lbWater { 0%{background-position:0 0} 100%{background-position:0 140px} } @keyframes lbGlow { 0%{opacity:.6} 100%{opacity:1} } @keyframes lbRing { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} } @keyframes lbSpark { 0%{transform:translateY(0) scale(.6);opacity:.4} 100%{transform:translateY(-26px) scale(1.1);opacity:1} }`}</style>
+            <style>{`.lb-anim img, .lb-anim [data-fx] { filter: none !important; } .lb-anim * { animation-play-state: paused !important; } @keyframes lbCloud { 0%{transform:translateX(-200px)} 100%{transform:translateX(110vw)} } @keyframes lbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} } @keyframes lbFlag { 0%{transform:rotate(-4deg)} 100%{transform:rotate(4deg)} } @keyframes lbWater { 0%{background-position:0 0} 100%{background-position:0 140px} } @keyframes lbGlow { 0%{opacity:.6} 100%{opacity:1} } @keyframes lbFadeIn { from{opacity:0} to{opacity:1} } @keyframes lbRing { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} } @keyframes lbSpark { 0%{transform:translateY(0) scale(.6);opacity:.4} 100%{transform:translateY(-26px) scale(1.1);opacity:1} }`}</style>
             {lobbyImg.sky && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(235,245,255,.55), rgba(255,255,255,.42) 60%, rgba(255,255,255,.5))", pointerEvents: "none" }} />}
             {/* 遠景の雲（画面固定）＋ 遠景の浮き島（カメラ 0.3 倍追従・倍率連動） */}
-            {[0, 1, 2].map((i) => (<div key={i} style={{ position: "absolute", top: `${8 + i * 30}%`, left: 0, width: 190, height: 50, background: "rgba(255,255,255,.85)", borderRadius: 999, filter: lite ? undefined : "blur(2px)", animation: `lbCloud ${100 + i * 35}s linear infinite`, animationDelay: `${-i * 40}s`, pointerEvents: "none", boxShadow: "50px -20px 0 -4px rgba(255,255,255,.8), 100px 0 0 -2px rgba(255,255,255,.85)", opacity: 0.6 }} />))}
-            {!lite && <div style={{ position: "absolute", left: 0, top: 0, width: worldW, height: worldH, transform: `translate(${cam.x * 0.3 + (vp.w / 2 - (worldW * cam.s) / 2) * 0.7}px,${cam.y * 0.3 + (vp.h / 2 - (worldH * cam.s) / 2) * 0.7}px) scale(${cam.s})`, transformOrigin: "0 0", pointerEvents: "none" }}>
+            {[0, 1, 2].map((i) => (<div key={i} style={{ position: "absolute", top: `${8 + i * 30}%`, left: 0, width: 190, height: 50, background: "rgba(255,255,255,.85)", borderRadius: 999, filter: lite ? undefined : "blur(2px)", animation: `lbCloud ${180 + i * 50}s linear infinite`, animationDelay: `${-i * 40}s`, pointerEvents: "none", boxShadow: "50px -20px 0 -4px rgba(255,255,255,.8), 100px 0 0 -2px rgba(255,255,255,.85)", opacity: 0.6 }} />))}
+            {!lite && <div ref={farRef} style={{ position: "absolute", left: 0, top: 0, width: worldW, height: worldH, transform: `translate(${cam.x * 0.3 + (vp.w / 2 - (worldW * cam.s) / 2) * 0.7}px,${cam.y * 0.3 + (vp.h / 2 - (worldH * cam.s) / 2) * 0.7}px) scale(${cam.s})`, transformOrigin: "0 0", pointerEvents: "none" }}>
                 {[{ x: worldW * 0.06, y: worldH * 0.1, w: 380, k: "far_a" }, { x: worldW * 0.86, y: worldH * 0.06, w: 340, k: "far_b" }, { x: worldW * 0.48, y: worldH * 0.93, w: 420, k: "far_c" }].map((f, i) => (
                     lobbyImg[f.k] ? <img key={i} src={smPath((LOBBY_IMG as any)[f.k], isMobile)} alt="" style={{ position: "absolute", left: f.x, top: f.y, width: f.w, opacity: 0.85, animation: `lbFloat ${6 + i}s ease-in-out infinite alternate` }} /> : (
                     <div key={i} style={{ position: "absolute", left: f.x, top: f.y, width: f.w * 0.7, height: f.w * 0.28, opacity: 0.55, animation: `lbFloat ${6 + i}s ease-in-out infinite alternate` }}>
@@ -257,14 +341,14 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
             </div>}
 
             {/* ===== ワールド（画面幅の計測前は描かない：スマホ/PC で読む画像サイズが違うため） ===== */}
-            {vp.w > 0 && <div style={{ position: "absolute", left: 0, top: 0, width: worldW, height: worldH, transform: `translate(${cam.x}px,${cam.y}px) scale(${cam.s})`, transformOrigin: "0 0" }}>
+            {vp.w > 0 && <div ref={worldRef} style={{ position: "absolute", left: 0, top: 0, width: worldW, height: worldH, transform: `translate(${cam.x}px,${cam.y}px) scale(${cam.s})`, transformOrigin: "0 0", ["--inv" as any]: inv, ["--invs" as any]: Math.min(isMobile ? 3.4 : 3.2, Math.max(1.2, inv * 1.1)) }}>
                 {/* 影（浮島の下） */}
                 {!lite && <svg width={worldW} height={worldH} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
-                    <defs><filter id="lbSoft"><feGaussianBlur stdDeviation="14" /></filter></defs>
-                    {areas.map((a, ai) => townFor(a, ai) ? null : <path key={a.key} d={areaD[a.key]} transform="translate(0,120)" fill="#2b3a6b" opacity=".18" filter="url(#lbSoft)" />)}
-                    <path d={plazaD} transform="translate(0,120)" fill="#2b3a6b" opacity=".18" filter="url(#lbSoft)" />
+                    
+                    {areas.map((a, ai) => townFor(a, ai) ? null : <path key={a.key} d={areaD[a.key]} transform="translate(0,120)" fill="#2b3a6b" opacity=".13" />)}
+                    <path d={plazaD} transform="translate(0,120)" fill="#2b3a6b" opacity=".13" />
                     {/* 橋の下の影線 */}
-                    {areas.map((a, ai) => <polyline key={"bl" + a.key} points={(townFor(a, ai) ? a.bridge.short : a.bridge.pts).map((p) => `${p.x},${p.y + 100}`).join(" ")} fill="none" stroke="#2b3a6b" strokeWidth="60" opacity=".12" strokeLinecap="round" strokeLinejoin="round" filter="url(#lbSoft)" />)}
+                    {areas.map((a, ai) => <polyline key={"bl" + a.key} points={(townFor(a, ai) ? a.bridge.short : a.bridge.pts).map((p) => `${p.x},${p.y + 100}`).join(" ")} fill="none" stroke="#2b3a6b" strokeWidth="60" opacity=".12" strokeLinecap="round" strokeLinejoin="round" />)}
                 </svg>}
                 {/* 側面（崖）：輪郭を下にずらして茶色で塗る */}
                 {areas.map((a, ai) => townFor(a, ai) ? null : lobbyImg.cliff && !lite
@@ -312,13 +396,13 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                     {lobbyImg.arena
                         ? <img src={smPath(LOBBY_IMG.arena, isMobile)} alt="" style={{ position: "absolute", left: -700, bottom: 0, width: 1400, filter: lite ? undefined : "drop-shadow(0 16px 16px rgba(0,0,0,.28)) drop-shadow(0 0 40px rgba(255,210,90,.55))", animation: "lbFloat 7s ease-in-out infinite" }} />
                         : <div style={{ position: "absolute", left: -60, bottom: 0, fontSize: 120, lineHeight: 1, filter: lite ? undefined : "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }}>🏟️</div>}
-                    <div style={{ position: "absolute", left: 0, top: 8, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", padding: "6px 16px", borderRadius: 12, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #b45309", fontSize: 14, fontWeight: 900, color: "#7c2d12", boxShadow: "0 4px 10px rgba(0,0,0,.2)", whiteSpace: "nowrap" }}>🏟️ 闘技場 <span style={{ fontSize: 11, color: "#b45309" }}>近日公開</span></div>
+                    <div style={{ position: "absolute", left: 0, top: 8, transform: "translateX(-50%) scale(var(--inv))", transformOrigin: "50% 0", padding: "6px 16px", borderRadius: 12, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #b45309", fontSize: 14, fontWeight: 900, color: "#7c2d12", boxShadow: "0 4px 10px rgba(0,0,0,.2)", whiteSpace: "nowrap" }}>🏟️ 闘技場 <span style={{ fontSize: 11, color: "#b45309" }}>近日公開</span></div>
                 </div>
                 <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("board"); }} style={{ position: "absolute", left: plaza.cx - 520, top: plaza.cy + 330, width: 0, cursor: "pointer", zIndex: 4 }}>
                     {lobbyImg.board
                         ? <img src={smPath(LOBBY_IMG.board, isMobile)} alt="" style={{ position: "absolute", left: -110, bottom: 0, width: 220, filter: lite ? undefined : "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }} />
                         : <div style={{ position: "absolute", left: -36, bottom: 0, fontSize: 72, lineHeight: 1, filter: lite ? undefined : "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }}>📋</div>}
-                    <div style={{ position: "absolute", left: 0, top: 6, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", padding: "5px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #8b5cf6", fontSize: 13, fontWeight: 900, color: "#4c1d95", boxShadow: "0 4px 10px rgba(0,0,0,.2)", whiteSpace: "nowrap" }}>📋 掲示板・ランキング</div>
+                    <div style={{ position: "absolute", left: 0, top: 6, transform: "translateX(-50%) scale(var(--inv))", transformOrigin: "50% 0", padding: "5px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #8b5cf6", fontSize: 13, fontWeight: 900, color: "#4c1d95", boxShadow: "0 4px 10px rgba(0,0,0,.2)", whiteSpace: "nowrap" }}>📋 掲示板・ランキング</div>
                 </div>
                 {lobbyImg.arena && <><img src="/island/deco/deco_funsui.png" alt="" style={{ position: "absolute", left: plaza.cx + 180, top: plaza.cy + 120, width: 120, pointerEvents: "none", zIndex: 4, filter: lite ? undefined : "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} /><img src="/world/sm/bush_flowers.png" alt="" style={{ position: "absolute", left: plaza.cx + 300, top: plaza.cy + 200, width: 90, pointerEvents: "none", zIndex: 4 }} /><img src="/world/sm/bush_flowers.png" alt="" style={{ position: "absolute", left: plaza.cx - 420, top: plaza.cy + 120, width: 90, pointerEvents: "none", zIndex: 4 }} /></>}
                 {!lobbyImg.arena && <img src="/world/ruin_pillar.png" alt="" style={{ position: "absolute", left: plaza.cx + 170, top: plaza.cy - 120, width: 90, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 6px 5px rgba(0,0,0,.25))" }} />}
@@ -356,7 +440,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 {/* 装飾（木・茂み・岩） */}
                 {showDecor && decor.map((d, i) => { const ai = areas.findIndex((a) => a.key === d.areaKey); if (ai >= 0 && townFor(areas[ai], ai)) return null; const th = themeOf(ai);
                     const it = d.kind === "flower" ? { src: "/world/sm/bush_flowers.png", w: 92 } : d.kind === "lamp" ? { src: "/world/lobby_flag_pole.png", w: 64 } : d.kind === "rock" ? { src: "/world/sm/rock.png", w: 72 } : pick(d.edge ? th.edgeDecor : th.decor.filter((x) => x.src.includes("tree")).length ? th.decor.filter((x) => x.src.includes("tree")) : th.decor, d.k);
-                    const w = it.w * d.s; return <img key={"dc" + i} src={smPath(it.src, isMobile)} alt="" style={{ position: "absolute", left: d.x - w / 2, top: d.y - w * 0.9, width: w, zIndex: d.z, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 4px 4px rgba(0,0,0,.2))" }} />; })}
+                    const w = it.w * d.s; return <img key={"dc" + i} decoding="async" src={smPath(it.src, isMobile)} alt="" style={{ position: "absolute", left: d.x - w / 2, top: d.y - w * 0.9, width: w, zIndex: d.z, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 4px 4px rgba(0,0,0,.2))" }} />; })}
                 {/* 村の中央広場（石畳の円）と門（橋のたもとの旗） */}
                 {areas.map((a, ai) => townFor(a, ai) ? null : (() => { const v = a.village; const rx = v.r, ry = v.r * 0.9; return (
                     <div key={"vp" + a.key}>
@@ -374,7 +458,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 {!lite && areas.map((a, ai) => [0, 1].map((k) => { const t = (ai * 1.7 + k * 2.4) % (Math.PI * 2); const x = a.cx + Math.cos(t) * a.r * 1.05, y = a.cy + Math.sin(t) * a.r * 0.9 + SIDE_H * 0.6; return <img key={"cl" + a.key + k} src={lobbyImg.cloud ? smPath(LOBBY_IMG.cloud, isMobile) : "/world/sm/cloud_soft.png"} alt="" style={{ position: "absolute", left: x - 190, top: y - 50, width: 380, opacity: .85, pointerEvents: "none", zIndex: 1, animation: `lbFloat ${7 + k * 2}s ease-in-out infinite alternate` }} />; }))}
                 {/* エリア看板（木の看板画像＋事業部名はコードで描く） */}
                 {areas.map((a) => (
-                    <div key={"sg" + a.key} onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} style={{ position: "absolute", left: a.cx, top: townFor(a, areas.indexOf(a)) ? a.cy + a.townW * TOWN_ANCHOR - a.townW + 70 : a.cy - a.r * 0.9 - 10, transform: `translateX(-50%) scale(${(mode === "area" || mode === "island" ? (isMobile ? 1.7 : 1.5) : Math.min(isMobile ? 3.4 : 3.2, Math.max(1.5, inv * 1.5))) * (areaActive(a.key) ? 1 : a.depth === "front" ? 1 : a.depth === "mid" ? 0.9 : 0.78)})`, transformOrigin: "50% 100%", zIndex: 200000, cursor: "pointer", width: lobbyImg.sign ? 260 : "auto", height: lobbyImg.sign ? 158 : "auto" }}>
+                    <div key={"sg" + a.key} onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} style={{ position: "absolute", left: a.cx, top: townFor(a, areas.indexOf(a)) ? a.cy + a.townW * TOWN_ANCHOR - a.townW + 70 : a.cy - a.r * 0.9 - 10, transform: `translateX(-50%) ${mode === "area" || mode === "island" ? `scale(${isMobile ? 1.7 : 1.5})` : `scale(calc(var(--invs) * ${areaActive(a.key) ? 1 : a.depth === "front" ? 1 : a.depth === "mid" ? 0.9 : 0.78}))`}`, transformOrigin: "50% 100%", zIndex: 200000, cursor: "pointer", width: lobbyImg.sign ? 260 : "auto", height: lobbyImg.sign ? 158 : "auto" }}>
                         {lobbyImg.sign && <img src={smPath(LOBBY_IMG.sign, isMobile)} alt="" style={{ position: "absolute", left: 0, top: 0, width: 260, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} />}
                         <div style={{ position: lobbyImg.sign ? "absolute" : "relative", left: lobbyImg.sign ? 26 : 0, right: lobbyImg.sign ? 26 : 0, top: lobbyImg.sign ? 38 : 0, textAlign: "center", padding: lobbyImg.sign ? 0 : "6px 16px", borderRadius: 12, background: lobbyImg.sign ? "transparent" : "linear-gradient(180deg,#fff,#fdf6e3)", border: lobbyImg.sign ? "none" : `2.5px solid ${a.color}`, fontSize: lobbyImg.sign ? 26 : 15, letterSpacing: lobbyImg.sign ? 0.5 : undefined, fontWeight: 900, color: lobbyImg.sign ? "#3b2410" : a.color, textShadow: lobbyImg.sign ? "0 1px 0 rgba(255,255,255,.35)" : undefined, boxShadow: lobbyImg.sign ? "none" : "0 4px 12px rgba(0,0,0,.2)", whiteSpace: "nowrap", lineHeight: 1.25 }}>
                             {a.label}<br /><span style={{ fontSize: 16, color: lobbyImg.sign ? "#6b4a2a" : "#64748b" }}>{a.count}人</span>
@@ -401,11 +485,11 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                             </>}
                             {detail ? (
                                 <div style={{ position: "absolute", left: 0, bottom: 0, width: 0, transform: `scale(${(areaActive(sl.areaKey) ? 1.3 : ISLAND_SCALE * 1.6) * depth * (isFocus ? 1.12 : 1)})`, transformOrigin: "50% 100%", transition: reduceMotion ? undefined : "transform .3s ease", pointerEvents: "none" }}>
-                                    <VillageHouse i={i} isLeader={sl.isLeader} focus={isFocus} dim={!!focusId && !isFocus && mode === "island"} houseSm={isMobile} lite={lite} flip={Math.cos(sl.faceAng) < 0} />
+                                    <VillageHouse i={i} isLeader={sl.isLeader} focus={isFocus} dim={!!focusId && !isFocus && mode === "island"} houseSm lite={lite} flip={Math.cos(sl.faceAng) < 0} />
                                 </div>
                             ) : <IslandMini i={i} leader={sl.isLeader} />}
                             {/* 名前プレート（スマホの WORLD では代表の島だけ） */}
-                            {(mode === "island" ? isFocus : (sl.isLeader || isFocus || inCurArea(sl) || cam.s > 0.42)) && <div style={{ position: "absolute", left: 0, top: 14, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", whiteSpace: "nowrap", textAlign: "center", pointerEvents: "auto", cursor: "pointer" }}>
+                            {(mode === "island" ? isFocus : (sl.isLeader || isFocus || inCurArea(sl) || cam.s > 0.42)) && <div style={{ position: "absolute", left: 0, top: 14, transform: "translateX(-50%) scale(var(--inv))", transformOrigin: "50% 0", whiteSpace: "nowrap", textAlign: "center", pointerEvents: "auto", cursor: "pointer" }}>
                                 <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 8, background: isFocus ? "linear-gradient(180deg,#fff7ed,#fde68a)" : "rgba(255,255,255,.92)", border: `2px solid ${isFocus ? "#f59e0b" : sl.isLeader ? "#f59e0b" : "#cbd5e1"}`, fontSize: 12.5, fontWeight: 900, color: "#1e293b", boxShadow: "0 2px 6px rgba(0,0,0,.2)" }}>{sl.isLeader ? "👑 " : ""}{i.name} <span style={{ color: "#b45309", fontSize: 11 }}>Lv.{i.level}</span></span>
                             </div>}
                         </div>
@@ -413,7 +497,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 })}
             </div>}
             {/* ISLAND：主役以外を落として視線を集める（画面座標のビネット。穴の中心＝家の位置） */}
-            {mode === "island" && focusId && !lite && (() => { const sl = slots.find((x) => x.userId === focusId); if (!sl) return null; const sx = sl.x * cam.s + cam.x, sy = (sl.y - 90) * cam.s + cam.y; const R = 260 * cam.s; return <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: `radial-gradient(ellipse ${R * 1.3}px ${R}px at ${sx}px ${sy}px, rgba(20,30,70,0) 0%, rgba(20,30,70,0) 70%, rgba(20,30,70,.42) 100%)`, transition: "opacity .4s", zIndex: 5 }} />; })()}
+            {mode === "island" && focusId && !lite && !moving && (() => { const sl = slots.find((x) => x.userId === focusId); if (!sl) return null; const sx = sl.x * cam.s + cam.x, sy = (sl.y - 90) * cam.s + cam.y; const R = 260 * cam.s; return <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: `radial-gradient(ellipse ${R * 1.3}px ${R}px at ${sx}px ${sy}px, rgba(20,30,70,0) 0%, rgba(20,30,70,0) 70%, rgba(20,30,70,.42) 100%)`, animation: "lbFadeIn .5s ease-out", zIndex: 5 }} />; })()}
         </div>
     );
 }

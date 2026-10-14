@@ -22,9 +22,14 @@ export default function LobbyView({ islands, depts, meId, initialUserId }: { isl
     useEffect(() => { const m = () => setIsMobile(window.innerWidth < 640); m(); window.addEventListener("resize", m); return () => window.removeEventListener("resize", m); }, []);
 
     const cmd = (c: Omit<LobbyCamCmd, "key">) => setCamCmd((p) => ({ key: (p?.key ?? 0) + 1, ...c }));
-    const goWorld = () => { setFocusId(null); setRanking(false); cmd({ mode: "world" }); };
+    const goWorld = () => { setFocusId(null); setRanking(false); setOverview(false); cmd({ mode: "world" }); };
+    /** 全体俯瞰（全島が収まる）。WORLD にいるときに 🌍 をもう一度押すと切替 */
+    const [overview, setOverview] = useState(false);
+    const goOverview = () => { setFocusId(null); setRanking(false); setOverview(true); cmd({ mode: "world", area: "overview" }); };
     const goArea = (k: string) => { setFocusId(null); setRanking(false); cmd({ mode: "area", area: k }); };
     const goIsland = (id: string) => { setFocusId(id); setRanking(false); setSearchOpen(false); setQ(""); cmd({ mode: "island", userId: id }); };
+    /** 戻る：直前のカメラ位置・倍率へ（家→村→WORLD）。LobbyWorld が履歴を持ち、結果のモードは onCamMode で返る */
+    const goBack = () => { setRanking(false); cmd({ mode: "back" }); };
     const focus = focusId ? byId.get(focusId) ?? null : null;
     const focusAreaObj = focus ? layout.areas.find((a) => a.key === (layout.slots.find((s) => s.userId === focus.id)?.areaKey)) ?? null : null;
     const focusArea = focusAreaObj?.label ?? "";
@@ -54,13 +59,13 @@ export default function LobbyView({ islands, depts, meId, initialUserId }: { isl
         <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
             <LobbyWorld layout={layout} islands={byId} camCmd={camCmd} focusId={focusId} hud={hud}
                 onIslandTap={goIsland} onAreaTap={goArea} onPlazaTap={(k) => { if (k === "board") setRanking(true); }}
-                onBackgroundTap={() => { if (focus) { if (focusAreaObj) goArea(focusAreaObj.key); else goWorld(); } }}
-                onCamMode={(m, a) => { setMode(m); setArea(a); if (m !== "island") setFocusId((f) => (m === "free" ? f : null)); }} />
+                onBackgroundTap={() => { if (focus) goBack(); }}
+                onCamMode={(m, a) => { setMode(m); setArea(a); if (m !== "world") setOverview(false); if (m !== "island") setFocusId((f) => (m === "free" ? f : null)); }} />
 
             {/* ---- 上部 HUD */}
             <div style={{ position: "fixed", top: "max(10px, env(safe-area-inset-top))", left: 10, right: 10, display: "flex", alignItems: "center", gap: 8, zIndex: 50, pointerEvents: "none" }}>
                 <div style={{ pointerEvents: "auto", display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 0 }}>
-                    {circleBtn("←", () => { if (focus) { if (focusAreaObj) goArea(focusAreaObj.key); else goWorld(); } else if (mode === "area" || mode === "free") goWorld(); else router.push("/home"); })}
+                    {circleBtn("←", () => { if (focus || mode === "area" || mode === "free") goBack(); else router.push("/home"); })}
                     <div style={{ ...pill, padding: "8px 14px", borderRadius: 999, fontWeight: 900, fontSize: 13.5, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
                         <button onClick={goWorld} style={{ border: "none", background: "transparent", padding: 0, fontWeight: 900, fontSize: 13.5, cursor: "pointer", color: mode === "world" ? "#1e293b" : "#64748b" }}>🌍 みんなの島{mode === "world" && <span style={{ color: "#8b5cf6" }}> {islands.length}人</span>}</button>
                         {curArea && (mode === "area" || mode === "island") && <><span style={{ color: "#94a3b8" }}>›</span><button onClick={() => goArea(curArea.key)} style={{ border: "none", background: "transparent", padding: 0, fontWeight: 900, fontSize: 13.5, cursor: "pointer", color: mode === "area" ? curArea.color : "#64748b" }}>{curArea.short}の村{mode === "area" && <span style={{ color: "#64748b", fontWeight: 700 }}> {curArea.count}人</span>}</button></>}
@@ -89,13 +94,13 @@ export default function LobbyView({ islands, depts, meId, initialUserId }: { isl
             {/* ---- 下部ナビ：🌍 ＋ 事業部チップ（横スクロール） */}
             {!focus && (
                 <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, padding: `8px 10px max(10px, env(safe-area-inset-bottom))`, display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", pointerEvents: "auto" }}>
-                    {chip("🌍 WORLD", goWorld, mode === "world", "#4f46e5")}
+                    {chip(mode === "world" ? (overview ? "🏟️ 中央へ" : "🗺️ 全体") : "🌍 WORLD", mode === "world" && !overview ? goOverview : goWorld, mode === "world", "#4f46e5")}
                     {layout.areas.map((a) => chip(a.short, () => goArea(a.key), mode === "area" && area === a.key, a.color, a.key, a.count))}
                     {meId && byId.has(meId) && chip("🏠 自分の島", () => goIsland(meId), false, "#0f766e")}
                 </div>
             )}
 
-            {focus && <IslandFocusCard i={focus} areaLabel={focusArea} areaColor={focusAreaObj?.color} isMobile={isMobile} isMe={focus.id === meId} neighbors={neighbors} onPick={goIsland} onProfile={() => router.push("/profile/" + focus.id)} onClose={() => (focusAreaObj ? goArea(focusAreaObj.key) : goWorld())} />}
+            {focus && <IslandFocusCard i={focus} areaLabel={focusArea} areaColor={focusAreaObj?.color} isMobile={isMobile} isMe={focus.id === meId} neighbors={neighbors} onPick={goIsland} onProfile={() => router.push("/profile/" + focus.id)} onClose={goBack} />}
             {ranking && <RankingPanel islands={islands} meId={meId} isMobile={isMobile} onPick={goIsland} onRandom={() => { const l = islands; if (l.length) goIsland(l[Math.floor(Math.random() * l.length)].id); }} onClose={() => setRanking(false)} />}
         </div>
     );
