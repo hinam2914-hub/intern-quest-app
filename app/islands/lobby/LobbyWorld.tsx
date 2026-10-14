@@ -7,7 +7,7 @@ import { fitBox, centerCam, tweenCam, type Cam, type Insets, type Viewport, type
 import { blobPath, TERRAIN_IMG } from "../../skill-board/terrain";
 import DayIslandScene from "../../components/DayIslandScene";
 import { getHouseStage, HOUSE_IMG, avatarSrc } from "../../lib/island";
-import type { LobbyLayout, LobbyIsland, LobbySlot, LobbyArea, Pt } from "./lobby-layout";
+import { TOWN_ANCHOR, type LobbyLayout, type LobbyIsland, type LobbySlot, type LobbyArea, type Pt } from "./lobby-layout";
 
 export type LobbyMode = "free" | "world" | "area" | "island";
 export type LobbyCamCmd = { key: number; mode: "world" | "area" | "island"; area?: string; userId?: string };
@@ -60,6 +60,7 @@ function smPath(src: string, sm: boolean): string {
 }
 const pick = (list: { src: string; w: number; min: number }[], k: number) => { let c = list[0]; for (const it of list) if (k >= it.min) c = it; return c; };
 const SIDE_H = 150;   // 浮島の厚み（崖テクスチャの高さに合わせる）
+const PLAZA_SIDE = 280;   // 中央広場の崖の厚み（広場は大きいので島より厚く）
 const BR_H = 120;     // 橋の高さ（幅は全区間で同じ）
 const DECOR_IMG: Record<string, string> = { tree_round: "/world/sm/tree_round.png", tree_pine: "/world/sm/tree_pine.png", bush: "/world/sm/bush_flowers.png", rock: "/world/sm/rock.png" };
 
@@ -230,7 +231,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     type Loc = { x: number; y: number; w: number; h: number; d: string };
     const locOf = (pts: Pt[], padB: number): Loc => { const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y); const x = Math.floor(Math.min(...xs)) - 40, y = Math.floor(Math.min(...ys)) - 40; const w = Math.ceil(Math.max(...xs)) + 40 - x, h = Math.ceil(Math.max(...ys)) + 40 + padB - y; return { x, y, w, h, d: blobPath(pts.map((p) => ({ x: p.x - x, y: p.y - y }))) }; };
     const areaL = useMemo(() => Object.fromEntries(areas.map((a) => [a.key, locOf(a.outline, SIDE_H + 60)])), [areas]);
-    const plazaL = useMemo(() => { const pts: Pt[] = []; for (let i = 0; i < 18; i++) { const t = (i / 18) * Math.PI * 2; pts.push({ x: plaza.cx + Math.cos(t) * plaza.r * 0.96, y: plaza.cy + Math.sin(t) * plaza.r * 0.9 }); } return locOf(pts, SIDE_H + 60); }, [plaza]);
+    const plazaL = useMemo(() => { const pts: Pt[] = []; for (let i = 0; i < 18; i++) { const t = (i / 18) * Math.PI * 2; pts.push({ x: plaza.cx + Math.cos(t) * plaza.r * 0.96, y: plaza.cy + Math.sin(t) * plaza.r * 0.9 }); } return locOf(pts, PLAZA_SIDE + 60); }, [plaza]);
 
     return (
         <div ref={wrapRef} onClick={onWrapClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
@@ -254,20 +255,20 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 {/* 影（浮島の下） */}
                 {!lite && <svg width={worldW} height={worldH} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
                     <defs><filter id="lbSoft"><feGaussianBlur stdDeviation="14" /></filter></defs>
-                    {areas.map((a) => <path key={a.key} d={areaD[a.key]} transform="translate(0,120)" fill="#2b3a6b" opacity=".18" filter="url(#lbSoft)" />)}
+                    {areas.map((a, ai) => townFor(a, ai) ? null : <path key={a.key} d={areaD[a.key]} transform="translate(0,120)" fill="#2b3a6b" opacity=".18" filter="url(#lbSoft)" />)}
                     <path d={plazaD} transform="translate(0,120)" fill="#2b3a6b" opacity=".18" filter="url(#lbSoft)" />
                     {/* 橋の下の影線 */}
-                    {areas.map((a) => <line key={"bl" + a.key} x1={a.bridge.from.x} y1={a.bridge.from.y + 100} x2={a.bridge.to.x} y2={a.bridge.to.y + 100} stroke="#2b3a6b" strokeWidth="60" opacity=".12" strokeLinecap="round" filter="url(#lbSoft)" />)}
+                    {areas.map((a) => <polyline key={"bl" + a.key} points={a.bridge.pts.map((p) => `${p.x},${p.y + 100}`).join(" ")} fill="none" stroke="#2b3a6b" strokeWidth="60" opacity=".12" strokeLinecap="round" strokeLinejoin="round" filter="url(#lbSoft)" />)}
                 </svg>}
                 {/* 側面（崖）：輪郭を下にずらして茶色で塗る */}
-                {areas.map((a) => lobbyImg.cliff && !lite
+                {areas.map((a, ai) => townFor(a, ai) ? null : lobbyImg.cliff && !lite
                     ? (() => { /* 帯の上端〜下端が岩の範囲（タイルの 105px 以降）に収まる高さにする。Fill は dy だけ下にずれているので位置から引く */ const th = Math.max(420, Math.round(0.45 * a.r + 320)); const posY = a.cy + 1.116 * a.r + 20 - th; return <Fill key={"side" + a.key} d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} dy={SIDE_H} img={smPath(LOBBY_IMG.cliff, isMobile)} size={th * 3} sizeH={th} pos={`0 ${Math.round(posY - SIDE_H - areaL[a.key].y)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />; })()
                     : <Fill key={"side" + a.key} d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} dy={78} color="linear-gradient(180deg,#a5814f 0%,#8a6a48 40%,#5c4330 80%,#4a3626 100%)" />)}
                 {lobbyImg.cliff && !lite
-                    ? <Fill d={plazaL.d} w={plazaL.w} h={plazaL.h} ox={plazaL.x} oy={plazaL.y} dy={SIDE_H} img={smPath(LOBBY_IMG.cliff, isMobile)} size={1260} sizeH={420} pos={`0 ${Math.round(plaza.cy + plaza.r * 0.9 + 20 - 420 - SIDE_H - plazaL.y)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />
+                    ? <Fill d={plazaL.d} w={plazaL.w} h={plazaL.h} ox={plazaL.x} oy={plazaL.y} dy={PLAZA_SIDE} img={smPath(LOBBY_IMG.cliff, isMobile)} size={1260} sizeH={420} pos={`0 ${Math.round(plaza.cy + plaza.r * 0.9 - 112 - PLAZA_SIDE - plazaL.y)}px`} color="linear-gradient(180deg,#5c4330,#3b2a1c)" />
                     : <Fill d={plazaL.d} w={plazaL.w} h={plazaL.h} ox={plazaL.x} oy={plazaL.y} dy={78} color="linear-gradient(180deg,#9a8a74 0%,#7b6a55 45%,#55483a 100%)" />}
                 {/* 上面：草地タイル＋事業部色の薄い着色 */}
-                {areas.map((a) => (
+                {areas.map((a, ai) => townFor(a, ai) ? null : (
                     <div key={"top" + a.key}>
                         {(() => { const th = themeOf(areas.indexOf(a)); return <>
                             <Fill d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} img={smPath((th.key === "town" || th.key === "castle") && lobbyImg.cobble ? LOBBY_IMG.cobble : th.base, isMobile)} size={th.baseSize} color="linear-gradient(180deg,#b9ec8f,#7ccb6a)" />
@@ -309,35 +310,48 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 </div>
                 {lobbyImg.arena && <><img src="/island/deco/deco_funsui.png" alt="" style={{ position: "absolute", left: plaza.cx + 180, top: plaza.cy + 120, width: 120, pointerEvents: "none", zIndex: 4, filter: lite ? undefined : "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} /><img src="/world/sm/bush_flowers.png" alt="" style={{ position: "absolute", left: plaza.cx + 300, top: plaza.cy + 200, width: 90, pointerEvents: "none", zIndex: 4 }} /><img src="/world/sm/bush_flowers.png" alt="" style={{ position: "absolute", left: plaza.cx - 420, top: plaza.cy + 120, width: 90, pointerEvents: "none", zIndex: 4 }} /></>}
                 {!lobbyImg.arena && <img src="/world/ruin_pillar.png" alt="" style={{ position: "absolute", left: plaza.cx + 170, top: plaza.cy - 120, width: 90, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 6px 5px rgba(0,0,0,.25))" }} />}
-                {/* 橋：両端の装飾は固定、中央の床板は繰り返し（長さに合わせて引き伸ばさない） */}
+                {/* 橋：曲線（折れ線）に沿って区間ごとに描く。両端の装飾は固定、中央の床板は繰り返し（長さに合わせて引き伸ばさない） */}
                 {areas.map((a) => {
-                    const dx = a.bridge.to.x - a.bridge.from.x, dy = a.bridge.to.y - a.bridge.from.y; const len = Math.hypot(dx, dy); const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+                    const P = a.bridge.pts.length >= 2 ? a.bridge.pts : [a.bridge.from, a.bridge.to];
                     if (!lobbyImg.bridge_mid) {
                         const mx = (a.bridge.from.x + a.bridge.to.x) / 2, my = (a.bridge.from.y + a.bridge.to.y) / 2;
+                        const ang = Math.atan2(a.bridge.to.y - a.bridge.from.y, a.bridge.to.x - a.bridge.from.x) * 180 / Math.PI;
                         return <img key={"bw" + a.key} src={smPath("/world/bridge_wood.png", isMobile)} alt="" style={{ position: "absolute", left: mx - 70, top: my - 48, width: 140, transform: `rotate(${ang}deg)`, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} />;
                     }
-                    // 画像は 1024×337。高さ BR_H に合わせた幅：左端 409、中央タイル 225、右端 369（px → ×scale）
+                    // 画像は 1024×337。高さ BR_H に合わせた幅：左端 222、中央タイル 222、右端 222（px → ×scale）
                     const sc = BR_H / 337, wl = 222 * sc, wm = 222 * sc, wr = 222 * sc;
-                    const mid = Math.max(0, len - wl - wr);
+                    // 奥の島へ渡る橋は細く（遠近）
+                    const bh = BR_H * (a.depth === "far" ? 0.7 : a.depth === "back" ? 0.8 : a.depth === "mid" ? 0.92 : 1);
+                    let acc = 0;
                     return (
-                        <div key={"bw" + a.key} style={{ position: "absolute", left: a.bridge.from.x, top: a.bridge.from.y - BR_H * 0.58, width: len, height: BR_H, transform: `rotate(${ang}deg)`, transformOrigin: `0 ${BR_H * 0.58}px`, pointerEvents: "none", zIndex: 2, filter: lite ? undefined : "drop-shadow(0 10px 8px rgba(0,0,0,.28))" }}>
-                            <div style={{ position: "absolute", left: 0, top: 0, width: wl, height: BR_H, backgroundImage: `url(${smPath(LOBBY_IMG.bridge_end_l, isMobile)})`, backgroundSize: `${wl}px ${BR_H}px`, backgroundRepeat: "no-repeat" }} />
-                            <div style={{ position: "absolute", left: wl - 1, top: 0, width: mid + 2, height: BR_H, backgroundImage: `url(${smPath(LOBBY_IMG.bridge_mid, isMobile)})`, backgroundSize: `${wm}px ${BR_H}px`, backgroundRepeat: "repeat-x", backgroundPosition: "0 0" }} />
-                            <div style={{ position: "absolute", left: wl + mid, top: 0, width: wr, height: BR_H, backgroundImage: `url(${smPath(LOBBY_IMG.bridge_end_r, isMobile)})`, backgroundSize: `${wr}px ${BR_H}px`, backgroundRepeat: "no-repeat" }} />
+                        <div key={"bw" + a.key} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 2, filter: lite ? undefined : "drop-shadow(0 10px 8px rgba(0,0,0,.28))" }}>
+                            {P.slice(0, -1).map((p, k) => {
+                                const q = P[k + 1]; const dx = q.x - p.x, dy = q.y - p.y; const len = Math.hypot(dx, dy) + 2; const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+                                const first = k === 0, last = k === P.length - 2;
+                                const capL = first ? wl : 0, capR = last ? wr : 0; const mid = Math.max(0, len - capL - capR);
+                                const off = acc; acc += len - 2;   // 床板の繰り返し位置を区間をまたいで連続させる
+                                return (
+                                    <div key={k} style={{ position: "absolute", left: p.x, top: p.y - bh * 0.58, width: len, height: bh, transform: `rotate(${ang}deg)`, transformOrigin: `0 ${bh * 0.58}px` }}>
+                                        {first && <div style={{ position: "absolute", left: 0, top: 0, width: wl, height: bh, backgroundImage: `url(${smPath(LOBBY_IMG.bridge_end_l, isMobile)})`, backgroundSize: `${wl}px ${bh}px`, backgroundRepeat: "no-repeat" }} />}
+                                        <div style={{ position: "absolute", left: capL - 1, top: 0, width: mid + 2, height: bh, backgroundImage: `url(${smPath(LOBBY_IMG.bridge_mid, isMobile)})`, backgroundSize: `${wm}px ${bh}px`, backgroundRepeat: "repeat-x", backgroundPosition: `${-((off - (first ? 0 : wl)) % wm)}px 0` }} />
+                                        {last && <div style={{ position: "absolute", left: capL + mid, top: 0, width: wr, height: bh, backgroundImage: `url(${smPath(LOBBY_IMG.bridge_end_r, isMobile)})`, backgroundSize: `${wr}px ${bh}px`, backgroundRepeat: "no-repeat" }} />}
+                                    </div>
+                                );
+                            })}
                         </div>
                     );
                 })}
                 {/* 装飾（木・茂み・岩） */}
-                {showDecor && decor.map((d, i) => { const ai = areas.findIndex((a) => a.key === d.areaKey); if (!d.edge && ai >= 0 && townFor(areas[ai], ai)) return null; const th = themeOf(ai); const it = pick(d.edge ? th.edgeDecor : th.decor, d.k); const w = it.w * d.s; return <img key={"dc" + i} src={smPath(it.src, isMobile)} alt="" style={{ position: "absolute", left: d.x - w / 2, top: d.y - w * 0.9, width: w, zIndex: d.z, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 4px 4px rgba(0,0,0,.2))" }} />; })}
+                {showDecor && decor.map((d, i) => { const ai = areas.findIndex((a) => a.key === d.areaKey); if (ai >= 0 && townFor(areas[ai], ai)) return null; const th = themeOf(ai); const it = pick(d.edge ? th.edgeDecor : th.decor, d.k); const w = it.w * d.s; return <img key={"dc" + i} src={smPath(it.src, isMobile)} alt="" style={{ position: "absolute", left: d.x - w / 2, top: d.y - w * 0.9, width: w, zIndex: d.z, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 4px 4px rgba(0,0,0,.2))" }} />; })}
                 {/* テーマのランドマーク（WORLD でも見える街の目印） */}
                 {areas.map((a, ai) => townFor(a, ai) || (isMobile && cam.s < 0.5 && !areaActive(a.key)) ? null : themeOf(ai).landmark.map((lm, k) => { const w = lm.w * Math.min(1.5, Math.max(0.85, a.r / 650)); return <img key={"lm" + a.key + k} src={smPath(lm.src, isMobile)} alt="" style={{ position: "absolute", left: a.landmark.x - w / 2, top: a.landmark.y - w * 0.78 + lm.dy, width: w, zIndex: Math.round(a.landmark.y) + k, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 8px 8px rgba(0,0,0,.25))" }} />; }))}
                 {/* 滝（崖から落ちる水：水タイル＋ぼかし） */}
-                {areas.map((a) => lobbyImg.waterfall ? <img key={"wf" + a.key} src={smPath(LOBBY_IMG.waterfall, isMobile)} alt="" style={{ position: "absolute", left: a.waterfall.p.x - 60, top: a.waterfall.p.y - 30, width: 120, pointerEvents: "none", zIndex: 1, opacity: .95 }} /> : <div key={"wf" + a.key} style={{ position: "absolute", left: a.waterfall.p.x - 34, top: a.waterfall.p.y - 10, width: 68, height: SIDE_H + 170, backgroundImage: `url(${TERRAIN_IMG.water})`, backgroundSize: "140px 140px", borderRadius: "30% 30% 50% 50%", opacity: .85, pointerEvents: "none", zIndex: 1, WebkitMaskImage: "linear-gradient(180deg,#000 0%,#000 55%,transparent 100%)", maskImage: "linear-gradient(180deg,#000 0%,#000 55%,transparent 100%)", filter: lite ? undefined : "blur(.6px) brightness(1.15)", animation: "lbWater 1.6s linear infinite" }}><div style={{ position: "absolute", left: 4, right: 4, bottom: 24, height: 46, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(255,255,255,.95), rgba(255,255,255,0) 70%)", filter: lite ? undefined : "blur(4px)" }} /></div>)}
+                {areas.map((a, ai) => townFor(a, ai) ? null : lobbyImg.waterfall ? <img key={"wf" + a.key} src={smPath(LOBBY_IMG.waterfall, isMobile)} alt="" style={{ position: "absolute", left: a.waterfall.p.x - 60, top: a.waterfall.p.y - 30, width: 120, pointerEvents: "none", zIndex: 1, opacity: .95 }} /> : <div key={"wf" + a.key} style={{ position: "absolute", left: a.waterfall.p.x - 34, top: a.waterfall.p.y - 10, width: 68, height: SIDE_H + 170, backgroundImage: `url(${TERRAIN_IMG.water})`, backgroundSize: "140px 140px", borderRadius: "30% 30% 50% 50%", opacity: .85, pointerEvents: "none", zIndex: 1, WebkitMaskImage: "linear-gradient(180deg,#000 0%,#000 55%,transparent 100%)", maskImage: "linear-gradient(180deg,#000 0%,#000 55%,transparent 100%)", filter: lite ? undefined : "blur(.6px) brightness(1.15)", animation: "lbWater 1.6s linear infinite" }}><div style={{ position: "absolute", left: 4, right: 4, bottom: 24, height: 46, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(255,255,255,.95), rgba(255,255,255,0) 70%)", filter: lite ? undefined : "blur(4px)" }} /></div>)}
                 {/* 島のまわりの雲（軽く浮遊感） */}
                 {!lite && areas.map((a, ai) => [0, 1].map((k) => { const t = (ai * 1.7 + k * 2.4) % (Math.PI * 2); const x = a.cx + Math.cos(t) * a.r * 1.05, y = a.cy + Math.sin(t) * a.r * 0.9 + SIDE_H * 0.6; return <img key={"cl" + a.key + k} src={lobbyImg.cloud ? smPath(LOBBY_IMG.cloud, isMobile) : "/world/sm/cloud_soft.png"} alt="" style={{ position: "absolute", left: x - 190, top: y - 50, width: 380, opacity: .85, pointerEvents: "none", zIndex: 1, animation: `lbFloat ${7 + k * 2}s ease-in-out infinite alternate` }} />; }))}
                 {/* エリア看板（木の看板画像＋事業部名はコードで描く） */}
                 {areas.map((a) => (
-                    <div key={"sg" + a.key} onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} style={{ position: "absolute", left: a.cx, top: a.cy > plaza.cy + 100 && !areaActive(a.key) ? a.cy + a.r * 0.9 + 30 : townFor(a, areas.indexOf(a)) ? a.cy + a.r * 0.78 - a.r * 2.05 + 70 : a.cy - a.r * 0.9 - 10, transform: `translateX(-50%) scale(${areaActive(a.key) ? (isMobile ? 1.7 : 1.5) : Math.min(isMobile ? 3.4 : 3.2, Math.max(1.5, inv * 1.5))})`, transformOrigin: a.cy > plaza.cy + 100 && !areaActive(a.key) ? "50% 0" : "50% 100%", zIndex: 200000, cursor: "pointer", width: lobbyImg.sign ? 260 : "auto", height: lobbyImg.sign ? 158 : "auto" }}>
+                    <div key={"sg" + a.key} onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} style={{ position: "absolute", left: a.cx, top: townFor(a, areas.indexOf(a)) ? a.cy + a.townW * TOWN_ANCHOR - a.townW + 70 : a.cy - a.r * 0.9 - 10, transform: `translateX(-50%) scale(${(areaActive(a.key) ? (isMobile ? 1.7 : 1.5) : Math.min(isMobile ? 3.4 : 3.2, Math.max(1.5, inv * 1.5))) * (areaActive(a.key) ? 1 : a.depth === "front" ? 1 : a.depth === "mid" ? 0.9 : 0.78)})`, transformOrigin: "50% 100%", zIndex: 200000, cursor: "pointer", width: lobbyImg.sign ? 260 : "auto", height: lobbyImg.sign ? 158 : "auto" }}>
                         {lobbyImg.sign && <img src={smPath(LOBBY_IMG.sign, isMobile)} alt="" style={{ position: "absolute", left: 0, top: 0, width: 260, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} />}
                         <div style={{ position: lobbyImg.sign ? "absolute" : "relative", left: lobbyImg.sign ? 26 : 0, right: lobbyImg.sign ? 26 : 0, top: lobbyImg.sign ? 38 : 0, textAlign: "center", padding: lobbyImg.sign ? 0 : "6px 16px", borderRadius: 12, background: lobbyImg.sign ? "transparent" : "linear-gradient(180deg,#fff,#fdf6e3)", border: lobbyImg.sign ? "none" : `2.5px solid ${a.color}`, fontSize: lobbyImg.sign ? 26 : 15, letterSpacing: lobbyImg.sign ? 0.5 : undefined, fontWeight: 900, color: lobbyImg.sign ? "#3b2410" : a.color, textShadow: lobbyImg.sign ? "0 1px 0 rgba(255,255,255,.35)" : undefined, boxShadow: lobbyImg.sign ? "none" : "0 4px 12px rgba(0,0,0,.2)", whiteSpace: "nowrap", lineHeight: 1.25 }}>
                             {a.label}<br /><span style={{ fontSize: 16, color: lobbyImg.sign ? "#6b4a2a" : "#64748b" }}>{a.count}人</span>
@@ -345,9 +359,9 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                     </div>
                 ))}
                 {/* 奥行き：奥（上）の島ほど薄い空気遠近（霞）をかける */}
-                {!lite && areas.map((a) => { const t = Math.max(0, Math.min(1, 1 - (a.cy - layout.contentBox.y) / layout.contentBox.h)); const op = t * 0.22; return op < 0.03 ? null : <Fill key={"haze" + a.key} d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} color={`rgba(215,235,255,${op.toFixed(2)})`} />; })}
+                {!lite && areas.map((a, ai) => { if (townFor(a, ai)) return null; const op = a.depth === "far" ? 0.3 : a.depth === "back" ? 0.2 : a.depth === "mid" ? 0.07 : 0; return op < 0.03 ? null : <Fill key={"haze" + a.key} d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} color={`rgba(215,235,255,${op.toFixed(2)})`} />; })}
                 {/* 街並み（WORLD）：テーマ画像を中心に1枚。下端中央＝エリア中心 */}
-                {areas.map((a, ai) => townFor(a, ai) ? (() => { const w = a.r * 2.05; const hov = hoverArea === a.key; return <img key={"town" + a.key} src={smPath(TOWN_IMG[themeOf(ai).key]!, isMobile)} alt="" onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} onMouseEnter={() => setHoverArea(a.key)} onMouseLeave={() => setHoverArea((h) => (h === a.key ? null : h))} style={{ position: "absolute", left: a.cx - w / 2, top: a.cy + a.r * 0.78 - w, width: w, zIndex: Math.round(a.cy) + 5, cursor: "pointer", transform: hov ? "translateY(-10px)" : "none", transition: reduceMotion ? undefined : "transform .25s ease, filter .25s ease", filter: lite ? undefined : hov ? "drop-shadow(0 18px 16px rgba(0,0,0,.3)) brightness(1.07) drop-shadow(0 0 22px rgba(255,235,150,.8))" : "drop-shadow(0 12px 12px rgba(0,0,0,.25))" }} />; })() : null)}
+                {areas.map((a, ai) => townFor(a, ai) ? (() => { const w = a.townW; const hov = hoverArea === a.key; const hz = a.depth === "far" ? "brightness(1.06) saturate(.78) opacity(.9)" : a.depth === "back" ? "brightness(1.04) saturate(.86)" : ""; return <img key={"town" + a.key} src={smPath(TOWN_IMG[themeOf(ai).key]!, isMobile)} alt="" onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} onMouseEnter={() => setHoverArea(a.key)} onMouseLeave={() => setHoverArea((h) => (h === a.key ? null : h))} style={{ position: "absolute", left: a.cx - w / 2, top: a.cy + w * TOWN_ANCHOR - w, width: w, zIndex: Math.round(a.cy) + 5, cursor: "pointer", transform: hov ? "translateY(-10px)" : "none", transition: reduceMotion ? undefined : "transform .25s ease, filter .25s ease", filter: lite ? (hz || undefined) : hov ? "drop-shadow(0 18px 16px rgba(0,0,0,.3)) brightness(1.07) drop-shadow(0 0 22px rgba(255,235,150,.8))" : `drop-shadow(0 12px 12px rgba(0,0,0,.25)) ${hz}` }} />; })() : null)}
                 {/* 島 */}
                 {slots.map((sl) => {
                     const i = islands.get(sl.userId); if (!i) return null;
