@@ -125,12 +125,15 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     const drag = useRef<{ x: number; y: number; cx: number; cy: number; moved: boolean } | null>(null);
     const pinch = useRef<{ d: number; s: number } | null>(null);
     const tapped = useRef(false);
-    const minS = Math.max(0.03, Math.min((vp.w || 1000) / worldW, (vp.h || 800) / worldH) * 0.8);   // 全体が収まる倍率より少し引ける程度まで
+    const minS = Math.max(0.03, Math.min((vp.w || 1000) / layout.contentBox.w, (vp.h || 800) / layout.contentBox.h) * 0.8);   // 全体が収まる倍率より少し引ける程度まで
     const maxS = 2.0;
-    const slack = isMobile ? { x: vp.w * 0.3, y: vp.h * 0.5 } : { x: 0, y: 0 };
+    const slack = isMobile ? { x: vp.w * 0.3, y: vp.h * 0.5 } : { x: vp.w * 0.35, y: vp.h * 0.35 };  // 端のエリアも中央に寄せられる余裕
     const [mode, setModeState] = useState<LobbyMode>("free");
     const lobbyImg = useLobbyImages(vp.w ? isMobile : null);
     const lite = isMobile;   // スマホ：GPU レイヤーを増やす filter / blur / 影 SVG を使わない
+    const [reduceMotion, setReduceMotion] = useState(false);
+    useEffect(() => { const m = window.matchMedia?.("(prefers-reduced-motion: reduce)"); if (!m) return; setReduceMotion(m.matches); const f = () => setReduceMotion(m.matches); m.addEventListener?.("change", f); return () => m.removeEventListener?.("change", f); }, []);
+    const [hoverArea, setHoverArea] = useState<string | null>(null);
 
     useEffect(() => {
         const el = wrapRef.current; if (!el) return;
@@ -143,11 +146,11 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     function stopTween() { tweenCancel.current?.(); tweenCancel.current = null; }
     function animateTo(c: Cam, ms = 600) {
         stopTween(); const to = clamp(c), from = camRef.current;
-        if (ms <= 0 || !vp.w) { setCamNow(to); return; }
+        if (ms <= 0 || !vp.w || reduceMotion) { setCamNow(to); return; }
         tweenCancel.current = tweenCam(from, to, ms, (k) => { camRef.current = k; setCam(k); }, () => { tweenCancel.current = null; });
     }
     function setMode(m: LobbyMode, area: string | null, focus: string | null) { modeRef.current = m; areaRef.current = area; focusRef.current = focus; setModeState(m); onCamMode?.(m, area); }
-    function worldCam(): Cam { return fitBox(layout.worldBox, vp, ins, isMobile ? 0.98 : 1.0, minS, maxS); }
+    function worldCam(): Cam { return fitBox(layout.contentBox, vp, ins, isMobile ? 0.96 : 0.97, minS, maxS); }
     function areaCam(key: string): Cam {
         const a = areas.find((x) => x.key === key); if (!a) return worldCam();
         if (!isMobile) return fitBox(a.box, vp, ins, 0.92, minS, maxS);
@@ -218,7 +221,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     // WORLD：街並み画像があるエリアは、個々の家の代わりに街1枚で表示（AREA/ISLAND で見ているエリアと、寄っているときは家を出す）
     const areaActive = (key: string) => key === areaRef.current && (mode === "area" || mode === "island" || mode === "free");
     const townFor = (a: LobbyArea, ai: number) => { const th = themeOf(ai); return !!TOWN_IMG[th.key] && !!lobbyImg["town:" + th.key] && !areaActive(a.key) && cam.s < 0.5; };
-    const inv = isMobile ? Math.min(3.2, Math.max(1, 0.45 / cam.s)) : Math.min(2.2, Math.max(1, 0.5 / cam.s));
+    const inv = isMobile ? Math.min(3.2, Math.max(1, 0.45 / cam.s)) : Math.min(2.6, Math.max(1, 0.55 / cam.s));
     const sky = lobbyImg.sky ? `url(${smPath(LOBBY_IMG.sky, isMobile)}) center / cover no-repeat, linear-gradient(180deg, #9fd3ff 0%, #c9e9ff 45%, #e6f5ff 100%)` : "linear-gradient(180deg, #9fd3ff 0%, #c9e9ff 45%, #e6f5ff 100%)";
     const slotById = useMemo(() => new Map(slots.map((s) => [s.userId, s])), [slots]);
     const plazaD = useMemo(() => { const pts: Pt[] = []; for (let i = 0; i < 18; i++) { const t = (i / 18) * Math.PI * 2; pts.push({ x: plaza.cx + Math.cos(t) * plaza.r * 0.96, y: plaza.cy + Math.sin(t) * plaza.r * 0.9 }); } return blobPath(pts); }, [plaza]);
@@ -232,7 +235,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
     return (
         <div ref={wrapRef} onClick={onWrapClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
             style={{ position: "absolute", inset: 0, overflow: "hidden", cursor: drag.current ? "grabbing" : "grab", touchAction: "none", background: sky, userSelect: "none", fontFamily: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif' }}>
-            <style>{`@keyframes lbCloud { 0%{transform:translateX(-200px)} 100%{transform:translateX(110vw)} } @keyframes lbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} } @keyframes lbFlag { 0%{transform:rotate(-4deg)} 100%{transform:rotate(4deg)} } @keyframes lbWater { 0%{background-position:0 0} 100%{background-position:0 140px} }`}</style>
+            <style>{`@keyframes lbCloud { 0%{transform:translateX(-200px)} 100%{transform:translateX(110vw)} } @keyframes lbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} } @keyframes lbFlag { 0%{transform:rotate(-4deg)} 100%{transform:rotate(4deg)} } @keyframes lbWater { 0%{background-position:0 0} 100%{background-position:0 140px} } @keyframes lbGlow { 0%{opacity:.6} 100%{opacity:1} }`}</style>
             {lobbyImg.sky && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(235,245,255,.55), rgba(255,255,255,.42) 60%, rgba(255,255,255,.5))", pointerEvents: "none" }} />}
             {/* 遠景の雲（画面固定）＋ 遠景の浮き島（カメラ 0.3 倍追従・倍率連動） */}
             {[0, 1, 2].map((i) => (<div key={i} style={{ position: "absolute", top: `${8 + i * 30}%`, left: 0, width: 190, height: 50, background: "rgba(255,255,255,.85)", borderRadius: 999, filter: lite ? undefined : "blur(2px)", animation: `lbCloud ${100 + i * 35}s linear infinite`, animationDelay: `${-i * 40}s`, pointerEvents: "none", boxShadow: "50px -20px 0 -4px rgba(255,255,255,.8), 100px 0 0 -2px rgba(255,255,255,.85)", opacity: 0.6 }} />))}
@@ -290,13 +293,15 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 </svg>
                 {/* 中央広場：闘技場（近日公開）・掲示板 */}
                 {!lobbyImg.arena && <img src={smPath(TERRAIN_IMG.plaza, isMobile)} alt="" style={{ position: "absolute", left: plaza.cx - 260, top: plaza.cy - 150, width: 520, pointerEvents: "none", opacity: .9 }} />}
-                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("arena"); }} style={{ position: "absolute", left: plaza.cx, top: plaza.cy + 150, width: 0, cursor: "pointer", zIndex: 3 }}>
+                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("arena"); }} style={{ position: "absolute", left: plaza.cx, top: plaza.cy + 260, width: 0, cursor: "pointer", zIndex: 3 }}>
+                    {lobbyImg.arena && !lite && <div style={{ position: "absolute", left: -560, top: -720, width: 1120, height: 720, background: "radial-gradient(ellipse at 50% 90%, rgba(255,230,140,.55), rgba(255,230,140,0) 65%)", pointerEvents: "none", animation: reduceMotion ? undefined : "lbGlow 3.5s ease-in-out infinite alternate" }} />}
+                    {lobbyImg.arena && lobbyImg.flag && [-660, 660].map((dx, k) => <img key={"af" + k} src={smPath(LOBBY_IMG.flag, isMobile)} alt="" style={{ position: "absolute", left: dx - 40, bottom: 60, width: 80, pointerEvents: "none", transform: k ? "scaleX(-1)" : undefined }} />)}
                     {lobbyImg.arena
-                        ? <img src={smPath(LOBBY_IMG.arena, isMobile)} alt="" style={{ position: "absolute", left: -470, bottom: 0, width: 940, filter: lite ? undefined : "drop-shadow(0 16px 16px rgba(0,0,0,.28)) drop-shadow(0 0 40px rgba(255,210,90,.55))", animation: "lbFloat 7s ease-in-out infinite" }} />
+                        ? <img src={smPath(LOBBY_IMG.arena, isMobile)} alt="" style={{ position: "absolute", left: -700, bottom: 0, width: 1400, filter: lite ? undefined : "drop-shadow(0 16px 16px rgba(0,0,0,.28)) drop-shadow(0 0 40px rgba(255,210,90,.55))", animation: "lbFloat 7s ease-in-out infinite" }} />
                         : <div style={{ position: "absolute", left: -60, bottom: 0, fontSize: 120, lineHeight: 1, filter: lite ? undefined : "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }}>🏟️</div>}
                     <div style={{ position: "absolute", left: 0, top: 8, transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 0", padding: "6px 16px", borderRadius: 12, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #b45309", fontSize: 14, fontWeight: 900, color: "#7c2d12", boxShadow: "0 4px 10px rgba(0,0,0,.2)", whiteSpace: "nowrap" }}>🏟️ 闘技場 <span style={{ fontSize: 11, color: "#b45309" }}>近日公開</span></div>
                 </div>
-                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("board"); }} style={{ position: "absolute", left: plaza.cx - 330, top: plaza.cy + 210, width: 0, cursor: "pointer", zIndex: 4 }}>
+                <div onClick={(e) => { e.stopPropagation(); tapped.current = true; onPlazaTap?.("board"); }} style={{ position: "absolute", left: plaza.cx - 520, top: plaza.cy + 330, width: 0, cursor: "pointer", zIndex: 4 }}>
                     {lobbyImg.board
                         ? <img src={smPath(LOBBY_IMG.board, isMobile)} alt="" style={{ position: "absolute", left: -110, bottom: 0, width: 220, filter: lite ? undefined : "drop-shadow(0 10px 10px rgba(0,0,0,.25))" }} />
                         : <div style={{ position: "absolute", left: -36, bottom: 0, fontSize: 72, lineHeight: 1, filter: lite ? undefined : "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }}>📋</div>}
@@ -332,15 +337,17 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                 {!lite && areas.map((a, ai) => [0, 1].map((k) => { const t = (ai * 1.7 + k * 2.4) % (Math.PI * 2); const x = a.cx + Math.cos(t) * a.r * 1.05, y = a.cy + Math.sin(t) * a.r * 0.9 + SIDE_H * 0.6; return <img key={"cl" + a.key + k} src={lobbyImg.cloud ? smPath(LOBBY_IMG.cloud, isMobile) : "/world/sm/cloud_soft.png"} alt="" style={{ position: "absolute", left: x - 190, top: y - 50, width: 380, opacity: .85, pointerEvents: "none", zIndex: 1, animation: `lbFloat ${7 + k * 2}s ease-in-out infinite alternate` }} />; }))}
                 {/* エリア看板（木の看板画像＋事業部名はコードで描く） */}
                 {areas.map((a) => (
-                    <div key={"sg" + a.key} onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} style={{ position: "absolute", left: a.cx, top: townFor(a, areas.indexOf(a)) ? a.cy + a.r * 0.78 - a.r * 2.05 + 40 : a.cy - a.r * 0.9 - 10, transform: `translateX(-50%) scale(${Math.min(inv, 3.2)})`, transformOrigin: "50% 100%", zIndex: 200000, cursor: "pointer", width: lobbyImg.sign ? 260 : "auto", height: lobbyImg.sign ? 158 : "auto" }}>
+                    <div key={"sg" + a.key} onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} style={{ position: "absolute", left: a.cx, top: a.cy > plaza.cy + 100 && !areaActive(a.key) ? a.cy + a.r * 0.9 + 30 : townFor(a, areas.indexOf(a)) ? a.cy + a.r * 0.78 - a.r * 2.05 + 70 : a.cy - a.r * 0.9 - 10, transform: `translateX(-50%) scale(${areaActive(a.key) ? (isMobile ? 1.7 : 1.5) : Math.min(isMobile ? 3.4 : 3.2, Math.max(1.5, inv * 1.5))})`, transformOrigin: a.cy > plaza.cy + 100 && !areaActive(a.key) ? "50% 0" : "50% 100%", zIndex: 200000, cursor: "pointer", width: lobbyImg.sign ? 260 : "auto", height: lobbyImg.sign ? 158 : "auto" }}>
                         {lobbyImg.sign && <img src={smPath(LOBBY_IMG.sign, isMobile)} alt="" style={{ position: "absolute", left: 0, top: 0, width: 260, pointerEvents: "none", filter: lite ? undefined : "drop-shadow(0 6px 6px rgba(0,0,0,.25))" }} />}
-                        <div style={{ position: lobbyImg.sign ? "absolute" : "relative", left: lobbyImg.sign ? 34 : 0, right: lobbyImg.sign ? 34 : 0, top: lobbyImg.sign ? 48 : 0, textAlign: "center", padding: lobbyImg.sign ? 0 : "6px 16px", borderRadius: 12, background: lobbyImg.sign ? "transparent" : "linear-gradient(180deg,#fff,#fdf6e3)", border: lobbyImg.sign ? "none" : `2.5px solid ${a.color}`, fontSize: lobbyImg.sign ? 17 : 15, fontWeight: 900, color: lobbyImg.sign ? "#3b2410" : a.color, textShadow: lobbyImg.sign ? "0 1px 0 rgba(255,255,255,.35)" : undefined, boxShadow: lobbyImg.sign ? "none" : "0 4px 12px rgba(0,0,0,.2)", whiteSpace: "nowrap", lineHeight: 1.25 }}>
-                            {a.label}<br /><span style={{ fontSize: 12, color: lobbyImg.sign ? "#6b4a2a" : "#64748b" }}>{a.count}人</span>
+                        <div style={{ position: lobbyImg.sign ? "absolute" : "relative", left: lobbyImg.sign ? 26 : 0, right: lobbyImg.sign ? 26 : 0, top: lobbyImg.sign ? 38 : 0, textAlign: "center", padding: lobbyImg.sign ? 0 : "6px 16px", borderRadius: 12, background: lobbyImg.sign ? "transparent" : "linear-gradient(180deg,#fff,#fdf6e3)", border: lobbyImg.sign ? "none" : `2.5px solid ${a.color}`, fontSize: lobbyImg.sign ? 26 : 15, letterSpacing: lobbyImg.sign ? 0.5 : undefined, fontWeight: 900, color: lobbyImg.sign ? "#3b2410" : a.color, textShadow: lobbyImg.sign ? "0 1px 0 rgba(255,255,255,.35)" : undefined, boxShadow: lobbyImg.sign ? "none" : "0 4px 12px rgba(0,0,0,.2)", whiteSpace: "nowrap", lineHeight: 1.25 }}>
+                            {a.label}<br /><span style={{ fontSize: 16, color: lobbyImg.sign ? "#6b4a2a" : "#64748b" }}>{a.count}人</span>
                         </div>
                     </div>
                 ))}
+                {/* 奥行き：奥（上）の島ほど薄い空気遠近（霞）をかける */}
+                {!lite && areas.map((a) => { const t = Math.max(0, Math.min(1, 1 - (a.cy - layout.contentBox.y) / layout.contentBox.h)); const op = t * 0.22; return op < 0.03 ? null : <Fill key={"haze" + a.key} d={areaL[a.key].d} w={areaL[a.key].w} h={areaL[a.key].h} ox={areaL[a.key].x} oy={areaL[a.key].y} color={`rgba(215,235,255,${op.toFixed(2)})`} />; })}
                 {/* 街並み（WORLD）：テーマ画像を中心に1枚。下端中央＝エリア中心 */}
-                {areas.map((a, ai) => townFor(a, ai) ? (() => { const w = a.r * 2.05; return <img key={"town" + a.key} src={smPath(TOWN_IMG[themeOf(ai).key]!, isMobile)} alt="" onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} style={{ position: "absolute", left: a.cx - w / 2, top: a.cy + a.r * 0.78 - w, width: w, zIndex: Math.round(a.cy) + 5, cursor: "pointer", filter: lite ? undefined : "drop-shadow(0 12px 12px rgba(0,0,0,.25))" }} />; })() : null)}
+                {areas.map((a, ai) => townFor(a, ai) ? (() => { const w = a.r * 2.05; const hov = hoverArea === a.key; return <img key={"town" + a.key} src={smPath(TOWN_IMG[themeOf(ai).key]!, isMobile)} alt="" onClick={(e) => { e.stopPropagation(); tapped.current = true; onAreaTap?.(a.key); }} onMouseEnter={() => setHoverArea(a.key)} onMouseLeave={() => setHoverArea((h) => (h === a.key ? null : h))} style={{ position: "absolute", left: a.cx - w / 2, top: a.cy + a.r * 0.78 - w, width: w, zIndex: Math.round(a.cy) + 5, cursor: "pointer", transform: hov ? "translateY(-10px)" : "none", transition: reduceMotion ? undefined : "transform .25s ease, filter .25s ease", filter: lite ? undefined : hov ? "drop-shadow(0 18px 16px rgba(0,0,0,.3)) brightness(1.07) drop-shadow(0 0 22px rgba(255,235,150,.8))" : "drop-shadow(0 12px 12px rgba(0,0,0,.25))" }} />; })() : null)}
                 {/* 島 */}
                 {slots.map((sl) => {
                     const i = islands.get(sl.userId); if (!i) return null;

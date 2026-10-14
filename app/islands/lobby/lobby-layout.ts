@@ -31,13 +31,14 @@ export type LobbyLayout = {
     plaza: { cx: number; cy: number; r: number; box: Box };
     areas: LobbyArea[]; slots: LobbySlot[]; decor: LobbyDecor[];
     worldBox: Box;
+    contentBox: Box;   // 島・看板・広場を含む実コンテンツの範囲（初期カメラはこれに合わせる）
 };
 
 // ---- 定数（ここだけ触れば全体の密度が変わる）
 export const SLOT_W = 300;          // 島1つの占有幅
 export const SLOT_H = 260;          // 島1つの占有高さ
 export const MIN_DIST = 290;        // 島同士の最低間隔（中心間）
-export const PLAZA_R = 520;         // 中央広場の半径（闘技場・掲示板の専用区画）
+export const PLAZA_R = 700;         // 中央広場の半径（闘技場・掲示板の専用区画）
 export const AREA_GAP = 120;        // エリア同士／エリアと広場の隙間
 export const MARGIN = { top: 300, bottom: 220, side: 200 };
 export const NO_DEPT_KEY = "__none__";
@@ -49,11 +50,11 @@ export function rng(seed: number) { let t = seed || 1; return () => { t = (t * 1
 /** n 島を六角リングで収めるのに必要なリング数（中心1＋6k） */
 export function ringsFor(n: number): number { if (n <= 1) return 0; return Math.ceil((-3 + Math.sqrt(9 + 12 * (n - 1))) / 6); }
 /** エリアの半径（島数から） */
-export function areaRadius(n: number): number { const k = ringsFor(n); return Math.max(360, (k + 0.75) * MIN_DIST + 100); }
+export function areaRadius(n: number): number { const k = ringsFor(n); return Math.max(430, (k + 0.75) * MIN_DIST + 100); }
 
 const DEPT_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ec4899", "#8b5cf6", "#14b8a6", "#ef4444", "#64748b"];
 
-export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLayout {
+export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[], opts: { wide?: boolean } = {}): LobbyLayout {
     // 1) エリア候補：メンバーがいる事業部だけ
     const byDept = new Map<string, LobbyIsland[]>();
     for (const i of islands) { const k = i.deptId && depts.some((d) => d.id === i.deptId) ? i.deptId : NO_DEPT_KEY; if (!byDept.has(k)) byDept.set(k, []); byDept.get(k)!.push(i); }
@@ -66,13 +67,15 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
     tmp.sort((a, b) => b.members.length - a.members.length);
 
     // 2) エリアを中央広場の周りに配置（極座標。楕円に潰して横長に）
-    const EX = 1.45, EY = 0.78;   // PC の横長画面に合わせて横に広げる
-    let ringR = Math.max(...tmp.map((a) => (PLAZA_R + AREA_GAP + a.r) / EY), (PLAZA_R + AREA_GAP + 340) / EY);
+    // 画面比に合わせた楕円：PC（wide）は横長 16:9 を使い切る、スマホは縦寄り
+    const EX = opts.wide ? 1.6 : 1.1, EY = opts.wide ? 0.74 : 0.95;
+    let ringR = Math.max(...tmp.map((a) => (PLAZA_R + AREA_GAP * 1.5 + a.r * 1.1) / EY), (PLAZA_R + AREA_GAP + 340) / EY);
     const chord = tmp.reduce((s, a) => s + a.r * 2 + AREA_GAP, 0);
     ringR = Math.max(ringR, chord / (2 * Math.PI));
     const centers: Pt[] = [];
     // 重なり判定（縦に並ぶ隣同士は看板・崖の厚みの分だけ余計に離す：縦距離を 1.35 で割って評価）
-    const clash = (p: Pt, r: number, q: Pt, rq: number) => Math.hypot(p.x - q.x, (p.y - q.y) / 1.35) < r + rq + AREA_GAP * 0.8;
+    // 街画像（半径×2.05）と看板が重ならない距離：横は半径×1.05、縦は街の高さ分（×1.2）を見込む
+    const clash = (p: Pt, r: number, q: Pt, rq: number) => Math.hypot((p.x - q.x) / 1.05, (p.y - q.y) / 1.25) < r + rq + AREA_GAP * 1.4;
     const onRing = (R: number, ang: number): Pt => ({ x: Math.cos(ang) * R * EX, y: Math.sin(ang) * R * EY });
     // 貪欲配置：真上から時計回りに、前のエリアと重ならない最小の角度に置いていく。1周に収まらなければ半径を広げる
     // 小さいエリアは広場に近く置く（橋が長くなりすぎない）：各エリアの半径を全体の R に比例させる
@@ -187,5 +190,8 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
             outline, bridge: { from, to }, landmark: lmW, waterfall, rad, paths });
     });
     const plaza = { cx: plazaC.x, cy: plazaC.y, r: PLAZA_R, box: { x: plazaC.x - PLAZA_R, y: plazaC.y - PLAZA_R, w: PLAZA_R * 2, h: PLAZA_R * 2 } };
-    return { worldW, worldH, plaza, areas, slots, decor, worldBox: { x: 0, y: 0, w: worldW, h: worldH } };
+    // コンテンツ範囲：各エリアの街画像（半径×2.05、上に看板）と広場
+    let cx0 = plaza.cx - plaza.r, cy0 = plaza.cy - plaza.r - 120, cx1 = plaza.cx + plaza.r, cy1 = plaza.cy + plaza.r + 120;
+    for (const a of areas) { const w = a.r * 2.05; cx0 = Math.min(cx0, a.cx - w / 2); cx1 = Math.max(cx1, a.cx + w / 2); cy0 = Math.min(cy0, a.cy + a.r * 0.78 - w - 170); cy1 = Math.max(cy1, a.cy + a.r * 0.9 + 320); }
+    return { worldW, worldH, plaza, areas, slots, decor, worldBox: { x: 0, y: 0, w: worldW, h: worldH }, contentBox: { x: cx0, y: cy0, w: cx1 - cx0, h: cy1 - cy0 } };
 }

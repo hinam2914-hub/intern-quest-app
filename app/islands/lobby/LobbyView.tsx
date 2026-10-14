@@ -9,9 +9,9 @@ import { layoutLobby, type LobbyDept, type LobbyIsland } from "./lobby-layout";
 
 export default function LobbyView({ islands, depts, meId, initialUserId }: { islands: LobbyIsland[]; depts: LobbyDept[]; meId: string | null; initialUserId?: string | null }) {
     const router = useRouter();
-    const layout = useMemo(() => layoutLobby(islands, depts), [islands, depts]);
-    const byId = useMemo(() => new Map(islands.map((i) => [i.id, i])), [islands]);
     const [isMobile, setIsMobile] = useState(false);
+    const layout = useMemo(() => layoutLobby(islands, depts, { wide: !isMobile }), [islands, depts, isMobile]);
+    const byId = useMemo(() => new Map(islands.map((i) => [i.id, i])), [islands]);
     const [mode, setMode] = useState<LobbyMode>("world");
     const [area, setArea] = useState<string | null>(null);
     const [focusId, setFocusId] = useState<string | null>(initialUserId && byId.has(initialUserId) ? initialUserId : null);
