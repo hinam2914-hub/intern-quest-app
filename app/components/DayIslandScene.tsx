@@ -7,7 +7,7 @@ const HOUSE_W: number[] = [104, 112, 120, 128, 134, 130];
 
 export type PetState = { say: string; hop: boolean; onTap: () => void };
 
-export default function DayIslandScene({ config, totalEarned, onHouseClick, pet, width = "min(88vw, 420px)" }: {
+export default function DayIslandScene({ config, totalEarned, onHouseClick, pet, width = "min(88vw, 420px)", flat = false }: {
     config: IslandConfig;
     totalEarned: number;
     onHouseClick?: () => void;
@@ -15,6 +15,8 @@ export default function DayIslandScene({ config, totalEarned, onHouseClick, pet,
     pet?: PetState;
     /** 島の横幅（home は画面幅に追従、ロビーでは固定幅で使う） */
     width?: string | number;
+    /** ロビー AREA 用：島の台座（影・側面・上面）を描かず、家と飾りを地面に直接置く */
+    flat?: boolean;
 }) {
     const view = config;
     const stage = getHouseStage(totalEarned);
@@ -33,17 +35,17 @@ export default function DayIslandScene({ config, totalEarned, onHouseClick, pet,
                 {view.sky && (SKY_IMG[view.sky] ? (view.sky === "sky_niji" ? <img key={"sky" + view.sky} src={SKY_IMG[view.sky]} alt="" style={{ position: "absolute", bottom: 112, left: "50%", transform: "translateX(-50%)", width: "96%", zIndex: 2, pointerEvents: "none", opacity: .92, animation: "dsPop .5s ease-out" }} /> : <img key={"sky" + view.sky} src={SKY_IMG[view.sky]} alt="" style={{ position: "absolute", top: "6%", right: "10%", width: "16%", zIndex: 6, pointerEvents: "none", animation: "dsFloat 5s ease-in-out infinite, dsPop .5s ease-out" }} />) : (SKY_EMOJI[view.sky] && <div key={"sky" + view.sky} style={{ position: "absolute", top: 0, right: "24%", fontSize: 42, zIndex: 1, animation: "dsFloat 5s ease-in-out infinite, dsPop .5s ease-out" }}>{SKY_EMOJI[view.sky]}</div>))}
 
                 {/* 島の影（浮遊感・薄青紫） */}
-                <div style={{ position: "absolute", bottom: -26, left: "50%", transform: "translateX(-50%)", width: "62%", height: 24, borderRadius: "50%", background: "rgba(130,125,200,.32)", filter: "blur(13px)", zIndex: 0 }} />
+                {!flat && <div style={{ position: "absolute", bottom: -26, left: "50%", transform: "translateX(-50%)", width: "62%", height: 24, borderRadius: "50%", background: "rgba(130,125,200,.32)", filter: "blur(13px)", zIndex: 0 }} />}
 
                 {/* 島の側面（草の縁→明茶→濃茶の層＋丸い下端） */}
-                <div style={{ position: "absolute", bottom: 6, left: "50%", transform: "translateX(-50%)", width: "76%", height: 66, borderRadius: "8% 8% 50% 50% / 12% 12% 100% 100%", background: "linear-gradient(180deg, #7ec95f 0%, #a5814f 16%, #8a6a48 45%, #5c4330 82%, #4a3626 100%)", zIndex: 1 }}>
+                {!flat && <div style={{ position: "absolute", bottom: 6, left: "50%", transform: "translateX(-50%)", width: "76%", height: 66, borderRadius: "8% 8% 50% 50% / 12% 12% 100% 100%", background: "linear-gradient(180deg, #7ec95f 0%, #a5814f 16%, #8a6a48 45%, #5c4330 82%, #4a3626 100%)", zIndex: 1 }}>
                     {[{ l: "22%", b: 12, w: 9 }, { l: "58%", b: 7, w: 7 }, { l: "76%", b: 15, w: 8 }].map((r, k) => (
                         <div key={k} style={{ position: "absolute", left: r.l, bottom: r.b, width: r.w, height: r.w * .72, borderRadius: "44%", background: "rgba(120,120,130,.55)" }} />
                     ))}
-                </div>
+                </div>}
 
                 {/* 島の上面（奥暗→手前明の草地） */}
-                <div style={{ position: "absolute", bottom: 46, left: "50%", transform: "translateX(-50%)", width: "88%", height: 96, borderRadius: "50%", background: (view.ground && GROUND_TOP[view.ground]) || "radial-gradient(ellipse at 50% 42%, #baf28b 0%, #83d96d 55%, #54b967 100%)", boxShadow: "inset 0 3px 5px rgba(255,255,255,.35), inset 0 -8px 12px rgba(50,100,40,.3)", zIndex: 2 }}>
+                {!flat && <div style={{ position: "absolute", bottom: 46, left: "50%", transform: "translateX(-50%)", width: "88%", height: 96, borderRadius: "50%", background: (view.ground && GROUND_TOP[view.ground]) || "radial-gradient(ellipse at 50% 42%, #baf28b 0%, #83d96d 55%, #54b967 100%)", boxShadow: "inset 0 3px 5px rgba(255,255,255,.35), inset 0 -8px 12px rgba(50,100,40,.3)", zIndex: 2 }}>
                     {view.ground && GROUND_IMG[view.ground] && <img src={GROUND_IMG[view.ground]} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "fill", borderRadius: "50%", zIndex: 1, pointerEvents: "none" }} />}
                     {/* 環境装飾：草・花・石（小さく控えめ） */}
                     {[{ l: "12%", t: "48%", e: "🌿", s: 12 }, { l: "84%", t: "40%", e: "🌿", s: 11 }, { l: "26%", t: "70%", e: "🌿", s: 10 }, { l: "70%", t: "76%", e: "🌿", s: 11 }].map((g, k) => (
@@ -66,11 +68,12 @@ export default function DayIslandScene({ config, totalEarned, onHouseClick, pet,
                     {view.ground === "ground_momiji" && [{ l: "26%", t: "44%" }, { l: "64%", t: "72%" }, { l: "76%", t: "42%" }].map((f, k) => (
                         <div key={"mj" + k} style={{ position: "absolute", left: f.l, top: f.t, fontSize: 10 }}>🍂</div>
                     ))}
-                </div>
+                </div>}
 
                 {/* 木（家の左奥・上面より手前レイヤー） */}
                 {view.tree && (TREE_IMG[view.tree] ? <div key={"tree" + view.tree} style={{ position: "absolute", bottom: 86, left: "5%", width: "36%", zIndex: 3, animation: "dsPop .5s ease-out" }}><div style={{ position: "absolute", bottom: -3, left: "50%", transform: "translateX(-50%)", width: "68%", height: 12, borderRadius: "50%", background: "rgba(45,80,40,.36)", filter: "blur(5px)" }} /><img src={TREE_IMG[view.tree]} alt="" style={{ width: "100%", display: "block", position: "relative", filter: "drop-shadow(0 4px 6px rgba(0,0,0,.2))" }} /></div> : (TREE_EMOJI[view.tree] && <div key={"tree" + view.tree} style={{ position: "absolute", bottom: 104, left: "17%", fontSize: 46, zIndex: 3, filter: "drop-shadow(0 4px 5px rgba(0,0,0,.25))", animation: "dsPop .5s ease-out" }}>{TREE_EMOJI[view.tree]}</div>))}
 
+                {flat && <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", width: "60%", height: 70, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(60,90,45,.28), rgba(60,90,45,0) 70%)", filter: "blur(6px)", zIndex: 2 }} />}
                 {/* 家の足元影 */}
                 <div style={{ position: "absolute", bottom: 66, left: "50%", transform: "translateX(-50%)", width: HOUSE_W[stage.idx] * .82, height: 15, borderRadius: "50%", background: "rgba(60,90,45,.32)", filter: "blur(5px)", zIndex: 3 }} />
                 {/* 家（中央より少し奥＝上面の上寄り） */}

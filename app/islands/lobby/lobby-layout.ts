@@ -20,6 +20,7 @@ export type LobbyArea = {
     bridge: { from: Pt; to: Pt };   // エリア縁 → 中央広場縁
     landmark: Pt;                   // テーマのランドマーク（島はここを避ける）
     waterfall: { p: Pt; ang: number };   // 滝の位置（輪郭の下半分）
+    paths: [Pt, Pt][];              // 家同士をつなぐ小道（最小全域木）
     rad: (t: number) => number;     // 輪郭の半径関数（角度→半径）
 };
 export type LobbySlot = { userId: string; areaKey: string; x: number; y: number; ring: number; z: number; isLeader: boolean };
@@ -35,9 +36,9 @@ export type LobbyLayout = {
 // ---- 定数（ここだけ触れば全体の密度が変わる）
 export const SLOT_W = 300;          // 島1つの占有幅
 export const SLOT_H = 260;          // 島1つの占有高さ
-export const MIN_DIST = 250;        // 島同士の最低間隔（中心間）
+export const MIN_DIST = 290;        // 島同士の最低間隔（中心間）
 export const PLAZA_R = 520;         // 中央広場の半径（闘技場・掲示板の専用区画）
-export const AREA_GAP = 150;        // エリア同士／エリアと広場の隙間
+export const AREA_GAP = 120;        // エリア同士／エリアと広場の隙間
 export const MARGIN = { top: 300, bottom: 220, side: 200 };
 export const NO_DEPT_KEY = "__none__";
 
@@ -48,7 +49,7 @@ export function rng(seed: number) { let t = seed || 1; return () => { t = (t * 1
 /** n 島を六角リングで収めるのに必要なリング数（中心1＋6k） */
 export function ringsFor(n: number): number { if (n <= 1) return 0; return Math.ceil((-3 + Math.sqrt(9 + 12 * (n - 1))) / 6); }
 /** エリアの半径（島数から） */
-export function areaRadius(n: number): number { const k = ringsFor(n); return Math.max(340, (k + 0.6) * MIN_DIST + 90); }
+export function areaRadius(n: number): number { const k = ringsFor(n); return Math.max(360, (k + 0.75) * MIN_DIST + 100); }
 
 const DEPT_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ec4899", "#8b5cf6", "#14b8a6", "#ef4444", "#64748b"];
 
@@ -173,13 +174,17 @@ export function layoutLobby(islands: LobbyIsland[], depts: LobbyDept[]): LobbyLa
             const tt = (x - cx) * dir.x + (y - cy) * dir.y; if (tt > 60) { const px = (x - cx) - dir.x * tt, py = (y - cy) - dir.y * tt; if (Math.hypot(px, py) < 110) continue; }
             decor.push({ x, y, k: dr(), s: 0.7 + dr() * 0.5, z: y, areaKey: a.key, edge });
         }
+        // 小道：家の座標を最小全域木でつなぐ（中心の島から伸びる）
+        const paths: [Pt, Pt][] = [];
+        { const P = members.map((_, i) => ({ x: cx + pts[i].x, y: cy + pts[i].y })); const used = [0]; const rest = P.map((_, i) => i).slice(1);
+          while (rest.length) { let best = -1, bi = -1, bu = -1, bd = Infinity; for (const u of used) for (let k = 0; k < rest.length; k++) { const d = Math.hypot(P[u].x - P[rest[k]].x, (P[u].y - P[rest[k]].y) * 1.3); if (d < bd) { bd = d; best = rest[k]; bi = k; bu = u; } } paths.push([P[bu], P[best]]); used.push(best); rest.splice(bi, 1); } }
         // 滝：輪郭の下半分（橋と反対寄り）のどこか
         const wa = Math.PI / 2 + (dr() - 0.5) * 1.6;
         const waterfall = { p: { x: Math.round(cx + Math.cos(wa) * rad(wa) * 0.97), y: Math.round(cy + Math.sin(wa) * rad(wa) * 0.9 * 0.97) }, ang: wa };
         areas.push({ key: a.key, label: a.label, short: a.short, color: a.color, count: members.length, cx, cy, r: a.r,
             box: { x: cx - a.r, y: cy - a.r * 0.9 - 90, w: a.r * 2, h: a.r * 1.8 + 90 },
             focus: { x: fx0 - 40, y: fy0 - 60, w: fx1 - fx0 + 80, h: fy1 - fy0 + 80 },
-            outline, bridge: { from, to }, landmark: lmW, waterfall, rad });
+            outline, bridge: { from, to }, landmark: lmW, waterfall, rad, paths });
     });
     const plaza = { cx: plazaC.x, cy: plazaC.y, r: PLAZA_R, box: { x: plazaC.x - PLAZA_R, y: plazaC.y - PLAZA_R, w: PLAZA_R * 2, h: PLAZA_R * 2 } };
     return { worldW, worldH, plaza, areas, slots, decor, worldBox: { x: 0, y: 0, w: worldW, h: worldH } };

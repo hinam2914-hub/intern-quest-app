@@ -135,7 +135,7 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
         tweenCancel.current = tweenCam(from, to, ms, (k) => { camRef.current = k; setCam(k); }, () => { tweenCancel.current = null; });
     }
     function setMode(m: LobbyMode, area: string | null, focus: string | null) { modeRef.current = m; areaRef.current = area; focusRef.current = focus; setModeState(m); onCamMode?.(m, area); }
-    function worldCam(): Cam { return fitBox(layout.worldBox, vp, ins, isMobile ? 0.98 : 0.96, minS, maxS); }
+    function worldCam(): Cam { return fitBox(layout.worldBox, vp, ins, isMobile ? 0.98 : 1.0, minS, maxS); }
     function areaCam(key: string): Cam {
         const a = areas.find((x) => x.key === key); if (!a) return worldCam();
         if (!isMobile) return fitBox(a.box, vp, ins, 0.92, minS, maxS);
@@ -271,7 +271,8 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                             {!lobbyImg.bridge_mid && <><line x1={a.bridge.from.x} y1={a.bridge.from.y} x2={a.bridge.to.x} y2={a.bridge.to.y} stroke="#6b4a34" strokeWidth="46" strokeLinecap="round" />
                             <line x1={a.bridge.from.x} y1={a.bridge.from.y} x2={a.bridge.to.x} y2={a.bridge.to.y} stroke="#c9a46a" strokeWidth="34" strokeLinecap="round" strokeDasharray="22 10" /></>}
                             <line x1={a.cx} y1={a.cy + 20} x2={a.bridge.from.x} y2={a.bridge.from.y} stroke={themeOf(areas.indexOf(a)).road} strokeWidth="26" strokeLinecap="round" opacity=".85" />
-                            <ellipse cx={a.cx} cy={a.cy + 10} rx={Math.min(a.r * 0.5, 330)} ry={Math.min(a.r * 0.5, 330) * 0.8} fill="none" stroke={themeOf(areas.indexOf(a)).road} strokeWidth="18" strokeDasharray="30 26" opacity=".55" />
+                            {areaActive(a.key) && a.paths.map((pp, k) => { const mx = (pp[0].x + pp[1].x) / 2, my = (pp[0].y + pp[1].y) / 2 + 30; return <path key={"pt" + k} d={`M ${pp[0].x} ${pp[0].y + 10} Q ${mx} ${my} ${pp[1].x} ${pp[1].y + 10}`} fill="none" stroke={themeOf(areas.indexOf(a)).road} strokeWidth="22" strokeLinecap="round" opacity=".8" />; })}
+                            {!areaActive(a.key) && <ellipse cx={a.cx} cy={a.cy + 10} rx={Math.min(a.r * 0.5, 330)} ry={Math.min(a.r * 0.5, 330) * 0.8} fill="none" stroke={themeOf(areas.indexOf(a)).road} strokeWidth="18" strokeDasharray="30 26" opacity=".55" />}
                         </g>
                     ))}
                 </svg>
@@ -333,14 +334,14 @@ export default function LobbyWorld({ layout, islands, camCmd, focusId, onIslandT
                     const i = islands.get(sl.userId); if (!i) return null;
                     { const ai = areas.findIndex((x) => x.key === sl.areaKey); if (ai >= 0 && townFor(areas[ai], ai)) return null; }
                     const detail = detailFor(sl); const isFocus = focusId === sl.userId;
+                    const ar = areas.find((x) => x.key === sl.areaKey); const depth = ar ? 0.88 + 0.12 * Math.min(1, Math.max(0, (sl.y - (ar.cy - ar.r * 0.9)) / (ar.r * 1.8))) : 1;
                     return (
                         <div key={sl.userId} onClick={(e) => tapIsland(e, sl.userId)} style={{ position: "absolute", left: sl.x, top: sl.y, width: 0, height: 0, zIndex: Math.round(sl.z) + 10, cursor: "pointer" }}>
-                            {detail && lobbyImg.base && <img src={LOBBY_IMG.base} alt="" style={{ position: "absolute", left: -175, top: -135, width: 350, pointerEvents: "none", opacity: .95 }} />}
-                            {sl.isLeader && <img src={TERRAIN_IMG.plaza} alt="" style={{ position: "absolute", left: -170, top: -120, width: 340, pointerEvents: "none", opacity: .85 }} />}
+                                                        {sl.isLeader && <img src={TERRAIN_IMG.plaza} alt="" style={{ position: "absolute", left: -170, top: -120, width: 340, pointerEvents: "none", opacity: .85 }} />}
                             {isFocus && <div style={{ position: "absolute", left: -150, top: -60, width: 300, height: 110, borderRadius: "50%", border: "4px solid #fbbf24", boxShadow: "0 0 24px #fbbf24, inset 0 0 24px rgba(251,191,36,.5)", pointerEvents: "none" }} />}
                             {detail ? (
-                                <div style={{ position: "absolute", left: -ISLAND_W / 2, bottom: 0, width: ISLAND_W, transform: `scale(${ISLAND_SCALE})`, transformOrigin: "50% 100%", pointerEvents: "none" }}>
-                                    <DayIslandScene config={i.config} totalEarned={i.totalEarned} width={ISLAND_W} />
+                                <div style={{ position: "absolute", left: -ISLAND_W / 2, bottom: 0, width: ISLAND_W, transform: `scale(${(areaActive(sl.areaKey) ? 0.95 : ISLAND_SCALE) * depth})`, transformOrigin: "50% 100%", pointerEvents: "none" }}>
+                                    <DayIslandScene config={i.config} totalEarned={i.totalEarned} width={ISLAND_W} flat />
                                     <img src={avatarSrc(i.avatarId)} alt="" style={{ position: "absolute", bottom: 86, left: "50%", transform: "translateX(-118px)", width: 54, height: 54, objectFit: "cover", borderRadius: "50%", border: "3px solid #fff", boxShadow: "0 3px 6px rgba(0,0,0,.35)", zIndex: 9 }} />
                                 </div>
                             ) : <IslandMini i={i} leader={sl.isLeader} />}
