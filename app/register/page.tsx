@@ -137,7 +137,7 @@ export default function RegisterPage() {
             setDone("confirm");
         } else {
             setDone("redirect");
-            setTimeout(() => router.push("/onboarding"), 1800);
+            setTimeout(() => router.push("/onboarding/profile"), 1800);
         }
         setLoading(false);
     };

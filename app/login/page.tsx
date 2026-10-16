@@ -11,11 +11,14 @@ import { supabase, KEEP_LOGIN_KEY } from "@/app/lib/supabase";
 async function resolveDestination(userId: string): Promise<{ to: string } | { blocked: true }> {
     const { data: profile } = await supabase
         .from("profiles")
-        .select("name, onboarding_done, is_active")
+        .select("name, onboarding_done, is_active, department_id, mbti, hobby_category")
         .eq("id", userId)
         .single();
     if (profile && (profile as any).is_active === false) return { blocked: true };
-    const to = (!profile?.name || profile.name.trim() === "") ? "/register" : ((profile as any)?.onboarding_done ? "/home" : "/onboarding");
+    const pr = profile as any;
+    // 新規ユーザー（未完了かつ冒険者情報が未入力）は冒険者情報登録から再開。それ以外は従来どおり
+    const fresh = pr && !pr.onboarding_done && !pr.department_id && !pr.mbti && !pr.hobby_category;
+    const to = (!profile?.name || profile.name.trim() === "") ? "/register" : (pr?.onboarding_done ? "/home" : (fresh ? "/onboarding/profile" : "/onboarding"));
     return { to };
 }
 
