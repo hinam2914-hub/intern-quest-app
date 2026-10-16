@@ -1,15 +1,20 @@
-export default function Page() {
-  return (
-    <main style={{ padding: 24 }}>
-      <h1>Intern Quest MVP</h1>
-      <p>デプロイ成功。ここから作っていく。</p>
+"use client";
+// ルート（/）：ログイン済みなら /home、未ログインなら /login（タイトル画面）へ。
+// 以前は開発用のプレースホルダー表示だった。
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "./lib/supabase";
 
-      <div style={{ marginTop: 24, display: "grid", gap: 12 }}>
-        <a href="/login">ログイン画面へ</a>
-        <a href="/mypage">マイページへ</a>
-        <a href="/ranking">ランキングへ</a>
-        <a href="/report">日報ページへ</a>
-      </div>
+export default function Page() {
+  const router = useRouter();
+  useEffect(() => {
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => router.replace(session?.user ? "/home" : "/login"))
+      .catch(() => router.replace("/login"));
+  }, [router]);
+  return (
+    <main style={{ minHeight: "100vh", background: "#79c0ee", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontFamily: "system-ui, sans-serif" }}>
+      Intern Quest 2.0
     </main>
   );
 }
