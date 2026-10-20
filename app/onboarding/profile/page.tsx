@@ -135,7 +135,7 @@ export default function OnboardingProfilePage() {
         }
         setMessage("✅ 登録しました！");
         // 次：職業選択（未実装）→ 当面は既存のオンボーディング画面へ
-        setTimeout(() => router.push("/onboarding"), 700);
+        setTimeout(() => router.push("/onboarding/job"), 700);
     };
 
     const art = stage ? ARTS[stage.kind] : null;
