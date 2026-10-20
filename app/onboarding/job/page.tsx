@@ -35,49 +35,40 @@ const CSS = `
 .jb-head::before{left:-14px;border-radius:8px 0 0 8px}.jb-head::after{right:-14px;border-radius:0 8px 8px 0}
 .jb-h1{margin:0;font-size:clamp(24px,3vw,38px);font-weight:900;color:#17397d}
 .jb-sub{margin:6px 0 0;font-size:clamp(13px,1.2vw,16px);font-weight:800;color:#2b3f6b}
-.jb-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;max-width:1500px;margin:0 auto}
-.jb-card{position:relative;min-height:min(62vh,600px);background:linear-gradient(180deg,rgba(255,253,246,.97),rgba(247,236,210,.97));overflow:hidden;border:3px solid #d8b55e;border-radius:20px;padding:14px 12px 14px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;box-shadow:0 10px 24px rgba(30,60,120,.18);display:flex;flex-direction:column;align-items:center;font-family:inherit;color:inherit}
-.jb-card:hover{transform:translateY(-4px)}
-.jb-card.on{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.35),0 0 30px rgba(59,130,246,.55),0 14px 30px rgba(30,60,120,.25);transform:translateY(-6px)}
-.jb-card .chk{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:900;display:none;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.25)}
+.jb-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;max-width:1500px;margin:0 auto;padding:12px 0}
+.jb-card{position:relative;aspect-ratio:300/455;background:url(/images/onboarding/job-card-normal.webp) center/100% 100% no-repeat;border:none;padding:9% 9% 7%;text-align:center;cursor:pointer;transition:transform .25s,filter .25s;display:flex;flex-direction:column;align-items:center;font-family:inherit;color:inherit;filter:drop-shadow(0 10px 16px rgba(30,60,120,.25))}
+.jb-card:hover{background-image:url(/images/onboarding/job-card-hover.webp);transform:translateY(-4px)}
+.jb-card.on{background-image:url(/images/onboarding/job-card-selected.webp);transform:translateY(-6px);filter:drop-shadow(0 0 18px rgba(80,160,255,.75)) drop-shadow(0 12px 20px rgba(30,60,120,.25))}
+.jb-card .chk{position:absolute;top:4%;right:5%;width:26px;height:26px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:900;font-size:14px;display:none;align-items:center;justify-content:center;box-shadow:0 0 0 2px #fff,0 3px 8px rgba(0,0,0,.3)}
 .jb-card.on .chk{display:flex}
-.jb-tint{position:absolute;left:0;right:0;top:0;height:46%;opacity:.28;pointer-events:none}
-.jb-img{position:relative;width:100%;flex:1 1 0;min-height:0;max-height:52vh;object-fit:contain;object-position:center center;filter:drop-shadow(0 10px 10px rgba(30,40,80,.3))}
-.jb-name{margin-top:6px;font-size:18px;font-weight:900}
-.jb-en{font-size:11px;font-weight:900;letter-spacing:.2em;margin-top:2px}
-.jb-ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:8px auto 6px;color:#fff;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 3px 8px rgba(0,0,0,.2)}
-.jb-ic svg{width:20px;height:20px;fill:#fff}
-.jb-desc{font-size:12.5px;font-weight:700;color:#4b3f2a;line-height:1.55;min-height:3.1em}
-.jb-pick{margin-top:10px;width:100%;height:40px;border-radius:999px;border:2px solid #e8c45a;font-family:inherit;font-weight:900;font-size:13px;color:#fff;cursor:pointer;background:linear-gradient(180deg,#4d9af5,#2458c7);box-shadow:0 4px 0 #173f93}
+.jb-tint{position:absolute;left:8%;right:8%;top:5%;height:40%;opacity:.22;pointer-events:none;border-radius:8px 8px 0 0;mix-blend-mode:multiply}
+.jb-emblem{position:relative;width:26%;height:auto;margin-top:-6%;filter:drop-shadow(0 4px 6px rgba(0,0,0,.25));z-index:1}
+.jb-img{position:relative;width:96%;flex:1 1 0;min-height:0;object-fit:contain;object-position:center;filter:drop-shadow(0 8px 8px rgba(30,40,80,.3))}
+.jb-name{margin-top:2px;font-size:17px;font-weight:900;line-height:1.15}
+.jb-en{font-size:10.5px;font-weight:900;letter-spacing:.2em;margin-top:1px}
+.jb-desc{font-size:12px;font-weight:700;color:#4b3f2a;line-height:1.5;min-height:3em;margin-top:4px}
+.jb-pick{margin-top:6px;width:92%;height:38px;transition:box-shadow .25s,filter .25s;border-radius:999px;border:2px solid #e8c45a;font-family:inherit;font-weight:900;font-size:13px;color:#fff;cursor:pointer;background:linear-gradient(180deg,#4d9af5,#2458c7);box-shadow:0 4px 0 #173f93}
+.jb-card:hover .jb-pick{filter:brightness(1.08);box-shadow:0 4px 0 #173f93,0 0 14px rgba(80,160,255,.8)}
 .jb-card.on .jb-pick{background:linear-gradient(180deg,#ffd45c,#e9a72a);color:#4a2f05;box-shadow:0 4px 0 #b67a12}
 .jb-foot{position:sticky;bottom:0;margin:14px auto 0;max-width:560px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 0 calc(8px + env(safe-area-inset-bottom))}
-.jb-next{width:100%;height:56px;border-radius:999px;border:2px solid #e8c45a;font-family:inherit;font-weight:900;font-size:18px;letter-spacing:.08em;color:#fff;cursor:pointer;background:linear-gradient(180deg,#4d9af5 0%,#2f6fd6 50%,#1d4fb3 100%);box-shadow:0 0 0 2px #fff6d0,0 8px 18px rgba(36,88,199,.4)}
+.jb-next{position:relative;width:100%;padding:0 48px;height:56px;border-radius:999px;border:2px solid #e8c45a;font-family:inherit;font-weight:900;font-size:18px;letter-spacing:.08em;color:#fff;cursor:pointer;background:linear-gradient(180deg,#4d9af5 0%,#2f6fd6 50%,#1d4fb3 100%);box-shadow:0 0 0 2px #fff6d0,0 8px 18px rgba(36,88,199,.4)}
+.jb-next::before,.jb-next::after{content:"✦";position:absolute;top:50%;transform:translateY(-50%);color:#f3c84c;font-size:22px;text-shadow:0 0 8px #fff}
+.jb-next::before{left:14px}.jb-next::after{right:14px}
 .jb-next:disabled{opacity:.5;cursor:default;filter:grayscale(.3)}
 .jb-msg{font-size:13px;font-weight:800;border-radius:10px;padding:8px 12px;text-align:center}
 .jb-msg.ng{color:#991b1b;background:#fee2e2}.jb-msg.ok{color:#14532d;background:#dcfce7}
-@media (max-width:1300px){.jb-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.jb-card{min-height:0}.jb-img{flex:none;aspect-ratio:1/1;max-height:none}}
+@media (max-width:1300px){.jb-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-width:900px}}
 @media (max-width:640px){
   .jb-root{padding:12px 12px calc(12px + env(safe-area-inset-bottom));background-position:62% 30%;background-attachment:scroll}
   .jb-head{padding:10px 26px 12px;display:block;align-self:stretch}.jb-head::before,.jb-head::after{display:none}
   .jb-top{flex-wrap:wrap}.jb-prog{order:3;width:100%;margin-top:6px}.jb-prog span{font-size:10px;padding:3px 8px}
   .jb-head{margin:14px auto 12px}
   .jb-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .jb-card{padding:10px 8px 10px;border-radius:16px;border-width:2px;min-height:0}
-  .jb-img{flex:none;aspect-ratio:1/1;max-height:none}
   .jb-name{font-size:15px}.jb-en{font-size:9.5px}.jb-desc{font-size:11.5px;min-height:0}
-  .jb-ic{width:28px;height:28px;margin:6px auto 4px}.jb-ic svg{width:16px;height:16px}
-  .jb-pick{height:38px;font-size:12px}
+  .jb-emblem{width:28%}.jb-card .chk{width:22px;height:22px;font-size:12px}
+  .jb-pick{height:36px;font-size:11.5px}
 }
 `;
-
-const ICON: Record<JobKey, React.ReactNode> = {
-    knight: <svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z" /></svg>,
-    mage: <svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.2L21 9l-5 4.2L17.5 20 12 16.6 6.5 20 8 13.2 3 9l6.6-.8z" /></svg>,
-    archer: <svg viewBox="0 0 24 24"><path d="M3 21l9-9M21 3l-4 1 2 2-7 7 1.5 1.5 7-7 2 2 1-4z" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" /></svg>,
-    healer: <svg viewBox="0 0 24 24"><path d="M12 21s-7-4.6-9-9c-1.3-3 .6-7 4.5-7 2 0 3.5 1 4.5 2.5C13 6 14.5 5 16.5 5c3.9 0 5.8 4 4.5 7-2 4.4-9 9-9 9z" /></svg>,
-    rogue: <svg viewBox="0 0 24 24"><path d="M14 3l7 7-2 2-1.5-1.5L8 20H4v-4l9.5-9.5L12 5z" /></svg>,
-    paladin: <svg viewBox="0 0 24 24"><path d="M12 2l2 5 5 .5-3.8 3.4L16.5 16 12 13.3 7.5 16l1.3-5.1L5 7.5 10 7z" /><path d="M4 19h16v2H4z" /></svg>,
-};
 
 export default function JobSelectPage() {
     const router = useRouter();
@@ -129,16 +120,17 @@ export default function JobSelectPage() {
                     <h1 className="jb-h1">職業を選択しよう</h1>
                     <p className="jb-sub">それぞれの強みを活かして、仲間と一緒に成長の冒険に出よう！</p>
                 </header>
+                <div className="jb-spacer" />
                 <div className="jb-grid" role="radiogroup" aria-label="職業">
                     {JOBS.map((j) => (
                         <div key={j.key} role="radio" aria-checked={sel === j.key} tabIndex={0} className={"jb-card" + (sel === j.key ? " on" : "")}
                             onClick={() => setSel(j.key)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSel(j.key); } }}>
                             <div className="jb-tint" style={{ background: `linear-gradient(180deg, ${j.color}, transparent)` }} />
                             <div className="chk">✓</div>
+                            <img className="jb-emblem" src={`/images/onboarding/job-icon-${j.key}.webp`} alt="" decoding="async" />
                             <img className="jb-img" src={`/jobs/${j.key}.webp`} alt={j.name} decoding="async" />
                             <div className="jb-name">{j.name}</div>
                             <div className="jb-en" style={{ color: j.color }}>{j.en}</div>
-                            <div className="jb-ic" style={{ background: j.color }}>{ICON[j.key]}</div>
                             <div className="jb-desc">{j.desc}</div>
                             <button className="jb-pick" type="button" onClick={(e) => { e.stopPropagation(); setSel(j.key); }}>{sel === j.key ? "選択中" : "この職業を選択"}</button>
                         </div>
