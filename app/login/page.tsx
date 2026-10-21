@@ -11,7 +11,7 @@ import { supabase, KEEP_LOGIN_KEY } from "@/app/lib/supabase";
 async function resolveDestination(userId: string): Promise<{ to: string } | { blocked: true }> {
     const { data: profile } = await supabase
         .from("profiles")
-        .select("name, onboarding_done, is_active, department_id, mbti, hobby_category, job_class")
+        .select("name, onboarding_done, is_active, department_id, mbti, hobby_category, job_class, avatar_config")
         .eq("id", userId)
         .single();
     if (profile && (profile as any).is_active === false) return { blocked: true };
@@ -20,7 +20,9 @@ async function resolveDestination(userId: string): Promise<{ to: string } | { bl
     const fresh = pr && !pr.onboarding_done && !pr.department_id && !pr.mbti && !pr.hobby_category;
     // 冒険者情報は入力済みだが職業が未選択の新規ユーザーは職業選択から再開
     const needJob = pr && !pr.onboarding_done && !fresh && pr.department_id && pr.mbti && pr.hobby_category && !pr.job_class;
-    const to = (!profile?.name || profile.name.trim() === "") ? "/register" : (pr?.onboarding_done ? "/home" : (fresh ? "/onboarding/profile" : needJob ? "/onboarding/job" : "/onboarding"));
+    // 職業は選択済みだがアバター未設定の新規ユーザーはアバター作成から再開
+    const needAvatar = pr && !pr.onboarding_done && !fresh && !needJob && pr.job_class && pr.avatar_config?.type !== "layered";
+    const to = (!profile?.name || profile.name.trim() === "") ? "/register" : (pr?.onboarding_done ? "/home" : (fresh ? "/onboarding/profile" : needJob ? "/onboarding/job" : needAvatar ? "/onboarding/avatar" : "/onboarding"));
     return { to };
 }
 

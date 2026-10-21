@@ -102,7 +102,7 @@ export default function JobSelectPage() {
         setSaved(sel);
         setMsg("✅ 職業を登録しました！");
         // 次：アバター作成（未実装）→ 当面は既存のオンボーディング画面へ
-        setTimeout(() => router.push("/onboarding"), 700);
+        setTimeout(() => router.push("/onboarding/avatar"), 700);
     };
 
     return (
