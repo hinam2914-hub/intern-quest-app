@@ -61,6 +61,11 @@ def hair_only(img):
     skin=(r>185)&(g>140)&(b_>115)&(r-b_>20)&(r-b_<95)&(g>=b_)&(r>=g); white=(r>225)&(g>220)&(b_>210)
     hairish=(np.abs(r-g)>12)|(r<150)
     al[skin|white|~hairish]=0
+    yy=np.arange(1024)[:,None]; xx=np.arange(1024)[None,:]
+    ears=(yy>360)&(yy<540)&((xx<400)|(xx>624))   # 耳の位置だけ
+    band=ndimage.binary_dilation(vis,iterations=8)&~ndimage.binary_erosion(vis,iterations=8)&ears
+    strong=(r-g>28)&(r<200)
+    al[band&~strong]=0
     m=ndimage.binary_opening(al>40,iterations=2); lab,k=ndimage.label(m)
     if k:
         ids=[]
@@ -94,7 +99,7 @@ if k:
     keep_ids=[]
     for i in range(1,k+1):
         comp=lab==i; area=comp.sum()
-        if area<2500: continue
+        if area<6000: continue
         ys,xs=np.where(comp); fill=area/((ys.max()-ys.min()+1)*(xs.max()-xs.min()+1))
         if area<12000 and fill<0.35: continue
         keep_ids.append(i)
