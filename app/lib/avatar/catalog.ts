@@ -18,7 +18,7 @@ export type Base = "f" | "m";
 export type Part = { id: string; label: string; src: string | null; swatch?: string };
 
 export const SKIN: Part[] = [
-    { id: "light", label: "ライト", src: null, swatch: "#fde7d2" },
+    { id: "light", label: "ライト", src: "ok", swatch: "#fde7d2" },
     { id: "fair", label: "フェア", src: null, swatch: "#f5d3b4" },
     { id: "tan", label: "タン", src: null, swatch: "#d9a97e" },
     { id: "deep", label: "ディープ", src: null, swatch: "#9c6a46" },
@@ -48,7 +48,7 @@ type JobGear = { outfit: Part[]; head: Part[]; cape: Part[]; weapon: Part[]; acc
 const none = (label = "なし"): Part => ({ id: "none", label, src: "" });
 export const GEAR: Record<JobKey, JobGear> = {
     knight: {
-        outfit: [{ id: "knight_default", label: "ナイトの鎧", src: null }],
+        outfit: [{ id: "knight_default", label: "ナイトの鎧", src: "ok" }],
         head: [none(), { id: "knight_shoulder", label: "肩装飾", src: null }],
         cape: [none(), { id: "knight_cape", label: "青のマント", src: null }],
         weapon: [none(), { id: "knight_sword", label: "剣", src: null }, { id: "knight_sword_shield", label: "剣と盾", src: null }],
@@ -107,14 +107,26 @@ export function defaultConfig(job: JobKey, base: Base = "f", presetId?: string):
 }
 
 /** 設定 → レイヤーごとの画像 URL（未納品は null）。描画コンポーネントはこれを順に重ねる */
+/** 納品済みの素体（base__skin） */
+export const BODY_READY = new Set(["f__light"]);
+/** 納品済みの衣装（outfitId__base）と、背面画像があるもの */
+export const OUTFIT_READY = new Set(["knight_default__f"]);
+export const OUTFIT_HAS_BACK = new Set<string>([]);
+
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
     const find = (list: Part[], id: string) => list.find((p) => p.id === id);
     const hair = find(HAIR[c.base], c.hair);
     const hairSrc = (which: "back" | "front") => hair?.src ? `/avatar/hair_${which}/${hair.id}__${c.hairColor}.png` : null;
     const gear = (list: Part[], id: string, layer: string) => { const p = find(list, id); if (!p || p.id === "none") return { src: "", missing: false }; return { src: p.src ? `/avatar/${layer}/${p.id}.png` : null, missing: !p.src }; };
-    const out = (which: "back" | "front") => { const p = find(g.outfit, c.outfit); return { src: p?.src ? `/avatar/outfit_${which}/${p.id}__${c.base}.png` : null, missing: !p?.src }; };
-    const body = { src: null as string | null, missing: true }; // public/avatar/body/<base>__<skin>.png（未納品）
+    const out = (which: "back" | "front") => {
+        const p = find(g.outfit, c.outfit); const ready = !!p?.src && OUTFIT_READY.has(`${p.id}__${c.base}`);
+        if (which === "back") return { src: ready && OUTFIT_HAS_BACK.has(`${p.id}__${c.base}`) ? `/avatar/outfit_back/${p.id}__${c.base}.png` : "", missing: false };
+        return { src: ready ? `/avatar/outfit_front/${p.id}__${c.base}.png` : null, missing: !ready };
+    };
+    // 素体：public/avatar/body/<base>__<skin>.png。納品済みは BODY_READY に登録
+    const bodyReady = BODY_READY.has(`${c.base}__${c.skin}`);
+    const body = { src: bodyReady ? `/avatar/body/${c.base}__${c.skin}.png` : null, missing: !bodyReady };
     const parts: Record<Layer, { src: string | null; missing: boolean }> = {
         cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !hair?.src }, body, outfit_back: out("back"), outfit_front: out("front"),
         hair_front: { src: hairSrc("front"), missing: !hair?.src }, head: gear(g.head, c.head, "head"), weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
