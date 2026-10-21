@@ -25,12 +25,12 @@ export const SKIN: Part[] = [
 ];
 export const HAIR_COLOR: Part[] = [
     { id: "brown", label: "ブラウン", src: "ok", swatch: "#8a5a3a" },
-    { id: "black", label: "ブラック", src: null, swatch: "#2b2630" },
-    { id: "darkbrown", label: "ダークブラウン", src: null, swatch: "#5a3a26" },
-    { id: "beige", label: "ベージュ", src: null, swatch: "#d9b98f" },
-    { id: "pink", label: "ピンク", src: null, swatch: "#ee7fa6" },
-    { id: "ash", label: "アッシュ", src: null, swatch: "#a8a4ad" },
-    { id: "blue", label: "ブルー", src: null, swatch: "#4c6fe0" },
+    { id: "black", label: "ブラック", src: "ok", swatch: "#2b2630" },
+    { id: "darkbrown", label: "ダークブラウン", src: "ok", swatch: "#5a3a26" },
+    { id: "beige", label: "ベージュ", src: "ok", swatch: "#d9b98f" },
+    { id: "pink", label: "ピンク", src: "ok", swatch: "#ee7fa6" },
+    { id: "ash", label: "アッシュ", src: "ok", swatch: "#a8a4ad" },
+    { id: "blue", label: "ブルー", src: "ok", swatch: "#4c6fe0" },
 ];
 export const HAIR: Record<Base, Part[]> = {
     f: [
@@ -108,13 +108,13 @@ export function defaultConfig(job: JobKey, base: Base = "f", presetId?: string):
 
 /** 設定 → レイヤーごとの画像 URL（未納品は null）。描画コンポーネントはこれを順に重ねる */
 /** 納品済みの素体（base__skin） */
-export const BODY_READY = new Set(["f__light"]);
+export const BODY_READY = new Set(["f__light","m__light"]);
 /** 納品済みの衣装（outfitId__base）と、背面画像があるもの */
 export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","archer_default__f","healer_default__f","rogue_default__f","paladin_default__f"]);
 export const OUTFIT_HAS_BACK = new Set<string>([]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "5";
+export const ASSET_V = "6";
 
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
