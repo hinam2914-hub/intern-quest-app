@@ -19,9 +19,9 @@ export type Part = { id: string; label: string; src: string | null; swatch?: str
 
 export const SKIN: Part[] = [
     { id: "light", label: "ライト", src: "ok", swatch: "#fde7d2" },
-    { id: "fair", label: "フェア", src: null, swatch: "#f5d3b4" },
-    { id: "tan", label: "タン", src: null, swatch: "#d9a97e" },
-    { id: "deep", label: "ディープ", src: null, swatch: "#9c6a46" },
+    { id: "fair", label: "フェア", src: "ok", swatch: "#f5d3b4" },
+    { id: "tan", label: "タン", src: "ok", swatch: "#d9a97e" },
+    { id: "deep", label: "ディープ", src: "ok", swatch: "#9c6a46" },
 ];
 export const HAIR_COLOR: Part[] = [
     { id: "brown", label: "ブラウン", src: "ok", swatch: "#8a5a3a" },
@@ -108,13 +108,13 @@ export function defaultConfig(job: JobKey, base: Base = "f", presetId?: string):
 
 /** 設定 → レイヤーごとの画像 URL（未納品は null）。描画コンポーネントはこれを順に重ねる */
 /** 納品済みの素体（base__skin） */
-export const BODY_READY = new Set(["f__light","m__light"]);
+export const BODY_READY = new Set(["f__light","m__light","f__fair","m__fair","f__tan","m__tan","f__deep","m__deep"]);
 /** 納品済みの衣装（outfitId__base）と、背面画像があるもの */
 export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","archer_default__f","healer_default__f","rogue_default__f","paladin_default__f"]);
 export const OUTFIT_HAS_BACK = new Set<string>([]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "6";
+export const ASSET_V = "7";
 
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
