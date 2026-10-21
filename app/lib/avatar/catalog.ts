@@ -24,7 +24,7 @@ export const SKIN: Part[] = [
     { id: "deep", label: "ディープ", src: null, swatch: "#9c6a46" },
 ];
 export const HAIR_COLOR: Part[] = [
-    { id: "brown", label: "ブラウン", src: null, swatch: "#8a5a3a" },
+    { id: "brown", label: "ブラウン", src: "ok", swatch: "#8a5a3a" },
     { id: "black", label: "ブラック", src: null, swatch: "#2b2630" },
     { id: "darkbrown", label: "ダークブラウン", src: null, swatch: "#5a3a26" },
     { id: "beige", label: "ベージュ", src: null, swatch: "#d9b98f" },
@@ -34,8 +34,8 @@ export const HAIR_COLOR: Part[] = [
 ];
 export const HAIR: Record<Base, Part[]> = {
     f: [
-        { id: "f_long", label: "ロング", src: null }, { id: "f_semilong", label: "セミロング", src: null }, { id: "f_pony", label: "ポニーテール", src: null },
-        { id: "f_bun", label: "おだんご", src: null }, { id: "f_twin", label: "ツインテール", src: null }, { id: "f_short", label: "ショート", src: null },
+        { id: "f_long", label: "ロング", src: "ok" }, { id: "f_semilong", label: "セミロング", src: "ok" }, { id: "f_pony", label: "ポニーテール", src: "ok" },
+        { id: "f_bun", label: "おだんご", src: "ok" }, { id: "f_twin", label: "ツインテール", src: "ok" }, { id: "f_short", label: "ショート", src: "ok" },
     ],
     m: [
         { id: "m_short", label: "ショート", src: null }, { id: "m_mash", label: "マッシュ", src: null }, { id: "m_center", label: "センターパート", src: null },
@@ -55,35 +55,35 @@ export const GEAR: Record<JobKey, JobGear> = {
         accessory: [none(), { id: "knight_ribbon_blue", label: "青リボン", src: null }, { id: "knight_ribbon_white", label: "白リボン", src: null }, { id: "knight_star", label: "星の飾り", src: null }],
     },
     mage: {
-        outfit: [{ id: "mage_default", label: "魔法使いのローブ", src: null }],
+        outfit: [{ id: "mage_default", label: "魔法使いのローブ", src: "ok" }],
         head: [none(), { id: "mage_hat", label: "魔法帽子", src: null }, { id: "mage_hat_star", label: "帽子（星リボン）", src: null }, { id: "mage_hat_moon", label: "帽子（月のチャーム）", src: null }],
         cape: [none(), { id: "mage_cape", label: "紫のマント", src: null }],
         weapon: [none(), { id: "mage_staff", label: "杖（基本）", src: null }, { id: "mage_staff_star", label: "杖（星）", src: null }, { id: "mage_staff_moon", label: "杖（月）", src: null }, { id: "mage_staff_crystal", label: "杖（水晶）", src: null }],
         accessory: [none(), { id: "mage_ribbon", label: "リボン", src: null }, { id: "mage_book", label: "魔導書", src: null }, { id: "mage_glasses", label: "メガネ", src: null }],
     },
     archer: {
-        outfit: [{ id: "archer_default", label: "アーチャーの軽装", src: null }],
+        outfit: [{ id: "archer_default", label: "アーチャーの軽装", src: "ok" }],
         head: [none(), { id: "archer_hat", label: "羽根付き帽子", src: null }],
         cape: [none(), { id: "archer_cape", label: "緑のマント", src: null }],
         weapon: [none(), { id: "archer_bow", label: "弓（基本）", src: null }, { id: "archer_bow_alt", label: "弓（別デザイン）", src: null }],
         accessory: [none(), { id: "archer_leaf", label: "葉のブローチ", src: null }, { id: "archer_pouch", label: "腰ポーチ", src: null }, { id: "archer_quiver", label: "矢筒", src: null }, { id: "archer_flower", label: "花飾り", src: null }],
     },
     healer: {
-        outfit: [{ id: "healer_default", label: "ヒーラーの衣装", src: null }],
+        outfit: [{ id: "healer_default", label: "ヒーラーの衣装", src: "ok" }],
         head: [none(), { id: "healer_hat", label: "聖帽", src: null }],
         cape: [none(), { id: "healer_cape", label: "白のマント", src: null }],
         weapon: [none(), { id: "healer_staff", label: "杖（基本）", src: null }, { id: "healer_staff_flower", label: "杖（花）", src: null }, { id: "healer_staff_moon", label: "杖（月）", src: null }, { id: "healer_staff_wing", label: "杖（翼）", src: null }, { id: "healer_staff_crystal", label: "杖（水晶）", src: null }],
         accessory: [none(), { id: "healer_ribbon", label: "リボン", src: null }, { id: "healer_cross", label: "十字架の飾り", src: null }, { id: "healer_book", label: "聖書", src: null }, { id: "healer_glasses", label: "メガネ", src: null }],
     },
     rogue: {
-        outfit: [{ id: "rogue_default", label: "ローグの軽装", src: null }],
+        outfit: [{ id: "rogue_default", label: "ローグの軽装", src: "ok" }],
         head: [none(), { id: "rogue_hood", label: "フード", src: null }],
         cape: [none(), { id: "rogue_cape", label: "黒のマント", src: null }],
         weapon: [none(), { id: "rogue_daggers", label: "短剣（二刀）", src: null }, { id: "rogue_knives", label: "投げナイフ", src: null }],
         accessory: [none(), { id: "rogue_scarf", label: "スカーフ", src: null }, { id: "rogue_brooch", label: "ブローチ", src: null }, { id: "rogue_pendant", label: "ペンダント", src: null }, { id: "rogue_armband", label: "アームバンド", src: null }],
     },
     paladin: {
-        outfit: [{ id: "paladin_default", label: "パラディンの聖鎧", src: null }],
+        outfit: [{ id: "paladin_default", label: "パラディンの聖鎧", src: "ok" }],
         head: [none(), { id: "paladin_tiara", label: "ティアラ", src: null }, { id: "paladin_crown", label: "冠", src: null }, { id: "paladin_feather", label: "羽飾り", src: null }],
         cape: [none(), { id: "paladin_cape", label: "青のマント", src: null }],
         weapon: [none(), { id: "paladin_sword", label: "聖剣（基本）", src: null }, { id: "paladin_sword_shield", label: "聖剣と盾", src: null }, { id: "paladin_sword_deco", label: "聖剣（装飾）", src: null }],
@@ -110,14 +110,15 @@ export function defaultConfig(job: JobKey, base: Base = "f", presetId?: string):
 /** 納品済みの素体（base__skin） */
 export const BODY_READY = new Set(["f__light"]);
 /** 納品済みの衣装（outfitId__base）と、背面画像があるもの */
-export const OUTFIT_READY = new Set(["knight_default__f"]);
+export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","archer_default__f","healer_default__f","rogue_default__f","paladin_default__f"]);
 export const OUTFIT_HAS_BACK = new Set<string>([]);
 
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
     const find = (list: Part[], id: string) => list.find((p) => p.id === id);
     const hair = find(HAIR[c.base], c.hair);
-    const hairSrc = (which: "back" | "front") => hair?.src ? `/avatar/hair_${which}/${hair.id}__${c.hairColor}.png` : null;
+    const colorOk = !!find(HAIR_COLOR, c.hairColor)?.src;
+    const hairSrc = (which: "back" | "front") => hair?.src && colorOk ? `/avatar/hair_${which}/${hair.id}__${c.hairColor}.png` : null;
     const gear = (list: Part[], id: string, layer: string) => { const p = find(list, id); if (!p || p.id === "none") return { src: "", missing: false }; return { src: p.src ? `/avatar/${layer}/${p.id}.png` : null, missing: !p.src }; };
     const out = (which: "back" | "front") => {
         const p = find(g.outfit, c.outfit); const ready = !!p?.src && OUTFIT_READY.has(`${p.id}__${c.base}`);
@@ -128,8 +129,8 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
     const bodyReady = BODY_READY.has(`${c.base}__${c.skin}`);
     const body = { src: bodyReady ? `/avatar/body/${c.base}__${c.skin}.png` : null, missing: !bodyReady };
     const parts: Record<Layer, { src: string | null; missing: boolean }> = {
-        cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !hair?.src }, body, outfit_back: out("back"), outfit_front: out("front"),
-        hair_front: { src: hairSrc("front"), missing: !hair?.src }, head: gear(g.head, c.head, "head"), weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
+        cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !(hair?.src && colorOk) }, body, outfit_back: out("back"), outfit_front: out("front"),
+        hair_front: { src: hairSrc("front"), missing: !(hair?.src && colorOk) }, head: gear(g.head, c.head, "head"), weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
     };
     return LAYER_ORDER.map((layer) => ({ layer, ...parts[layer] }));
 }

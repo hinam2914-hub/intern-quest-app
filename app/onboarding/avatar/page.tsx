@@ -148,7 +148,7 @@ export default function AvatarCustomizePage() {
                                             <button type="button" className={"av-opt" + (cfg.base === "m" ? " on" : "")} onClick={() => setBase("m")}>男性</button>
                                         </div></div>
                                     <div className="av-sec"><div className="av-lab">肌の色<small>素材準備中</small></div><Opts list={SKIN} value={cfg.skin} onPick={(v) => set("skin", v)} swatch /></div>
-                                    <div className="av-sec"><div className="av-lab">髪型<small>素材準備中</small></div><Opts list={HAIR[cfg.base]} value={cfg.hair} onPick={(v) => set("hair", v)} /></div>
+                                    <div className="av-sec"><div className="av-lab">髪型</div><Opts list={HAIR[cfg.base]} value={cfg.hair} onPick={(v) => set("hair", v)} /></div>
                                     <div className="av-sec"><div className="av-lab">髪の色<small>素材準備中</small></div><Opts list={HAIR_COLOR} value={cfg.hairColor} onPick={(v) => set("hairColor", v)} swatch /></div>
                                 </>
                             ) : (
