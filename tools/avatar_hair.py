@@ -56,8 +56,21 @@ R=place_back(right,sF); sR=sF
 def hair_only(img):
     A=np.array(img).astype(int); same=vis&(np.abs(A[:,:,:3]-B[:,:,:3]).sum(axis=2)<70)
     al=A[:,:,3].copy(); al[same]=0
+    # 髪色でない画素（肌・白インナー・腕の縁）は前髪レイヤーに入れない
+    r,g,b_=A[:,:,0],A[:,:,1],A[:,:,2]
+    skin=(r>185)&(g>140)&(b_>115)&(r-b_>20)&(r-b_<95)&(g>=b_)&(r>=g); white=(r>225)&(g>220)&(b_>210)
+    hairish=(np.abs(r-g)>12)|(r<150)
+    al[skin|white|~hairish]=0
     m=ndimage.binary_opening(al>40,iterations=2); lab,k=ndimage.label(m)
-    if k: sizes=ndimage.sum(m,lab,range(1,k+1)); keep=np.isin(lab,[i+1 for i,s in enumerate(sizes) if s>1500]); al[~keep]=0
+    if k:
+        ids=[]
+        for i in range(1,k+1):
+            comp=lab==i; area=comp.sum()
+            if area<1500: continue
+            ys,xs=np.where(comp); fill=area/((ys.max()-ys.min()+1)*(xs.max()-xs.min()+1))
+            if area<12000 and fill<0.35: continue   # 細い弧（耳の縁取り）
+            ids.append(i)
+        al[~np.isin(lab,ids)]=0
     out=img.copy(); out.putalpha(Image.fromarray(al.astype("uint8")).filter(ImageFilter.MedianFilter(3))); return out
 front=hair_only(F)
 # 後ろ髪：後ろ姿画像のうち、正面髪で覆われていない部分（素体の頭の内側は除く＝素体で隠れるので不要）

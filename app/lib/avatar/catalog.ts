@@ -114,7 +114,7 @@ export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","arch
 export const OUTFIT_HAS_BACK = new Set<string>([]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "3";
+export const ASSET_V = "4";
 
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
