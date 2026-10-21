@@ -10,7 +10,10 @@ from scipy import ndimage
 ap=argparse.ArgumentParser(); ap.add_argument("src"); ap.add_argument("hair"); ap.add_argument("color"); ap.add_argument("--body",default="public/avatar/body/f__light.png")
 a=ap.parse_args()
 sh=Image.open(a.src).convert("RGBA"); W,H=sh.size
-left=sh.crop((0,0,W//2,H)); right=sh.crop((W//2,0,W,H))
+_a=np.array(sh)[:,:,3]>10; col=_a.sum(axis=0); mid=W//2
+# 中央付近で最も透明な列を分割点にする
+win=col[int(W*0.35):int(W*0.65)]; cut=int(W*0.35)+int(np.argmin(win))
+left=sh.crop((0,0,cut,H)); right=sh.crop((cut,0,W,H))
 bd=Image.open(a.body).convert("RGBA"); B=np.array(bd).astype(int); vis=B[:,:,3]>200
 def bb(i):
     m=np.array(i)[:,:,3]>10; ys,xs=np.where(m); return xs.min(),xs.max(),ys.min(),ys.max()
