@@ -113,6 +113,9 @@ export const BODY_READY = new Set(["f__light"]);
 export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","archer_default__f","healer_default__f","rogue_default__f","paladin_default__f"]);
 export const OUTFIT_HAS_BACK = new Set<string>([]);
 
+/** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
+export const ASSET_V = "3";
+
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
     const find = (list: Part[], id: string) => list.find((p) => p.id === id);
@@ -132,5 +135,5 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
         cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !(hair?.src && colorOk) }, body, outfit_back: out("back"), outfit_front: out("front"),
         hair_front: { src: hairSrc("front"), missing: !(hair?.src && colorOk) }, head: gear(g.head, c.head, "head"), weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
     };
-    return LAYER_ORDER.map((layer) => ({ layer, ...parts[layer] }));
+    return LAYER_ORDER.map((layer) => { const p = parts[layer]; return { layer, src: p.src ? p.src + "?v=" + ASSET_V : p.src, missing: p.missing }; });
 }
