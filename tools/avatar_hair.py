@@ -39,13 +39,13 @@ def fit_w(img):
     mv,s,(mx,my)=best; return place(img,s,(tx0-mx,ty0-my)),(round(float(s),3),(tx0-mx,ty0-my))
 def place(img,s,off):
     sq=Image.new("RGBA",(max(img.size),)*2,(0,0,0,0)); sq.paste(img,((sq.width-img.width)//2,(sq.height-img.height)//2))
-    d=sq.resize((1024,1024),Image.LANCZOS); w=int(round(1024*s)); sm=d.resize((w,w),Image.LANCZOS)
+    w=int(round(1024*s)); sm=sq.resize((w,w),Image.LANCZOS)
     out=Image.new("RGBA",(1024,1024),(0,0,0,0)); out.alpha_composite(sm,off); return out
 F,(sF,off)=fit_w(left)
 # 後ろ姿：シート内の左右位置が揃っていないので、同じ拡縮で「足元と左右中心」を素体に合わせる
 def place_back(img,s):
     sq=Image.new("RGBA",(max(img.size),)*2,(0,0,0,0)); sq.paste(img,((sq.width-img.width)//2,(sq.height-img.height)//2))
-    d=sq.resize((1024,1024),Image.LANCZOS); w=int(round(1024*s)); sm=d.resize((w,w),Image.LANCZOS)
+    w=int(round(1024*s)); sm=sq.resize((w,w),Image.LANCZOS)
     m=np.array(sm)[:,:,3]>10; ys=np.where(m.any(axis=1))[0]; fy=ys.max(); band=m[fy-30:fy]; xs=np.where(band.any(axis=0))[0]; fcx=(xs.min()+xs.max())/2
     bys=np.where(vis.any(axis=1))[0]; bfy=bys.max(); bband=vis[bfy-30:bfy]; bxs=np.where(bband.any(axis=0))[0]; bcx=(bxs.min()+bxs.max())/2
     out=Image.new("RGBA",(1024,1024),(0,0,0,0)); out.alpha_composite(sm,(int(round(bcx-fcx)),int(round(bfy-fy)))); return out
@@ -55,7 +55,7 @@ def hair_only(img):
     al=A[:,:,3].copy(); al[same]=0
     m=ndimage.binary_opening(al>40,iterations=2); lab,k=ndimage.label(m)
     if k: sizes=ndimage.sum(m,lab,range(1,k+1)); keep=np.isin(lab,[i+1 for i,s in enumerate(sizes) if s>1500]); al[~keep]=0
-    out=img.copy(); out.putalpha(Image.fromarray(al.astype("uint8")).filter(ImageFilter.MedianFilter(5))); return out
+    out=img.copy(); out.putalpha(Image.fromarray(al.astype("uint8")).filter(ImageFilter.MedianFilter(3))); return out
 front=hair_only(F)
 # 後ろ髪：後ろ姿画像のうち、正面髪で覆われていない部分（素体の頭の内側は除く＝素体で隠れるので不要）
 RA=np.array(R).astype(int); fa=np.array(front)[:,:,3]>30
@@ -83,6 +83,6 @@ if k:
         if area<12000 and fill<0.35: continue
         keep_ids.append(i)
     keep=np.isin(lab,keep_ids); al[~keep]=0
-back=R.copy(); back.putalpha(Image.fromarray(al.astype("uint8")).filter(ImageFilter.MedianFilter(5)))
+back=R.copy(); back.putalpha(Image.fromarray(al.astype("uint8")).filter(ImageFilter.MedianFilter(3)))
 front.save(f"public/avatar/hair_front/{a.hair}__{a.color}.png"); back.save(f"public/avatar/hair_back/{a.hair}__{a.color}.png")
 print("saved",a.hair,a.color,"scale",round(sF,3),round(sR,3))
