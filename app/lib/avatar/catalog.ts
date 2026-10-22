@@ -114,7 +114,7 @@ export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","arch
 export const OUTFIT_HAS_BACK = new Set<string>([]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "7";
+export const ASSET_V = "8";
 
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
@@ -126,7 +126,8 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
     const out = (which: "back" | "front") => {
         const p = find(g.outfit, c.outfit); const ready = !!p?.src && OUTFIT_READY.has(`${p.id}__${c.base}`);
         if (which === "back") return { src: ready && OUTFIT_HAS_BACK.has(`${p.id}__${c.base}`) ? `/avatar/outfit_back/${p.id}__${c.base}.png` : "", missing: false };
-        return { src: ready ? `/avatar/outfit_front/${p.id}__${c.base}.png` : null, missing: !ready };
+        const sk = c.skin && c.skin !== "light" ? `__${c.skin}` : "";
+        return { src: ready ? `/avatar/outfit_front/${p.id}__${c.base}${sk}.png` : null, missing: !ready };
     };
     // 素体：public/avatar/body/<base>__<skin>.png。納品済みは BODY_READY に登録
     const bodyReady = BODY_READY.has(`${c.base}__${c.skin}`);

@@ -9,9 +9,11 @@ hexrgb=lambda h: tuple(int(h[i:i+2],16) for i in (1,3,5))
 def tint(img,target):
     a=np.array(img.convert("RGBA")); rgb=a[:,:,:3].astype(np.uint8)
     r,g,b=[rgb[:,:,i].astype(int) for i in range(3)]
-    skin=(r>150)&(r-b>15)&(r-b<120)&(g>=b-5)&(r>=g)&(a[:,:,3]>10)&~((r>235)&(g>228)&(b>218))  # 白インナーは除く
-    skin=ndimage.binary_closing(skin,iterations=2)
     hsv=cv2.cvtColor(rgb,cv2.COLOR_RGB2HSV).astype(float)
+    H,S,V=hsv[:,:,0],hsv[:,:,1],hsv[:,:,2]
+    # 肌：オレンジ寄りの色相、彩度は中くらい（白目・白インナー・金装飾は除外）
+    skin=(a[:,:,3]>10)&(H>=3)&(H<=17)&(S>=38)&(S<=125)&(V>=130)
+    skin=ndimage.binary_opening(skin,iterations=1); skin=ndimage.binary_closing(skin,iterations=2)
     bh,bs,bv=cv2.cvtColor(np.uint8([[hexrgb(BASE)]]),cv2.COLOR_RGB2HSV)[0,0].astype(float)
     th,ts,tv=cv2.cvtColor(np.uint8([[hexrgb(target)]]),cv2.COLOR_RGB2HSV)[0,0].astype(float)
     hsv[:,:,0][skin]=(hsv[:,:,0][skin]+(th-bh))%180
@@ -21,4 +23,8 @@ def tint(img,target):
 for f in glob.glob("public/avatar/body/*__light.png"):
     im=Image.open(f)
     for n,hx in SKINS.items(): tint(im,hx).save(f.replace("__light.png",f"__{n}.png"))
+# 衣装に描かれた手・脚・首の肌も同じ色に（<id>__<base>__<skin>.png）
+for f in glob.glob("public/avatar/outfit_front/*_default__?.png"):
+    im=Image.open(f)
+    for n,hx in SKINS.items(): tint(im,hx).save(f.replace(".png",f"__{n}.png"))
 print("done")
