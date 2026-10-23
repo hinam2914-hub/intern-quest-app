@@ -111,11 +111,11 @@ export function defaultConfig(job: JobKey, base: Base = "f", presetId?: string):
 /** 納品済みの素体（base__skin） */
 export const BODY_READY = new Set(["f__light","m__light","f__fair","m__fair","f__tan","m__tan","f__deep","m__deep"]);
 /** 納品済みの衣装（outfitId__base）と、背面画像があるもの */
-export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","archer_default__f","healer_default__f","rogue_default__f","paladin_default__f"]);
+export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","archer_default__f","healer_default__f","rogue_default__f","paladin_default__f","knight_default__m","mage_default__m","healer_default__m","rogue_default__m","paladin_default__m"]);
 export const OUTFIT_HAS_BACK = new Set<string>([]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "18";
+export const ASSET_V = "19";
 
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
