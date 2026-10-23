@@ -66,6 +66,12 @@ def hair_only(img):
     # 肩より下（y>=600）は髪色の画素しか残さない（体のズレで残る手・足・輪郭を除去）
     yy0=np.arange(1024)[:,None]
     al[(yy0>=600)&~((r<180)&(np.abs(r-g)>10))]=0
+    # 肩より下：素体の内側（輪郭線の帯を含む）は衣装で隠れるので捨てる。残すのは体の外側に落ちる髪だけ
+    bodyband=ndimage.binary_dilation(vis,iterations=6)
+    al[(yy0>=560)&bodyband]=0
+    # 顔の中（目・眉・口の周り）に残る破片を捨てる：素体の顔領域（頭の内側、生え際より下）
+    face=ndimage.binary_erosion(vis,iterations=14)&(yy0>330)&(yy0<560)
+    al[face&~((r<170)&(np.abs(r-g)>10)&(ndimage.binary_erosion(al>60,iterations=4)))]=0
     yy=np.arange(1024)[:,None]; xx=np.arange(1024)[None,:]
     ears=(yy>360)&(yy<540)&((xx<400)|(xx>624))   # 耳の位置だけ
     band=ndimage.binary_dilation(vis,iterations=8)&~ndimage.binary_erosion(vis,iterations=8)&ears
@@ -113,7 +119,7 @@ if k:
     keep_ids=[]
     for i in range(1,k+1):
         comp=lab==i; area=comp.sum()
-        if area<800: continue
+        if area<2500: continue
         keep_ids.append(i)
     keep=np.isin(lab,keep_ids); al[~keep]=0
 back=R.copy(); back.putalpha(Image.fromarray(al.astype("uint8")).filter(ImageFilter.MedianFilter(3)))
