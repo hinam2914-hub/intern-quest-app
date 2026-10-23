@@ -60,7 +60,9 @@ def hair_only(img):
     r,g,b_=A[:,:,0],A[:,:,1],A[:,:,2]
     skin=(r>185)&(g>140)&(b_>115)&(r-b_>20)&(r-b_<95)&(g>=b_)&(r>=g); white=(r>225)&(g>220)&(b_>210)
     hairish=(np.abs(r-g)>12)|(r<150)
-    al[skin|white|~hairish]=0
+    # 髪の内側（縁から離れた所）はハイライトが白くても残す。縁の帯だけ色で判定
+    inner=ndimage.binary_erosion(al>60,iterations=7)
+    al[(skin|white|~hairish)&~inner]=0
     yy=np.arange(1024)[:,None]; xx=np.arange(1024)[None,:]
     ears=(yy>360)&(yy<540)&((xx<400)|(xx>624))   # 耳の位置だけ
     band=ndimage.binary_dilation(vis,iterations=8)&~ndimage.binary_erosion(vis,iterations=8)&ears
@@ -90,7 +92,7 @@ al=RA[:,:,3].copy(); al[same|skin|white]=0; al[fa]=0
 hairish=(np.abs(r-g)>12)|(r<150)   # 茶系：赤>緑 の差がある、または暗い
 al[~hairish]=0
 # 頭の内側（素体で隠れる領域）は落として軽くする
-head=ndimage.binary_erosion(vis,iterations=6); al[head]=0
+head=ndimage.binary_erosion(vis,iterations=6)&(np.arange(1024)[:,None]<560); al[head]=0
 # 頭の輪郭のすぐ外側（耳の縁取りが残る帯）：頭の高さ範囲では素体から 14px 膨らませた分も落とす
 yy=np.arange(1024)[:,None]; ring=ndimage.binary_dilation(vis,iterations=14)&(yy<520); al[ring]=0
 m=ndimage.binary_opening(al>40,iterations=2); lab,k=ndimage.label(m)
@@ -99,9 +101,7 @@ if k:
     keep_ids=[]
     for i in range(1,k+1):
         comp=lab==i; area=comp.sum()
-        if area<6000: continue
-        ys,xs=np.where(comp); fill=area/((ys.max()-ys.min()+1)*(xs.max()-xs.min()+1))
-        if area<12000 and fill<0.35: continue
+        if area<800: continue
         keep_ids.append(i)
     keep=np.isin(lab,keep_ids); al[~keep]=0
 back=R.copy(); back.putalpha(Image.fromarray(al.astype("uint8")).filter(ImageFilter.MedianFilter(3)))

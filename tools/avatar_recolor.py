@@ -21,8 +21,8 @@ def recolor(img,target):
     t=np.array([tr,tg,tb]); tn=t/max(tl,0.05)
     out=np.clip(L[:,:,None]*tn[None,None,:],0,1)
     # 白飛び防止：L が高いところは白へ寄せる
-    hi=np.clip((L-0.75)/0.25,0,1)[:,:,None]
-    out=out*(1-hi)+np.minimum(out+0.35,1)*hi
+    hi=np.clip((L-0.82)/0.18,0,1)[:,:,None]
+    out=out*(1-hi)+np.minimum(out+0.18,1)*hi
     a[:,:,:3]=(out*255).astype(np.uint8)
     al=a[:,:,3].astype(float); edge=(al>0)&(al<200)
     a[:,:,3]=np.where(edge,np.clip(al*1.25,0,255),al).astype(np.uint8)
