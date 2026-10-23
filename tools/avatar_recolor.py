@@ -8,21 +8,22 @@ BASE="#8a5a3a"
 def hexrgb(h): return tuple(int(h[i:i+2],16) for i in (1,3,5))
 def recolor(img,target):
     a=np.array(img.convert("RGBA")); rgb=a[:,:,:3].astype(np.uint8)
-    hsv=cv2.cvtColor(rgb,cv2.COLOR_RGB2HSV).astype(float)
-    bh,bs,bv=cv2.cvtColor(np.uint8([[hexrgb(BASE)]]),cv2.COLOR_RGB2HSV)[0,0].astype(float)
-    th,ts,tv=cv2.cvtColor(np.uint8([[hexrgb(target)]]),cv2.COLOR_RGB2HSV)[0,0].astype(float)
-    hsv[:,:,0]=th
-    # 彩度：元の明るいハイライト（低彩度・高明度）は目標色の彩度に寄せて、オレンジの点にならないようにする
-    hsv[:,:,1]=np.clip(np.maximum(hsv[:,:,1]*(ts/max(bs,1)), ts*0.6),0,255)
-    # 明度：比例で落とすと暗色でツヤが消えるので、暗い色ほどハイライトを残す（ガンマで圧縮）
-    ratio=tv/max(bv,1)
-    if ratio<1:
-        v=hsv[:,:,2]/255.0
-        hsv[:,:,2]=np.clip((v**(1.0/ (0.55+0.45*ratio)))*255*(0.55+0.45*ratio),0,255)
-    else:
-        hsv[:,:,2]=np.clip(hsv[:,:,2]*ratio,0,255)
-    out=cv2.cvtColor(hsv.astype(np.uint8),cv2.COLOR_HSV2RGB); a[:,:,:3]=out
-    # 縁の半透明画素は元の明るい色が残って「白い縁取り」になるので、そこはやや不透明化して縁をなじませる
+    # 元画像を「明るさだけ」にして（ハイライトの色味を捨てる）、目標色を乗せる
+    gray=cv2.cvtColor(rgb,cv2.COLOR_RGB2GRAY).astype(float)/255.0
+    tr,tg,tb=[c/255.0 for c in hexrgb(target)]
+    base=np.array([c/255.0 for c in hexrgb(BASE)]); bl=0.299*base[0]+0.587*base[1]+0.114*base[2]
+    tl=0.299*tr+0.587*tg+0.114*tb
+    # 明るさを目標色の明るさに合わせて圧縮（暗い色でもハイライトが残るようガンマ）
+    ratio=tl/max(bl,0.05)
+    if ratio<1: L=(gray**(1.0/(0.55+0.45*ratio)))*(0.55+0.45*ratio)
+    else: L=np.clip(gray*ratio,0,1)
+    # 色乗せ：目標色の比率で L を配分（soft light 風）
+    t=np.array([tr,tg,tb]); tn=t/max(tl,0.05)
+    out=np.clip(L[:,:,None]*tn[None,None,:],0,1)
+    # 白飛び防止：L が高いところは白へ寄せる
+    hi=np.clip((L-0.75)/0.25,0,1)[:,:,None]
+    out=out*(1-hi)+np.minimum(out+0.35,1)*hi
+    a[:,:,:3]=(out*255).astype(np.uint8)
     al=a[:,:,3].astype(float); edge=(al>0)&(al<200)
     a[:,:,3]=np.where(edge,np.clip(al*1.25,0,255),al).astype(np.uint8)
     return Image.fromarray(a)
