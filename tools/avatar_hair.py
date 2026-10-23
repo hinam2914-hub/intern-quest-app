@@ -63,6 +63,9 @@ def hair_only(img):
     # 髪の内側（縁から離れた所）はハイライトが白くても残す。縁の帯だけ色で判定
     inner=ndimage.binary_erosion(al>60,iterations=7)
     al[(skin|white|~hairish)&~inner]=0
+    # 肩より下（y>=600）は髪色の画素しか残さない（体のズレで残る手・足・輪郭を除去）
+    yy0=np.arange(1024)[:,None]
+    al[(yy0>=600)&~((r<180)&(np.abs(r-g)>10))]=0
     yy=np.arange(1024)[:,None]; xx=np.arange(1024)[None,:]
     ears=(yy>360)&(yy<540)&((xx<400)|(xx>624))   # 耳の位置だけ
     band=ndimage.binary_dilation(vis,iterations=8)&~ndimage.binary_erosion(vis,iterations=8)&ears
@@ -93,6 +96,15 @@ hairish=(np.abs(r-g)>12)|(r<150)   # 茶系：赤>緑 の差がある、また�
 al[~hairish]=0
 # 頭の内側（素体で隠れる領域）は落として軽くする
 head=ndimage.binary_erosion(vis,iterations=6)&(np.arange(1024)[:,None]<560); al[head]=0
+# 後ろ姿の体の輪郭線・手袋・靴などの残り：素体の輪郭（膨張）から外側の画素は「頭の高さ」以外では捨てる。
+# 肩より下で残すのは、体のシルエットより外側にはみ出す髪（ロングの垂れ髪）だけ → 素体の外側 or 素体の内側で髪色の画素
+yy=np.arange(1024)[:,None]
+body_in=ndimage.binary_dilation(vis,iterations=10)
+below=yy>=560
+# 肩より下：体の内側は捨てる（素体と衣装で隠れる＋輪郭線が残るため）。外側は髪色で濃い画素だけ残す
+dark_hair=(r<170)&(np.abs(r-g)>10)
+al[below&body_in]=0
+al[below&~body_in&~dark_hair]=0
 # 頭の輪郭のすぐ外側（耳の縁取りが残る帯）：頭の高さ範囲では素体から 14px 膨らませた分も落とす
 yy=np.arange(1024)[:,None]; ring=ndimage.binary_dilation(vis,iterations=14)&(yy<520); al[ring]=0
 m=ndimage.binary_opening(al>40,iterations=2); lab,k=ndimage.label(m)
