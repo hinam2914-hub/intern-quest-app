@@ -39,7 +39,8 @@ export const HAIR: Record<Base, Part[]> = {
     ],
     m: [
         { id: "m_short", label: "ショート", src: "ok" }, { id: "m_mash", label: "マッシュ", src: "ok" }, { id: "m_center", label: "センターパート", src: "ok" },
-        { id: "m_wolf", label: "ウルフ", src: "ok" }, { id: "m_spiky", label: "スパイキー", src: "ok" }, { id: "m_long", label: "ロング", src: "ok" },
+        { id: "m_wolf", label: "ウルフ", src: "ok" }, // スパイキー・ロングは素材の位置が合わないため一時非表示
+        // { id: "m_spiky", label: "スパイキー", src: "ok" }, { id: "m_long", label: "ロング", src: "ok" },
     ],
 };
 
@@ -114,7 +115,7 @@ export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","arch
 export const OUTFIT_HAS_BACK = new Set<string>([]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "17";
+export const ASSET_V = "18";
 
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
