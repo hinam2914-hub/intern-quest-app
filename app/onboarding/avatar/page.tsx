@@ -23,7 +23,7 @@ const CSS = `
 .av-h h1{margin:0;font-size:clamp(20px,2.6vw,30px);font-weight:900;color:#17397d}.av-h p{margin:4px 0 0;font-size:13px;font-weight:800;color:#2b3f6b}
 .av-wrap{display:grid;grid-template-columns:minmax(300px,420px) minmax(320px,1fr);gap:18px;max-width:1200px;margin:0 auto;align-items:start}
 .av-stage{background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.25));border:3px solid #d8b55e;border-radius:22px;padding:14px;box-shadow:0 14px 30px rgba(30,60,120,.22);position:sticky;top:12px}
-.av-stage .plate{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);width:70%;height:7%;border-radius:50%;background:radial-gradient(ellipse,rgba(30,60,120,.35),rgba(30,60,120,0) 70%)}
+.av-stage .plate{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:70%;height:7%;border-radius:50%;background:radial-gradient(ellipse,rgba(30,60,120,.35),rgba(30,60,120,0) 70%)}
 .av-stage .job{display:flex;justify-content:center;gap:8px;margin-top:6px;font-size:12.5px;font-weight:900;color:#1d3f8c}
 .av-panel{background:linear-gradient(180deg,#fffdf6,#f7ecd2);border:3px solid #d8b55e;border-radius:22px;padding:16px;box-shadow:0 14px 30px rgba(30,60,120,.22)}
 .av-tabs{display:flex;gap:8px;margin-bottom:12px}

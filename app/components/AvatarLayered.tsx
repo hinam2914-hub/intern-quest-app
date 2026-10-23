@@ -9,9 +9,9 @@ export default function AvatarLayered({ config, job, size = "100%", showFallback
     const drawable = layers.filter((l) => l.src);
     const missing = layers.filter((l) => l.missing).length;
     return (
-        <div style={{ position: "relative", width: size, aspectRatio: "1 / 1", overflow: "visible" }} aria-label="アバター">
+        <div style={{ position: "relative", width: size, aspectRatio: "1024 / 1224", overflow: "hidden" }} aria-label="アバター">
             {drawable.length === 0 && showFallback && (
-                <img src={`/jobs/${job}.webp`} alt="" decoding="async" style={{ position: "absolute", inset: "8% 10%", width: "80%", height: "84%", objectFit: "contain", filter: "drop-shadow(0 12px 12px rgba(30,40,80,.3))" }} />
+                <img src={`/jobs/${job}.webp`} alt="" decoding="async" style={{ position: "absolute", left: "10%", bottom: "6%", width: "80%", height: "72%", objectFit: "contain", filter: "drop-shadow(0 12px 12px rgba(30,40,80,.3))" }} />
             )}
             {drawable.map((l) => <img key={l.layer} src={l.src!} alt="" decoding="async" style={{ position: "absolute", left: 0, bottom: 0, width: "100%", height: "auto" }} />)}
             {missing > 0 && (
