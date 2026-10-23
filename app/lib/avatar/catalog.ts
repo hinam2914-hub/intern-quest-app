@@ -114,7 +114,7 @@ export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","arch
 export const OUTFIT_HAS_BACK = new Set<string>([]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "10";
+export const ASSET_V = "11";
 
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
     const g = GEAR[job];
@@ -124,10 +124,13 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
     const hairSrc = (which: "back" | "front") => hair?.src && colorOk ? `/avatar/hair_${which}/${hair.id}__${c.hairColor}.png` : null;
     const gear = (list: Part[], id: string, layer: string) => { const p = find(list, id); if (!p || p.id === "none") return { src: "", missing: false }; return { src: p.src ? `/avatar/${layer}/${p.id}.png` : null, missing: !p.src }; };
     const out = (which: "back" | "front") => {
-        const p = find(g.outfit, c.outfit); const ready = !!p?.src && OUTFIT_READY.has(`${p.id}__${c.base}`);
-        if (which === "back") return { src: ready && OUTFIT_HAS_BACK.has(`${p.id}__${c.base}`) ? `/avatar/outfit_back/${p.id}__${c.base}.png` : "", missing: false };
+        const p = find(g.outfit, c.outfit);
+        // 男性用が未納品の間は女性用を代用（体格はほぼ同じ）
+        const base = OUTFIT_READY.has(`${p?.id}__${c.base}`) ? c.base : (OUTFIT_READY.has(`${p?.id}__f`) ? "f" : c.base);
+        const ready = !!p?.src && OUTFIT_READY.has(`${p.id}__${base}`);
+        if (which === "back") return { src: ready && OUTFIT_HAS_BACK.has(`${p.id}__${base}`) ? `/avatar/outfit_back/${p.id}__${base}.png` : "", missing: false };
         const sk = c.skin && c.skin !== "light" ? `__${c.skin}` : "";
-        return { src: ready ? `/avatar/outfit_front/${p.id}__${c.base}${sk}.png` : null, missing: !ready };
+        return { src: ready ? `/avatar/outfit_front/${p.id}__${base}${sk}.png` : null, missing: !ready };
     };
     // 素体：public/avatar/body/<base>__<skin>.png。納品済みは BODY_READY に登録
     const bodyReady = BODY_READY.has(`${c.base}__${c.skin}`);

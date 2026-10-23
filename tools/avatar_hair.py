@@ -105,5 +105,24 @@ if k:
         keep_ids.append(i)
     keep=np.isin(lab,keep_ids); al[~keep]=0
 back=R.copy(); back.putalpha(Image.fromarray(al.astype("uint8")).filter(ImageFilter.MedianFilter(3)))
-front.save(f"public/avatar/hair_front/{a.hair}__{a.color}.png"); back.save(f"public/avatar/hair_back/{a.hair}__{a.color}.png")
+TOP=200
+def tall(img):
+    # 元シートの拡縮・位置をそのまま使い、上に TOP px 余白を足した 1024×(1024+TOP) キャンバスへ置き直す
+    out=Image.new("RGBA",(1024,1024+TOP),(0,0,0,0)); out.alpha_composite(img,(0,TOP)); return out
+def tall_from_src(src_img,s,off,mask_img):
+    # mask_img（1024 版）のアルファで、上余白込みのキャンバスに元画像を貼り直す
+    sq=Image.new("RGBA",(max(src_img.size),)*2,(0,0,0,0)); sq.paste(src_img,((sq.width-src_img.width)//2,(sq.height-src_img.height)//2))
+    w=int(round(1024*s)); sm=sq.resize((w,w),Image.LANCZOS)
+    out=Image.new("RGBA",(1024,1024+TOP),(0,0,0,0)); out.alpha_composite(sm,(off[0],off[1]+TOP))
+    m=Image.new("L",(1024,1024+TOP),0); m.paste(mask_img.split()[3],(0,TOP))
+    # 1024 の外（上余白）は元画像のアルファで髪色画素だけ残す
+    A=np.array(out).astype(int); ma=np.array(m)
+    r,g,b_=A[:,:,0],A[:,:,1],A[:,:,2]; hair=((np.abs(r-g)>12)|(r<150))&(A[:,:,3]>40)
+    top=np.zeros_like(ma,bool); top[:TOP]=True
+    ma[top&hair]=A[:,:,3][top&hair]
+    out.putalpha(Image.fromarray(ma.astype("uint8"))); return out
+front_t=tall_from_src(left,sF,off,front)
+frontmask=np.array(front_t)[:,:,3]>30
+back_t=tall(back)
+front_t.save(f"public/avatar/hair_front/{a.hair}__{a.color}.png"); back_t.save(f"public/avatar/hair_back/{a.hair}__{a.color}.png")
 print("saved",a.hair,a.color,"scale",round(sF,3),round(sR,3))

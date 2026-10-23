@@ -9,11 +9,11 @@ export default function AvatarLayered({ config, job, size = "100%", showFallback
     const drawable = layers.filter((l) => l.src);
     const missing = layers.filter((l) => l.missing).length;
     return (
-        <div style={{ position: "relative", width: size, aspectRatio: "1 / 1" }} aria-label="アバター">
+        <div style={{ position: "relative", width: size, aspectRatio: "1 / 1", overflow: "visible" }} aria-label="アバター">
             {drawable.length === 0 && showFallback && (
                 <img src={`/jobs/${job}.webp`} alt="" decoding="async" style={{ position: "absolute", inset: "8% 10%", width: "80%", height: "84%", objectFit: "contain", filter: "drop-shadow(0 12px 12px rgba(30,40,80,.3))" }} />
             )}
-            {drawable.map((l) => <img key={l.layer} src={l.src!} alt="" decoding="async" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />)}
+            {drawable.map((l) => <img key={l.layer} src={l.src!} alt="" decoding="async" style={{ position: "absolute", left: 0, bottom: 0, width: "100%", height: "auto" }} />)}
             {missing > 0 && (
                 <div style={{ position: "absolute", left: "50%", bottom: 6, transform: "translateX(-50%)", fontSize: 11, fontWeight: 900, color: "#92400e", background: "rgba(255,243,199,.95)", border: "1px solid #fde68a", borderRadius: 999, padding: "3px 10px", whiteSpace: "nowrap" }}>
                     パーツ素材 準備中（{missing}）
