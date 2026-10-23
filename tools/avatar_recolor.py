@@ -13,7 +13,13 @@ def recolor(img,target):
     th,ts,tv=cv2.cvtColor(np.uint8([[hexrgb(target)]]),cv2.COLOR_RGB2HSV)[0,0].astype(float)
     hsv[:,:,0]=th
     hsv[:,:,1]=np.clip(hsv[:,:,1]*(ts/max(bs,1)),0,255)
-    hsv[:,:,2]=np.clip(hsv[:,:,2]*(tv/max(bv,1)),0,255)
+    # 明度：比例で落とすと暗色でツヤが消えるので、暗い色ほどハイライトを残す（ガンマで圧縮）
+    ratio=tv/max(bv,1)
+    if ratio<1:
+        v=hsv[:,:,2]/255.0
+        hsv[:,:,2]=np.clip((v**(1.0/ (0.55+0.45*ratio)))*255*(0.55+0.45*ratio),0,255)
+    else:
+        hsv[:,:,2]=np.clip(hsv[:,:,2]*ratio,0,255)
     out=cv2.cvtColor(hsv.astype(np.uint8),cv2.COLOR_HSV2RGB); a[:,:,:3]=out
     return Image.fromarray(a)
 for layer in ("hair_front","hair_back"):
