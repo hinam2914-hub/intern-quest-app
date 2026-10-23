@@ -12,7 +12,8 @@ def recolor(img,target):
     bh,bs,bv=cv2.cvtColor(np.uint8([[hexrgb(BASE)]]),cv2.COLOR_RGB2HSV)[0,0].astype(float)
     th,ts,tv=cv2.cvtColor(np.uint8([[hexrgb(target)]]),cv2.COLOR_RGB2HSV)[0,0].astype(float)
     hsv[:,:,0]=th
-    hsv[:,:,1]=np.clip(hsv[:,:,1]*(ts/max(bs,1)),0,255)
+    # 彩度：元の明るいハイライト（低彩度・高明度）は目標色の彩度に寄せて、オレンジの点にならないようにする
+    hsv[:,:,1]=np.clip(np.maximum(hsv[:,:,1]*(ts/max(bs,1)), ts*0.6),0,255)
     # 明度：比例で落とすと暗色でツヤが消えるので、暗い色ほどハイライトを残す（ガンマで圧縮）
     ratio=tv/max(bv,1)
     if ratio<1:
@@ -21,6 +22,9 @@ def recolor(img,target):
     else:
         hsv[:,:,2]=np.clip(hsv[:,:,2]*ratio,0,255)
     out=cv2.cvtColor(hsv.astype(np.uint8),cv2.COLOR_HSV2RGB); a[:,:,:3]=out
+    # 縁の半透明画素は元の明るい色が残って「白い縁取り」になるので、そこはやや不透明化して縁をなじませる
+    al=a[:,:,3].astype(float); edge=(al>0)&(al<200)
+    a[:,:,3]=np.where(edge,np.clip(al*1.25,0,255),al).astype(np.uint8)
     return Image.fromarray(a)
 for layer in ("hair_front","hair_back"):
     for f in glob.glob(f"public/avatar/{layer}/*__brown.png"):
