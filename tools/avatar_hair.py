@@ -68,10 +68,17 @@ def hair_only(img):
     al[(yy0>=600)&~((r<180)&(np.abs(r-g)>10))]=0
     # 肩より下：素体の内側（輪郭線の帯を含む）は衣装で隠れるので捨てる。残すのは体の外側に落ちる髪だけ
     bodyband=ndimage.binary_dilation(vis,iterations=6)
-    al[(yy0>=560)&bodyband]=0
+    strongHair=(r<175)&(np.abs(r-g)>14)&(ndimage.binary_erosion(al>60,iterations=3))
+    al[(yy0>=560)&bodyband&~strongHair]=0
     # 顔の中（目・眉・口の周り）に残る破片を捨てる：素体の顔領域（頭の内側、生え際より下）
     face=ndimage.binary_erosion(vis,iterations=14)&(yy0>330)&(yy0<560)
-    al[face&~((r<170)&(np.abs(r-g)>10)&(ndimage.binary_erosion(al>60,iterations=4)))]=0
+    import os
+    if os.environ.get("HAIR_KEEP_FACE")=="1":
+        # 前髪が顔にかかる髪型用：素体と色が十分違う画素は顔の中でも残す
+        diff=np.abs(A[:,:,:3]-B[:,:,:3]).sum(axis=2)
+        al[face&~((diff>120)&(ndimage.binary_erosion(al>60,iterations=2)))]=0
+    else:
+        al[face&~((r<170)&(np.abs(r-g)>10)&(ndimage.binary_erosion(al>60,iterations=4)))]=0
     yy=np.arange(1024)[:,None]; xx=np.arange(1024)[None,:]
     ears=(yy>360)&(yy<540)&((xx<400)|(xx>624))   # 耳の位置だけ
     band=ndimage.binary_dilation(vis,iterations=8)&~ndimage.binary_erosion(vis,iterations=8)&ears
