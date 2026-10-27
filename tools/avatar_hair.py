@@ -3,7 +3,7 @@
 使い方: python3 tools/avatar_hair.py <sheet.png> <hairId> <color> [--body public/avatar/body/f__light.png]
  front: 左半分を素体に拡縮合わせ → 素体と同じ画素を透明化（＝髪だけ）
  back : 右半分を同様に合わせ、正面の髪と重ならない「頭の輪郭の外側＋肩より下」部分を後ろ髪として採用"""
-import argparse
+import argparse, os
 from PIL import Image, ImageFilter
 import numpy as np
 from scipy import ndimage
@@ -147,6 +147,18 @@ def tall_from_src(src_img,s,off,mask_img):
     ma[top&hair]=A[:,:,3][top&hair]
     out.putalpha(Image.fromarray(ma.astype("uint8"))); return out
 front_t=tall_from_src(left,sF,off,front)
+if os.environ.get("HAIR_COVER_BROW")=="1":
+    # 元絵で前髪が眉を隠す髪型：素体の眉の位置は、元絵のその位置の画素（髪）で必ず覆う
+    bl=(B[:,:,:3]*np.array([0.299,0.587,0.114])).sum(2); reg=np.zeros_like(vis); reg[250:330,360:660]=True
+    bm=(bl<150)&vis&reg; lab2,k2=ndimage.label(bm); keep2=[i+1 for i,s_ in enumerate(ndimage.sum(bm,lab2,range(1,k2+1))) if s_>100]
+    bm=ndimage.binary_dilation(np.isin(lab2,keep2),iterations=6)
+    sq=Image.new("RGBA",(max(left.size),)*2,(0,0,0,0)); sq.paste(left,((sq.width-left.width)//2,(sq.height-left.height)//2))
+    w=int(round(1024*sF)); sm=sq.resize((w,w),Image.LANCZOS); srcimg=Image.new("RGBA",(1024,1024+TOP),(0,0,0,0)); srcimg.alpha_composite(sm,(off[0],off[1]+TOP))
+    S=np.array(srcimg).astype(int); FT=np.array(front_t)
+    r_,g_,b2=S[:,:,0],S[:,:,1],S[:,:,2]
+    skin_=(r_>185)&(g_>140)&(b2>115)&(r_-b2>20)&(r_-b2<95)&(g_>=b2)&(r_>=g_)
+    m2=np.zeros(FT.shape[:2],bool); m2[TOP:]=bm; m2&=(S[:,:,3]>200)&~skin_
+    FT[m2,:3]=S[m2,:3]; FT[m2,3]=255; front_t=Image.fromarray(FT)
 frontmask=np.array(front_t)[:,:,3]>30
 back_t=tall(back)
 front_t.save(f"public/avatar/hair_front/{a.hair}__{a.color}.png"); back_t.save(f"public/avatar/hair_back/{a.hair}__{a.color}.png")
