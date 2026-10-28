@@ -5,6 +5,7 @@ import MentorInboxBanner from "../components/MentorInboxBanner";
 import TodayQuestCard from "../components/TodayQuestCard";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import TutorialMark from "../components/TutorialMark";
 import DotKun from "../components/DotKun";
 import DotHouse, { getHouseStage } from "../components/DotHouse";
 import HomeIsland from "../components/HomeIsland";
@@ -362,6 +363,7 @@ export default function HomePage() {
 
   return (
     <>
+    <TutorialMark id="home" />
     <MentorQuestEvent />
     <MentorInboxBanner />
     <TodayQuestCard />

@@ -96,8 +96,7 @@ export default function FirstQuestIntroPage() {
     const next = () => {
         if (going) return;
         setGoing(true);
-        // 2/4 以降は未実装。未完成画面へは遷移させず、既存のオンボーディング（使い方説明）へ
-        router.push("/onboarding");
+        router.push("/onboarding/first-quest/quests");
     };
 
     return (

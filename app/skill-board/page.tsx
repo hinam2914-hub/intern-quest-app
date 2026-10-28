@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import TutorialMark from "../components/TutorialMark";
 import { evaluateUser, syncUnlocks, requestCheck, getFocus, focusOp, nextQuestCandidates, questMission, ruleRecommendations, getMentorRecommendations, type EvalResult, type NodeState, type Focus, type Reco } from "../lib/skills";
 import SkillWorld, { type Walk } from "./SkillWorld";
 import DetailPanel from "./DetailPanel";
@@ -168,6 +169,7 @@ export default function SkillBoardPage() {
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
+      <TutorialMark id="skill" />
       <SkillWorld res={res} avatarId={avatarId} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} camCmd={camCmd} stages={stageRes?.stages} onStageTap={() => setStageOpen(true)} onAreaTap={(k) => setNavArea(k)} onCamMode={(m, a) => { if (m === "area" && a) setNavArea(a); }} />
 
       {/* HUD 上 */}

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import TutorialMark from "../components/TutorialMark";
 import DotKun from "../components/DotKun";
 
 // よく使うQuest（クイック追加用）
@@ -111,6 +112,7 @@ export default function TodaySchedulePage() {
 
     return (
         <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at 30% 0%, #1a1030 0%, #0b0b16 55%)", padding: "24px 16px 110px" }}>
+            <TutorialMark id="quest" />
             <div style={{ maxWidth: 1080, margin: "0 auto" }}>
                 {/* ヘッダー */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
