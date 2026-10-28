@@ -16,7 +16,7 @@ const STEP_NOW = 5;
 
 // 画像の座標（1659×948 の元画像に対する比率）
 const IMG = { w: 1659, h: 948 };
-const PORTRAIT = { l: 318, t: 268, w: 348, h: 426 };     // 金の肖像枠の内側
+const PORTRAIT = { l: 318, t: 270, w: 348, h: 352 };     // 金の肖像枠の内側
 const ROWS = [268, 359, 451, 543].map((t, i) => ({ l: 728, t, w: i === 3 ? 490 : 604, h: 78 }));   // 4本目は封蝋にかからない幅
 const RIBBON = { l: 330, t: 708, w: 1000, h: 90 };       // 金のリボン（文字を置く帯）
 const TITLE = { l: 330, t: 10, w: 1000, h: 84 };         // ライセンス上の空（装飾を隠さない位置）
@@ -37,7 +37,7 @@ const CSS = `
 .lc-title b{font-size:calc(var(--u)*44);font-weight:900;color:#17397d;text-shadow:0 2px 0 #fff,0 0 18px rgba(255,255,255,.9);letter-spacing:.04em;line-height:1.1}
 .lc-title small{font-size:calc(var(--u)*15);font-weight:800;color:#2b3f6b;letter-spacing:.3em;text-shadow:0 1px 0 #fff}
 .lc-portrait{align-items:flex-start;overflow:hidden;padding:0}
-.lc-portrait>div{flex:none;margin-top:-32%}
+.lc-portrait>div{flex:none;margin-top:-30%}
 .lc-mtitle{display:none;text-align:center;margin:10px 0 2px}
 .lc-mtitle b{display:block;font-size:24px;font-weight:900;color:#17397d;text-shadow:0 2px 0 #fff}
 .lc-mtitle small{font-size:11px;font-weight:800;color:#2b3f6b;letter-spacing:.3em}
@@ -122,7 +122,7 @@ export default function LicensePage() {
     }, [vw, vh, mobile]);
     const u = layout ? layout.imgW / IMG.w : 0;   // 元画像 1px あたりの画面 px（文字サイズの基準）
 
-    const start = () => { if (going) return; setGoing(true); router.push("/onboarding"); };   // 次：STEP 7 初回クエスト（未実装）→ 当面は既存オンボーディングへ
+    const start = () => { if (going) return; setGoing(true); router.push("/onboarding/first-quest"); };
 
     const V = ({ v }: { v?: string | null }) => <span className={"v" + (v ? "" : " none")}>{v || "未設定"}</span>;
 
@@ -144,7 +144,7 @@ export default function LicensePage() {
                                 <div className="lc-glow" />
                                 <div className="lc-ov lc-title" style={pct(TITLE)}><b>冒険者ライセンス</b><small>ADVENTURER LICENSE</small></div>
                                 <div className="lc-ov lc-portrait" style={pct(PORTRAIT)} aria-label="アバター">
-                                    <AvatarLayered config={cfg} job={job} size="170%" showFallback />
+                                    <AvatarLayered config={cfg} job={job} size="150%" showFallback />
                                 </div>
                                 <div className="lc-ov lc-row" style={pct(ROWS[0])}><span className="k">名前</span><V v={p.name} /></div>
                                 <div className="lc-ov lc-row" style={pct(ROWS[1])}><span className="k">職業</span><span className="v">{jobInfo?.name}<span style={{ color: jobInfo?.color, fontSize: "calc(var(--u)*16)", letterSpacing: ".15em", marginLeft: "0.6em" }}>{jobInfo?.en}</span></span></div>
