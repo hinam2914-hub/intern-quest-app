@@ -36,8 +36,8 @@ const CSS = `
 .lc-title{flex-direction:column;gap:0}
 .lc-title b{font-size:calc(var(--u)*44);font-weight:900;color:#17397d;text-shadow:0 2px 0 #fff,0 0 18px rgba(255,255,255,.9);letter-spacing:.04em;line-height:1.1}
 .lc-title small{font-size:calc(var(--u)*15);font-weight:800;color:#2b3f6b;letter-spacing:.3em;text-shadow:0 1px 0 #fff}
-.lc-portrait{align-items:flex-end;overflow:hidden;padding:0 0 3%}
-.lc-portrait>div{flex:none}
+.lc-portrait{align-items:flex-start;overflow:hidden;padding:0}
+.lc-portrait>div{flex:none;margin-top:-32%}
 .lc-mtitle{display:none;text-align:center;margin:10px 0 2px}
 .lc-mtitle b{display:block;font-size:24px;font-weight:900;color:#17397d;text-shadow:0 2px 0 #fff}
 .lc-mtitle small{font-size:11px;font-weight:800;color:#2b3f6b;letter-spacing:.3em}
@@ -144,7 +144,7 @@ export default function LicensePage() {
                                 <div className="lc-glow" />
                                 <div className="lc-ov lc-title" style={pct(TITLE)}><b>冒険者ライセンス</b><small>ADVENTURER LICENSE</small></div>
                                 <div className="lc-ov lc-portrait" style={pct(PORTRAIT)} aria-label="アバター">
-                                    <AvatarLayered config={cfg} job={job} size="128%" showFallback />
+                                    <AvatarLayered config={cfg} job={job} size="170%" showFallback />
                                 </div>
                                 <div className="lc-ov lc-row" style={pct(ROWS[0])}><span className="k">名前</span><V v={p.name} /></div>
                                 <div className="lc-ov lc-row" style={pct(ROWS[1])}><span className="k">職業</span><span className="v">{jobInfo?.name}<span style={{ color: jobInfo?.color, fontSize: "calc(var(--u)*16)", letterSpacing: ".15em", marginLeft: "0.6em" }}>{jobInfo?.en}</span></span></div>
