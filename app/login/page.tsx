@@ -22,7 +22,7 @@ async function resolveDestination(userId: string): Promise<{ to: string } | { bl
     const needJob = pr && !pr.onboarding_done && !fresh && pr.department_id && pr.mbti && pr.hobby_category && !pr.job_class;
     // 職業は選択済みだがアバター未設定の新規ユーザーはアバター作成から再開
     const needAvatar = pr && !pr.onboarding_done && !fresh && !needJob && pr.job_class && pr.avatar_config?.type !== "layered";
-    const to = (!profile?.name || profile.name.trim() === "") ? "/register" : (pr?.onboarding_done ? "/home" : (fresh ? "/onboarding/profile" : needJob ? "/onboarding/job" : needAvatar ? "/onboarding/avatar" : "/onboarding"));
+    const to = (!profile?.name || profile.name.trim() === "") ? "/register" : (pr?.onboarding_done ? "/home" : (fresh ? "/onboarding/profile" : needJob ? "/onboarding/job" : needAvatar ? "/onboarding/avatar" : "/onboarding/confirm"));
     return { to };
 }
 

@@ -98,8 +98,7 @@ export default function AvatarCustomizePage() {
         const { error } = await supabase.from("profiles").update({ avatar_config: cfg }).eq("id", userId);
         if (error) { setMsg("保存に失敗しました。もう一度お試しください（" + error.message + "）"); setLoading(false); return; }
         setMsg("✅ アバターを保存しました！");
-        // 次：アバター確認（未実装）→ 当面は既存のオンボーディング画面へ
-        setTimeout(() => router.push("/onboarding"), 700);
+        setTimeout(() => router.push("/onboarding/confirm"), 700);
     };
 
     const jobInfo = useMemo(() => JOBS.find((j) => j.key === job), [job]);
