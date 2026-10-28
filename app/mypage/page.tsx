@@ -9,6 +9,10 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart
 import { AnimatePresence, motion } from "framer-motion";
 import DotKun from "../components/DotKun";
 import SkillBoardCard from "../components/SkillBoardCard";
+import AvatarLayered from "../components/AvatarLayered";
+import type { AvatarConfig } from "../lib/avatar/catalog";
+import { JOBS, type JobKey } from "../onboarding/job/page";
+import { MYPAGE_CSS } from "./theme";
 
 type PointHistory = {
     id?: string;
@@ -520,6 +524,9 @@ export default function MyPage() {
     const router = useRouter();
     const [userId, setUserId] = useState("");
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [avatarCfg, setAvatarCfg] = useState<AvatarConfig | null>(null);
+    const [jobClass, setJobClass] = useState<JobKey | null>(null);
+    const [openDetail, setOpenDetail] = useState<"profile" | "collection" | "activity" | "event" | null>(null);
     const [name, setName] = useState("");
     const [inputName, setInputName] = useState("");
     const [myKpis, setMyKpis] = useState<{ deptName: string; target: number; result: number; rate: number; pts: number; approved: boolean }[]>([]);
@@ -757,6 +764,7 @@ export default function MyPage() {
     const todayYmd = getTodayJST();
     const level = getLevel(totalEarned);
     const exp = getExp(totalEarned);
+    const jobInfo = JOBS.find((j) => j.key === jobClass);
     const badgeLabel = getBadgeLabel(level);
     const badgeColor = getBadgeColor(level);
     const actionMessage = getActionMessage(isSubmitted, streak);
@@ -810,6 +818,7 @@ export default function MyPage() {
             setEducation(profile.education || "");
             setDepartmentId((profileData as any)?.department_id || "");
             setAvatarUrl((profileData as any)?.avatar_url || null);
+            { const ac = (profileData as any)?.avatar_config; setAvatarCfg(ac?.type === "layered" ? ac : null); const jc = (profileData as any)?.job_class; setJobClass(jc && JOBS.some((j) => j.key === jc) ? jc : null); }
             setThemeColor((profileData as any)?.theme_color || "#6366f1");
             setBgColor((profileData as any)?.bg_color || "#0a0a0f");
             setFontFamily((profileData as any)?.font_family || "'Inter', sans-serif");
@@ -1402,7 +1411,9 @@ const handleRoutineCheck = async (routineId: string) => {
     }
 
     return (
-        <main style={{ minHeight: "100vh", background: bgColor || "#0a0a0f", padding: "40px 24px 110px", fontFamily: fontFamily, color: textPrimary }}>
+        <main className="mp-root" style={{ minHeight: "100vh", padding: "0 16px 120px", fontFamily: fontFamily, color: textPrimary }}>
+            <style>{MYPAGE_CSS}</style>
+            <header className="mp-header"><div className="mp-logo">Intern<br/>Quest</div><div className="mp-htitle">マイページ<small>MY PAGE</small></div><div className="mp-hbtns"><button onClick={() => router.push("/notifications")} aria-label="通知">🔔{unreadNotifCount > 0 && <i />}</button><button onClick={() => setShowProfileModal(true)} aria-label="設定">⚙️</button></div></header>
 
             {/* ===== パーティクルキャンバス ===== */}
             <canvas
@@ -2029,95 +2040,83 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                 </div>
 
-                {/* ===== プロフィールヒーロー（統合版） ===== */}
-                <div style={{ order: -2, position: "relative", marginBottom: 22, borderRadius: 28, padding: "72px 20px 18px", background: "linear-gradient(180deg, rgba(255,253,246,0) 0%, rgba(255,251,240,.5) 52%, rgba(255,251,240,.95) 100%), url(/island/room_bg.png) center top / cover no-repeat", border: "1.5px solid rgba(190,170,130,.35)", boxShadow: "0 10px 30px rgba(120,100,60,.16)", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 8, zIndex: 2 }}>
-                        <button onClick={() => router.push("/home")} style={{ width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(190,170,130,.4)", background: "rgba(255,255,255,.85)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>🏝️</button>
-                        <button onClick={() => setShowProfileModal(true)} style={{ width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(190,170,130,.4)", background: "rgba(255,255,255,.85)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>⚙️</button>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-                        <div style={{ position: "relative", flexShrink: 0 }}>
-                            {avatarUrl ? (
-                                <img src={avatarUrl} alt={name} style={{ width: 84, height: 84, borderRadius: "50%", objectFit: "cover", display: "block", border: "3px solid rgba(167,139,250,.7)", boxShadow: "0 0 22px rgba(139,92,246,.35)" }} />
-                            ) : (
-                                <div style={{ width: 84, height: 84, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #a78bfa, #6d28d9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 900, color: "#fff", boxShadow: "0 0 22px rgba(139,92,246,.4)" }}>{name ? name.charAt(0) : "?"}</div>
-                            )}
-                            <div style={{ position: "absolute", bottom: -4, right: -6, borderRadius: 999, padding: "3px 9px", background: "linear-gradient(135deg, #8b5cf6, #6d28d9)", color: "#fff", fontSize: 12, fontWeight: 900, boxShadow: "0 2px 8px rgba(109,40,217,.5)", border: "2px solid #fffdf6" }}>Lv.{level}</div>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 20, fontWeight: 900, color: "#3d3355", lineHeight: 1.2 }}>{name || "名前未設定"}</div>
-                            {topTrophy && <div style={{ fontSize: 12, fontWeight: 800, color: "#b0641f", marginTop: 2 }}>{topTrophy.icon} {topTrophy.name}</div>}
-
-                        </div>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0, borderRadius: 18, background: "rgba(255,255,255,.9)", boxShadow: "0 6px 18px rgba(120,100,60,.14)", overflow: "hidden" }}>
-                        {[
-                            { label: "レベル", value: `Lv.${level}` },
-                            { label: "累計獲得pt", value: `${totalEarned.toLocaleString()}pt` },
-                            { label: "ランキング", value: rank ? `${rank}位` : "-" },
-                            { label: "連続記録", value: `${streak}日` },
-                        ].map((it, i) => (
-                            <div key={i} style={{ textAlign: "center", padding: "13px 2px 11px", borderLeft: i > 0 ? "1px solid rgba(120,100,60,.14)" : "none" }}>
-                                <div style={{ fontSize: 15, fontWeight: 900, color: "#4a3f66", lineHeight: 1.2 }}>{it.value}</div>
-                                <div style={{ fontSize: 9.5, fontWeight: 700, color: "#9a8fb0", marginTop: 2 }}>{it.label}</div>
+                {/* ===== 2.0 レイアウト：左 2×2 パネル／右カラム（ルク・ボタン・4入口）／下に指標行 ===== */}
+                <div className="mp-grid">
+                    <section className="mp-panel mp-p-profile">
+                        <div className="mp-ribbon">冒険者プロフィール<small>ADVENTURER PROFILE</small></div>
+                        <div className="mp-prof">
+                            <div className="mp-prof-av">{avatarCfg && jobClass ? <AvatarLayered config={avatarCfg} job={jobClass} /> : <div className="mp-noav">アバター未設定<br /><button className="mp-smallbtn" onClick={() => router.push("/onboarding/avatar?from=mypage")}>作成する</button></div>}</div>
+                            <div className="mp-prof-info">
+                                <div className="mp-shield"><span>Lv.</span><b>{level}</b></div>
+                                <div className="mp-name">{name || "名前未設定"}<span>さん</span></div>
+                                <div className="mp-jobchip">{jobInfo ? `${jobInfo.name}（${jobInfo.en}）` : "職業 未選択"}</div>
+                                <div className="mp-exp"><b>EXP</b><span>{exp} / 100</span><em>次のLv.まであと{100 - exp}pt</em></div>
+                                <div className="mp-expbar"><div style={{ width: `${exp}%` }} /></div>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    </section>
+                    <section className="mp-panel mp-p-status">
+                        <div className="mp-ribbon">冒険者ステータス<small>ADVENTURER STATUS</small></div>
+                        <div className="mp-stats">
+                            {[
+                                { ic: "🪙", label: "累計ポイント", value: `${totalEarned.toLocaleString()}pt` },
+                                { ic: "🏆", label: "ランキング", value: rank ? `${rank}位` : "-" },
+                                { ic: "🔥", label: "連続記録", value: `${streak}日` },
+                                { ic: "🔷", label: "努力ランク", value: rank2 },
+                            ].map((it) => <div key={it.label} className="mp-stat"><div className="mp-stat-ic">{it.ic}</div><div className="mp-stat-l">{it.label}</div><div className="mp-stat-v">{it.value}</div></div>)}
+                        </div>
+                        <div className="mp-kv" style={{ marginTop: 10 }}>
+                            <div className="mp-kv-row"><span>保有ポイント</span><b>{points.toLocaleString()}pt</b></div>
+                            <div className="mp-kv-row"><span>今月の獲得</span><b>{monthPt.toLocaleString()}pt</b></div>
+                        </div>
+                    </section>
+                    <section className="mp-panel mp-p-growth">
+                        <div className="mp-ribbon">成長の記録<small>GROWTH</small></div>
+                        <div className="mp-growth"><SkillBoardCard /></div>
+                    </section>
+                    <section className="mp-panel mp-p-col">
+                        <div className="mp-ribbon">冒険者コレクション<small>COLLECTION</small></div>
+                        <div className="mp-colgrid">
+                            {achieveBadges.filter((b) => myBadgeIds.includes(b.id)).slice(0, 8).map((b) => <div key={b.id} className="mp-colitem"><span>{b.icon || "🏅"}</span><small>{b.name}</small></div>)}
+                            {myBadgeIds.length === 0 && <div className="mp-empty">まだバッジがありません。クエストを進めて集めよう！</div>}
+                        </div>
+                        <div className="mp-colfoot"><span>{myBadgeIds.length} / {achieveBadges.length}</span><button className="mp-smallbtn" onClick={() => setOpenDetail(openDetail === "collection" ? null : "collection")}>コレクションをすべて見る →</button></div>
+                    </section>
+                    <aside className="mp-side">
+                        <img className="mp-side-luku" src="/onboarding/luku.png" alt="" />
+                        <button className="mp-bigbtn" onClick={() => router.push("/skill-board")}>SKILL WORLDへ →</button>
+                        <button className="mp-sidebtn" onClick={() => router.push("/onboarding/avatar?from=mypage")}>👕 アバターを編集</button>
+                        <div className="mp-tiles">
+                            {([["profile", "🪪", "基本プロフィール"], ["collection", "⭐", "冒険者コレクション"], ["activity", "📋", "最近の活動"], ["event", "🎁", "限定イベント"]] as const).map(([k, ic, lab]) => (
+                                <button key={k} className={"mp-tile" + (openDetail === k ? " on" : "") + (k === "event" ? " ev" : "")} onClick={() => setOpenDetail(openDetail === k ? null : k)}>
+                                    {k === "event" && (pendingSurveys.length > 0 || myKpis.length > 0) && <span className="mp-tile-badge">開催中！</span>}
+                                    <span className="mp-tile-ic">{ic}</span><span className="mp-tile-l">{lab}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </aside>
                 </div>
-                {/* ===== レベルカード（分離） ===== */}
-                <div style={{ order: -1, marginBottom: 16, borderRadius: 20, padding: "18px 20px", background: "rgba(255,253,246,.75)", border: "1px solid rgba(190,170,130,.22)", boxShadow: "0 4px 14px rgba(120,100,60,.08)", display: "flex", alignItems: "center", gap: 16 }}>
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-                            <div style={{ fontSize: 15, fontWeight: 900, color: "#4a3f66" }}>Lv.{level}<span style={{ fontSize: 10.5, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #a78bfa, #7c5ce0)", borderRadius: 8, padding: "2px 8px", marginLeft: 8 }}>達人</span></div>
-                            <div style={{ fontSize: 12, fontWeight: 800, color: "#b0641f" }}>あと{100 - exp}ptで Lv.{level + 1}！</div>
-                        </div>
-                        <div style={{ height: 9, borderRadius: 999, background: "rgba(120,100,150,.14)" }}>
-                            <div style={{ height: "100%", width: `${exp}%`, borderRadius: 999, background: "linear-gradient(90deg, #8b5cf6, #c4b5fd)", transition: "width 1s ease" }} />
-                        </div>
-                        <div style={{ marginTop: 9, fontSize: 11.5, fontWeight: 700, color: "#8a7fa5" }}>次のレベルで解放されるもの<span style={{ marginLeft: 8, color: "#6b5f8a" }}>・称号  ・バッジの獲得チャンス</span></div>
-                    </div>
-                    <div style={{ fontSize: 40, flexShrink: 0 }}>🎁</div>
-                </div>
-                <SkillBoardCard />
-                {/* ===== 努力ランクカード（モック準拠） ===== */}
-                {(() => {
-                    const AXES = [
-                        { axis: "学歴", value: getEducationScore(education), full: 20 },
-                        { axis: "活動期間", value: Math.min(activeDays * (15 / 730), 15), full: 20 },
-                        { axis: "実績KPI", value: Math.min(approvedKpiCount * 0.75, 15), full: 20 },
-                        { axis: "メタ認知", value: Math.min(level * (4 / 15), 10), full: 20 },
-                        { axis: "アウトプット", value: Math.min(Math.floor(esUpdateCount / 10), 20), full: 20 },
-                        { axis: "リーダー", value: Math.min(Math.floor((thanksCount + mentorCount) / 20), 10), full: 20 },
-                        { axis: "思考力", value: Math.min(Math.floor(thinkingAnswerCount / 5), 20), full: 20 },
-                    ];
-                    const sorted = [...AXES].sort((a, b) => (b.value / b.full) - (a.value / a.full));
-                    const best = sorted[0], worst = sorted[sorted.length - 1];
-                    return (
-                        <div style={{ order: -1, marginBottom: 16, borderRadius: 20, padding: "18px 20px", background: "rgba(255,253,246,.8)", border: "1px solid rgba(190,170,130,.22)", boxShadow: "0 4px 14px rgba(120,100,60,.08)" }}>
-                            <div style={{ fontSize: 13.5, fontWeight: 900, color: "#4a3f66", marginBottom: 14 }}>努力ランク</div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                                    <div style={{ width: 52, height: 60, borderRadius: 12, background: "linear-gradient(150deg, #8b5cf6, #6d28d9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: "#fff", boxShadow: "0 4px 12px rgba(109,40,217,.35)" }}>{rank2 || "-"}</div>
-                                    <div>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: "#9a8fb0" }}>スコア</div>
-                                        <div style={{ fontSize: 26, fontWeight: 900, color: "#4a3f66", lineHeight: 1.1 }}>{rankScore}<span style={{ fontSize: 12, color: "#9a8fb0", fontWeight: 700 }}>/100</span></div>
-                                    </div>
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10.5, fontWeight: 700, color: "#9a8fb0" }}><span>⭐</span><span>あなたの強み</span></div>
-                                    <div style={{ fontSize: 14, fontWeight: 900, color: "#b0641f", marginBottom: 8, marginLeft: 2 }}>{best.axis}</div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10.5, fontWeight: 700, color: "#9a8fb0" }}><span>🔹</span><span>次に伸ばすと良い項目</span></div>
-                                    <div style={{ fontSize: 14, fontWeight: 900, color: "#5a7fb0", marginLeft: 2 }}>{worst.axis}</div>
-                                </div>
-                            </div>
-                            <div style={{ marginTop: 12, height: 6, borderRadius: 999, background: "rgba(120,100,150,.14)" }}>
-                                <div style={{ height: "100%", width: `${rankScore}%`, borderRadius: 999, background: "linear-gradient(90deg, #a78bfa, #7c5ce0)" }} />
-                            </div>
-                            <div style={{ marginTop: 7, fontSize: 11, fontWeight: 700, color: "#9a8fb0", textAlign: "right" }}>{nextRankInfo}</div>
-                        </div>
-                    );
-                })()}
 
+                {openDetail === "profile" && (
+                    <section className="mp-panel mp-detail">
+                        <div className="mp-ribbon">基本プロフィール</div>
+                        <div className="mp-kv">
+                            {[["MBTI", mbti], ["学歴", education], ["高校の部活", club], ["趣味", hobby], ["所属", departments.find((d) => d.id === departmentId)?.name || ""], ["入社日", startedAt]].map(([k, v]) => <div key={k} className="mp-kv-row"><span>{k}</span><b>{v || "未設定"}</b></div>)}
+                        </div>
+                        <button className="mp-smallbtn" onClick={() => setShowProfileModal(true)}>✏️ プロフィールを編集</button>
+                    </section>
+                )}
+                {openDetail === "event" && (
+                    <section className="mp-panel mp-detail mp-event">
+                        <div className="mp-ribbon">限定イベント</div>
+                        {pendingSurveys.length === 0 && myKpis.length === 0 && <div className="mp-empty">現在開催中のイベントはありません</div>}
+                        {pendingSurveys.map((s) => <button key={s.id} className="mp-kv-row mp-link" onClick={() => router.push("/surveys")}><span>📝 {s.title}</span><b>+{s.reward_points}pt</b></button>)}
+                        {myKpis.map((k, i) => <div key={i} className="mp-kv-row"><span>📈 {k.deptName}</span><b>{k.result}/{k.target}（{k.rate}%）{k.approved ? " ✓" : ""}</b></div>)}
+                        <button className="mp-smallbtn" onClick={() => router.push("/kpi")}>KPIを入力する →</button>
+                    </section>
+                )}
+
+                {openDetail === "activity" && (<section className="mp-panel mp-detail"><div className="mp-ribbon">最近の活動<small>RECENT ACTIVITY</small></div>
                 {/* ===== みんなの最近の達成 ===== */}
                 {achievements.length > 0 && (
                     <div style={{ marginTop: 16, padding: "16px 0 14px 18px", borderRadius: 16, background: isLightBg ? "rgba(255,255,255,0.8)" : "rgba(52,211,153,0.07)", border: `1px solid ${isLightBg ? "rgba(0,0,0,0.06)" : "rgba(52,211,153,0.22)"}` }}>
@@ -2155,6 +2154,8 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                 )}
 
+                </section>)}
+                {openDetail === "profile" && (<div className="mp-detail-raw">
                 {/* ===== 成長マップ要約カード ===== */}
                 {mbti && (() => {
                     const gs = calculateSibyl({ mbti, education, club, hobby });
@@ -2423,6 +2424,8 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>}
                 </div>
 
+                </div>)}
+                {openDetail === "collection" && (<div className="mp-detail-raw">
                 {/* ===== コレクション（統合サマリー） ===== */}
                 <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -2547,6 +2550,8 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                 )}
 
+                </div>)}
+                {openDetail === "activity" && (<div className="mp-detail-raw">
                 {/* ===== クイックタスク（超目立つ版） ===== */}
                 <div style={{
                     display: "none",
@@ -2773,6 +2778,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     )}
                 </div>
 
+                </div>)}
                 {/* プロフィール編集モーダル */}
                 {showProfileModal && (
                     <div onClick={() => setShowProfileModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 20001, padding: 20 }}>
@@ -2856,6 +2862,7 @@ const handleRoutineCheck = async (routineId: string) => {
                     </div>
                 )}
 
+                {openDetail === "activity" && (<div className="mp-detail-raw">
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
 
                     <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
@@ -2879,22 +2886,26 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     </div>
                 </div>
+                </div>)}
             </div>
-            {/* 下部固定ナビ（島の木製バー） */}
+            {/* 下部固定ナビ（2.0：6タブ。マイページのみ） */}
             <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 88, display: "flex", zIndex: 50, paddingBottom: 6 }}>
                 <div style={{ position: "absolute", inset: "4px 6px 10px", background: "url(/island/nav_wood.png) center / 100% 100% no-repeat", zIndex: 0, pointerEvents: "none" }} />
                 {[
-                    { ic: "🏝️", label: "ホーム", href: "/home", active: false },
+                    { ic: "🏠", label: "ホーム", href: "/home", active: false },
                     { ic: "🏆", label: "ランキング", href: "/ranking", active: false },
-                    { ic: "🏠", label: "おうち", href: "/mypage", active: true },
+                    { ic: "🗺️", label: "マップ", href: "/journey", active: false },
+                    { ic: "👥", label: "メンター", href: "/mentor-report", active: false },
+                    { ic: "👤", label: "マイページ", href: "/mypage", active: true },
                     { ic: "☰", label: "メニュー", href: "/menu", active: false },
                 ].map((t) => (
-                    <button key={t.href} onClick={() => router.push(t.href)} style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, paddingBottom: 4, background: "transparent", border: "none", cursor: "pointer", color: t.active ? "#fff" : "rgba(255,255,255,.7)", textShadow: "0 1px 2px rgba(90,55,20,.6)" }}>
+                    <button key={t.href} onClick={() => router.push(t.href)} className={"mp-nav" + (t.active ? " on" : "")}>
                         <div style={{ fontSize: 20 }}>{t.ic}</div>
                         <div style={{ fontSize: 10, fontWeight: t.active ? 900 : 700 }}>{t.label}</div>
                     </button>
                 ))}
             </div>
+
         </main>
     );
 }
