@@ -6,6 +6,9 @@ import TodayQuestCard from "../components/TodayQuestCard";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import TutorialMark from "../components/TutorialMark";
+import AvatarLayered from "../components/AvatarLayered";
+import type { AvatarConfig } from "../lib/avatar/catalog";
+import { JOBS, type JobKey } from "../onboarding/job/page";
 import DotKun from "../components/DotKun";
 import DotHouse, { getHouseStage } from "../components/DotHouse";
 import HomeIsland from "../components/HomeIsland";
@@ -97,6 +100,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [avatarId, setAvatarId] = useState<string | null>(null);
+  const [layered, setLayered] = useState<{ cfg: AvatarConfig; job: JobKey } | null>(null);   // 2.0 のレイヤーアバター（保存済みなら顔を表示）
   const [streak, setStreak] = useState(0);
   const [goals, setGoals] = useState<{ monthly_target: string; monthly_theme: string; quarter_goal: string; career_goal: string }>({ monthly_target: "", monthly_theme: "", quarter_goal: "", career_goal: "" });
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -162,7 +166,7 @@ export default function HomePage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
-      const { data: profile } = await supabase.from("profiles").select("name, streak, avatar_config, licenses").eq("id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("name, streak, avatar_config, licenses, job_class").eq("id", user.id).single();
       const { data: pointRow } = await supabase.from("user_points").select("total_earned").eq("id", user.id).single();
       const te = (pointRow as any)?.total_earned || 0;
       setTotalEarned(te);
@@ -197,6 +201,7 @@ export default function HomePage() {
         setName((profile as any).name || "");
         setLicenses((profile as any).licenses || {});
         setAvatarId((profile as any).avatar_config?.id || null);
+        { const ac = (profile as any).avatar_config; const jc = (profile as any).job_class; setLayered(ac?.type === "layered" && jc && JOBS.some((j) => j.key === jc) ? { cfg: ac, job: jc } : null); }
         setStreak((profile as any).streak || 0);
         const { data: goalRow } = await supabase.from("user_goals").select("*").eq("user_id", user.id).maybeSingle();
         if (goalRow) setGoals({ monthly_target: (goalRow as any).monthly_target || "", monthly_theme: (goalRow as any).monthly_theme || "", quarter_goal: (goalRow as any).quarter_goal || "", career_goal: (goalRow as any).career_goal || "" });
@@ -414,9 +419,14 @@ export default function HomePage() {
         {/* 上部 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", animation: "popIn 0.5s ease-out both" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {avatarId && (
+            {layered ? (
+              /* 2.0：保存済みレイヤーアバターの顔。タップでアバター編集（保存後はホームへ戻る） */
+              <div onClick={() => router.push("/onboarding/avatar?from=home")} title="アバターを編集" style={{ width: 46, height: 46, borderRadius: "50%", background: "#fff", boxShadow: "0 4px 12px rgba(43,52,64,.12)", cursor: "pointer", overflow: "hidden", position: "relative", flexShrink: 0 }}>
+                <div style={{ position: "absolute", left: "-70%", top: "-68%", width: "240%" }}><AvatarLayered config={layered.cfg} job={layered.job} showFallback={false} /></div>
+              </div>
+            ) : avatarId && (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={`/avatars/${avatarId}.png`} alt="avatar" onClick={() => router.push("/avatar")} style={{ width: 46, height: 46, objectFit: "cover", objectPosition: "top", borderRadius: "50%", background: "#fff", boxShadow: "0 4px 12px rgba(43,52,64,.12)", cursor: "pointer" }} />
+              <img src={`/avatars/${avatarId}.png`} alt="avatar" onClick={() => router.push("/onboarding/avatar?from=home")} style={{ width: 46, height: 46, objectFit: "cover", objectPosition: "top", borderRadius: "50%", background: "#fff", boxShadow: "0 4px 12px rgba(43,52,64,.12)", cursor: "pointer" }} />
             )}
             <div>
               <div style={{ fontSize: 13, color: helloColor }}>{greeting()}</div>
@@ -432,7 +442,7 @@ export default function HomePage() {
 
         {/* アバター未作成の人への導線 */}
         {!avatarId && (
-          <div onClick={() => router.push("/avatar")} style={{ marginTop: 14, borderRadius: 18, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, background: isDark ? "linear-gradient(135deg, rgba(255,180,92,.15), rgba(255,138,61,.08))" : "linear-gradient(135deg, #fff3e4, #ffe8d1)", border: isDark ? "1px solid rgba(255,180,92,.3)" : "1px solid #ffd9ae", animation: "popIn 0.5s ease-out 0.1s both" }}>
+          <div onClick={() => router.push("/onboarding/avatar?from=home")} style={{ marginTop: 14, borderRadius: 18, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, background: isDark ? "linear-gradient(135deg, rgba(255,180,92,.15), rgba(255,138,61,.08))" : "linear-gradient(135deg, #fff3e4, #ffe8d1)", border: isDark ? "1px solid rgba(255,180,92,.3)" : "1px solid #ffd9ae", animation: "popIn 0.5s ease-out 0.1s both" }}>
             <div style={{ fontSize: 30 }}>🧑‍🎨</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13.5, fontWeight: 900, color: isDark ? "#ffcf9e" : "#c2410c" }}>きみの分身をつくろう！</div>

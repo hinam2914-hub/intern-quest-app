@@ -55,8 +55,10 @@ type Tab = "basic" | "gear";
 
 export default function AvatarCustomizePage() {
     const router = useRouter();
-    const [fromMypage, setFromMypage] = useState(false);   // ?from=mypage：マイページからの編集（保存後／キャンセルでマイページへ戻る）
-    useEffect(() => { try { setFromMypage(new URLSearchParams(window.location.search).get("from") === "mypage"); } catch {} }, []);
+    const [from, setFrom] = useState<string>("");   // ?from=mypage|home：既存ユーザーの編集（保存後／キャンセルで元の画面へ戻る）
+    useEffect(() => { try { setFrom(new URLSearchParams(window.location.search).get("from") || ""); } catch {} }, []);
+    const fromMypage = from === "mypage" || from === "home";
+    const backTo = from === "home" ? "/home" : "/mypage";
     const [userId, setUserId] = useState<string | null>(null);
     const [job, setJob] = useState<JobKey | null>(null);
     const [cfg, setCfg] = useState<AvatarConfig | null>(null);
@@ -100,7 +102,7 @@ export default function AvatarCustomizePage() {
         const { error } = await supabase.from("profiles").update({ avatar_config: cfg }).eq("id", userId);
         if (error) { setMsg("保存に失敗しました。もう一度お試しください（" + error.message + "）"); setLoading(false); return; }
         setMsg("✅ アバターを保存しました！");
-        setTimeout(() => router.push(fromMypage ? "/mypage" : "/onboarding/confirm"), 700);
+        setTimeout(() => router.push(fromMypage ? backTo : "/onboarding/confirm"), 700);
     };
 
     const jobInfo = useMemo(() => JOBS.find((j) => j.key === job), [job]);
@@ -122,10 +124,10 @@ export default function AvatarCustomizePage() {
             <main className="av-root">
                 <div className="av-top">
                     <div className="av-prog">{STEPS.map((s, i) => <span key={s} className={i === STEP_NOW ? "on" : i < STEP_NOW ? "done" : ""}>{i + 1}. {s}</span>)}</div>
-                    <button className="av-back" type="button" onClick={() => router.push(fromMypage ? "/mypage" : "/onboarding/job")}>{fromMypage ? "← キャンセル（マイページへ）" : "← 職業選択へ"}</button>
+                    <button className="av-back" type="button" onClick={() => router.push(fromMypage ? backTo : "/onboarding/job")}>{fromMypage ? (from === "home" ? "← キャンセル（ホームへ）" : "← キャンセル（マイページへ）") : "← 職業選択へ"}</button>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                    <div className="av-h"><h1>{fromMypage ? "アバターを編集" : "アバターをつくろう"}</h1><p>{fromMypage ? "保存するとマイページに反映されます。" : "見た目は、あとからマイページで変えられます。"}</p></div>
+                    <div className="av-h"><h1>{fromMypage ? "アバターを編集" : "アバターをつくろう"}</h1><p>{fromMypage ? (from === "home" ? "保存するとホームに反映されます。" : "保存するとマイページに反映されます。") : "見た目は、あとからマイページで変えられます。"}</p></div>
                 </div>
                 {cfg && job && gear && (
                     <div className="av-wrap">
