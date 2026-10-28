@@ -78,7 +78,7 @@ export default function FirstQuestGuidePage() {
     const open = (href: string) => { if (userId) setTutorialReturn(userId, HERE); router.push(href); };
     const allDone = tutorialAllDone(prog);
     const doneCount = CARDS.filter((c) => prog[c.key]).length;
-    const goClear = () => { if (!allDone) return; router.push("/onboarding"); };   // 4/4（クリア演出）は未実装。当面は既存オンボーディングへ
+    const goClear = () => { if (!allDone) return; router.push("/onboarding/first-quest/clear"); };
 
     return (
         <>

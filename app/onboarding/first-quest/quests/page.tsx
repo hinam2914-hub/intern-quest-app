@@ -95,7 +95,7 @@ export default function FirstQuestListPage() {
     const allDone = tutorialAllDone(prog);
     const doneCount = QUESTS.filter((q) => prog[q.key]).length;
     // 次は 3/4（ルクの案内）。3つ達成済みなら 4/4 へ（4/4 は未実装のため当面は既存オンボーディングへ）
-    const goNext = () => router.push(allDone ? "/onboarding" : "/onboarding/first-quest/guide");
+    const goNext = () => router.push(allDone ? "/onboarding/first-quest/clear" : "/onboarding/first-quest/guide");
     const goSee = (href: string) => { if (userId) setTutorialReturn(userId, "/onboarding/first-quest/quests"); router.push(href); };
 
     return (
