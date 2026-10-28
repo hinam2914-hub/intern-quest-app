@@ -5,7 +5,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
-import { readTutorial, tutorialAllDone, type TutorialKey, type TutorialProgress } from "@/app/lib/tutorial";
+import { readTutorial, setTutorialReturn, tutorialAllDone, type TutorialKey, type TutorialProgress } from "@/app/lib/tutorial";
 
 const STEPS = ["登録", "冒険者情報", "職業", "アバター", "確認", "ライセンス", "初回クエスト"];
 const STEP_NOW = 6;
@@ -94,11 +94,9 @@ export default function FirstQuestListPage() {
 
     const allDone = tutorialAllDone(prog);
     const doneCount = QUESTS.filter((q) => prog[q.key]).length;
-    const goClear = () => {
-        if (!allDone) return;
-        // 4/4（クリア演出）は未実装。未完成画面へは送らず、当面は既存のオンボーディングへ
-        router.push("/onboarding");
-    };
+    // 次は 3/4（ルクの案内）。3つ達成済みなら 4/4 へ（4/4 は未実装のため当面は既存オンボーディングへ）
+    const goNext = () => router.push(allDone ? "/onboarding" : "/onboarding/first-quest/guide");
+    const goSee = (href: string) => { if (userId) setTutorialReturn(userId, "/onboarding/first-quest/quests"); router.push(href); };
 
     return (
         <>
@@ -124,7 +122,7 @@ export default function FirstQuestListPage() {
                                             <div className="fq2-ic">{icons[q.key] ? <img src={q.icon} alt="" /> : <span className="no">{q.no}</span>}</div>
                                             <div className="fq2-t"><b>{icons[q.key] ? q.no + " " : ""}{q.title}</b><small>→ {q.sub}</small></div>
                                             <div className="fq2-r">
-                                                {!done && <button className="fq2-go" type="button" onClick={() => router.push(q.href)}>見に行く →</button>}
+                                                {!done && <button className="fq2-go" type="button" onClick={() => goSee(q.href)}>見に行く →</button>}
                                                 <div className={"fq2-cb" + (done ? " on" : "")} role="img" aria-label={done ? "達成" : "未達成"}>{done ? "✓" : ""}</div>
                                             </div>
                                         </div>
@@ -132,8 +130,8 @@ export default function FirstQuestListPage() {
                                 })}
                             </div>
                             <div className="fq2-foot">
-                                <div className="fq2-note">{allDone ? "3つのクエストをすべてクリア！" : `達成 ${doneCount} / 3 — 「見に行く」でその画面を開くと達成になります（この画面には後で戻ってこられます）`}</div>
-                                <button className="fq2-next" type="button" disabled={!allDone} onClick={goClear}>{allDone ? "クリア報告へ進む →" : "3つクリアすると進めます"}</button>
+                                <div className="fq2-note">{allDone ? "3つのクエストをすべてクリア！" : `達成 ${doneCount} / 3 — 「見に行く」でその画面を開くと達成になります。次の画面でルクが案内します`}</div>
+                                <button className="fq2-next" type="button" onClick={goNext}>{allDone ? "クリア報告へ進む →" : "ルクの案内を見る →"}</button>
                             </div>
                         </section>
                     </div>

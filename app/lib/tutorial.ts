@@ -17,3 +17,10 @@ export function markTutorial(userId: string, key: TutorialKey) {
     } catch { /* ストレージが使えない環境では何もしない */ }
 }
 export function tutorialAllDone(p: TutorialProgress) { return TUTORIAL_KEYS.every((k) => !!p[k]); }
+
+// 3/4「案内」から実画面を開いたときだけ、実画面上にルクの小さな案内（チュートリアルへ戻る）を出すためのフラグ。
+// 通常利用のユーザーには出ない（フラグが無い）。戻るボタンで消す。
+const returnKey = (userId: string) => `iq_tutorial_return_${userId}`;
+export function setTutorialReturn(userId: string, to: string) { try { window.localStorage.setItem(returnKey(userId), to); } catch {} }
+export function getTutorialReturn(userId: string): string | null { try { return window.localStorage.getItem(returnKey(userId)); } catch { return null; } }
+export function clearTutorialReturn(userId: string) { try { window.localStorage.removeItem(returnKey(userId)); } catch {} }
