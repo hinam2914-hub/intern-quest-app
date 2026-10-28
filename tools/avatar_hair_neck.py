@@ -10,16 +10,15 @@ TOP=200
 ids=sys.argv[1:] or sorted({f.split("/")[-1].split("__")[0] for f in glob.glob("public/avatar/hair_front/*__brown.png")})
 for h in ids:
     body=np.array(Image.open(f"public/avatar/body/{h[0]}__light.png"))[:,:,3]>120
-    edge=ndimage.binary_dilation(body,iterations=7)&~ndimage.binary_erosion(body,iterations=7)
+    edge=ndimage.binary_dilation(body,iterations=16)&~ndimage.binary_erosion(body,iterations=16)
     f=f"public/avatar/hair_front/{h}__brown.png"
     a=np.array(Image.open(f).convert("RGBA")).astype(int); al=a[:,:,3]; lum=(a[:,:,:3]*[0.299,0.587,0.114]).sum(2)
     m=np.zeros(al.shape,bool); m[TOP:]=edge
     yy=np.arange(al.shape[0])[:,None]; band=m&(yy>=TOP+470)&(yy<=TOP+620)
-    fill=(al>80)&(lum>=105)                       # 髪の塗り
-    thick=ndimage.binary_opening(al>80,structure=np.ones((9,9)))
-    stroke=band&(al>80)&(lum<105)&~thick          # 細い濃い線
-    near=ndimage.binary_dilation(fill,iterations=5) # 髪の塗りの近く
-    kill=stroke&~near                              # 髪の塗りに接していない線＝素体の輪郭
+    thick=ndimage.binary_opening(al>80,structure=np.ones((9,9)))   # 髪の塊
+    near=ndimage.binary_dilation(thick,iterations=5)
+    # 帯の中で、髪の塊に接していない細い画素（色を問わず）＝素体の輪郭線・肌の縁
+    kill=band&(al>80)&~thick&~near
     kill=ndimage.binary_dilation(kill,iterations=2)&~thick&band&~near
     a[:,:,3][kill]=0
     Image.fromarray(a.astype(np.uint8)).save(f); print(h,"removed",int(kill.sum()))
