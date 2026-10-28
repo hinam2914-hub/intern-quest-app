@@ -97,8 +97,7 @@ export default function ConfirmPage() {
     const start = () => {
         if (going) return;
         setGoing(true);
-        // 次：ライセンス（未実装）→ 当面は既存のオンボーディング画面へ
-        router.push("/onboarding");
+        router.push("/onboarding/license");
     };
 
     const V = ({ v }: { v?: string | null }) => <span className={"v" + (v ? "" : " none")}>{v || "未設定"}</span>;
