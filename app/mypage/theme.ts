@@ -1,7 +1,7 @@
 // Intern Quest 2.0｜マイページの見た目（青・白・金のゲームUI）。データ処理は page.tsx 側をそのまま使う。
 // 背景・アイコンは GPT 素材が届くまで既存素材／絵文字で仮置き（public/mypage/ に置けば差し替え）。
 export const MYPAGE_CSS = `
-.mp-root{background:#c9a97a url(/mypage/room_pc.webp) center top/cover no-repeat fixed;color:#2b2416}
+.mp-root{background:#c9a97a url(/mypage/bg_pc.webp) center top/cover no-repeat fixed;color:#2b2416}
 .mp-root *{box-sizing:border-box}
 .mp-header{position:sticky;top:0;z-index:40;margin:0 -16px 14px;padding:10px 16px calc(10px);display:flex;align-items:center;gap:14px;background:linear-gradient(180deg,#1f3f8f,#15306f);border-bottom:3px solid #e8c45a;box-shadow:0 6px 16px rgba(10,30,80,.35)}
 .mp-logo{font-family:Georgia,"Times New Roman",serif;font-weight:900;font-size:15px;line-height:1;color:#ffe08a;text-shadow:0 1px 0 #7a4e05;border:2px solid #e8c45a;border-radius:10px;padding:5px 8px;background:rgba(0,0,0,.2)}
@@ -23,8 +23,8 @@ export const MYPAGE_CSS = `
 .mp-expbar{height:14px;border-radius:999px;background:#e6dcc4;border:2px solid #d8b55e;overflow:hidden;margin-top:6px}.mp-expbar>div{height:100%;background:linear-gradient(90deg,#4bd37b,#1f9e4e);transition:width 1s ease}
 
 .mp-grid{display:grid;grid-template-columns:1fr 1fr minmax(220px,300px);gap:16px;align-items:start;margin-top:6px}
-.mp-p-profile{grid-column:1}.mp-p-status{grid-column:2}.mp-p-growth{grid-column:1}.mp-p-col{grid-column:2}
-.mp-side{grid-column:3;grid-row:1 / span 2;display:flex;flex-direction:column;gap:10px;align-items:stretch;position:sticky;top:76px}
+.mp-p-profile{grid-column:1 / span 2}.mp-p-status{grid-column:1}.mp-p-growth{grid-column:2}.mp-p-col{grid-column:1 / span 2}
+.mp-side{grid-column:3;grid-row:1 / span 3;display:flex;flex-direction:column;gap:10px;align-items:stretch;position:sticky;top:76px}
 .mp-side-luku{width:62%;align-self:center;filter:drop-shadow(0 8px 8px rgba(0,0,0,.25));animation:mp-bob 2.4s ease-in-out infinite}
 .mp-sidebtn{height:50px;border-radius:999px;border:3px solid #e8c45a;background:linear-gradient(180deg,#fffdf4,#f6ead0);color:#17397d;font-weight:900;font-size:16px;cursor:pointer;font-family:inherit;box-shadow:0 6px 14px rgba(30,60,120,.22)}
 .mp-sidebtn:hover{filter:brightness(1.03)}
@@ -67,7 +67,7 @@ export const MYPAGE_CSS = `
 .mp-nav.on{color:#17397d}.mp-nav.on>div:first-child{background:linear-gradient(180deg,#4d9af5,#2458c7);border:2px solid #e8c45a;border-radius:999px;padding:4px 14px;color:#fff}
 @keyframes mp-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @media (max-width:860px){
-  .mp-root{background-image:url(/mypage/room_mobile.webp)}
+  .mp-root{background-image:url(/mypage/bg_mobile.webp)}
   .mp-grid{grid-template-columns:1fr;gap:12px}
   .mp-p-profile,.mp-p-status,.mp-p-growth,.mp-p-col,.mp-side{grid-column:1;grid-row:auto}
   .mp-side{display:contents}.mp-side-luku{display:none}

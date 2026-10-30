@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import DotKun from "../components/DotKun";
 import SkillBoardCard from "../components/SkillBoardCard";
 import AvatarLayered from "../components/AvatarLayered";
+import ProfileCard2 from "../components/ProfileCard2";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import { JOBS, type JobKey } from "../onboarding/job/page";
 import { MYPAGE_CSS } from "./theme";
@@ -2042,18 +2043,15 @@ const handleRoutineCheck = async (routineId: string) => {
 
                 {/* ===== 2.0 レイアウト：左 2×2 パネル／右カラム（ルク・ボタン・4入口）／下に指標行 ===== */}
                 <div className="mp-grid">
-                    <section className="mp-panel mp-p-profile">
-                        <div className="mp-ribbon">冒険者プロフィール<small>ADVENTURER PROFILE</small></div>
-                        <div className="mp-prof">
-                            <div className="mp-prof-av">{avatarCfg && jobClass ? <AvatarLayered config={avatarCfg} job={jobClass} /> : <div className="mp-noav">アバター未設定<br /><button className="mp-smallbtn" onClick={() => router.push("/onboarding/avatar?from=mypage")}>作成する</button></div>}</div>
-                            <div className="mp-prof-info">
-                                <div className="mp-shield"><span>Lv.</span><b>{level}</b></div>
-                                <div className="mp-name">{name || "名前未設定"}<span>さん</span></div>
-                                <div className="mp-jobchip">{jobInfo ? `${jobInfo.name}（${jobInfo.en}）` : "職業 未選択"}</div>
-                                <div className="mp-exp"><b>EXP</b><span>{exp} / 100</span><em>次のLv.まであと{100 - exp}pt</em></div>
-                                <div className="mp-expbar"><div style={{ width: `${exp}%` }} /></div>
-                            </div>
-                        </div>
+                    <section className="mp-p-profile">
+                        <ProfileCard2
+                            name={name} jobName={jobInfo?.name ?? null} jobEn={jobInfo?.en ?? null}
+                            deptName={departments.find((d) => d.id === departmentId)?.name || null}
+                            level={level} exp={exp} title={topTrophy ? { name: topTrophy.name, icon: topTrophy.icon } : null}
+                            avatar={avatarCfg && jobClass ? { cfg: avatarCfg, job: jobClass } : null}
+                            onEditAvatar={() => router.push("/onboarding/avatar?from=mypage")}
+                            onEditProfile={() => setShowProfileModal(true)}
+                        />
                     </section>
                     <section className="mp-panel mp-p-status">
                         <div className="mp-ribbon">冒険者ステータス<small>ADVENTURER STATUS</small></div>
