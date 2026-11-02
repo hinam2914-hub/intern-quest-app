@@ -409,7 +409,7 @@ export default function HomePage() {
       .hq-luku .bub{margin-top:-5%;background:url(/home/luku_bubble.webp);background-size:100% 100%;padding:8% 7% 11% 8.5%;font-weight:800;color:#4a3519;font-size:clamp(12px,3.6cqw,15px);line-height:1.7;cursor:pointer}
       .hq-nav{position:fixed;left:0;bottom:0;width:100%;max-width:100vw;box-sizing:border-box;z-index:50;display:flex;height:calc(86px + env(safe-area-inset-bottom));padding:0 10px calc(10px + env(safe-area-inset-bottom));overflow:hidden}
       .hq-nav .band{position:absolute;inset:6px 8px calc(8px + env(safe-area-inset-bottom));background:url(/home/nav_bar.webp);background-size:100% 100%;pointer-events:none}
-      .hq-nav button{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;padding-bottom:10px;background:transparent;border:none;cursor:pointer;color:#fff;text-shadow:0 1px 2px rgba(70,40,10,.7);-webkit-tap-highlight-color:transparent}
+      .hq-nav button{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding-bottom:calc(17px + env(safe-area-inset-bottom));background:transparent;border:none;cursor:pointer;color:#fff;text-shadow:0 1px 2px rgba(70,40,10,.7);-webkit-tap-highlight-color:transparent}
       .hq-nav .lbl{font-size:10.5px;font-weight:800}
     `}</style>
     <div className="hq-page">
@@ -446,7 +446,7 @@ export default function HomePage() {
         )}
 
         {/* B. 中央の浮島（既存の島・コレクション・ショップ機能をそのまま維持） */}
-        <div style={{ width: "100%", marginTop: 14, animation: "popIn 0.5s ease-out 0.2s both", position: "relative", overflow: "hidden", borderRadius: 20, background: "rgba(255,253,245,.55)", backdropFilter: "blur(2px)", boxShadow: "0 6px 20px rgba(60,80,140,.15)", padding: "4px 10px 14px" }}>
+        <div style={{ width: "100%", marginTop: 14, animation: "popIn 0.5s ease-out 0.2s both", position: "relative", overflow: "hidden", padding: "4px 2px 6px" }}>
           {showPtFx && (
             <div style={{ position: "absolute", top: -8, left: 0, right: 0, display: "flex", justifyContent: "center", zIndex: 5, pointerEvents: "none" }}>
               <div style={{ fontSize: 26, fontWeight: 900, color: "#f59e0b", textShadow: "0 2px 0 #fff, 0 3px 8px rgba(180,120,0,.45)", animation: "ptFloat 3s ease-out both" }}>+{ptGain.toLocaleString()}pt</div>
@@ -538,10 +538,10 @@ export default function HomePage() {
           { key: "menu", label: "メニュー", href: "/menu" },
         ].map((t) => (
           <button key={t.href} onClick={() => { playPoko(); setHopNav(t.href); setTimeout(() => router.push(t.href), 180); }} style={{ animation: hopNav === t.href ? "hop 0.35s ease-out" : "none" }}>
-            {t.key === "home" && <img src="/home/nav_home_active.webp" alt="" style={{ height: 56, marginBottom: -4, filter: "drop-shadow(0 3px 5px rgba(30,40,90,.4))" }} />}
-            {t.key === "ranking" && <img src="/home/nav_trophy.webp" alt="" style={{ height: 38 }} />}
-            {t.key === "house" && <img src="/home/nav_house.webp" alt="" style={{ height: 38 }} />}
-            {t.key === "menu" && <div style={{ fontSize: 22 }}>☰</div>}
+            {t.key === "home" && <img src="/home/nav_home_active.webp" alt="" style={{ height: 46, marginBottom: -2, filter: "drop-shadow(0 3px 5px rgba(30,40,90,.4))" }} />}
+            {t.key === "ranking" && <img src="/home/nav_trophy.webp" alt="" style={{ height: 30 }} />}
+            {t.key === "house" && <img src="/home/nav_house.webp" alt="" style={{ height: 30 }} />}
+            {t.key === "menu" && <div style={{ fontSize: 20, lineHeight: "30px" }}>☰</div>}
             <div className="lbl">{t.label}</div>
           </button>
         ))}
