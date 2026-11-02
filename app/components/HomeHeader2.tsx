@@ -27,7 +27,7 @@ const CSS = `
 .hh-img{display:block;width:100%;height:auto}
 .hh-ov{position:absolute;display:flex;align-items:center;box-sizing:border-box;min-width:0}
 .hh-av{border-radius:50%;overflow:hidden;cursor:pointer;background:radial-gradient(circle at 50% 35%, #fdfbf2, #efe6d2)}
-.hh-av>div{position:absolute;left:-70%;top:-68%;width:240%}
+.hh-av>div{position:absolute;left:-25%;top:-27%;width:151%}
 .hh-noav{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2%;color:#8a6a2b;font-weight:900;font-size:calc(var(--u)*30)}
 .hh-name{font-size:calc(var(--u)*42);font-weight:900;color:#1f2a44;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hh-job{font-size:calc(var(--u)*23);font-weight:800;color:#5a6b85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
