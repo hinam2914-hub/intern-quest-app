@@ -33,7 +33,9 @@ const CSS = `
 .pc2-img{display:block;width:100%;height:auto}
 .pc2-ov{position:absolute;display:flex;align-items:center;box-sizing:border-box;min-width:0}
 .pc2-av{justify-content:center;align-items:flex-end;overflow:hidden}
-.pc2-av>div{width:118%;margin-bottom:-2%}
+/* アバター画像はキャンバス上部に透明余白が多い（実体は縦の約 80%）ため、
+   枠の高さいっぱいにキャラクターが来るよう 126% に拡大し、足元を 8% 浮かせて上下の余白を均等にする */
+.pc2-av>div{flex:none;width:126%;margin-bottom:8%}
 .pc2-noav{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#8a6a2b;font-weight:900;font-size:calc(var(--u)*22)}
 .pc2-noav button{border:2px solid #2f6fd6;background:#e8f0ff;color:#1d3f8c;font-weight:900;border-radius:999px;padding:.4em 1em;cursor:pointer;font-family:inherit;font-size:.8em}
 .pc2-name{font-size:calc(var(--u)*44);font-weight:900;color:#1f2a44;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -57,9 +59,9 @@ const CSS = `
   .pc2m-head{position:relative;overflow:hidden;width:100%;aspect-ratio:${W} / 200}
   .pc2m-head>img{position:absolute;left:0;top:0;width:100%}
   .pc2m-body{position:relative;width:100%;overflow:hidden;aspect-ratio:460 / 600}
-  .pc2m-body>img{position:absolute;width:${(1428/460*100).toFixed(2)}%;left:${(-60/460*100).toFixed(2)}%;top:${(-196/460*100).toFixed(2)}%}
-  .pc2m-avbox{position:absolute;left:0;right:0;bottom:12%;display:flex;justify-content:center}
-  .pc2m-avbox>div{width:78%}
+  .pc2m-body>img{position:absolute;width:${(1428/460*100).toFixed(2)}%;left:${(-60/460*100).toFixed(2)}%;top:${(-196/600*100).toFixed(2)}%}
+  .pc2m-avbox{position:absolute;left:0;right:0;bottom:8%;display:flex;justify-content:center}
+  .pc2m-avbox>div{flex:none;width:113%}
   .pc2m-info{background:linear-gradient(180deg,#fffdf4,#f6ead0);border:3px solid #d8b55e;border-top:0;border-radius:0 0 18px 18px;padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
   .pc2m-name{font-size:22px;font-weight:900;color:#1f2a44}
   .pc2m-meta{font-size:13.5px;font-weight:900;color:#1f2a44;display:flex;gap:10px;flex-wrap:wrap}
