@@ -12,6 +12,8 @@ import { JOBS, type JobKey } from "../onboarding/job/page";
 import DotKun from "../components/DotKun";
 import DotHouse, { getHouseStage } from "../components/DotHouse";
 import HomeIsland from "../components/HomeIsland";
+import HomeHeader2 from "../components/HomeHeader2";
+import { fetchCurrentTitle } from "../lib/mypage2";
 
 type Theme = "light" | "dark";
 type Task = { key: string; icon: string; label: string; href: string };
@@ -155,6 +157,8 @@ export default function HomePage() {
   const [petKey, setPetKey] = useState(0);
   const [btnPop, setBtnPop] = useState(false);
   const [hopNav, setHopNav] = useState<string | null>(null);
+  const [homeTitle, setHomeTitle] = useState<string | null>(null);   // 直近に獲得した称号（ヘッダー表示用）
+  const [jobName, setJobName] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = (typeof window !== "undefined" && localStorage.getItem("homeTheme")) as Theme | null;
@@ -201,12 +205,14 @@ export default function HomePage() {
         setName((profile as any).name || "");
         setLicenses((profile as any).licenses || {});
         setAvatarId((profile as any).avatar_config?.id || null);
-        { const ac = (profile as any).avatar_config; const jc = (profile as any).job_class; setLayered(ac?.type === "layered" && jc && JOBS.some((j) => j.key === jc) ? { cfg: ac, job: jc } : null); }
+        { const ac = (profile as any).avatar_config; const jc = (profile as any).job_class; setLayered(ac?.type === "layered" && jc && JOBS.some((j) => j.key === jc) ? { cfg: ac, job: jc } : null); setJobName(JOBS.find((j) => j.key === jc)?.name ?? null); }
         setStreak((profile as any).streak || 0);
         const { data: goalRow } = await supabase.from("user_goals").select("*").eq("user_id", user.id).maybeSingle();
         if (goalRow) setGoals({ monthly_target: (goalRow as any).monthly_target || "", monthly_theme: (goalRow as any).monthly_theme || "", quarter_goal: (goalRow as any).quarter_goal || "", career_goal: (goalRow as any).career_goal || "" });
 
       }
+      // ヘッダーの称号（直近に獲得したバッジ。読み取りのみ・失敗しても HOME には影響させない）
+      fetchCurrentTitle(supabase, user.id).then((t) => setHomeTitle(t?.name ?? null)).catch(() => {});
       const todayYmd = getTodayJST();
       const range = todayRangeUTC();
 
@@ -342,29 +348,14 @@ export default function HomePage() {
     if (typeof window !== "undefined") localStorage.setItem("homeSound", next ? "on" : "off");
     if (next) setTimeout(() => { try { const AC = (window as any).AudioContext || (window as any).webkitAudioContext; const ctx: AudioContext = (window as any).__iqAudio || new AC(); (window as any).__iqAudio = ctx; ctx.resume(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = "sine"; osc.frequency.setValueAtTime(660, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 0.09); gain.gain.setValueAtTime(0.25, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.13); } catch {} }, 50);
   };
-  const isDark = false; // 背景は明るい昼、UIは紫ダーク
-  const bg = isDark ? "radial-gradient(circle at 50% 30%, #14142b 0%, #0a0a0f 65%)" : "url(/island_bg.png) center top / cover no-repeat fixed, #bfe3f5";
-  const nameColor = isDark ? "#f9fafb" : "#2b3440";
-  const helloColor = isDark ? "#6b7280" : "#6f7a86";
-  const flameStyle = isDark
-    ? { background: "rgba(245,158,11,.12)", border: "1px solid rgba(245,158,11,.35)", color: "#fbbf24" }
-    : { background: "#fff", border: "none", color: "#e8590c", boxShadow: "0 4px 14px rgba(43,52,64,.08)" };
-  const pct = (doneCount / 3) * 100;
-  const ringBg = isDark
-    ? `conic-gradient(#8b5cf6 0 var(--ringPct), rgba(139,92,246,.12) var(--ringPct) 100%)`
-    : `conic-gradient(#ffa94d 0 var(--ringPct), #eceae4 var(--ringPct) 100%)`;
-  const ringInner = isDark ? "#0d0d18" : "#fdfdfb";
-  const btnBg = isDark ? "linear-gradient(150deg, #6366f1, #8b5cf6)" : "transparent";
-  const btnShadow = isDark
-    ? "0 0 50px rgba(99,102,241,.5), inset 0 -6px 0 rgba(0,0,0,.2)"
-    : "0 18px 40px rgba(255,138,61,.35), inset 0 -8px 0 rgba(0,0,0,.08)";
-  const dotRowStyle = isDark
-    ? { background: "rgba(99,102,241,.08)", border: "1px solid rgba(99,102,241,.22)" }
-    : { background: "linear-gradient(160deg, #b07a4a, #8b5e34)", border: "2px solid #6f4a29", boxShadow: "0 6px 16px rgba(60,38,18,.35), inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 6px rgba(60,38,18,.35)" };
-  const dotTextColor = isDark ? "#c7d2fe" : "#fff";
-  const otherColor = isDark ? "#6b7280" : "#6f7a86";
+  // ===== Intern Quest 2.0 HOME（GPT素材下敷き＋実データ重ね。ロジック・保存処理は上と同じまま） =====
+  const QUESTS = [
+    { key: "schedule" as const, icon: "/home/icon_schedule.webp", tag: "朝のクエスト", label: "今日の作戦を立てる", desc: "今日の目標と行動予定を設定しよう", href: "/today-schedule" },
+    { key: "report" as const, icon: "/home/icon_report.webp", tag: "夕方のクエスト", label: "冒険の記録を残す", desc: "今日の成果・学び・改善点を記録しよう", href: "/report" },
+    { key: "thinking" as const, icon: "/home/icon_thinking.webp", tag: "成長のクエスト", label: "今日の思考クエスト", desc: "1問のお題に答えて思考力を鍛えよう", href: "/thinking" },
+  ];
 
-  if (loading) return <div style={{ minHeight: "100vh", background: bg, display: "flex", alignItems: "center", justifyContent: "center", color: helloColor }}>読み込み中...</div>;
+  if (loading) return <div style={{ minHeight: "100vh", background: "url(/home/bg_mobile.webp) center top / cover no-repeat fixed, #bfe3f5", display: "flex", alignItems: "center", justifyContent: "center", color: "#5a6b85", fontWeight: 800 }}>読み込み中...</div>;
 
   return (
     <>
@@ -374,180 +365,188 @@ export default function HomePage() {
     <TodayQuestCard />
     <style>{`
       @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-      @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-      @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes popIn { 0% { opacity: 0; transform: translateY(16px) scale(0.86); } 55% { opacity: 1; transform: translateY(-3px) scale(1.05); } 78% { transform: translateY(1px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
       @keyframes flashGlow { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
       @keyframes houseReveal { 0% { opacity: 0; transform: scale(0.3) translateY(30px); } 55% { opacity: 1; transform: scale(1.15) translateY(-6px); } 75% { transform: scale(0.95) translateY(2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
       @keyframes ptFloat { 0% { opacity: 0; transform: translateY(12px) scale(0.7); } 18% { opacity: 1; transform: translateY(0) scale(1.15); } 30% { transform: translateY(-2px) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-42px) scale(1); } }
       @keyframes sparklePop { 0% { opacity: 0; transform: translate(0,0) scale(0.3) rotate(0deg); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(1.2) rotate(180deg); } }
-      @keyframes ringGlow { 0%, 100% { filter: drop-shadow(0 0 18px rgba(139,92,246,0.25)); } 50% { filter: drop-shadow(0 0 34px rgba(139,92,246,0.55)); } }
       @keyframes confettiFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0.7; } }
-      @property --ringPct { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
-      @keyframes ringFill { from { --ringPct: 0%; } }
-      .iq-ring { animation: ringFill 1.1s ease-out both; }
       @keyframes petSquish { 0% { transform: scale(1,1); } 15% { transform: scale(1.15,0.82) translateY(4px); } 40% { transform: scale(0.9,1.15) translateY(-8px); } 65% { transform: scale(1.06,0.96); } 100% { transform: scale(1,1); } }
       @keyframes heartPop { 0% { transform: translate(0,0) scale(0.3) rotate(0deg); opacity: 1; } 40% { opacity: 1; } 100% { transform: translate(var(--hx), -52px) scale(1.3) rotate(var(--hr)); opacity: 0; } }
-      @keyframes pushPop { 0% { transform: scale(0.9); } 45% { transform: scale(1.08); } 70% { transform: scale(0.97); } 100% { transform: scale(1); } }
       @keyframes hop { 0% { transform: translateY(0) scale(1); } 30% { transform: translateY(-7px) scale(1.12, 0.9); } 60% { transform: translateY(0) scale(0.94, 1.08); } 100% { transform: translateY(0) scale(1); } }
-      @keyframes cloudDrift { 0% { transform: translateX(-30vw); } 100% { transform: translateX(130vw); } }
-      @keyframes dotHop { 0%, 88%, 100% { transform: translateY(0); } 92% { transform: translateY(-9px) scale(1.06, 0.94); } 96% { transform: translateY(0) scale(0.96, 1.05); } }
-      @keyframes sunPulse { 0%, 100% { opacity: .35; transform: scale(1); } 50% { opacity: .7; transform: scale(1.18); } }
-      @keyframes btnShine { 0%, 82% { transform: translateX(-120%) rotate(18deg); opacity: 0; } 86% { opacity: .9; } 94%, 100% { transform: translateX(160%) rotate(18deg); opacity: 0; } }
-      @keyframes birdFly { 0% { transform: translate(-10vw, 0); } 50% { transform: translate(55vw, -24px); } 100% { transform: translate(120vw, -8px); } }
-      @keyframes leafFall { 0% { transform: translate(0, -5vh) rotate(0deg); opacity: 0; } 8% { opacity: .9; } 100% { transform: translate(-90px, 108vh) rotate(560deg); opacity: 0; } }
+      .hq-page{min-height:100vh;overflow-x:clip;background:url(/home/bg_mobile.webp) center top / cover no-repeat fixed, #bfe3f5;display:flex;flex-direction:column;align-items:center;padding:14px 14px 132px;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}
+      .hq-col{width:100%;max-width:480px;display:flex;flex-direction:column}
+      @media (min-width:700px){ .hq-page{background-image:url(/home/bg_pc.webp);padding-top:28px} .hq-col{max-width:640px} }
+      .hq-top{display:flex;justify-content:flex-end;margin:0 2px 8px}
+      .hq-title{position:relative;width:min(94%,560px);margin:26px auto 0;container-type:inline-size;z-index:2}
+      .hq-title img{display:block;width:100%;height:auto;filter:drop-shadow(0 6px 14px rgba(20,40,90,.3))}
+      .hq-title>div{position:absolute;inset:14% 8% 8%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;pointer-events:none}
+      .hq-title .t1{font-size:clamp(16px,6cqw,27px);font-weight:900;letter-spacing:.06em;text-shadow:0 2px 4px rgba(10,25,70,.55)}
+      .hq-title .t2{font-size:clamp(8px,2.2cqw,11px);font-weight:800;letter-spacing:.42em;color:#cfe0ff;margin-top:1%}
+      .hq-panel{position:relative;margin-top:-10px;padding:8.5% 7% 8%;background:url(/home/quest_panel.webp);background-size:100% 100%;display:flex;flex-direction:column;gap:12px;container-type:inline-size}
+      .hq-prog{align-self:center;display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#fffdf4,#f8efdb);border:2px solid #e2bf63;border-radius:999px;padding:5px 22px;font-weight:900;color:#7a5a1a;font-size:clamp(12px,3.6cqw,15px);box-shadow:0 2px 6px rgba(140,100,30,.18)}
+      .hq-prog b{color:#17397d;font-size:1.25em}
+      .hq-prog .dia{color:#e0b24a;font-size:.8em}
+      .hq-card{position:relative;border:none;background:transparent;padding:0;cursor:pointer;text-align:left;font-family:inherit;container-type:inline-size;-webkit-tap-highlight-color:transparent}
+      .hq-card:disabled{cursor:default}
+      .hq-card>img{display:block;width:100%;height:auto}
+      .hq-card .in{position:absolute;inset:8% 5%;display:flex;align-items:center;gap:3.5%}
+      .hq-card .ic{height:96%;width:auto;flex:none;filter:drop-shadow(0 2px 3px rgba(120,90,30,.25))}
+      .hq-card .tx{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3.5%}
+      .hq-card .tag{background:linear-gradient(180deg,#f7d264,#e3a62e);color:#6e4606;font-weight:900;font-size:clamp(9px,2.7cqw,12px);padding:.22em .9em;border-radius:999px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+      .hq-card .qt{font-size:clamp(14px,4.6cqw,22px);font-weight:900;color:#17397d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+      .hq-card .qd{font-size:clamp(10px,3cqw,13px);font-weight:700;color:#8a8f9c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+      .hq-card .st{flex:none;width:12.5%;display:flex;align-items:center;justify-content:center}
+      .hq-card .st img{width:82%;height:auto}
+      .hq-card .st .todo{width:68%;aspect-ratio:1;border:3px solid #cfd4dd;border-radius:50%;background:#fff;box-sizing:border-box}
+      .hq-luku{display:flex;align-items:flex-end;margin-top:18px;container-type:inline-size}
+      .hq-luku .lk{width:29%;flex:none;position:relative;cursor:pointer;z-index:2;animation:floaty 2.8s ease-in-out infinite}
+      .hq-luku .lk img{width:100%;display:block;filter:drop-shadow(0 6px 10px rgba(30,40,90,.3))}
+      .hq-luku .bw{flex:1;min-width:0;display:flex;flex-direction:column;margin-bottom:4%}
+      .hq-luku .pl{width:36%;min-width:96px;position:relative;margin-left:5%;z-index:2}
+      .hq-luku .pl img{display:block;width:100%;height:auto}
+      .hq-luku .pl span{position:absolute;inset:0 0 6% 0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:clamp(11px,3.2cqw,15px);letter-spacing:.2em;text-shadow:0 1px 3px rgba(10,25,70,.6)}
+      .hq-luku .bub{margin-top:-5%;background:url(/home/luku_bubble.webp);background-size:100% 100%;padding:8% 7% 11% 8.5%;font-weight:800;color:#4a3519;font-size:clamp(12px,3.6cqw,15px);line-height:1.7;cursor:pointer}
+      .hq-nav{position:fixed;left:0;bottom:0;width:100%;max-width:100vw;box-sizing:border-box;z-index:50;display:flex;height:calc(86px + env(safe-area-inset-bottom));padding:0 10px calc(10px + env(safe-area-inset-bottom));overflow:hidden}
+      .hq-nav .band{position:absolute;inset:6px 8px calc(8px + env(safe-area-inset-bottom));background:url(/home/nav_bar.webp);background-size:100% 100%;pointer-events:none}
+      .hq-nav button{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;padding-bottom:10px;background:transparent;border:none;cursor:pointer;color:#fff;text-shadow:0 1px 2px rgba(70,40,10,.7);-webkit-tap-highlight-color:transparent}
+      .hq-nav .lbl{font-size:10.5px;font-weight:800}
     `}</style>
-    <div style={{ minHeight: "100vh", background: bg, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 22px 84px" }}>
-      {/* 流れる雲（島の生きてる感） */}
-      <div style={{ position: "fixed", top: "8%", left: 0, width: 120, height: 36, background: "rgba(255,255,255,.75)", borderRadius: 999, filter: "blur(2px)", animation: "cloudDrift 75s linear infinite", pointerEvents: "none", zIndex: 1, boxShadow: "30px -12px 0 -4px rgba(255,255,255,.65), 60px 0 0 -2px rgba(255,255,255,.7)" }} />
-      <div style={{ position: "fixed", top: "16%", left: 0, width: 90, height: 28, background: "rgba(255,255,255,.6)", borderRadius: 999, filter: "blur(2px)", animation: "cloudDrift 110s linear infinite", animationDelay: "-40s", pointerEvents: "none", zIndex: 1, boxShadow: "24px -10px 0 -3px rgba(255,255,255,.5)" }} />
-      {/* 太陽のきらめき */}
-      <div style={{ position: "fixed", top: "6.5%", right: "7%", width: 90, height: 90, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,244,190,.8) 0%, rgba(255,244,190,0) 70%)", animation: "sunPulse 5s ease-in-out infinite", pointerEvents: "none", zIndex: 1 }} />
-      {/* 遠くを飛ぶ鳥 */}
-      <div style={{ position: "fixed", top: "13%", left: 0, animation: "birdFly 34s linear infinite", pointerEvents: "none", zIndex: 1, display: "flex", gap: 6 }}>
-        {[0,1].map(i => (
-          <div key={i} style={{ width: 14, height: 7, position: "relative", top: i * 4 }}>
-            <div style={{ position: "absolute", left: 0, width: 8, height: 8, border: "1.6px solid rgba(55,65,85,.5)", borderColor: "rgba(55,65,85,.5) transparent transparent transparent", borderRadius: "50%", transform: "rotate(12deg)" }} />
-            <div style={{ position: "absolute", left: 6, width: 8, height: 8, border: "1.6px solid rgba(55,65,85,.5)", borderColor: "rgba(55,65,85,.5) transparent transparent transparent", borderRadius: "50%", transform: "rotate(-12deg)" }} />
-          </div>
-        ))}
-      </div>
-      {/* 舞い落ちる葉っぱ */}
-      <div style={{ position: "fixed", top: 0, left: "72%", fontSize: 14, animation: "leafFall 16s linear infinite", animationDelay: "-3s", pointerEvents: "none", zIndex: 1, opacity: 0 }}>🍃</div>
-      <div style={{ position: "fixed", top: 0, left: "22%", fontSize: 12, animation: "leafFall 21s linear infinite", animationDelay: "-12s", pointerEvents: "none", zIndex: 1, opacity: 0 }}>🍃</div>
-      <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 70px)" }}>
-        {/* 上部 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", animation: "popIn 0.5s ease-out both" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {layered ? (
-              /* 2.0：保存済みレイヤーアバターの顔。タップでアバター編集（保存後はホームへ戻る） */
-              <div onClick={() => router.push("/onboarding/avatar?from=home")} title="アバターを編集" style={{ width: 46, height: 46, borderRadius: "50%", background: "#fff", boxShadow: "0 4px 12px rgba(43,52,64,.12)", cursor: "pointer", overflow: "hidden", position: "relative", flexShrink: 0 }}>
-                <div style={{ position: "absolute", left: "-70%", top: "-68%", width: "240%" }}><AvatarLayered config={layered.cfg} job={layered.job} showFallback={false} /></div>
-              </div>
-            ) : avatarId && (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={`/avatars/${avatarId}.png`} alt="avatar" onClick={() => router.push("/onboarding/avatar?from=home")} style={{ width: 46, height: 46, objectFit: "cover", objectPosition: "top", borderRadius: "50%", background: "#fff", boxShadow: "0 4px 12px rgba(43,52,64,.12)", cursor: "pointer" }} />
-            )}
-            <div>
-              <div style={{ fontSize: 13, color: helloColor }}>{greeting()}</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: nameColor }}>{name || "ゲスト"}さん</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            
-            <button onClick={toggleSound} style={{ border: "none", background: "#fff", borderRadius: 20, padding: "7px 12px", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 14px rgba(43,52,64,.08)", opacity: soundOn ? 1 : 0.55 }}>{soundOn ? "🔊" : "🔇"}</button>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 20, padding: "7px 13px", fontSize: 14, fontWeight: 900, ...flameStyle }}>🔥 {streak}</div>
-          </div>
+    <div className="hq-page">
+      <div className="hq-col">
+        {/* 右上：サウンド切替（既存機能） */}
+        <div className="hq-top">
+          <button onClick={toggleSound} style={{ border: "none", background: "rgba(255,255,255,.85)", borderRadius: 20, padding: "7px 12px", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 14px rgba(43,52,64,.15)", opacity: soundOn ? 1 : 0.55 }}>{soundOn ? "🔊" : "🔇"}</button>
         </div>
 
-        {/* アバター未作成の人への導線 */}
+        {/* A. 冒険者ヘッダー（枠素材＋実データ） */}
+        <div style={{ animation: "popIn 0.5s ease-out both" }}>
+          <HomeHeader2
+            name={name}
+            jobName={jobName}
+            level={getLevel(totalEarned)}
+            exp={totalEarned % 100}
+            streak={streak}
+            title={homeTitle}
+            avatar={layered}
+            onAvatarClick={() => router.push("/onboarding/avatar?from=home")}
+          />
+        </div>
+
+        {/* アバター未作成の人への導線（既存） */}
         {!avatarId && (
-          <div onClick={() => router.push("/onboarding/avatar?from=home")} style={{ marginTop: 14, borderRadius: 18, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, background: isDark ? "linear-gradient(135deg, rgba(255,180,92,.15), rgba(255,138,61,.08))" : "linear-gradient(135deg, #fff3e4, #ffe8d1)", border: isDark ? "1px solid rgba(255,180,92,.3)" : "1px solid #ffd9ae", animation: "popIn 0.5s ease-out 0.1s both" }}>
+          <div onClick={() => router.push("/onboarding/avatar?from=home")} style={{ marginTop: 12, borderRadius: 18, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, background: "linear-gradient(135deg, #fff3e4, #ffe8d1)", border: "1px solid #ffd9ae", animation: "popIn 0.5s ease-out 0.1s both" }}>
             <div style={{ fontSize: 30 }}>🧑‍🎨</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 900, color: isDark ? "#ffcf9e" : "#c2410c" }}>きみの分身をつくろう！</div>
-              <div style={{ fontSize: 11.5, color: isDark ? "#c9a882" : "#9a6a3a", marginTop: 2 }}>ホームに登場するアバターをえらべるよ</div>
+              <div style={{ fontSize: 13.5, fontWeight: 900, color: "#c2410c" }}>きみの分身をつくろう！</div>
+              <div style={{ fontSize: 11.5, color: "#9a6a3a", marginTop: 2 }}>ホームに登場するアバターをえらべるよ</div>
             </div>
-            <div style={{ fontSize: 16, color: isDark ? "#ffb45c" : "#ff8a3d", fontWeight: 900 }}>→</div>
+            <div style={{ fontSize: 16, color: "#ff8a3d", fontWeight: 900 }}>→</div>
           </div>
         )}
 
-        {/* 中央 */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, animation: "popIn 0.5s ease-out 0.15s both" }}>
-          <div className="iq-ring" style={{ width: 250, height: 250, borderRadius: "50%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: ringBg, ["--ringPct" as any]: `${pct}%`, filter: isDark ? undefined : undefined }}>
-            <div style={{ position: "absolute", width: 218, height: 218, borderRadius: "50%", background: ringInner }} />
-            <button onPointerDown={() => setBtnPop(false)} onClick={() => { playPoko(); setBtnPop(true); const next = !missions.schedule ? "/today-schedule" : !missions.report ? "/report" : !missions.thinking ? "/thinking" : "/mypage"; setTimeout(() => router.push(next), 260); }} style={{ animation: btnPop ? "pushPop 0.4s ease-out" : "breathe 3s ease-in-out infinite", position: "relative", width: 176, height: 176, borderRadius: isDark ? "50%" : 0, background: isDark ? btnBg : "url(/island/quest_btn.png) center / contain no-repeat", boxShadow: isDark ? btnShadow : "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", zIndex: 2, transition: "transform 0.08s", transform: "scale(1)", WebkitTapHighlightColor: "transparent" }} onTouchStart={(e) => { e.currentTarget.style.transform = "scale(0.93)"; }} onTouchEnd={(e) => { e.currentTarget.style.transform = "scale(1)"; }}>
-              {!isDark && <div style={{ position: "absolute", inset: "14% 12%", borderRadius: "50%", overflow: "hidden", pointerEvents: "none" }}><div style={{ position: "absolute", top: "-20%", left: 0, width: "36%", height: "140%", background: "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.55) 50%, rgba(255,255,255,0) 100%)", animation: "btnShine 6.5s ease-in-out infinite" }} /></div>}
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: 1, textShadow: "0 2px 4px rgba(150,90,20,.7)", marginBottom: -2 }}>今日のクエスト</div>
-              <div style={{ fontSize: 46, fontWeight: 900, color: "#fff", textShadow: "0 3px 6px rgba(150,90,20,.75)", lineHeight: 1.1 }}>{doneCount}<span style={{ fontSize: 26, opacity: .85 }}>/3</span></div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.9)", textShadow: "0 1px 3px rgba(150,90,20,.6)" }}>{doneCount >= 3 ? "コンプリート！" : "タップして確認"}</div>
-            </button>
-          </div>
-
-          {/* ドットくんの家（累計ポイントで育つ） */}
-          <div style={{ width: "100%", marginTop: 4, animation: "popIn 0.5s ease-out 0.3s both", position: "relative" }}>
-            {showPtFx && (
-              <div style={{ position: "absolute", top: -8, left: 0, right: 0, display: "flex", justifyContent: "center", zIndex: 5, pointerEvents: "none" }}>
-                <div style={{ fontSize: 26, fontWeight: 900, color: "#f59e0b", textShadow: "0 2px 0 #fff, 0 3px 8px rgba(180,120,0,.45)", animation: "ptFloat 3s ease-out both" }}>+{ptGain.toLocaleString()}pt</div>
-                {["-52px,-38px","44px,-46px","-28px,-64px","58px,-20px","-64px,-12px","30px,-70px"].map((d, i) => {
-                  const [sx, sy] = d.split(",");
-                  return <div key={i} style={{ position: "absolute", top: 18, left: "50%", fontSize: 15, animation: `sparklePop ${0.9 + (i % 3) * 0.25}s ease-out ${i * 0.14}s both`, ["--sx" as any]: sx, ["--sy" as any]: sy, pointerEvents: "none" }}>{i % 2 === 0 ? "✨" : "⭐"}</div>;
-                })}
-              </div>
-            )}
-            <HomeIsland userId={homeUserId} totalEarned={totalEarned} onHouseClick={() => { playPoko(); router.push("/mypage"); }} />
-
-          </div>
-          {(!licenses.ip || !licenses.cb) && (
-            <div style={{ width: "100%", marginTop: 12, borderRadius: 20, padding: "14px 16px", background: "linear-gradient(180deg, rgba(255,252,242,.96), rgba(252,244,226,.96))", boxShadow: "0 6px 18px rgba(120,90,40,.16), inset 0 1px 0 rgba(255,255,255,.7)", border: "1.5px solid rgba(190,160,110,.35)", animation: "popIn 0.5s ease-out 0.32s both" }}>
-              <div style={{ fontSize: 12.5, fontWeight: 900, color: "#8a6a3a", marginBottom: 4, letterSpacing: 1 }}>🎫 取得できる免許</div>
-              <div style={{ fontSize: 11, color: "#a08356", marginBottom: 10 }}>申請すると、あなたのプロフィールに免許が表示されるよ</div>
-              {!licenses.ip && (
-                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: !licenses.cb ? "1px solid rgba(180,150,100,.18)" : "none" }}>
-                  <img src="/island/licenses/license_ip.png" alt="IP" style={{ width: 46, height: 46, flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 900, color: "#5c4a3a" }}>IP免許</div>
-                    <div style={{ fontSize: 11, color: "#a08356" }}>インフラ初稼働を迎えたら</div>
-                  </div>
-                  <button onClick={() => applyLicense("ip")} disabled={applyingLicense} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 900, background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", opacity: applyingLicense ? 0.6 : 1, flexShrink: 0 }}>申請する</button>
-                </div>
-              )}
-              {!licenses.cb && (
-                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
-                  <img src="/island/licenses/license_cb.png" alt="CB" style={{ width: 46, height: 46, flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 900, color: "#5c4a3a" }}>CB免許</div>
-                    <div style={{ fontSize: 11, color: "#a08356" }}>テレアポ初稼働を迎えたら</div>
-                  </div>
-                  <button onClick={() => applyLicense("cb")} disabled={applyingLicense} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 900, background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", opacity: applyingLicense ? 0.6 : 1, flexShrink: 0 }}>申請する</button>
-                </div>
-              )}
+        {/* B. 中央の浮島（既存の島・コレクション・ショップ機能をそのまま維持） */}
+        <div style={{ width: "100%", marginTop: 14, animation: "popIn 0.5s ease-out 0.2s both", position: "relative", overflow: "hidden", borderRadius: 20, background: "rgba(255,253,245,.55)", backdropFilter: "blur(2px)", boxShadow: "0 6px 20px rgba(60,80,140,.15)", padding: "4px 10px 14px" }}>
+          {showPtFx && (
+            <div style={{ position: "absolute", top: -8, left: 0, right: 0, display: "flex", justifyContent: "center", zIndex: 5, pointerEvents: "none" }}>
+              <div style={{ fontSize: 26, fontWeight: 900, color: "#f59e0b", textShadow: "0 2px 0 #fff, 0 3px 8px rgba(180,120,0,.45)", animation: "ptFloat 3s ease-out both" }}>+{ptGain.toLocaleString()}pt</div>
+              {["-52px,-38px","44px,-46px","-28px,-64px","58px,-20px","-64px,-12px","30px,-70px"].map((d, i) => {
+                const [sx, sy] = d.split(",");
+                return <div key={i} style={{ position: "absolute", top: 18, left: "50%", fontSize: 15, animation: `sparklePop ${0.9 + (i % 3) * 0.25}s ease-out ${i * 0.14}s both`, ["--sx" as any]: sx, ["--sy" as any]: sy, pointerEvents: "none" }}>{i % 2 === 0 ? "✨" : "⭐"}</div>;
+              })}
             </div>
           )}
-          <div style={{ width: "100%", marginTop: 12, borderRadius: 20, padding: "14px 16px 12px", background: "linear-gradient(180deg, rgba(255,252,242,.96), rgba(252,244,226,.96))", boxShadow: "0 6px 18px rgba(120,90,40,.16), inset 0 1px 0 rgba(255,255,255,.7)", border: "1.5px solid rgba(190,160,110,.35)", animation: "popIn 0.5s ease-out 0.38s both" }}>
-            <div style={{ fontSize: 12.5, fontWeight: 900, color: "#8a6a3a", marginBottom: 8, letterSpacing: 1 }}>今日のミッション</div>
-            {[
-              { key: "schedule", icon: "☀️", label: "予定を立てる", pt: "", href: "/today-schedule", done: missions.schedule },
-              { key: "report", icon: "📝", label: "日報を書く", pt: "+2pt", href: "/report", done: missions.report },
-              { key: "thinking", icon: "🧠", label: "今日のお題", pt: "+5pt", href: "/thinking", done: missions.thinking },
-            ].map((m) => (
-              <div key={m.key} onClick={() => { if (!m.done) { playPoko(); router.push(m.href); } }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 4px", cursor: m.done ? "default" : "pointer", opacity: m.done ? 0.5 : 1, borderBottom: m.key !== "thinking" ? "1px solid rgba(180,150,100,.18)" : "none" }}>
-                <div style={{ fontSize: 19, flexShrink: 0 }}>{m.icon}</div>
-                <div style={{ flex: 1, fontSize: 13.5, fontWeight: 800, color: "#6b5232", textDecoration: m.done ? "line-through" : "none" }}>{m.label}</div>
-                {m.pt && <div style={{ fontSize: 11.5, fontWeight: 900, color: m.done ? "#a09070" : "#e8590c" }}>{m.pt}</div>}
-                <div style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, background: m.done ? "linear-gradient(180deg, #8ee04a, #5cbf2a)" : "transparent", border: m.done ? "none" : "2px solid rgba(160,130,80,.4)", color: "#fff" }}>{m.done ? "✓" : ""}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* ドットくん（リングのすぐ下） */}
-          <div onClick={() => { playPoko(); router.push(task.href); }} style={{ display: "flex", alignItems: "center", gap: 10, borderRadius: 20, padding: "12px 16px", width: "100%", animation: "popIn 0.5s ease-out 0.45s both", cursor: "pointer", ...dotRowStyle }}>
-            <div onClick={(e) => { e.stopPropagation(); router.push("/dotkun"); }} style={{ flexShrink: 0, position: "relative", cursor: "pointer", animation: "floaty 2.6s ease-in-out infinite" }}><div style={{ animation: "dotHop 7s ease-in-out infinite" }}>
-              <DotKun size={44} stage={dotStage(getLevel(totalEarned))} mood="cheer" /></div>
-              {petHearts.map(h => (
-                <div key={h.id} style={{ position: "absolute", top: 4, left: 16, fontSize: 15, pointerEvents: "none", animation: "heartPop 0.9s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
-              ))}
-            </div>
-            <p style={{ fontSize: 12.5, fontWeight: isDark ? 400 : 600, color: dotTextColor, lineHeight: 1.6, textShadow: isDark ? "none" : "0 1px 3px rgba(40,24,10,.6)" }}>{petMsg || dotMsg}</p>
-          </div>
+          <HomeIsland userId={homeUserId} totalEarned={totalEarned} onHouseClick={() => { playPoko(); router.push("/mypage"); }} />
         </div>
 
-        {/* 下部 */}
+        {/* 免許の申請（既存機能そのまま） */}
+        {(!licenses.ip || !licenses.cb) && (
+          <div style={{ width: "100%", marginTop: 12, borderRadius: 20, padding: "14px 16px", background: "linear-gradient(180deg, rgba(255,252,242,.96), rgba(252,244,226,.96))", boxShadow: "0 6px 18px rgba(120,90,40,.16), inset 0 1px 0 rgba(255,255,255,.7)", border: "1.5px solid rgba(190,160,110,.35)", animation: "popIn 0.5s ease-out 0.3s both" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 900, color: "#8a6a3a", marginBottom: 4, letterSpacing: 1 }}>🎫 取得できる免許</div>
+            <div style={{ fontSize: 11, color: "#a08356", marginBottom: 10 }}>申請すると、あなたのプロフィールに免許が表示されるよ</div>
+            {!licenses.ip && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: !licenses.cb ? "1px solid rgba(180,150,100,.18)" : "none" }}>
+                <img src="/island/licenses/license_ip.png" alt="IP" style={{ width: 46, height: 46, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 900, color: "#5c4a3a" }}>IP免許</div>
+                  <div style={{ fontSize: 11, color: "#a08356" }}>インフラ初稼働を迎えたら</div>
+                </div>
+                <button onClick={() => applyLicense("ip")} disabled={applyingLicense} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 900, background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#fff", opacity: applyingLicense ? 0.6 : 1, flexShrink: 0 }}>申請する</button>
+              </div>
+            )}
+            {!licenses.cb && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
+                <img src="/island/licenses/license_cb.png" alt="CB" style={{ width: 46, height: 46, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 900, color: "#5c4a3a" }}>CB免許</div>
+                  <div style={{ fontSize: 11, color: "#a08356" }}>テレアポ初稼働を迎えたら</div>
+                </div>
+                <button onClick={() => applyLicense("cb")} disabled={applyingLicense} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 900, background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", opacity: applyingLicense ? 0.6 : 1, flexShrink: 0 }}>申請する</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* C. 今日の冒険クエスト（見出しプレート＋羊皮紙パネル＋カード3枚。完了判定・遷移先は既存のまま） */}
+        <div className="hq-title" style={{ animation: "popIn 0.5s ease-out 0.35s both" }}>
+          <img src="/home/title_plate.webp" alt="" width={1200} height={374} />
+          <div><span className="t1">今日の冒険クエスト</span><span className="t2">DAILY QUEST</span></div>
+        </div>
+        <div className="hq-panel" style={{ animation: "popIn 0.5s ease-out 0.4s both" }}>
+          <div className="hq-prog"><span className="dia">◆</span>達成状況<b>{doneCount}/3</b><span className="dia">◆</span></div>
+          {QUESTS.map((q) => {
+            const done = missions[q.key];
+            return (
+              <button key={q.key} className="hq-card" disabled={done} onClick={() => { if (!done) { playPoko(); router.push(q.href); } }}>
+                <img src="/home/quest_card.webp" alt="" width={1300} height={267} />
+                <div className="in">
+                  <img className="ic" src={q.icon} alt="" />
+                  <div className="tx">
+                    <span className="tag">{q.tag}</span>
+                    <span className="qt">{q.label}</span>
+                    <span className="qd">{q.desc}</span>
+                  </div>
+                  <div className="st">{done ? <img src="/home/check_done.webp" alt="達成" /> : <div className="todo" />}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* D. ルクの案内（タップで今日のおすすめへ。ルクをなでると喜ぶ＝既存のなでなで機能） */}
+        <div className="hq-luku" style={{ animation: "popIn 0.5s ease-out 0.5s both" }}>
+          <div className="lk" onClick={handlePet}>
+            <img key={petKey} src="/onboarding/luku.png" alt="ルク" style={{ animation: petKey ? "petSquish 0.7s ease-out" : undefined }} />
+            {petHearts.map(h => (
+              <div key={h.id} style={{ position: "absolute", top: "14%", left: "40%", fontSize: 16, pointerEvents: "none", animation: "heartPop 0.9s ease-out forwards", ["--hx" as any]: h.hx, ["--hr" as any]: h.hr }}>💗</div>
+            ))}
+          </div>
+          <div className="bw">
+            <div className="pl"><img src="/home/luku_plate.webp" alt="" /><span>ルク</span></div>
+            <div className="bub" onClick={() => { playPoko(); router.push(task.href); }}>{petMsg || dotMsg}</div>
+          </div>
+        </div>
       </div>
-      {/* 下部固定ナビ */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: isDark ? 64 : 88, background: isDark ? "rgba(13,13,24,0.92)" : "transparent", borderTop: isDark ? "1px solid rgba(255,255,255,0.08)" : "none", backdropFilter: isDark ? "blur(12px)" : "none", display: "flex", zIndex: 50, ...(isDark ? {} : { paddingBottom: 6 }) }}>{!isDark && <div style={{ position: "absolute", inset: "4px 6px 10px", background: "url(/island/nav_wood.png) center / 100% 100% no-repeat", zIndex: 0, pointerEvents: "none" }} />}
+
+      {/* E. 下部ナビ（4項目・リンク先・動作は既存のまま。帯とホーム/おうちは提供素材、他は従来表示） */}
+      <div className="hq-nav">
+        <div className="band" />
         {[
-          { ic: "🏝️", label: "ホーム", href: "/home", active: true },
-          { ic: "🏆", label: "ランキング", href: "/ranking", active: false },
-          { ic: "🏠", label: "おうち", href: "/mypage", active: false },
-          { ic: "☰", label: "メニュー", href: "/menu", active: false },
+          { key: "home", label: "ホーム", href: "/home" },
+          { key: "ranking", label: "ランキング", href: "/ranking" },
+          { key: "house", label: "おうち", href: "/mypage" },
+          { key: "menu", label: "メニュー", href: "/menu" },
         ].map((t) => (
-          <button key={t.href} onClick={() => { playPoko(); setHopNav(t.href); setTimeout(() => router.push(t.href), 180); }} style={{ position: "relative", zIndex: 1, flex: 1, animation: hopNav === t.href ? "hop 0.35s ease-out" : "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, paddingBottom: 4, background: "transparent", border: "none", cursor: "pointer", color: t.active ? (isDark ? "#a78bfa" : "#fff") : (isDark ? "#6b7280" : "rgba(255,255,255,.75)"), textShadow: isDark ? "none" : "0 1px 2px rgba(90,55,20,.6)" }}>
-            <div style={{ fontSize: 20 }}>{t.ic}</div>
-            <div style={{ fontSize: 10, fontWeight: 700 }}>{t.label}</div>
+          <button key={t.href} onClick={() => { playPoko(); setHopNav(t.href); setTimeout(() => router.push(t.href), 180); }} style={{ animation: hopNav === t.href ? "hop 0.35s ease-out" : "none" }}>
+            {t.key === "home" && <img src="/home/nav_home_active.webp" alt="" style={{ height: 56, marginBottom: -4, filter: "drop-shadow(0 3px 5px rgba(30,40,90,.4))" }} />}
+            {t.key === "ranking" && <div style={{ fontSize: 22 }}>🏆</div>}
+            {t.key === "house" && <img src="/home/nav_house.webp" alt="" style={{ height: 38 }} />}
+            {t.key === "menu" && <div style={{ fontSize: 22 }}>☰</div>}
+            <div className="lbl">{t.label}</div>
           </button>
         ))}
       </div>
+
       {showEvolve && (() => {
         const NAMES = ["はじまりのテント", "丸太小屋", "一軒家", "大きな家", "豪邸", "ドットくん城"];
         const IMGS = ["/island/house/0_tent.png", "/island/house/1_cabin.png", "/island/house/2_house.png", "/island/house/3_big.png", "/island/house/4_mansion.png", "/island/house/5_castle.png"];
@@ -616,7 +615,6 @@ export default function HomePage() {
           </div>
         </div>
       )}
-
     </div>
     </>
   );
