@@ -539,7 +539,7 @@ export default function HomePage() {
         ].map((t) => (
           <button key={t.href} onClick={() => { playPoko(); setHopNav(t.href); setTimeout(() => router.push(t.href), 180); }} style={{ animation: hopNav === t.href ? "hop 0.35s ease-out" : "none" }}>
             {t.key === "home" && <img src="/home/nav_home_active.webp" alt="" style={{ height: 56, marginBottom: -4, filter: "drop-shadow(0 3px 5px rgba(30,40,90,.4))" }} />}
-            {t.key === "ranking" && <div style={{ fontSize: 22 }}>🏆</div>}
+            {t.key === "ranking" && <img src="/home/nav_trophy.webp" alt="" style={{ height: 38 }} />}
             {t.key === "house" && <img src="/home/nav_house.webp" alt="" style={{ height: 38 }} />}
             {t.key === "menu" && <div style={{ fontSize: 22 }}>☰</div>}
             <div className="lbl">{t.label}</div>
