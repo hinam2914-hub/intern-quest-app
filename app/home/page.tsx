@@ -71,6 +71,10 @@ const DOT_MSGS: Record<string, string[]> = {
     "今日の予定を立てよう！決めると一日が動きやすくなるよ",
     "まずスケジュール！何をやるか決めちゃおう☀️",
   ],
+  gratitude: [
+    "今日はまだサンキュー送ってないね。誰かの顔が浮かんだら、その人だよ💌",
+    "ありがとうを言葉にすると、チームがあったかくなるんだ",
+  ],
   thinking: [
     "今日は思考クエストの日！きみの考え、聞かせて🧠",
     "頭の体操いこう！今日のお題、なかなか面白いよ",
@@ -151,7 +155,7 @@ export default function HomePage() {
   const [ptGain, setPtGain] = useState(0);
   const [showPtFx, setShowPtFx] = useState(false);
   const [barFrom, setBarFrom] = useState<number | null>(null);
-  const [missions, setMissions] = useState({ schedule: false, report: false, thinking: false });
+  const [missions, setMissions] = useState({ thinking: false, report: false, thanks: false });
   const [petHearts, setPetHearts] = useState<{ id: number; hx: string; hr: string }[]>([]);
   const [petMsg, setPetMsg] = useState<string | null>(null);
   const [petKey, setPetKey] = useState(0);
@@ -216,17 +220,17 @@ export default function HomePage() {
       const todayYmd = getTodayJST();
       const range = todayRangeUTC();
 
-      // 今日の状況を取得
+      // 今日の状況を取得（クエスト3種：思考・日報・サンキュー。日付が変わればJSTの当日分で判定し直す）
       const { data: subRows } = await supabase.from("submissions").select("id").eq("user_id", user.id).gte("created_at", range.start).lt("created_at", range.end).limit(1);
       const reportDone = !!(subRows && subRows.length > 0);
-      const { data: schedRow } = await supabase.from("daily_schedules").select("id").eq("user_id", user.id).eq("date", todayYmd).maybeSingle();
-      const scheduleDone = !!schedRow;
       const { data: thinkRows } = await supabase.from("thinking_answers").select("id").eq("user_id", user.id).gte("created_at", range.start).lt("created_at", range.end).limit(1);
       const thinkingDone = !!(thinkRows && thinkRows.length > 0);
+      // サンキュー：当日の最初の有効送信1回で達成（複数回送っても1のまま）
+      const { data: thanksRows2 } = await supabase.from("thanks").select("id").eq("from_user_id", user.id).gte("created_at", range.start).lt("created_at", range.end).limit(1);
+      const thanksDone = !!(thanksRows2 && thanksRows2.length > 0);
 
-      // リング: コアタスク3つ（スケジュール・日報・思考系）
-      setDoneCount([scheduleDone, reportDone, thinkingDone].filter(Boolean).length);
-      setMissions({ schedule: scheduleDone, report: reportDone, thinking: thinkingDone });
+      setDoneCount([thinkingDone, reportDone, thanksDone].filter(Boolean).length);
+      setMissions({ thinking: thinkingDone, report: reportDone, thanks: thanksDone });
 
       // 中央ボタンの決定
       const seed = todayYmd + user.id;
@@ -236,7 +240,7 @@ export default function HomePage() {
         chosen = { key: "report", icon: "📝", label: "日報を書く", href: "/report" };
       } else {
         const pool: Task[] = [];
-        if (!scheduleDone) pool.push({ key: "schedule", icon: "☀️", label: "予定を立てる", href: "/today-schedule" });
+        if (!thanksDone) pool.push({ key: "gratitude", icon: "💌", label: "サンキューを送る", href: "/thanks" });
         if (!thinkingDone) {
           pool.push({ key: "thinking", icon: "🧠", label: "今日のお題", href: "/thinking" });
           pool.push({ key: "oogiri", icon: "🎤", label: "大喜利でボケる", href: "/thinking" });
@@ -350,9 +354,9 @@ export default function HomePage() {
   };
   // ===== Intern Quest 2.0 HOME（GPT素材下敷き＋実データ重ね。ロジック・保存処理は上と同じまま） =====
   const QUESTS = [
-    { key: "schedule" as const, icon: "/home/icon_schedule.webp", tag: "朝のクエスト", label: "今日の作戦を立てる", desc: "今日の目標と行動予定を設定しよう", href: "/today-schedule" },
-    { key: "report" as const, icon: "/home/icon_report.webp", tag: "夕方のクエスト", label: "冒険の記録を残す", desc: "今日の成果・学び・改善点を記録しよう", href: "/report" },
-    { key: "thinking" as const, icon: "/home/icon_thinking.webp", tag: "成長のクエスト", label: "今日の思考クエスト", desc: "1問のお題に答えて思考力を鍛えよう", href: "/thinking" },
+    { key: "thinking" as const, icon: "/home/icon_thinking.webp", tag: "思考のクエスト", label: "思考クエスト", desc: "今日のお題に答える", href: "/thinking" },
+    { key: "report" as const, icon: "/home/icon_report.webp", tag: "記録のクエスト", label: "日報を提出する", desc: "今日の活動実績・成果・学びを記録する", href: "/report" },
+    { key: "thanks" as const, icon: "/home/icon_thanks.webp", tag: "感謝のクエスト", label: "サンキューを送る", desc: "仲間に感謝の気持ちを届ける", href: "/thanks" },
   ];
 
   if (loading) return <div style={{ minHeight: "100vh", background: "url(/home/bg_mobile.webp) center top / cover no-repeat fixed, #bfe3f5", display: "flex", alignItems: "center", justifyContent: "center", color: "#5a6b85", fontWeight: 800 }}>読み込み中...</div>;

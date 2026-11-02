@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { computeReportStreak } from "../lib/date";
+import { formatJSTShort } from "../lib/date";
 import { calculateSibyl, getMbtiColor, calculateGrowthCourse } from "../lib/sibyl";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
 import { AnimatePresence, motion } from "framer-motion";
@@ -568,6 +569,8 @@ export default function MyPage() {
     const [contentCompletionCount, setContentCompletionCount] = useState(0);
     const [esCompleted, setEsCompleted] = useState(false);
     const [thanksCount, setThanksCount] = useState(0);
+    const [thanksSentCount, setThanksSentCount] = useState(0);
+    const [thanksReceived, setThanksReceived] = useState<{ id: string; fromName: string; message: string; reason: string | null; created_at: string }[]>([]);
     const [kpiCount, setKpiCount] = useState(0);
     const [approvedKpiCount, setApprovedKpiCount] = useState(0);
     const [kkcApprovedCount, setKkcApprovedCount] = useState(0);
@@ -996,6 +999,15 @@ export default function MyPage() {
 
         const { count: tCount } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("to_user_id", user.id);
         setThanksCount(tCount || 0);
+        // 受け取ったサンキュー（コレクション内に表示。メッセージは本人の受信分のみ）
+        const { count: tSentCount } = await supabase.from("thanks").select("*", { count: "exact", head: true }).eq("from_user_id", user.id);
+        setThanksSentCount(tSentCount || 0);
+        const { data: recvRows } = await supabase.from("thanks").select("*").eq("to_user_id", user.id).order("created_at", { ascending: false }).limit(20);
+        if (recvRows && recvRows.length) {
+            const senderIds = Array.from(new Set((recvRows as any[]).map((r) => r.from_user_id)));
+            const { data: senders } = await supabase.from("profiles").select("id, name").in("id", senderIds);
+            setThanksReceived((recvRows as any[]).map((r) => ({ id: String(r.id), fromName: (senders as any[] | null)?.find((x) => x.id === r.from_user_id)?.name || "名前未設定", message: r.message || "", reason: r.reason ?? null, created_at: r.created_at })));
+        }
 
         const { count: cCount } = await supabase.from("content_completions").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "approved");
         setContentCompletionCount(cCount || 0);
@@ -2446,6 +2458,32 @@ const handleRoutineCheck = async (routineId: string) => {
                         )}
                     </div>
                     <button onClick={() => setShowAllCollection(!showAllCollection)} style={{ width: "100%", marginTop: 10, padding: "9px 0", borderRadius: 10, border: `1px solid ${cardBorder}`, background: "transparent", color: "#818cf8", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>{showAllCollection ? "▲ 閉じる" : "▼ コレクションをすべて見る"}</button>
+                </div>
+                {/* ===== 受け取ったサンキュー ===== */}
+                <div style={{ marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <div style={{ fontSize: 11, color: textMuted, fontWeight: 700, letterSpacing: 2 }}>💌 受け取ったサンキュー</div>
+                        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 700 }}>受信 {thanksCount} ／ 送信 {thanksSentCount}</div>
+                    </div>
+                    {thanksReceived.length === 0 ? (
+                        <div style={{ fontSize: 12.5, color: textMuted, padding: "6px 0" }}>まだ受け取ったサンキューはありません</div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto" }}>
+                            {thanksReceived.map((t) => (
+                                <div key={t.id} style={{ background: "rgba(255,253,245,.9)", border: "1.5px solid rgba(190,160,110,.35)", borderRadius: 12, padding: "10px 12px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 3 }}>
+                                        <span style={{ fontSize: 12, fontWeight: 900, color: "#17397d" }}>{t.fromName}さんから</span>
+                                        <span style={{ fontSize: 11, fontWeight: 700, color: "#8a93a6", whiteSpace: "nowrap" }}>{formatJSTShort(t.created_at)}</span>
+                                    </div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#4a4a5a", lineHeight: 1.65, wordBreak: "break-word" }}>
+                                        {t.reason && <span style={{ display: "inline-block", background: "#fff3cf", border: "1.5px solid #e2bf63", color: "#8a6207", fontWeight: 900, fontSize: 10.5, borderRadius: 999, padding: "1px 8px", marginRight: 6 }}>{t.reason}</span>}
+                                        {t.message}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <button onClick={() => router.push("/thanks")} style={{ width: "100%", marginTop: 10, padding: "9px 0", borderRadius: 10, border: `1px solid ${cardBorder}`, background: "transparent", color: "#818cf8", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>サンキューを送る →</button>
                 </div>
                 {/* ===== トロフィー ===== */}
                 <div style={{ display: showAllCollection ? undefined : "none", marginBottom: 16, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: 24 }}>

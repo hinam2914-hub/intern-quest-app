@@ -8,7 +8,7 @@ type Category = { key: string; icon: string; title: string; desc: string; items:
 
 const SHORTCUTS: MenuItem[] = [
     { icon: "📋", label: "日報", path: "/report" },
-    { icon: "☀️", label: "予定", path: "/today-schedule" },
+    { icon: "💌", label: "サンキュー", path: "/thanks" },
     { icon: "🧠", label: "思考", path: "/thinking" },
     { icon: "🎯", label: "チャレンジ", path: "/challenge" },
     { icon: "📚", label: "学習", path: "/learn" },
