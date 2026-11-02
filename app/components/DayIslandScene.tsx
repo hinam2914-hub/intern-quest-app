@@ -1,9 +1,8 @@
 "use client";
 // 「昼の島」シーン（home の自分の島）の描画。Phase 1 で HomeIsland.tsx から描画部分だけを切り出したもの。
 // 編集（かざる）の状態や保存は HomeIsland 側が持ち、ここは config を受け取って描くだけ。見た目は移行前と同じ。
-import { getHouseStage, HOUSE_IMG, GROUND_TOP, GROUND_IMG, TREE_IMG, TREE_EMOJI, DECO_IMG, DECO_EMOJI, SKY_IMG, SKY_EMOJI, ANIMAL_IMG, ANIMAL_EMOJI, type IslandConfig } from "../lib/island";
-
-const HOUSE_W: number[] = [104, 112, 120, 128, 134, 130];
+import { GROUND_TOP, GROUND_IMG, TREE_IMG, TREE_EMOJI, DECO_IMG, DECO_EMOJI, SKY_IMG, SKY_EMOJI, ANIMAL_IMG, ANIMAL_EMOJI, type IslandConfig } from "../lib/island";
+import { getCastleStage } from "../lib/castle";
 
 export type PetState = { say: string; hop: boolean; onTap: () => void };
 
@@ -23,7 +22,7 @@ export default function DayIslandScene({ config, totalEarned, onHouseClick, pet,
     lite?: boolean;
 }) {
     const view = config;
-    const stage = getHouseStage(totalEarned);
+    const castle = getCastleStage(totalEarned);   // 城はレベル連動の5段階（lib/castle.ts で一元管理）
     return (
         <>
             <style>{`
@@ -79,11 +78,11 @@ export default function DayIslandScene({ config, totalEarned, onHouseClick, pet,
 
                 {flat && <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", width: "60%", height: 70, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(60,90,45,.28), rgba(60,90,45,0) 70%)", filter: lite ? undefined : "blur(6px)", zIndex: 2 }} />}
                 {/* 家の足元影 */}
-                <div style={{ position: "absolute", bottom: 66, left: "50%", transform: "translateX(-50%)", width: HOUSE_W[stage.idx] * .82, height: 15, borderRadius: "50%", background: "rgba(60,90,45,.32)", filter: lite ? undefined : "blur(5px)", zIndex: 3 }} />
-                {/* 家（中央より少し奥＝上面の上寄り） */}
+                <div style={{ position: "absolute", bottom: 66, left: "50%", transform: "translateX(-50%)", width: castle.w * .82, height: 15, borderRadius: "50%", background: "rgba(60,90,45,.32)", filter: lite ? undefined : "blur(5px)", zIndex: 3 }} />
+                {/* 城（レベルで5段階成長。縦横比は画像のまま、幅だけ段階ごとに指定） */}
                 <div onClick={onHouseClick} style={{ position: "relative", zIndex: 4, marginBottom: 62, cursor: onHouseClick ? "pointer" : "default" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={houseSm ? HOUSE_IMG[stage.idx].replace("/island/house/", "/island/house/sm/") : HOUSE_IMG[stage.idx]} alt="house" style={{ width: HOUSE_W[stage.idx], display: "block", filter: lite ? undefined : "drop-shadow(0 6px 9px rgba(60,50,30,.26))" }} />
+                    <img src={castle.img} alt="castle" style={{ width: castle.w, height: "auto", display: "block", filter: lite ? undefined : "drop-shadow(0 6px 9px rgba(60,50,30,.26))" }} />
                 </div>
                 {/* 小道（家の扉下→手前、遠近台形） */}
                 <div style={{ position: "absolute", bottom: 48, left: "50%", transform: "translateX(-50%)", width: 58, height: 42, clipPath: "polygon(38% 0, 62% 0, 92% 100%, 8% 100%)", background: "linear-gradient(180deg, #e6d3a8, #d4bc8a)", opacity: .92, zIndex: 3 }} />

@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import DayIslandScene from "./DayIslandScene";
-import { getHouseStage, ITEM_IMG, type IslandConfig } from "../lib/island";
+import { ITEM_IMG, type IslandConfig } from "../lib/island";
+import { getCastleStage } from "../lib/castle";
 
 type ShopItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string };
 type Cfg = IslandConfig;
@@ -40,8 +41,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
     }, [userId]);
 
     const view = editing ? draft : config;
-    const stage = getHouseStage(totalEarned);
-    const nextName = stage.nextName;
+    const stage = getCastleStage(totalEarned);   // 城の段階（レベル連動・lib/castle.ts）
     const startEdit = () => { setDraft({ ...config }); setEditing(true); setToast(""); };
     const cancelEdit = () => { setEditing(false); setToast(""); };
     const tapItem = (it: ShopItem) => {
@@ -91,7 +91,7 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                     <>
                         <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 14, background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,180,92,.35)" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: "#7a5a2b" }}>{stage.isMax ? "👑 GOAL達成！" : (nextName ? "🏠 " + nextName + "まで" : "GOALまで")}</span>
+                                <span style={{ fontSize: 12, fontWeight: 800, color: "#7a5a2b" }}>{stage.isMax ? "👑 お城がMAX！" : "🏰 STAGE " + stage.nextStage + " の城まで（Lv." + stage.nextAtLevel + "）"}</span>
                                 <span style={{ fontSize: 11, fontWeight: 800, color: "#e8590c" }}>{stage.isMax ? "MAX！" : "あと " + stage.toNext.toLocaleString() + "pt"}</span>
                             </div>
                             <div style={{ height: 9, background: "rgba(150,110,50,.18)", borderRadius: 6, overflow: "hidden" }}>

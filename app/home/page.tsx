@@ -10,7 +10,7 @@ import AvatarLayered from "../components/AvatarLayered";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import { JOBS, type JobKey } from "../onboarding/job/page";
 import DotKun from "../components/DotKun";
-import DotHouse, { getHouseStage } from "../components/DotHouse";
+import { getCastleStage, CASTLE_STAGES } from "../lib/castle";
 import HomeIsland from "../components/HomeIsland";
 import HomeHeader2 from "../components/HomeHeader2";
 import { fetchCurrentTitle } from "../lib/mypage2";
@@ -175,16 +175,16 @@ export default function HomePage() {
       const te = (pointRow as any)?.total_earned || 0;
       setTotalEarned(te);
       setHomeUserId(user.id);
-      // 家の進化検知（前回見た段階より上がってたら1回だけ祝う）
+      // 城の進化検知（前回見た段階より上がってたら1回だけ祝う）
       try {
-        const curIdx = getHouseStage(te).idx;
-        const prevRaw = localStorage.getItem("lastHouseStage");
+        const curIdx = getCastleStage(te).idx;
+        const prevRaw = localStorage.getItem("lastCastleStage");
         if (prevRaw === null) {
-          localStorage.setItem("lastHouseStage", String(curIdx));
+          localStorage.setItem("lastCastleStage", String(curIdx));
         } else if (curIdx > parseInt(prevRaw, 10)) {
           setEvolveIdx(curIdx);
           setShowEvolve(true);
-          localStorage.setItem("lastHouseStage", String(curIdx));
+          localStorage.setItem("lastCastleStage", String(curIdx));
         }
         // pt獲得演出（進化演出が出る時はスキップ）
         const lastTERaw = localStorage.getItem("lastSeenTE");
@@ -520,24 +520,23 @@ export default function HomePage() {
       </div>
 
       {showEvolve && (() => {
-        const NAMES = ["はじまりのテント", "丸太小屋", "一軒家", "大きな家", "豪邸", "ドットくん城"];
-        const IMGS = ["/island/house/0_tent.png", "/island/house/1_cabin.png", "/island/house/2_house.png", "/island/house/3_big.png", "/island/house/4_mansion.png", "/island/house/5_castle.png"];
-        const isCastle = evolveIdx === 5;
-        const confs = isCastle
+        const st = CASTLE_STAGES[evolveIdx];
+        const isMax = evolveIdx === CASTLE_STAGES.length - 1;
+        const confs = isMax
           ? ["#ffd700","#ffec8b","#f59e0b","#fbbf24","#fff3b0","#ffd700","#f59e0b","#ffec8b","#fbbf24","#ffd700","#fff3b0","#f59e0b","#ffd700","#fbbf24"]
           : ["#fbbf24","#a78bfa","#f472b6","#34d399","#60a5fa","#fbbf24","#f472b6","#a78bfa"];
         return (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2200, padding: 20 }}>
-            <div style={{ position: "absolute", inset: 0, background: isCastle ? "radial-gradient(circle, rgba(255,215,0,.5) 0%, rgba(255,215,0,0) 70%)" : "radial-gradient(circle, rgba(255,255,255,.45) 0%, rgba(255,255,255,0) 70%)", animation: "flashGlow 1.4s ease-out" }} />
+            <div style={{ position: "absolute", inset: 0, background: isMax ? "radial-gradient(circle, rgba(255,215,0,.5) 0%, rgba(255,215,0,0) 70%)" : "radial-gradient(circle, rgba(255,255,255,.45) 0%, rgba(255,255,255,0) 70%)", animation: "flashGlow 1.4s ease-out" }} />
             {confs.map((c, i) => (
-              <div key={i} style={{ position: "absolute", top: 0, left: `${4 + i * (92 / confs.length)}%`, width: isCastle ? 11 : 9, height: isCastle ? 11 : 9, borderRadius: 2, background: c, animation: `confettiFall ${2.2 + (i % 4) * 0.5}s linear ${(i % 5) * 0.3}s infinite` }} />
+              <div key={i} style={{ position: "absolute", top: 0, left: `${4 + i * (92 / confs.length)}%`, width: isMax ? 11 : 9, height: isMax ? 11 : 9, borderRadius: 2, background: c, animation: `confettiFall ${2.2 + (i % 4) * 0.5}s linear ${(i % 5) * 0.3}s infinite` }} />
             ))}
-            <div style={{ background: isCastle ? "linear-gradient(135deg, #fff9e0, #ffedb0)" : "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 24, padding: "30px 26px", maxWidth: 380, width: "100%", textAlign: "center", boxShadow: isCastle ? "0 20px 70px rgba(200,150,0,.5)" : "0 20px 60px rgba(0,0,0,0.3)", position: "relative" }}>
-              <div style={{ fontSize: 15, fontWeight: 900, color: "#b45309", marginBottom: 2 }}>{isCastle ? "👑 GOAL!! 👑" : "✨ おうちが進化！ ✨"}</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: isCastle ? "#a16207" : "#b45309", marginBottom: 14 }}>{NAMES[evolveIdx]}{isCastle ? "、完成！" : "になった！"}</div>
-              <img src={IMGS[evolveIdx]} alt="new house" style={{ width: isCastle ? 190 : 165, height: "auto", margin: "0 auto 14px", display: "block", animation: "houseReveal 0.9s cubic-bezier(.5,1.6,.4,1) 0.35s both", filter: "drop-shadow(0 10px 16px rgba(120,90,20,.3))" }} />
-              <div style={{ fontSize: 12.5, color: "#92400e", lineHeight: 1.7, marginBottom: 18 }}>{isCastle ? "テントから始まった冒険、ついに城まで来たね。きみの積み重ねはホンモノだよ。" : "コツコツの積み重ねがカタチになったよ。この調子！"}</div>
-              <button onClick={() => setShowEvolve(false)} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: isCastle ? "linear-gradient(135deg, #f5c542, #d99e06)" : "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>{isCastle ? "最高！" : "やった！"}</button>
+            <div style={{ background: isMax ? "linear-gradient(135deg, #fff9e0, #ffedb0)" : "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 24, padding: "30px 26px", maxWidth: 380, width: "100%", textAlign: "center", boxShadow: isMax ? "0 20px 70px rgba(200,150,0,.5)" : "0 20px 60px rgba(0,0,0,0.3)", position: "relative" }}>
+              <div style={{ fontSize: 15, fontWeight: 900, color: "#b45309", marginBottom: 2 }}>{isMax ? "👑 MAX!! 👑" : "✨ お城が成長！ ✨"}</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: isMax ? "#a16207" : "#b45309", marginBottom: 14 }}>{isMax ? "お城が最終進化した！" : `STAGE ${st.stage} のお城になった！`}</div>
+              <img src={st.img} alt="castle" style={{ width: isMax ? 200 : 175, height: "auto", margin: "0 auto 14px", display: "block", animation: "houseReveal 0.9s cubic-bezier(.5,1.6,.4,1) 0.35s both", filter: "drop-shadow(0 10px 16px rgba(120,90,20,.3))" }} />
+              <div style={{ fontSize: 12.5, color: "#92400e", lineHeight: 1.7, marginBottom: 18 }}>{isMax ? "小さな建物から始まった冒険、ついにここまで来たね。きみの積み重ねはホンモノだよ。" : "レベルが上がってお城が大きくなったよ。この調子！"}</div>
+              <button onClick={() => setShowEvolve(false)} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: isMax ? "linear-gradient(135deg, #f5c542, #d99e06)" : "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>{isMax ? "最高！" : "やった！"}</button>
             </div>
           </div>
         );
