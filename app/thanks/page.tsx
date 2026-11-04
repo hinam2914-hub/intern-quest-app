@@ -143,7 +143,8 @@ export default function ThanksPage() {
     }, [router]);
 
     const filtered = useMemo(() => {
-        const pool = users.filter((u) => u.active);   // 送信先は在籍者（is_active=false の離職者は出さない）
+        // 送信先は在籍者のみ。テスト用の「試験中」事業部と名前未設定のアカウントも出さない
+        const pool = users.filter((u) => u.active && u.deptName !== "試験中" && u.name !== "名前未設定");
         const k = q.trim().toLowerCase();
         const base = k ? pool.filter((u) => u.name.toLowerCase().includes(k) || u.deptName.toLowerCase().includes(k)) : pool;
         return base.slice(0, 60);
@@ -157,7 +158,7 @@ export default function ThanksPage() {
         if (Date.now() - lastSentAt.current < COOLDOWN_MS) { setErr("少し時間をおいてから送ってね（連投防止・30秒）"); setConfirming(false); return; }
         if (!toUserId || toUserId === myId) { setErr("送り先を選んでください"); setConfirming(false); return; }
         const toU = users.find((u) => u.id === toUserId);
-        if (toU && !toU.active) { setErr("この相手には送れません（在籍していません）"); setConfirming(false); return; }
+        if (toU && (!toU.active || toU.deptName === "試験中" || toU.name === "名前未設定")) { setErr("この相手には送れません"); setConfirming(false); return; }
         setSending(true);
         // 同じ相手には1日1回（従来仕様のまま）
         const todayYmd = getTodayJST();
