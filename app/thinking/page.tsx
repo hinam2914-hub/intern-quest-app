@@ -41,7 +41,10 @@ const CSS = `
 .tk-head small{font-weight:800;font-size:10px;color:#cfe0ff;margin-left:auto;text-align:right}
 .tk-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
 @media (min-width:480px){ .tk-stats{grid-template-columns:repeat(3,1fr)} }
-.tk-stat{background:rgba(255,255,251,.9);border:2px solid rgba(190,160,110,.4);border-radius:14px;padding:9px 8px;text-align:center}
+.tk-stat{position:relative;background:rgba(255,255,251,.9);border:2px solid rgba(190,160,110,.4);border-radius:14px;padding:9px 8px;text-align:center;cursor:pointer;font-family:inherit}
+.tk-stat.today{border-color:#2f6fd6;box-shadow:0 0 0 2px rgba(47,111,214,.25)}
+.tk-stat.open{background:#fff;border-color:#e0a62e}
+.tk-stat .tdy{position:absolute;top:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;background:linear-gradient(180deg,#4d9af5,#2458c7);color:#fff;font-size:9px;font-weight:900;border-radius:999px;padding:1px 8px;border:1px solid #e2bf63}
 .tk-stat .em{font-size:26px;line-height:1.2}
 .tk-stat .nm{font-size:12px;font-weight:900;color:#17397d;margin-top:2px}
 .tk-stat .ct{font-size:11px;font-weight:800;color:#8a93a6;margin-top:2px}
@@ -104,7 +107,8 @@ export default function ThinkingPage() {
     const [message, setMessage] = useState("");
     const [stats, setStats] = useState<Record<string, { total: number; last30: number }>>({});
     const [streakDays, setStreakDays] = useState(0);
-    const [myHistory, setMyHistory] = useState<{ id: string; date: string; quest: string; content: string }[]>([]);
+    const [myHistory, setMyHistory] = useState<{ id: string; date: string; quest: string; content: string; catKey: string }[]>([]);
+    const [openCat, setOpenCat] = useState<string | null>(null);   // カテゴリ一覧で開いている詳細
     const [openHistory, setOpenHistory] = useState<string | null>(null);
 
     const todayStr = getTodayJST();
@@ -207,7 +211,7 @@ export default function ThinkingPage() {
         const st: Record<string, { total: number; last30: number }> = {};
         THINK_CATS.forEach(c => { st[c.key] = { total: 0, last30: 0 }; });
         const cutoff = Date.now() - 30 * 86400000;
-        const hist: { id: string; date: string; quest: string; content: string }[] = [];
+        const hist: { id: string; date: string; quest: string; content: string; catKey: string }[] = [];
         const dateSet = new Set<string>();
         mine.forEach(a => {
             const qq = qmap.get(a.question_id);
@@ -216,7 +220,7 @@ export default function ThinkingPage() {
             st[c.key].total += 1;
             if (new Date(a.created_at).getTime() >= cutoff) st[c.key].last30 += 1;
             dateSet.add(toJSTDateOnly(a.created_at));
-            if (hist.length < 15) hist.push({ id: a.id, date: toJSTDateOnly(a.created_at), quest: `${c.quest}（${c.skill}）`, content: a.content });
+            if (hist.length < 40) hist.push({ id: a.id, date: toJSTDateOnly(a.created_at), quest: `${c.quest}（${c.skill}）`, content: a.content, catKey: c.key });
         });
         // 継続日数（今日または昨日から連続した挑戦日数）
         let streak = 0;
@@ -368,16 +372,50 @@ export default function ThinkingPage() {
                             {THINK_CATS.map(c => {
                                 const st = stats[c.key] || { total: 0, last30: 0 };
                                 const g = growthOf(st.total);
+                                const isToday = todayCat === c.key;
+                                const open = openCat === c.key;
                                 return (
-                                    <div key={c.key} className="tk-stat">
+                                    <button key={c.key} type="button" className={"tk-stat" + (isToday ? " today" : "") + (open ? " open" : "")} onClick={() => setOpenCat(open ? null : c.key)}>
+                                        {isToday && <div className="tdy">本日の試練</div>}
                                         <div className="em">{c.emoji}</div>
-                                        <div className="nm">{c.skill}</div>
-                                        <div className="ct">挑戦 {st.total} 回・30日 {st.last30} 回</div>
+                                        <div className="nm">{c.quest}</div>
+                                        <div className="ct">{c.skill}｜挑戦 {st.total} 回</div>
                                         <span className="tk-badge" style={{ background: g.color }}>{g.name}</span>
-                                    </div>
+                                    </button>
                                 );
                             })}
                         </div>
+                        {openCat && (() => {
+                            const c = THINK_CATS.find(x => x.key === openCat)!;
+                            const st = stats[c.key] || { total: 0, last30: 0 };
+                            const g = growthOf(st.total);
+                            const myCatHist = myHistory.filter(h => h.catKey === c.key);
+                            return (
+                                <div className="tk-q" style={{ borderColor: c.color }}>
+                                    <div className="cat" style={{ color: c.color }}><span style={{ fontSize: 18 }}>{c.emoji}</span>{c.quest}｜鍛える力：{c.skill}</div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#3a4256", lineHeight: 1.75, marginTop: 6 }}>{c.desc}</div>
+                                    <div style={{ fontSize: 12, fontWeight: 800, color: "#8a6a3a", marginTop: 8 }}>
+                                        段階：<span className="tk-badge" style={{ background: g.color, marginTop: 0 }}>{g.name}</span>　累計 {st.total} 回・直近30日 {st.last30} 回
+                                        {todayCat === c.key ? "　⚔️ 今日はこの試練の日！" : ""}
+                                    </div>
+                                    {myCatHist.length > 0 ? (
+                                        <div style={{ marginTop: 8 }}>
+                                            <div style={{ fontSize: 12, fontWeight: 900, color: "#7a5a1a" }}>自分の挑戦記録</div>
+                                            {myCatHist.slice(0, 5).map(h => (
+                                                <div key={h.id}>
+                                                    <button className="tk-past" onClick={() => setOpenHistory(openHistory === h.id ? null : h.id)}>
+                                                        <span>{h.date.replaceAll("-", ".")}</span><span style={{ color: "#b09a6a" }}>{openHistory === h.id ? "−" : "+"}</span>
+                                                    </button>
+                                                    {openHistory === h.id && <div style={{ padding: "8px 4px 10px", fontSize: 13, fontWeight: 700, color: "#3a3a4a", lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{h.content}</div>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: 12, fontWeight: 800, color: "#8a93a6", marginTop: 8 }}>まだ挑戦記録がありません。{todayCat === c.key ? "今日の試練に挑もう！" : "この試練の曜日に挑戦しよう！"}</div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
                 )}
 

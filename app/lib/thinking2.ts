@@ -14,6 +14,7 @@ export type CatDef = {
     emoji: string;        // 素材が届くまでの仮アイコン（届き次第 img に差し替え）
     img: string | null;   // ChatGPT制作アイコン（public/thinking/）。null の間は emoji を表示
     color: string;
+    desc: string;        // カテゴリ一覧で見せる説明
     steps: StepDef[];
     defaultHint: string;  // 問題に hint が無いときのルクのヒント
 };
@@ -21,11 +22,13 @@ export type CatDef = {
 export const THINK_CATS: CatDef[] = [
     {
         key: "idea", quest: "ひらめきの試練", skill: "発想力", en: "IDEA", emoji: "💡", img: null, color: "#e89a1d",
+        desc: "自由な発想でアイデアを出す試練。数と意外性で頭をやわらかくする。",
         steps: [{ key: "answer", label: "あなたのアイデア", ph: "自由に発想してみよう。意外なアイデアも大歓迎！" }],
         defaultHint: "正解はないよ。『ふつうはやらないこと』も1つ混ぜてみよう！",
     },
     {
         key: "why", quest: "なぜなぜの迷宮", skill: "分析力", en: "ANALYSIS", emoji: "🌀", img: null, color: "#7a5cc9",
+        desc: "「なぜ？」を重ねて本当の原因まで潜る試練。表面でとまらない分析力を鍛える。",
         steps: [
             { key: "cause", label: "考えられる原因", ph: "まずは思いつく原因を書き出そう" },
             { key: "deep", label: "なぜその原因が起きるのか", ph: "その原因の、さらに奥にあるものは？" },
@@ -35,6 +38,7 @@ export const THINK_CATS: CatDef[] = [
     },
     {
         key: "decision", quest: "決断の天秤", skill: "判断力", en: "JUDGE", emoji: "⚖️", img: null, color: "#2f6fd6",
+        desc: "正解がひとつではない状況で決める試練。理由・リスク・対策まで考え抜く。",
         steps: [
             { key: "choice", label: "あなたの決断（AかBか）", ph: "どちらを選ぶ？まず決めよう" },
             { key: "reason", label: "選んだ理由", ph: "なぜそちらを選んだ？" },
@@ -45,6 +49,7 @@ export const THINK_CATS: CatDef[] = [
     },
     {
         key: "reverse", quest: "逆転の発想", skill: "柔軟性", en: "FLEX", emoji: "🔄", img: null, color: "#2e9d5f",
+        desc: "あえて逆から考える試練。最悪の作り方が分かれば、改善の種が見つかる。",
         steps: [
             { key: "bad", label: "悪い状態を作る条件", ph: "あえて最悪にするなら、何をする？" },
             { key: "found", label: "そこから見つかる問題", ph: "書き出した条件から、今の問題が見えてこない？" },
@@ -54,6 +59,7 @@ export const THINK_CATS: CatDef[] = [
     },
     {
         key: "persuade", quest: "説得の試練", skill: "論理力", en: "LOGIC", emoji: "📣", img: null, color: "#c4422f",
+        desc: "相手を納得させる説明を組み立てる試練。主張・根拠・懸念への答えをそろえる。",
         steps: [
             { key: "claim", label: "自分の主張", ph: "一言でいうと、何を伝えたい？" },
             { key: "ground", label: "主張の根拠", ph: "そう言える理由・事実は？" },
@@ -64,6 +70,7 @@ export const THINK_CATS: CatDef[] = [
     },
     {
         key: "perspective", quest: "視点の扉", skill: "多角的思考", en: "VIEW", emoji: "🚪", img: null, color: "#b07a08",
+        desc: "立場を変えて同じ出来事を見る試練。視点の数だけ答えの質が上がる。",
         steps: [
             { key: "new", label: "新人の視点", ph: "本人にはどう見えている？何を感じている？" },
             { key: "senior", label: "先輩の視点", ph: "先輩の立場からはどう見える？" },
