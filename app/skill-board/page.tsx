@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { JOBS, type JobKey } from "../onboarding/job/page";
+import type { AvatarConfig } from "../lib/avatar/catalog";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import TutorialMark from "../components/TutorialMark";
@@ -17,6 +19,7 @@ export default function SkillBoardPage() {
   const router = useRouter();
   const [uid, setUid] = useState<string | null>(null);
   const [avatarId, setAvatarId] = useState<string | null>(null);
+  const [layered, setLayered] = useState<{ cfg: AvatarConfig; job: JobKey } | null>(null);
   const [res, setRes] = useState<EvalResult | null>(null);
   const [focus, setFocus] = useState<Focus>({ current: null, subs: [] });
   const [mentorRecos, setMentorRecos] = useState<Reco[]>([]);
@@ -50,8 +53,9 @@ export default function SkillBoardPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
     setUid(user.id);
-    const { data: prof } = await supabase.from("profiles").select("avatar_config").eq("id", user.id).single();
+    const { data: prof } = await supabase.from("profiles").select("avatar_config, job_class").eq("id", user.id).single();
     setAvatarId((prof as any)?.avatar_config?.id ?? null);
+    { const ac = (prof as any)?.avatar_config; const jc = (prof as any)?.job_class; setLayered(ac?.type === "layered" && jc && JOBS.some((j) => j.key === jc) ? { cfg: ac, job: jc } : null); }
     let r = await evaluateUser(supabase, user.id);
     if (initial) { const l = lastUnlockedId(r); setLocId(l); locRef.current = l; }
     const { newNodes, newJobs } = await syncUnlocks(supabase, user.id, r);
@@ -170,7 +174,7 @@ export default function SkillBoardPage() {
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
       <TutorialMark id="skill" />
-      <SkillWorld res={res} avatarId={avatarId} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} camCmd={camCmd} stages={stageRes?.stages} onStageTap={() => setStageOpen(true)} onAreaTap={(k) => setNavArea(k)} onCamMode={(m, a) => { if (m === "area" && a) setNavArea(a); }} />
+      <SkillWorld res={res} avatarId={avatarId} layered={layered} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} camCmd={camCmd} stages={stageRes?.stages} onStageTap={() => setStageOpen(true)} onAreaTap={(k) => setNavArea(k)} onCamMode={(m, a) => { if (m === "area" && a) setNavArea(a); }} />
 
       {/* HUD 上 */}
       {isMobile ? (

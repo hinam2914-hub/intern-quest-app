@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { questMission, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
 import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, pt, curve, type Pt } from "./world";
 import type { StageState } from "../lib/stages";
+import AvatarLayered from "../components/AvatarLayered";
+import type { AvatarConfig } from "../lib/avatar/catalog";
+import type { JobKey } from "../onboarding/job/page";
 import { AREA_BOX, AREA_FOCUS, fitBox, centerCam, clampCam, tweenCam, areaAt, type CamCmd, type CamMode, type Insets } from "./camera";
 import { TERRAIN_IMG, blobPath, LAND_PTS, MEADOW_PTS, HILL_PTS, STONE_PTS, STREAM_D, COMM_CLUSTERS, WORLD_CLUSTERS, PILLARS, FOREST_PTS, HIGHLAND_PTS, UPPER_PTS, AI_DECK_PTS, clusterItems } from "./terrain";
 
@@ -68,8 +71,8 @@ function useTerrainImages(): Record<string, boolean> {
   return ok;
 }
 
-export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title, camCmd, onAreaTap, onCamMode, hud, stages, onStageTap }: {
-  res: EvalResult; avatarId: string | null; selectedId: string | null; onSelect: (n: NodeState | null) => void; focusTo?: { key: number; target: Pt };
+export default function SkillWorld({ res, avatarId, layered, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title, camCmd, onAreaTap, onCamMode, hud, stages, onStageTap }: {
+  res: EvalResult; avatarId: string | null; layered?: { cfg: AvatarConfig; job: JobKey } | null; selectedId: string | null; onSelect: (n: NodeState | null) => void; focusTo?: { key: number; target: Pt };
   focus: Focus; locNodeId: string | null; walk: Walk | null; onWalkEnd?: () => void; recos?: Reco[]; title?: { name: string; icon: string | null } | null;
   /** カメラ指示（WORLD / AREA / QUEST）。key が変わるたびに実行 */
   camCmd?: CamCmd; onAreaTap?: (area: string) => void; onCamMode?: (mode: CamMode, area: string | null) => void;
@@ -598,8 +601,13 @@ export default function SkillWorld({ res, avatarId, selectedId, onSelect, focusT
           {title && (
             <div style={{ position: "absolute", top: -4, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", padding: "2px 9px", borderRadius: 999, background: "linear-gradient(135deg,#fde68a,#f59e0b)", color: "#78350f", fontSize: 10.5, fontWeight: 900, border: "1.5px solid #fff", boxShadow: "0 2px 8px rgba(180,120,0,.35)", zIndex: 2 }}>{title.icon ?? "🏅"} {title.name}</div>
           )}
-          <div style={{ animation: "swBob 2.4s ease-in-out infinite", position: "relative", transform: facingLeft ? "scaleX(-1)" : "none" }}>
-            {avatarId ? <img src={`/avatars/${avatarId}.png`} alt="" style={{ width: 128, display: "block", filter: "drop-shadow(0 10px 10px rgba(0,0,0,.28))" }} /> : <div style={{ fontSize: 100, textAlign: "center" }}>🧑‍🚀</div>}
+          <div style={{ animation: "swBob 2.4s ease-in-out infinite", position: "relative", transform: facingLeft ? "scaleX(-1)" : "none", height: layered ? 150 : undefined }}>
+            {/* 2.0：保存済みの合成アバター（素体×髪×衣装）を全身表示。未作成はプリセット→絵文字の順にフォールバック */}
+            {layered ? (
+              <div style={{ position: "absolute", bottom: -2, left: "50%", transform: "translateX(-50%)", width: 172, filter: "drop-shadow(0 10px 10px rgba(0,0,0,.28))" }}>
+                <AvatarLayered config={layered.cfg} job={layered.job} showFallback={false} />
+              </div>
+            ) : avatarId ? <img src={`/avatars/${avatarId}.png`} alt="" style={{ width: 128, display: "block", filter: "drop-shadow(0 10px 10px rgba(0,0,0,.28))" }} /> : <div style={{ fontSize: 100, textAlign: "center" }}>🧑‍🚀</div>}
           </div>
         </div>
       </div>
