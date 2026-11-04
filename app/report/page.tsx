@@ -3,11 +3,10 @@
 // 提出処理・ポイント（+2pt／連続ボーナス）・streak・KPI保存・実験・ガチャ・サンキュー誘導は従来ロジックのまま。
 // 成長ランクは従来からある「今日のQuest達成率」ルール（90%↑S / 80%↑A / 60%↑B / 40%↑C / 未満D）をそのまま盾に表示。
 // 記入欄は「成果・課題・学び・明日の一手」の4項目（保存は submissions.content への連結のままで DB 変更なし）。
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { computeReportStreak } from "../lib/date";
-import TodayScheduleReview, { TodayScheduleReviewHandle } from "../components/TodayScheduleReview";
 import { generateDotKunFeedback, DotKunFeedback } from "../lib/dotkunFeedback";
 
 type KpiItem = { id: string; title: string; unit: string; target_value: number };
@@ -102,7 +101,6 @@ const CSS = `
 
 export default function ReportPage() {
     const router = useRouter();
-    const reviewRef = useRef<TodayScheduleReviewHandle>(null);
     const [factText, setFactText] = useState("");        // 今日の成果（旧:今日のGood）
     const [issueText, setIssueText] = useState("");      // 今日の課題
     const [learnText, setLearnText] = useState("");      // 今日の学び
@@ -185,8 +183,9 @@ export default function ReportPage() {
     const [gachaResult, setGachaResult] = useState<number | null>(null);
     const [reportDone, setReportDone] = useState(false);
     const [showThanksPopup, setShowThanksPopup] = useState(false);
-    const [questDone, setQuestDone] = useState(0);
-    const [questTotal, setQuestTotal] = useState(0);
+    const [thinkingDone, setThinkingDone] = useState(false);
+    const [thanksDone, setThanksDone] = useState(false);
+    const [kpiLogged, setKpiLogged] = useState<Record<string, number>>({});
     const [streakNow, setStreakNow] = useState(0);
     const [monthRate, setMonthRate] = useState<number | null>(null);
 
@@ -199,6 +198,19 @@ export default function ReportPage() {
                 const todayYmd = getTodayJST();
                 const { data: subs } = await supabase.from("submissions").select("created_at").eq("user_id", user.id);
                 const submittedToday = (subs || []).some((row: any) => toJSTDateOnly(row.created_at) === todayYmd);
+                // 成長ランク用：今日の思考クエスト・サンキュー・KPI実績（読み取りのみ）
+                const dayStart = new Date(`${todayYmd}T00:00:00+09:00`).toISOString();
+                const dayEnd = new Date(new Date(`${todayYmd}T00:00:00+09:00`).getTime() + 86400000).toISOString();
+                const [{ data: thinkRows }, { data: thanksRows }, { data: kpiRows }] = await Promise.all([
+                    supabase.from("thinking_answers").select("id").eq("user_id", user.id).gte("created_at", dayStart).lt("created_at", dayEnd).limit(1),
+                    supabase.from("thanks").select("id").eq("from_user_id", user.id).gte("created_at", dayStart).lt("created_at", dayEnd).limit(1),
+                    supabase.from("kpi_logs").select("kpi_item_id, value, created_at").eq("user_id", user.id).gte("created_at", dayStart).lt("created_at", dayEnd),
+                ]);
+                setThinkingDone(!!(thinkRows && thinkRows.length));
+                setThanksDone(!!(thanksRows && thanksRows.length));
+                const kl: Record<string, number> = {};
+                (kpiRows || []).forEach((r: any) => { kl[r.kpi_item_id] = (kl[r.kpi_item_id] || 0) + Number(r.value || 0); });
+                setKpiLogged(kl);
                 const { data: gachas } = await supabase.from("gacha_history").select("created_at").eq("user_id", user.id).eq("cost", 0);
                 const gachaToday = (gachas || []).some((row: any) => toJSTDateOnly(row.created_at) === todayYmd);
                 if (submittedToday && !gachaToday) setReportDone(true);
@@ -262,46 +274,6 @@ export default function ReportPage() {
             await supabase.from("profiles").update({ streak: newStreak, last_report_date: nowIso }).eq("id", user.id);
             setStreakNow(newStreak);
 
-            // Quest振り返りを保存
-            const reviewResult = await reviewRef.current?.saveReview(user.id);
-
-            // 全達成なら累計＆連続ボーナス
-            if (reviewResult?.isAllMaru) {
-                const { data: schedRow } = await supabase.from("daily_schedules").select("streak_rewarded, schedule_status").eq("user_id", user.id).eq("date", todayYmd).maybeSingle();
-                if (schedRow && !(schedRow as any).streak_rewarded && (schedRow as any).schedule_status !== "rejected") {
-                    const { data: profMaru } = await supabase.from("profiles").select("total_maru_days").eq("id", user.id).single();
-                    const newTotal = ((profMaru as any)?.total_maru_days || 0) + 1;
-                    await supabase.from("profiles").update({ total_maru_days: newTotal }).eq("id", user.id);
-
-                    let maruStreak = 1;
-                    for (let i = 1; i <= 30; i++) {
-                        const past = new Date(`${todayYmd}T00:00:00+09:00`);
-                        past.setDate(past.getDate() - i);
-                        const pastYmd = past.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
-                        const { data: pastRow } = await supabase.from("daily_schedules").select("slots").eq("user_id", user.id).eq("date", pastYmd).maybeSingle();
-                        const pastSlots = (pastRow as any)?.slots;
-                        // 新3分割Quest構造で全達成判定
-                        let pastAllMaru = false;
-                        if (pastSlots && !Array.isArray(pastSlots)) {
-                            const allQ = [...(pastSlots.morning || []), ...(pastSlots.afternoon || []), ...(pastSlots.night || [])];
-                            pastAllMaru = allQ.length > 0 && allQ.every((q: any) => q.done);
-                        }
-                        if (pastAllMaru) maruStreak++;
-                        else break;
-                    }
-
-                    let maruBonus = 0;
-                    if (maruStreak === 3) maruBonus = 5;
-                    else if (maruStreak === 7) maruBonus = 10;
-                    if (maruBonus > 0) {
-                        const { data: ptNow } = await supabase.from("user_points").select("points").eq("id", user.id).single();
-                        await supabase.from("user_points").update({ points: ((ptNow as any)?.points || 0) + maruBonus }).eq("id", user.id);
-                        await supabase.from("points_history").insert([{ user_id: user.id, change: maruBonus, reason: "maru_streak_bonus" }]);
-                    }
-                    await supabase.from("daily_schedules").update({ streak_rewarded: true }).eq("user_id", user.id).eq("date", todayYmd);
-                }
-            }
-
             setSuccess(true);
             setMessage(bonus > 0 ? `+${addPoints}pt 獲得！連続ボーナス +${bonus}pt も獲得 🎉` : `+${addPoints}pt 獲得しました！`);
             setDotkunFb(generateDotKunFeedback({ factText, interpText: learnText, actionText, streak: newStreak }));
@@ -338,10 +310,12 @@ export default function ReportPage() {
         setGachaSpinning(false);
     };
 
-    // Quest結果の計算（従来ルールのまま：達成率→ランク）
-    const rate = questTotal > 0 ? Math.round((questDone / questTotal) * 100) : 0;
-    const rank = rate >= 90 ? "S" : rate >= 80 ? "A" : rate >= 60 ? "B" : rate >= 40 ? "C" : "D";
-    const rankDisp = questTotal > 0 ? rank : "–";
+    // 本日の成長ランク：今日の冒険クエスト3種（思考・日報・サンキュー）＋KPI目標で判定
+    // S=3クエスト達成＋KPI全項目目標到達（KPI項目が無い場合は3クエストでS）／A=3／B=2／C=1／D=0
+    const questCount = (reportDone ? 1 : 0) + (thinkingDone ? 1 : 0) + (thanksDone ? 1 : 0);
+    const kpiVal = (id: string) => Math.max(kpiValues[id] || 0, kpiLogged[id] || 0);
+    const kpiAll = kpiItems.length === 0 || kpiItems.every((it) => it.target_value <= 0 || kpiVal(it.id) >= it.target_value);
+    const rankDisp = questCount === 3 ? (kpiAll ? "S" : "A") : questCount === 2 ? "B" : questCount === 1 ? "C" : "D";
 
     const todayYmd = getTodayJST();
     const dateLabel = `${todayYmd.slice(0, 4)}.${todayYmd.slice(5, 7)}.${todayYmd.slice(8, 10)}（${WEEK[new Date(`${todayYmd}T00:00:00+09:00`).getDay()]}）`;
@@ -380,6 +354,7 @@ export default function ReportPage() {
                         <div className="rp-stat"><img src="/report/icon_rate.webp" alt="" /><span className="k">今月の提出率</span><span className="v">{monthRate === null ? "–" : monthRate}<small> %</small></span></div>
                     </div>
                 </div>
+                <div style={{ textAlign: "center", fontSize: 10.5, fontWeight: 800, color: "#5a6b85", marginTop: 6, textShadow: "0 1px 0 rgba(255,255,255,.6)" }}>ランク基準：今日のクエスト（思考・日報・サンキュー）3つ達成でA、＋活動実績の目標も全達成でS（2つ=B／1つ=C）</div>
 
                 {/* 今日の活動実績（KPI。項目は管理画面の設定と連動） */}
                 {kpiItems.length > 0 && !reportDone && (
@@ -428,14 +403,6 @@ export default function ReportPage() {
                         )}
                     </div>
                 )}
-
-                {/* Questの振り返り（既存部品） */}
-                <div className="rp-panel">
-                    <div className="rp-head">✨ Questの振り返り<small>達成率がランクになる（S:90%〜 A:80%〜 B:60%〜 C:40%〜）</small></div>
-                    <div style={{ marginTop: 10 }}>
-                        <TodayScheduleReview ref={reviewRef} onProgressChange={(d, t) => { setQuestDone(d); setQuestTotal(t); }} />
-                    </div>
-                </div>
 
                 {/* メンターからのFB */}
                 {fbList.length > 0 && (
