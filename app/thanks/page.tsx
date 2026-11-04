@@ -12,7 +12,7 @@ import AvatarLayered from "../components/AvatarLayered";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import { JOBS, type JobKey } from "../onboarding/job/page";
 
-type UserOption = { id: string; name: string; avatar_url: string | null; deptName: string; layered: { cfg: AvatarConfig; job: JobKey } | null };
+type UserOption = { id: string; name: string; avatar_url: string | null; deptName: string; layered: { cfg: AvatarConfig; job: JobKey } | null; active: boolean };
 type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; reason?: string | null; created_at: string };
 
 const REASONS = ["助けてもらった", "教えてもらった", "挑戦を応援してくれた", "一緒に頑張ってくれた", "その他"];
@@ -125,14 +125,14 @@ export default function ThanksPage() {
             const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);
             setIsAdmin(!!user.email && adminEmails.includes(user.email));
             const [{ data: profs }, { data: depts }] = await Promise.all([
-                supabase.from("profiles").select("id, name, avatar_url, avatar_config, job_class, department_id"),
+                supabase.from("profiles").select("id, name, avatar_url, avatar_config, job_class, department_id, is_active"),
                 supabase.from("departments").select("id, name"),
             ]);
             const dmap: Record<string, string> = {}; (depts || []).forEach((d: any) => { dmap[d.id] = d.name; });
             const all: UserOption[] = (profs || []).map((p: any) => {
                 const ac = p.avatar_config, jc = p.job_class;
                 const layered = ac?.type === "layered" && jc && JOBS.some((j) => j.key === jc) ? { cfg: ac as AvatarConfig, job: jc as JobKey } : null;
-                return { id: p.id, name: p.name || "名前未設定", avatar_url: p.avatar_url || null, deptName: dmap[p.department_id] || "", layered };
+                return { id: p.id, name: p.name || "名前未設定", avatar_url: p.avatar_url || null, deptName: dmap[p.department_id] || "", layered, active: p.is_active !== false };
             });
             setMyName(all.find((u) => u.id === user.id)?.name || "");
             setMeUser(all.find((u) => u.id === user.id) || null);
@@ -143,8 +143,9 @@ export default function ThanksPage() {
     }, [router]);
 
     const filtered = useMemo(() => {
+        const pool = users.filter((u) => u.active);   // 送信先は在籍者（is_active=false の離職者は出さない）
         const k = q.trim().toLowerCase();
-        const base = k ? users.filter((u) => u.name.toLowerCase().includes(k) || u.deptName.toLowerCase().includes(k)) : users;
+        const base = k ? pool.filter((u) => u.name.toLowerCase().includes(k) || u.deptName.toLowerCase().includes(k)) : pool;
         return base.slice(0, 60);
     }, [q, users]);
 
@@ -155,6 +156,8 @@ export default function ThanksPage() {
         setErr("");
         if (Date.now() - lastSentAt.current < COOLDOWN_MS) { setErr("少し時間をおいてから送ってね（連投防止・30秒）"); setConfirming(false); return; }
         if (!toUserId || toUserId === myId) { setErr("送り先を選んでください"); setConfirming(false); return; }
+        const toU = users.find((u) => u.id === toUserId);
+        if (toU && !toU.active) { setErr("この相手には送れません（在籍していません）"); setConfirming(false); return; }
         setSending(true);
         // 同じ相手には1日1回（従来仕様のまま）
         const todayYmd = getTodayJST();
