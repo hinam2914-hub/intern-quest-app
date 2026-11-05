@@ -112,6 +112,10 @@ export const BODY_READY = new Set(["f__light","m__light","f__fair","m__fair","f_
 /** 納品済みの衣装（outfitId__base）と、背面画像があるもの */
 export const OUTFIT_READY = new Set(["knight_default__f","mage_default__f","archer_default__f","healer_default__f","rogue_default__f","paladin_default__f","knight_default__m","mage_default__m","healer_default__m","rogue_default__m","paladin_default__m","archer_default__m"]);
 export const OUTFIT_HAS_BACK = new Set<string>([]);
+/** 納品済みの装備（head/cape/weapon/accessory）。
+ *  男女共通1枚なら "rogue_hood"、男女別なら "rogue_hood__f" / "rogue_hood__m" を登録する。
+ *  ファイルは public/avatar/<layer>/<id>.png または <id>__<base>.png（1024×1024・既存座標系） */
+export const GEAR_READY = new Set<string>([]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
 export const ASSET_V = "43";
@@ -122,7 +126,13 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
     const hair = find(HAIR[c.base], c.hair);
     const colorOk = !!find(HAIR_COLOR, c.hairColor)?.src;
     const hairSrc = (which: "back" | "front") => hair?.src && colorOk ? `/avatar/hair_${which}/${hair.id}__${c.hairColor}.png` : null;
-    const gear = (list: Part[], id: string, layer: string) => { const p = find(list, id); if (!p || p.id === "none") return { src: "", missing: false }; return { src: p.src ? `/avatar/${layer}/${p.id}.png` : null, missing: !p.src }; };
+    const gear = (list: Part[], id: string, layer: string) => {
+        const p = find(list, id); if (!p || p.id === "none") return { src: "", missing: false };
+        // 性別別ファイル（<id>__<base>）→ 男女共通（<id>）の順で解決。GEAR_READY 登録 or src が入っていれば納品済み
+        if (GEAR_READY.has(`${p.id}__${c.base}`)) return { src: `/avatar/${layer}/${p.id}__${c.base}.png`, missing: false };
+        if (GEAR_READY.has(p.id) || p.src) return { src: `/avatar/${layer}/${p.id}.png`, missing: false };
+        return { src: null, missing: true };
+    };
     const out = (which: "back" | "front") => {
         const p = find(g.outfit, c.outfit);
         // 男性用が未納品の間は女性用を代用（体格はほぼ同じ）

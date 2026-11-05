@@ -33,6 +33,7 @@ import ScriptPracticeTab from "./ScriptPracticeTab";
 import CourseManageTab from "./CourseManageTab";
 import AvatarShopTab from "./AvatarShopTab";
 import IslandShopTab from "./IslandShopTab";
+import GearShopTab from "./GearShopTab";
 import JourneyTab from "./JourneyTab";
 
 type UserRow = { id: string; name: string | null };
@@ -137,7 +138,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"required_check" | "rookie" | "fb_requests" | "skill_check" | "script_practice" | "home" | "dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box" | "recruit" | "course" | "avatar_shop" | "island_shop" | "journey">("home");
+    const [activeTab, setActiveTab] = useState<"required_check" | "rookie" | "fb_requests" | "skill_check" | "script_practice" | "home" | "dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box" | "recruit" | "course" | "avatar_shop" | "island_shop" | "gear_shop" | "journey">("home");
     const [scheduleTargetUser, setScheduleTargetUser] = useState<string | null>(null);
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -382,6 +383,7 @@ export default function AdminPage() {
     const [pendingRecruitCount, setPendingRecruitCount] = useState(0);
     const [pendingAvatarCount, setPendingAvatarCount] = useState(0);
     const [pendingIslandCount, setPendingIslandCount] = useState(0);
+    const [pendingGearCount, setPendingGearCount] = useState(0);
     const [pendingJourneyCount, setPendingJourneyCount] = useState(0);
     const [pendingRookieCount, setPendingRookieCount] = useState(0);
     const [pendingFbCount, setPendingFbCount] = useState(0);
@@ -755,6 +757,8 @@ export default function AdminPage() {
             setPendingAvatarCount(avatarC || 0);
             const { count: islandC } = await supabase.from("island_purchases").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingIslandCount(islandC || 0);
+            const { count: gearC } = await supabase.from("gear_purchases").select("*", { count: "exact", head: true }).eq("status", "pending");
+            setPendingGearCount(gearC || 0);
             const { count: journeyC } = await supabase.from("journey_submissions").select("*", { count: "exact", head: true }).eq("status", "pending");
             setPendingJourneyCount(journeyC || 0);
             const { count: rookieC } = await supabase.from("rookie_submissions").select("*", { count: "exact", head: true }).eq("status", "pending");
@@ -2222,14 +2226,20 @@ export default function AdminPage() {
                 {activeTab === "course" && <CourseManageTab />}
                 {activeTab === "avatar_shop" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🏝️ 島</button></div>
+                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🏝️ 島</button><button onClick={() => setActiveTab("gear_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>⚔️ 装備</button></div>
                         <AvatarShopTab />
                     </div>
                 )}
                 {activeTab === "island_shop" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>🏝️ 島</button></div>
+                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>🏝️ 島</button><button onClick={() => setActiveTab("gear_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>⚔️ 装備</button></div>
                         <IslandShopTab />
+                    </div>
+                )}
+                {activeTab === "gear_shop" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🏝️ 島</button><button onClick={() => setActiveTab("gear_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>⚔️ 装備</button></div>
+                        <GearShopTab />
                     </div>
                 )}
                 {activeTab === "journey" && <JourneyTab />}
@@ -2250,7 +2260,7 @@ export default function AdminPage() {
                             pendingRecruit: pendingRecruitCount,
                             pendingAvatar: pendingAvatarCount,
                             pendingIsland: pendingIslandCount,
-                            pendingShop: pendingAvatarCount + pendingIslandCount,
+                            pendingShop: pendingAvatarCount + pendingIslandCount + pendingGearCount,
                             pendingJourney: pendingJourneyCount,
                             pendingRookie: pendingRookieCount,
                             pendingFb: pendingFbCount,
@@ -4891,7 +4901,7 @@ export default function AdminPage() {
                 )}
                 {activeTab === "shop" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🏝️ 島</button></div>
+                        <div style={{ display: "flex", gap: 8 }}><button onClick={() => setActiveTab("shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff" }}>🎁 景品</button><button onClick={() => setActiveTab("avatar_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>👗 アバター</button><button onClick={() => setActiveTab("island_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>🏝️ 島</button><button onClick={() => setActiveTab("gear_shop")} style={{ padding: "9px 18px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>⚔️ 装備</button></div>
                         <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
                             <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>🛍️ 新規景品追加</div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
