@@ -90,7 +90,7 @@ const CSS = `
 .mn-home{border:2px solid #e8c45a;background:rgba(255,253,245,.92);color:#17397d;font-weight:900;font-size:13px;border-radius:999px;padding:8px 16px;cursor:pointer;font-family:inherit;box-shadow:0 3px 8px rgba(40,60,120,.15)}
 .mn-title{position:relative;width:min(88%,460px);margin:0 auto;container-type:inline-size;z-index:2}
 .mn-title img{display:block;width:100%;height:auto;filter:drop-shadow(0 6px 14px rgba(20,40,90,.3))}
-.mn-title>div{position:absolute;inset:14% 8% 8%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;pointer-events:none}
+.mn-title>div{position:absolute;inset:25.9% 10% 11.8%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;pointer-events:none}
 .mn-title .t1{font-size:clamp(16px,6.2cqw,26px);font-weight:900;letter-spacing:.08em;text-shadow:0 2px 4px rgba(10,25,70,.55)}
 .mn-title .t2{font-size:clamp(8px,2.3cqw,11px);font-weight:800;letter-spacing:.42em;color:#cfe0ff;margin-top:1%}
 .mn-h{align-self:center;display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,#fffdf4,#f8efdb);border:2px solid #e2bf63;border-radius:999px;padding:5px 22px;font-weight:900;color:#7a5a1a;font-size:14px;margin:18px 0 10px;box-shadow:0 2px 6px rgba(140,100,30,.18)}

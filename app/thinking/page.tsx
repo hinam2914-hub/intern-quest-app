@@ -29,7 +29,7 @@ const CSS = `
 .tk-back{align-self:flex-start;border:2px solid #e8c45a;background:rgba(255,253,245,.92);color:#17397d;font-weight:900;font-size:13px;border-radius:999px;padding:8px 16px;cursor:pointer;font-family:inherit;box-shadow:0 3px 8px rgba(40,60,120,.15)}
 .tk-title{position:relative;width:min(88%,480px);margin:10px auto 0;container-type:inline-size}
 .tk-title img{display:block;width:100%;height:auto;filter:drop-shadow(0 6px 14px rgba(20,40,90,.3))}
-.tk-title>div{position:absolute;inset:14% 8% 8%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;pointer-events:none}
+.tk-title>div{position:absolute;inset:25.9% 10% 11.8%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;pointer-events:none}
 .tk-title .t1{font-size:clamp(16px,6.2cqw,26px);font-weight:900;letter-spacing:.1em;text-shadow:0 2px 4px rgba(10,25,70,.55)}
 .tk-title .t2{font-size:clamp(8px,2.3cqw,11px);font-weight:800;letter-spacing:.34em;color:#cfe0ff;margin-top:1%}
 .tk-tabs{display:flex;gap:8px;margin-top:14px}

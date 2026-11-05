@@ -384,7 +384,7 @@ export default function HomePage() {
       .hq-top{display:flex;justify-content:flex-end;margin:0 2px 8px}
       .hq-title{position:relative;width:min(94%,560px);margin:26px auto 0;container-type:inline-size;z-index:2}
       .hq-title img{display:block;width:100%;height:auto;filter:drop-shadow(0 6px 14px rgba(20,40,90,.3))}
-      .hq-title>div{position:absolute;inset:14% 8% 8%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;pointer-events:none}
+      .hq-title>div{position:absolute;inset:25.9% 10% 11.8%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;pointer-events:none}
       .hq-title .t1{font-size:clamp(16px,6cqw,27px);font-weight:900;letter-spacing:.06em;text-shadow:0 2px 4px rgba(10,25,70,.55)}
       .hq-title .t2{font-size:clamp(8px,2.2cqw,11px);font-weight:800;letter-spacing:.42em;color:#cfe0ff;margin-top:1%}
       .hq-panel{position:relative;margin-top:-10px;padding:8.5% 7% 8%;background:url(/home/quest_panel.webp);background-size:100% 100%;display:flex;flex-direction:column;gap:12px;container-type:inline-size}
