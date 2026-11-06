@@ -49,14 +49,14 @@ const none = (label = "なし"): Part => ({ id: "none", label, src: "" });
 export const GEAR: Record<JobKey, JobGear> = {
     knight: {
         outfit: [{ id: "knight_default", label: "ナイトの鎧", src: "ok" }],
-        head: [none(), { id: "knight_shoulder", label: "肩装飾", src: null }],
-        cape: [none(), { id: "knight_cape", label: "青のマント", src: null }],
-        weapon: [none(), { id: "knight_sword", label: "剣", src: null }, { id: "knight_sword_shield", label: "剣と盾", src: null }],
-        accessory: [none(), { id: "knight_ribbon_blue", label: "青リボン", src: null }, { id: "knight_ribbon_white", label: "白リボン", src: null }, { id: "knight_star", label: "星の飾り", src: null }],
+        head: [none(), { id: "knight_shoulder", label: "肩装飾", src: "ok" }],
+        cape: [none(), { id: "knight_cape", label: "青のマント", src: "ok" }],
+        weapon: [none(), { id: "knight_sword", label: "剣", src: "ok" }, { id: "knight_sword_shield", label: "剣と盾", src: "ok" }],
+        accessory: [none(), { id: "knight_ribbon_blue", label: "青リボン", src: "ok" }, { id: "knight_ribbon_white", label: "白リボン", src: null }, { id: "knight_star", label: "星の飾り", src: "ok" }],
     },
     mage: {
         outfit: [{ id: "mage_default", label: "魔法使いのローブ", src: "ok" }],
-        head: [none(), { id: "mage_hat", label: "魔法帽子", src: null }, { id: "mage_hat_star", label: "帽子（星リボン）", src: null }, { id: "mage_hat_moon", label: "帽子（月のチャーム）", src: null }],
+        head: [none(), { id: "mage_hat", label: "魔法帽子", src: "ok" }, { id: "mage_hat_star", label: "帽子（星リボン）", src: "ok" }, { id: "mage_hat_moon", label: "帽子（月のチャーム）", src: "ok" }],
         cape: [none(), { id: "mage_cape", label: "紫のマント", src: "ok" }],
         weapon: [none(), { id: "mage_staff", label: "杖（基本）", src: "ok" }, { id: "mage_staff_star", label: "杖（星）", src: "ok" }, { id: "mage_staff_moon", label: "杖（月）", src: "ok" }, { id: "mage_staff_crystal", label: "杖（水晶）", src: "ok" }],
         accessory: [none(), { id: "mage_ribbon", label: "リボン", src: "ok" }, { id: "mage_book", label: "魔導書", src: "ok" }, { id: "mage_glasses", label: "メガネ", src: "ok" }],
