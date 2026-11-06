@@ -116,6 +116,8 @@ export const OUTFIT_HAS_BACK = new Set<string>([]);
  *  男女共通1枚なら "rogue_hood"、男女別なら "rogue_hood__f" / "rogue_hood__m" を登録する。
  *  ファイルは public/avatar/<layer>/<id>.png または <id>__<base>.png（1024×1024・既存座標系） */
 export const GEAR_READY = new Set<string>([]);
+/** 装備すると髪を隠す頭装備（フード・兜など、髪がはみ出すと不自然なもの） */
+export const HAIR_HIDDEN_BY_HEAD = new Set<string>(["rogue_hood"]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
 export const ASSET_V = "43";
@@ -145,9 +147,12 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
     // 素体：public/avatar/body/<base>__<skin>.png。納品済みは BODY_READY に登録
     const bodyReady = BODY_READY.has(`${c.base}__${c.skin}`);
     const body = { src: bodyReady ? `/avatar/body/${c.base}__${c.skin}.png` : null, missing: !bodyReady };
+    // フード等の「髪を隠す」頭装備を着けている間は髪レイヤーを描かない（その装備が納品済みのときのみ）
+    const headGear = gear(g.head, c.head, "head");
+    const hideHair = HAIR_HIDDEN_BY_HEAD.has(c.head) && !!headGear.src;
     const parts: Record<Layer, { src: string | null; missing: boolean }> = {
-        cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !(hair?.src && colorOk) }, body, outfit_back: out("back"), outfit_front: out("front"),
-        hair_front: { src: hairSrc("front"), missing: !(hair?.src && colorOk) }, head: gear(g.head, c.head, "head"), weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
+        cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hideHair ? "" : hairSrc("back"), missing: !hideHair && !(hair?.src && colorOk) }, body, outfit_back: out("back"), outfit_front: out("front"),
+        hair_front: { src: hideHair ? "" : hairSrc("front"), missing: !hideHair && !(hair?.src && colorOk) }, head: headGear, weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
     };
     return LAYER_ORDER.map((layer) => { const p = parts[layer]; return { layer, src: p.src ? p.src + "?v=" + ASSET_V : p.src, missing: p.missing }; });
 }
