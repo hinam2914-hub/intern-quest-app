@@ -66,7 +66,7 @@ export const GEAR: Record<JobKey, JobGear> = {
         head: [none(), { id: "archer_hat", label: "羽根付き帽子", src: "ok" }],
         cape: [none(), { id: "archer_cape", label: "緑のマント", src: "ok" }],
         weapon: [none(), { id: "archer_bow", label: "弓（基本）", src: "ok" }, { id: "archer_bow_alt", label: "弓（別デザイン）", src: "ok" }],
-        accessory: [none(), { id: "archer_leaf", label: "葉のブローチ", src: null }, { id: "archer_pouch", label: "腰ポーチ", src: "ok" }, { id: "archer_quiver", label: "矢筒", src: "ok" }, { id: "archer_flower", label: "花飾り", src: "ok" }],
+        accessory: [none(), { id: "archer_leaf", label: "葉のブローチ", src: "ok" }, { id: "archer_pouch", label: "腰ポーチ", src: "ok" }, { id: "archer_quiver", label: "矢筒", src: "ok" }, { id: "archer_flower", label: "花飾り", src: "ok" }],
     },
     healer: {
         outfit: [{ id: "healer_default", label: "ヒーラーの衣装", src: "ok" }],
@@ -80,11 +80,11 @@ export const GEAR: Record<JobKey, JobGear> = {
         head: [none(), { id: "rogue_hood", label: "フード", src: "ok" }],
         cape: [none(), { id: "rogue_cape", label: "黒のマント", src: "ok" }],
         weapon: [none(), { id: "rogue_daggers", label: "短剣（二刀）", src: "ok" }, { id: "rogue_knives", label: "投げナイフ", src: "ok" }],
-        accessory: [none(), { id: "rogue_scarf", label: "スカーフ", src: "ok" }, { id: "rogue_brooch", label: "ブローチ", src: "ok" }, { id: "rogue_pendant", label: "ペンダント", src: null }, { id: "rogue_armband", label: "アームバンド", src: null }],
+        accessory: [none(), { id: "rogue_scarf", label: "スカーフ", src: "ok" }, { id: "rogue_brooch", label: "ブローチ", src: "ok" }, { id: "rogue_pendant", label: "ペンダント", src: "ok" }, { id: "rogue_armband", label: "アームバンド", src: "ok" }],
     },
     paladin: {
         outfit: [{ id: "paladin_default", label: "パラディンの聖鎧", src: "ok" }],
-        head: [none(), { id: "paladin_tiara", label: "ティアラ", src: null }, { id: "paladin_crown", label: "冠", src: null }, { id: "paladin_feather", label: "羽飾り", src: null }],
+        head: [none(), { id: "paladin_tiara", label: "ティアラ", src: null }, { id: "paladin_crown", label: "冠", src: "ok" }, { id: "paladin_feather", label: "羽飾り", src: "ok" }],
         cape: [none(), { id: "paladin_cape", label: "青のマント", src: null }],
         weapon: [none(), { id: "paladin_sword", label: "聖剣（基本）", src: null }, { id: "paladin_sword_shield", label: "聖剣と盾", src: null }, { id: "paladin_sword_deco", label: "聖剣（装飾）", src: null }],
         accessory: [none(), { id: "paladin_clasp", label: "マント留め", src: null }, { id: "paladin_cross", label: "十字架のペンダント", src: null }, { id: "paladin_medal", label: "勲章", src: null }],
