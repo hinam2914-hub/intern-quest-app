@@ -57,15 +57,15 @@ export const GEAR: Record<JobKey, JobGear> = {
     mage: {
         outfit: [{ id: "mage_default", label: "魔法使いのローブ", src: "ok" }],
         head: [none(), { id: "mage_hat", label: "魔法帽子", src: null }, { id: "mage_hat_star", label: "帽子（星リボン）", src: null }, { id: "mage_hat_moon", label: "帽子（月のチャーム）", src: null }],
-        cape: [none(), { id: "mage_cape", label: "紫のマント", src: null }],
-        weapon: [none(), { id: "mage_staff", label: "杖（基本）", src: null }, { id: "mage_staff_star", label: "杖（星）", src: null }, { id: "mage_staff_moon", label: "杖（月）", src: null }, { id: "mage_staff_crystal", label: "杖（水晶）", src: null }],
-        accessory: [none(), { id: "mage_ribbon", label: "リボン", src: null }, { id: "mage_book", label: "魔導書", src: null }, { id: "mage_glasses", label: "メガネ", src: null }],
+        cape: [none(), { id: "mage_cape", label: "紫のマント", src: "ok" }],
+        weapon: [none(), { id: "mage_staff", label: "杖（基本）", src: "ok" }, { id: "mage_staff_star", label: "杖（星）", src: "ok" }, { id: "mage_staff_moon", label: "杖（月）", src: "ok" }, { id: "mage_staff_crystal", label: "杖（水晶）", src: "ok" }],
+        accessory: [none(), { id: "mage_ribbon", label: "リボン", src: "ok" }, { id: "mage_book", label: "魔導書", src: "ok" }, { id: "mage_glasses", label: "メガネ", src: "ok" }],
     },
     archer: {
         outfit: [{ id: "archer_default", label: "アーチャーの軽装", src: "ok" }],
-        head: [none(), { id: "archer_hat", label: "羽根付き帽子", src: null }],
-        cape: [none(), { id: "archer_cape", label: "緑のマント", src: null }],
-        weapon: [none(), { id: "archer_bow", label: "弓（基本）", src: null }, { id: "archer_bow_alt", label: "弓（別デザイン）", src: null }],
+        head: [none(), { id: "archer_hat", label: "羽根付き帽子", src: "ok" }],
+        cape: [none(), { id: "archer_cape", label: "緑のマント", src: "ok" }],
+        weapon: [none(), { id: "archer_bow", label: "弓（基本）", src: "ok" }, { id: "archer_bow_alt", label: "弓（別デザイン）", src: "ok" }],
         accessory: [none(), { id: "archer_leaf", label: "葉のブローチ", src: null }, { id: "archer_pouch", label: "腰ポーチ", src: null }, { id: "archer_quiver", label: "矢筒", src: null }, { id: "archer_flower", label: "花飾り", src: null }],
     },
     healer: {
