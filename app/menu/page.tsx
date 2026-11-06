@@ -72,7 +72,7 @@ const CATS: Cat[] = [
     {
         key: "setting", title: "マイページ・設定", img: "/menu/icon_settings.webp", items: [
             { icon: "🪪", label: "冒険者プロフィール", path: "/mypage" },
-            { icon: "🧍", label: "アバター編集", path: "/avatar" },
+            { icon: "🧍", label: "アバター編集", path: "/onboarding/avatar?from=mypage" },
             { icon: "✏️", label: "基本プロフィール編集", path: "/mypage" },
             { icon: "🔔", label: "通知設定", path: "/notifications" },
         ]
