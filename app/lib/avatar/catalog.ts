@@ -72,7 +72,7 @@ export const GEAR: Record<JobKey, JobGear> = {
         outfit: [{ id: "healer_default", label: "ヒーラーの衣装", src: "ok" }],
         head: [none(), { id: "healer_hat", label: "聖帽", src: "ok" }],
         cape: [none(), { id: "healer_cape", label: "白のマント", src: "ok" }],
-        weapon: [none(), { id: "healer_staff", label: "杖（基本）", src: null }, { id: "healer_staff_flower", label: "杖（花）", src: "ok" }, { id: "healer_staff_moon", label: "杖（月）", src: "ok" }, { id: "healer_staff_wing", label: "杖（翼）", src: "ok" }, { id: "healer_staff_crystal", label: "杖（水晶）", src: "ok" }],
+        weapon: [none(), { id: "healer_staff", label: "杖（基本）", src: "ok" }, { id: "healer_staff_flower", label: "杖（花）", src: "ok" }, { id: "healer_staff_moon", label: "杖（月）", src: "ok" }, { id: "healer_staff_wing", label: "杖（翼）", src: "ok" }, { id: "healer_staff_crystal", label: "杖（水晶）", src: "ok" }],
         accessory: [none(), { id: "healer_ribbon", label: "リボン", src: "ok" }, { id: "healer_cross", label: "十字架の飾り", src: "ok" }, { id: "healer_book", label: "聖書", src: "ok" }, { id: "healer_glasses", label: "メガネ", src: "ok" }],
     },
     rogue: {
@@ -84,7 +84,7 @@ export const GEAR: Record<JobKey, JobGear> = {
     },
     paladin: {
         outfit: [{ id: "paladin_default", label: "パラディンの聖鎧", src: "ok" }],
-        head: [none(), { id: "paladin_tiara", label: "ティアラ", src: null }, { id: "paladin_crown", label: "冠", src: "ok" }, { id: "paladin_feather", label: "羽飾り", src: "ok" }],
+        head: [none(), { id: "paladin_tiara", label: "ティアラ", src: "ok" }, { id: "paladin_crown", label: "冠", src: "ok" }, { id: "paladin_feather", label: "羽飾り", src: "ok" }],
         cape: [none(), { id: "paladin_cape", label: "青のマント", src: "ok" }],
         weapon: [none(), { id: "paladin_sword", label: "聖剣（基本）", src: "ok" }, { id: "paladin_sword_shield", label: "聖剣と盾", src: "ok" }, { id: "paladin_sword_deco", label: "聖剣（装飾）", src: "ok" }],
         accessory: [none(), { id: "paladin_clasp", label: "マント留め", src: "ok" }, { id: "paladin_cross", label: "十字架のペンダント", src: "ok" }, { id: "paladin_medal", label: "勲章", src: "ok" }],
