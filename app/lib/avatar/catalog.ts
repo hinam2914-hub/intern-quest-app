@@ -85,9 +85,9 @@ export const GEAR: Record<JobKey, JobGear> = {
     paladin: {
         outfit: [{ id: "paladin_default", label: "パラディンの聖鎧", src: "ok" }],
         head: [none(), { id: "paladin_tiara", label: "ティアラ", src: null }, { id: "paladin_crown", label: "冠", src: "ok" }, { id: "paladin_feather", label: "羽飾り", src: "ok" }],
-        cape: [none(), { id: "paladin_cape", label: "青のマント", src: null }],
-        weapon: [none(), { id: "paladin_sword", label: "聖剣（基本）", src: null }, { id: "paladin_sword_shield", label: "聖剣と盾", src: null }, { id: "paladin_sword_deco", label: "聖剣（装飾）", src: null }],
-        accessory: [none(), { id: "paladin_clasp", label: "マント留め", src: null }, { id: "paladin_cross", label: "十字架のペンダント", src: null }, { id: "paladin_medal", label: "勲章", src: null }],
+        cape: [none(), { id: "paladin_cape", label: "青のマント", src: "ok" }],
+        weapon: [none(), { id: "paladin_sword", label: "聖剣（基本）", src: "ok" }, { id: "paladin_sword_shield", label: "聖剣と盾", src: "ok" }, { id: "paladin_sword_deco", label: "聖剣（装飾）", src: "ok" }],
+        accessory: [none(), { id: "paladin_clasp", label: "マント留め", src: "ok" }, { id: "paladin_cross", label: "十字架のペンダント", src: "ok" }, { id: "paladin_medal", label: "勲章", src: "ok" }],
     },
 };
 
