@@ -117,7 +117,7 @@ export const OUTFIT_HAS_BACK = new Set<string>([]);
  *  ファイルは public/avatar/<layer>/<id>.png または <id>__<base>.png（1024×1024・既存座標系） */
 export const GEAR_READY = new Set<string>([]);
 /** 装備すると髪を隠す頭装備（フード・兜など、髪がはみ出すと不自然なもの） */
-export const HAIR_HIDDEN_BY_HEAD = new Set<string>(["rogue_hood"]);
+export const HAIR_HIDDEN_BY_HEAD = new Set<string>([]);  // フードは拡大版で髪と共存できるため現在は対象なし
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
 export const ASSET_V = "43";
