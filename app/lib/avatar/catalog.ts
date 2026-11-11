@@ -10,9 +10,9 @@
 
 import type { JobKey } from "../../onboarding/job/page";
 
-export type Layer = "hair_back" | "body" | "outfit_back" | "outfit_front" | "hair_front" | "head" | "cape" | "weapon" | "accessory";
+export type Layer = "hair_back" | "body" | "outfit_back" | "outfit_front" | "head_back" | "hair_front" | "head" | "cape" | "weapon" | "accessory";
 /** 描画順（下→上）。マントは衣装の背面側に入る想定だが、素材の作り方で前にも出せるよう独立レイヤーにする */
-export const LAYER_ORDER: Layer[] = ["cape", "hair_back", "body", "outfit_back", "outfit_front", "hair_front", "head", "weapon", "accessory"];
+export const LAYER_ORDER: Layer[] = ["cape", "hair_back", "body", "outfit_back", "outfit_front", "head_back", "hair_front", "head", "weapon", "accessory"];
 
 export type Base = "f" | "m";
 export type Part = { id: string; label: string; src: string | null; swatch?: string };
@@ -117,7 +117,8 @@ export const OUTFIT_HAS_BACK = new Set<string>([]);
  *  ファイルは public/avatar/<layer>/<id>.png または <id>__<base>.png（1024×1024・既存座標系） */
 export const GEAR_READY = new Set<string>([]);
 /** 装備すると髪を隠す頭装備（フード・兜など、髪がはみ出すと不自然なもの） */
-export const HAIR_HIDDEN_BY_HEAD = new Set<string>([]);  // フードは拡大版で髪と共存できるため現在は対象なし
+/** 髪の「後ろ」に描く頭装備（フードなど）。髪はそのまま、装備が頭の後ろに回り込む */
+export const HEAD_BEHIND_HAIR = new Set<string>(["rogue_hood"]);
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
 export const ASSET_V = "43";
@@ -147,12 +148,14 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
     // 素体：public/avatar/body/<base>__<skin>.png。納品済みは BODY_READY に登録
     const bodyReady = BODY_READY.has(`${c.base}__${c.skin}`);
     const body = { src: bodyReady ? `/avatar/body/${c.base}__${c.skin}.png` : null, missing: !bodyReady };
-    // フード等の「髪を隠す」頭装備を着けている間は髪レイヤーを描かない（その装備が納品済みのときのみ）
+    // フード等は髪の「後ろ」のレイヤーに描く（髪はそのまま表示）
     const headGear = gear(g.head, c.head, "head");
-    const hideHair = HAIR_HIDDEN_BY_HEAD.has(c.head) && !!headGear.src;
+    const behind = HEAD_BEHIND_HAIR.has(c.head);
+    const none = { src: "", missing: false };
     const parts: Record<Layer, { src: string | null; missing: boolean }> = {
-        cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hideHair ? "" : hairSrc("back"), missing: !hideHair && !(hair?.src && colorOk) }, body, outfit_back: out("back"), outfit_front: out("front"),
-        hair_front: { src: hideHair ? "" : hairSrc("front"), missing: !hideHair && !(hair?.src && colorOk) }, head: headGear, weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
+        cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !(hair?.src && colorOk) }, body, outfit_back: out("back"), outfit_front: out("front"),
+        head_back: behind ? headGear : none,
+        hair_front: { src: hairSrc("front"), missing: !(hair?.src && colorOk) }, head: behind ? none : headGear, weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
     };
     return LAYER_ORDER.map((layer) => { const p = parts[layer]; return { layer, src: p.src ? p.src + "?v=" + ASSET_V : p.src, missing: p.missing }; });
 }
