@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import IslandScene, { IslandSceneStyle } from "../components/IslandScene";
 import { STEP_TITLE, getLevel, avatarIdOf } from "../lib/island";
+import { BATTLE_CONFIG, ELEMENTS, castleElementOf } from "../lib/battle";
 
 type Island = {
     id: string;
@@ -37,11 +38,14 @@ export default function IslandsPage() {
     const [search, setSearch] = useState("");
     const [tab, setTab] = useState<"osusume" | "level" | "streak">("osusume");
     const [departing, setDeparting] = useState<string | null>(null);
+    const [myId, setMyId] = useState<string>("");          // 島バトル用：自分の島には挑めない
+    const [castleOpen, setCastleOpen] = useState<string | null>(null); // 城の状態を開いている島
 
     useEffect(() => {
         const load = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
+            setMyId(user.id);
             const [{ data: profiles }, { data: points }, { data: jsubs }] = await Promise.all([
                 supabase.from("profiles").select("id, name, streak, avatar_config, island_config, licenses").eq("is_active", true),
                 supabase.from("user_points").select("id, total_earned"),
@@ -207,6 +211,34 @@ export default function IslandsPage() {
                                         <div className="iq-visit-btn" style={{ marginTop: 11 }}>
                                             <span style={{ display: "inline-block", padding: "9px 24px", borderRadius: 999, background: "linear-gradient(135deg, #8b5cf6, #6d4bc4)", color: "#fff", fontSize: 13, fontWeight: 900, boxShadow: "0 5px 18px rgba(139,92,246,.55)" }}>▶ 島へ遊びに行く</span>
                                         </div>
+                                        {/* 島バトル（Phase 1）：自分の島には表示しない。訪問機能はそのまま */}
+                                        {myId && i.id !== myId && (
+                                            <div style={{ marginTop: 10, borderTop: "1px dashed rgba(139,92,246,.25)", paddingTop: 9 }}>
+                                                <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                                                    <button onClick={(e) => { e.stopPropagation(); router.push("/battle/" + i.id); }} style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid rgba(248,113,113,.5)", cursor: "pointer", background: "linear-gradient(135deg, #ef4444, #b91c1c)", color: "#fff", fontSize: 12, fontWeight: 900, boxShadow: "0 4px 14px rgba(239,68,68,.4)" }}>⚔️ バトルを挑む</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); setCastleOpen(castleOpen === i.id ? null : i.id); }} style={{ padding: "8px 12px", borderRadius: 999, border: "1px solid rgba(251,191,36,.4)", cursor: "pointer", background: "rgba(251,191,36,.1)", color: "#fbbf24", fontSize: 12, fontWeight: 800 }}>🏰 城の状態</button>
+                                                </div>
+                                                {castleOpen === i.id && (() => {
+                                                    const el = ELEMENTS[castleElementOf(i.id)];
+                                                    return (
+                                                        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 8, padding: "9px 11px", borderRadius: 12, background: "rgba(15,12,32,.72)", border: "1px solid rgba(251,191,36,.25)", textAlign: "left", cursor: "default" }}>
+                                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10.5, fontWeight: 800 }}>
+                                                                <span style={{ color: "#fcd34d" }}>城HP</span>
+                                                                <span style={{ color: "#f9fafb" }}>{BATTLE_CONFIG.castleBaseHp} / {BATTLE_CONFIG.castleBaseHp}</span>
+                                                            </div>
+                                                            <div style={{ marginTop: 4, height: 8, borderRadius: 999, background: "rgba(255,255,255,.12)", overflow: "hidden" }}>
+                                                                <div style={{ width: "100%", height: "100%", borderRadius: 999, background: "linear-gradient(90deg, #4ade80, #22c55e)" }} />
+                                                            </div>
+                                                            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, fontSize: 10.5, fontWeight: 800 }}>
+                                                                <span style={{ color: el.color }}>{el.img ? <img src={el.img} alt="" style={{ width: 13, height: 13, verticalAlign: "-2px" }} /> : el.emoji} {el.name}属性の城</span>
+                                                                <span style={{ color: "#a5a8c0" }}>防衛力 Lv.{i.level}</span>
+                                                            </div>
+                                                            <div style={{ marginTop: 6, fontSize: 9.5, color: "#8b8fa8" }}>⚠️ バトルはデモ版（結果は保存されません）</div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
