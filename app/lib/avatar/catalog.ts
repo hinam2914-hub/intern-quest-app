@@ -77,7 +77,7 @@ export const GEAR: Record<JobKey, JobGear> = {
     },
     rogue: {
         outfit: [{ id: "rogue_default", label: "ローグの軽装", src: "ok" }],
-        head: [none(), { id: "rogue_hood", label: "フード", src: "ok" }],
+        head: [none()],  // フードは廃止（髪型との相性問題のため）
         cape: [none(), { id: "rogue_cape", label: "黒のマント", src: "ok" }],
         weapon: [none(), { id: "rogue_daggers", label: "短剣（二刀）", src: "ok" }, { id: "rogue_knives", label: "投げナイフ", src: "ok" }],
         accessory: [none(), { id: "rogue_scarf", label: "スカーフ", src: "ok" }, { id: "rogue_brooch", label: "ブローチ", src: "ok" }, { id: "rogue_pendant", label: "ペンダント", src: "ok" }, { id: "rogue_armband", label: "アームバンド", src: "ok" }],
@@ -118,7 +118,7 @@ export const OUTFIT_HAS_BACK = new Set<string>([]);
 export const GEAR_READY = new Set<string>([]);
 /** 装備すると髪を隠す頭装備（フード・兜など、髪がはみ出すと不自然なもの） */
 /** 髪の「後ろ」に描く頭装備（フードなど）。髪はそのまま、装備が頭の後ろに回り込む */
-export const HEAD_BEHIND_HAIR = new Set<string>(["rogue_hood"]);
+export const HEAD_BEHIND_HAIR = new Set<string>([]);  // 後ろ配置は髪に埋もれたため不使用（前被りに戻した）
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
 export const ASSET_V = "43";
