@@ -233,7 +233,6 @@ export default function IslandsPage() {
                                                                 <span style={{ color: el.color }}>{el.img ? <img src={el.img} alt="" style={{ width: 13, height: 13, verticalAlign: "-2px" }} /> : el.emoji} {el.name}属性の城</span>
                                                                 <span style={{ color: "#a5a8c0" }}>防衛力 Lv.{i.level}</span>
                                                             </div>
-                                                            <div style={{ marginTop: 6, fontSize: 9.5, color: "#8b8fa8" }}>⚠️ バトルはデモ版（結果は保存されません）</div>
                                                         </div>
                                                     );
                                                 })()}

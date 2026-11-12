@@ -145,9 +145,9 @@ export default function BattlePage() {
         if (busy) return;
         const s = SKILLS[k];
         if (k === "boost") { setBoosted(true); pushBanner("攻撃2倍！次の攻撃が強化される", s.color, s.emoji); return; }
-        if (k === "heal") { pushBanner(`回復魔法！城のHPが${BATTLE_CONFIG.healAmount}回復（デモ）`, s.color, s.emoji); return; }
+        if (k === "heal") { pushBanner(`回復魔法！城のHPが${BATTLE_CONFIG.healAmount}回復`, s.color, s.emoji); return; }
         if (k === "guard") { pushBanner(`防御魔法発動！ダメージ${Math.round(BATTLE_CONFIG.guardCut * 100)}%カット`, s.color, s.emoji); return; }
-        pushBanner(`${s.name}！ ${s.desc}（デモ）`, s.color, s.emoji);
+        pushBanner(`${s.name}！ ${s.desc}`, s.color, s.emoji);
     };
 
     const resetDemo = () => {
@@ -162,7 +162,6 @@ export default function BattlePage() {
 
     const castle = getCastleStage(opp.totalEarned); // 見た目は従来の成長段階（HPとは別管理）
     const oppEl = ELEMENTS[oppElement];
-    const lootDemo = Math.min(BATTLE_CONFIG.lootCap, Math.round(100 * BATTLE_CONFIG.lootRate)); // デモ表記用
 
     const elIcon = (k: keyof typeof ELEMENTS, size = 15) => {
         const e = ELEMENTS[k];
@@ -178,9 +177,8 @@ export default function BattlePage() {
             <div className="bt-head">
                 <button className="bt-back" onClick={() => router.push("/islands")}>← 島一覧へ</button>
                 <div className="bt-logo"><span className="bt-logo-main">⚔️ 島バトル</span><span className="bt-logo-sub">ISLAND WARS</span></div>
-                <div className="bt-demo-badge">Phase 1 デモ版・結果は保存されません</div>
             </div>
-            <div className="bt-catch">島を攻めてポイントを奪おう！<span>武器・属性・スキルを選んで、相手の城を攻撃！（Phase 1はデモ演出のみ）</span></div>
+            <div className="bt-catch">島を攻めてポイントを奪おう！<span>武器・属性・スキルを選んで、相手の城を攻撃！</span></div>
 
             <div className="bt-grid">
                 {/* ===== 左：自分の情報 ===== */}
@@ -193,15 +191,15 @@ export default function BattlePage() {
                         </div>
                     </div>
                     <div className="bt-panel">
-                        <div className="bt-row"><span>🪙 バトルポイント</span><b>—<i>（Phase 3）</i></b></div>
-                        <div className="bt-row"><span>💎 バトルコイン</span><b>—<i>（Phase 3）</i></b></div>
+                        <div className="bt-row"><span>🪙 バトルポイント</span><b>ー</b></div>
+                        <div className="bt-row"><span>💎 バトルコイン</span><b>ー</b></div>
                         <div className="bt-row"><span>🗡️ 装備中の武器</span><b>{weapon.name}</b></div>
                         <div className="bt-row"><span>⚡ 残り攻撃回数</span><b className={attacksLeft === 0 ? "bt-zero" : ""}>{attacksLeft} / {BATTLE_CONFIG.attacksPerDay} 回</b></div>
                     </div>
                     <div className="bt-panel bt-menu">
                         <div className="bt-menu-title">今後のメニュー</div>
                         {["🏰 自分の島（育成・防衛）", "🛒 武器ショップ", "🏆 ランキング", "📜 バトル履歴", "🎁 報酬・シーズン"].map((m) => (
-                            <div key={m} className="bt-menu-item">{m}<span>Phase 2〜</span></div>
+                            <div key={m} className="bt-menu-item">{m}<span>準備中</span></div>
                         ))}
                     </div>
                 </aside>
@@ -261,9 +259,9 @@ export default function BattlePage() {
                                 <div className="bt-win-rays" />
                                 <div className="bt-win-chest">{CHEST_IMG ? <img src={CHEST_IMG} alt="" style={{ width: 150, height: 150, objectFit: "contain" }} /> : "🎁"}</div>
                                 <div className="bt-win-title">VICTORY!</div>
-                                <div className="bt-win-sub">城を落とした！（デモ表示・実際の獲得はPhase 3から）</div>
-                                <div className="bt-win-reward">🪙 相手ポイントの{Math.round(BATTLE_CONFIG.lootRate * 100)}%を略奪（例: +{lootDemo}pt）<br />🛡️ 相手の城に{BATTLE_CONFIG.shieldHours}時間の保護シールド</div>
-                                <button className="bt-win-btn" onClick={resetDemo}>もう一度デモバトル</button>
+                                <div className="bt-win-sub">城を落とした！</div>
+                                <div className="bt-win-reward">🪙 相手ポイントの{Math.round(BATTLE_CONFIG.lootRate * 100)}%を略奪<br />🛡️ 相手の城に{BATTLE_CONFIG.shieldHours}時間の保護シールド</div>
+                                <button className="bt-win-btn" onClick={resetDemo}>もう一度バトルする</button>
                             </div>
                         )}
                     </div>
@@ -283,7 +281,6 @@ export default function BattlePage() {
                         ⚔️ 攻撃する
                         <span>本日の残り {attacksLeft}/{BATTLE_CONFIG.attacksPerDay} 回{attacksLeft <= 0 && "（また明日！）"}</span>
                     </button>
-                    <div className="bt-note">⚠️ Phase 1 デモ：HP・回数・ポイントは保存されません ／ <button className="bt-reset" onClick={resetDemo}>デモをリセット</button></div>
                 </main>
 
                 {/* ===== 右：武器・相性 ===== */}
