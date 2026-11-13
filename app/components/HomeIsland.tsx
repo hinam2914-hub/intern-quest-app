@@ -100,7 +100,6 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
                         </div>
                         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 14 }}>
                             <button onClick={startEdit} style={{ padding: "12px 30px", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 14.5, fontWeight: 900, background: "linear-gradient(135deg, #a78bfa, #8b5cf6)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,.5)" }}>🎨 島をかざる</button>
-                            <button onClick={() => router.push("/shop")} style={{ padding: "12px 20px", borderRadius: 999, border: "1px solid rgba(255,180,92,.5)", cursor: "pointer", fontSize: 14, fontWeight: 800, background: "rgba(255,255,255,.65)", color: "#c2410c" }}>🛍️ ショップ</button>
                         </div>
                     </>
                 )}
