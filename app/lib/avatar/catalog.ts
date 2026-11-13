@@ -56,7 +56,7 @@ export const GEAR: Record<JobKey, JobGear> = {
     },
     mage: {
         outfit: [{ id: "mage_default", label: "魔法使いのローブ", src: "ok" }],
-        head: [none(), { id: "mage_hat", label: "魔法帽子", src: "ok" }, { id: "mage_hat_star", label: "帽子（星リボン）", src: "ok" }, { id: "mage_hat_moon", label: "帽子（月のチャーム）", src: "ok" }],
+        head: [none(), { id: "mage_hat_star", label: "帽子（星リボン）", src: "ok" }],  // 魔法帽子・月のチャームは廃止（被り方が合わないため）
         cape: [none(), { id: "mage_cape", label: "紫のマント", src: "ok" }],
         weapon: [none(), { id: "mage_staff", label: "杖（基本）", src: "ok" }, { id: "mage_staff_star", label: "杖（星）", src: "ok" }, { id: "mage_staff_moon", label: "杖（月）", src: "ok" }, { id: "mage_staff_crystal", label: "杖（水晶）", src: "ok" }],
         accessory: [none(), { id: "mage_ribbon", label: "リボン", src: "ok" }, { id: "mage_book", label: "魔導書", src: "ok" }, { id: "mage_glasses", label: "メガネ", src: "ok" }],
@@ -124,7 +124,7 @@ export const HEAD_BEHIND_HAIR = new Set<string>([]);  // 後ろ配置は髪に�
 export const ASSET_V = "44";
 
 /** 被ると髪を帽子の中に収める頭装備。帽子より上にはみ出す髪を <id>__hairmask.png で隠す（＝ちゃんと被って見える） */
-export const HEAD_HAIR_MASK = new Set<string>(["mage_hat", "mage_hat_star", "mage_hat_moon"]);
+export const HEAD_HAIR_MASK = new Set<string>(["mage_hat_star"]);
 
 export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean; mask?: string }[] {
     const g = GEAR[job];
