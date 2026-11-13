@@ -93,7 +93,7 @@ export default function NotificationsPage() {
                                     alignItems: "flex-start",
                                 }}
                             >
-                                <div style={{ fontSize: 24, flexShrink: 0 }}>{n.icon || "🔔"}</div>
+                                <div style={{ fontSize: 24, flexShrink: 0 }}>{n.icon && n.icon.startsWith("/") ? <img src={n.icon} alt="" style={{ width: 44, height: 44, objectFit: "contain", display: "block" }} /> : (n.icon || "🔔")}</div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, color: n.is_read ? "#9ca3af" : "#f9fafb" }}>
                                         {!n.is_read && <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#ef4444", marginRight: 8 }} />}
