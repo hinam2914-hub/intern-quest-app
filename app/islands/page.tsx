@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import DayIslandScene from "../components/DayIslandScene";
 import AvatarLayered from "../components/AvatarLayered";
+import AvatarFace from "../components/AvatarFace";
 import { STEP_TITLE, getLevel, type IslandConfig } from "../lib/island";
 import { getCastleStage } from "../lib/castle";
 import { JOBS, type JobKey } from "../onboarding/job/page";
@@ -245,22 +246,8 @@ export default function IslandsGuildPage() {
         return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#7fc3ef", color: "#fff", fontWeight: 900, fontSize: 16 }}>🏝️ ギルドの地図をひらいています...</div>;
     }
 
-    // 一覧の丸アイコン：本人のアバター（編集済みならその顔のアップ）。未編集の人だけ職業キャラ
-    const Face = ({ i, size }: { i: GIsland; size: number }) => {
-        const w = size * 1.7;                  // 頭まわり（約480/1024）が円に収まる倍率
-        const h = w * (1224 / 1024);
-        return (
-            <div style={{ position: "relative", width: size, height: size, borderRadius: "50%", overflow: "hidden", border: "2px solid #F5D77E", background: "#dbeafe", flexShrink: 0 }}>
-                {i.cfg ? (
-                    <div style={{ position: "absolute", width: w, left: size / 2 - w / 2, top: size / 2 - h * (505 / 1224) }}>
-                        <AvatarLayered config={i.cfg} job={i.job} size="100%" />
-                    </div>
-                ) : (
-                    <img src={`/jobs/${i.job}.webp`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
-                )}
-            </div>
-        );
-    };
+    // 一覧の丸アイコン：共通部品 AvatarFace（ランキングと同じ表示）
+    const Face = ({ i, size }: { i: GIsland; size: number }) => <AvatarFace src={{ job: i.job, cfg: i.cfg }} size={size} />;
 
     return (
         <div className="gx-root">

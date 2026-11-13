@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import AvatarFace, { faceSourceOf, type FaceSource } from "../components/AvatarFace";
 
 type RankingUser = {
     id: string;
@@ -189,6 +190,7 @@ export default function RankingPage() {
     const [thinkingUsers, setThinkingUsers] = useState<RankingUser[]>([]);
     const [questionUsers, setQuestionUsers] = useState<RankingUser[]>([]);
     const [ipponUsers, setIpponUsers] = useState<RankingUser[]>([]);
+    const [faces, setFaces] = useState<Record<string, FaceSource>>({});   // 全員分のアバター（id → 顔アイコンの元データ）
     const [battleCountUsers, setBattleCountUsers] = useState<RankingUser[]>([]);
     const [battleWinUsers, setBattleWinUsers] = useState<RankingUser[]>([]);
     const [battleDamageUsers, setBattleDamageUsers] = useState<RankingUser[]>([]);
@@ -222,6 +224,13 @@ export default function RankingPage() {
             setMyTeamId((myProfile as any)?.team_id || null);
             setMyName((myProfile as any)?.name || "あなた");
             setMyAvatar((myProfile as any)?.avatar_url || null);
+
+            // 全タブ共通：全員のアバター設定を1回だけ取得（集計には使わない・表示専用）
+            supabase.from("profiles").select("id, job_class, avatar_config").eq("is_active", true).then(({ data }) => {
+                const m: Record<string, FaceSource> = {};
+                (data || []).forEach((r: any) => { m[r.id] = faceSourceOf(r); });
+                setFaces(m);
+            });
 
             // ===== 総合ランキング =====
             const { data: pointRows } = await supabase.from("user_points").select("id, total_earned").order("total_earned", { ascending: false });
@@ -611,6 +620,8 @@ export default function RankingPage() {
                 </div>
             );
         }
+        // 本人が設定したアバター（なければ職業キャラ）を優先。どちらも無い人だけ従来の写真・頭文字
+        if (faces[user.id]?.job) return <AvatarFace src={faces[user.id]} size={size} border="none" />;
         if (user.avatar_url) {
             return <img src={user.avatar_url} alt={user.name} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", display: "block" }} />;
         }
