@@ -51,7 +51,7 @@ async function fetchAllUserIds(table: string, filters: [string, string | boolean
     return rows;
 }
 
-type TabKey = "total" | "weekly" | "teams" | "streak" | "sankyu" | "sankyu_sent" | "challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total" | "job_rank" | "pay_forward" | "thinking" | "question" | "ippon";
+type TabKey = "total" | "weekly" | "teams" | "streak" | "sankyu" | "sankyu_sent" | "challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total" | "job_rank" | "pay_forward" | "thinking" | "question" | "ippon" | "battle_count" | "battle_wins" | "battle_damage";
 
 // タブ（旧ページの種別・ラベルをそのまま維持）
 const TABS: { key: TabKey; em: string; label: string }[] = [
@@ -74,6 +74,9 @@ const TABS: { key: TabKey; em: string; label: string }[] = [
     { key: "pay_forward", em: "🤝", label: "ペイフォワード" },
     { key: "thinking", em: "🧠", label: "思考クエスト" },
     { key: "ippon", em: "🎤", label: "IPPON" },
+    { key: "battle_count", em: "⚔️", label: "バトル回数" },
+    { key: "battle_wins", em: "🏰", label: "落城数" },
+    { key: "battle_damage", em: "💥", label: "与ダメージ" },
 ];
 
 const CSS = `
@@ -186,6 +189,9 @@ export default function RankingPage() {
     const [thinkingUsers, setThinkingUsers] = useState<RankingUser[]>([]);
     const [questionUsers, setQuestionUsers] = useState<RankingUser[]>([]);
     const [ipponUsers, setIpponUsers] = useState<RankingUser[]>([]);
+    const [battleCountUsers, setBattleCountUsers] = useState<RankingUser[]>([]);
+    const [battleWinUsers, setBattleWinUsers] = useState<RankingUser[]>([]);
+    const [battleDamageUsers, setBattleDamageUsers] = useState<RankingUser[]>([]);
     const [kpiUsers, setKpiUsers] = useState<RankingUser[]>([]);
     const [salesMonthUsers, setSalesMonthUsers] = useState<RankingUser[]>([]);
     const [salesTotalUsers, setSalesTotalUsers] = useState<RankingUser[]>([]);
@@ -362,6 +368,20 @@ export default function RankingPage() {
                     })).sort((a, b) => b.points - a.points));
                 }
             }
+            // ===== 島バトル（回数・落城数・与ダメージ）=====
+            // 集計は battle_ranking()（battle_server.sql）で行う。未適用の環境では空のまま（エラーにしない）
+            try {
+                const { data: bRows, error: bErr } = await supabase.rpc("battle_ranking");
+                if (!bErr && bRows && (bRows as any[]).length > 0) {
+                    const rows = bRows as any[];
+                    const { data: bProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true).in("id", rows.map((r) => r.user_id));
+                    const pm: Record<string, any> = {}; (bProfiles || []).forEach((r: any) => { pm[r.id] = r; });
+                    const mk = (field: string) => rows.filter((r) => pm[r.user_id] && Number(r[field]) > 0).map((r) => ({
+                        id: r.user_id, name: pm[r.user_id].name, avatar_url: pm[r.user_id].avatar_url, is_active: true, points: Number(r[field]),
+                    })).sort((a, b) => b.points - a.points);
+                    setBattleCountUsers(mk("attacks")); setBattleWinUsers(mk("wins")); setBattleDamageUsers(mk("damage"));
+                }
+            } catch { /* バトル未導入 */ }
             // ===== テスト合格数ランキング =====
             const { data: testProfileRows } = await supabase.from("profiles").select("*").eq("is_active", true);
             setTestUsers((testProfileRows || []).map((row: any) => {
@@ -549,7 +569,7 @@ export default function RankingPage() {
         loadRanking();
     }, [router]);
 
-    const currentList = activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "sankyu_sent" ? sankyuSentUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : activeTab === "maru_total" ? maruTotalUsers : activeTab === "job_rank" ? jobRankUsers : activeTab === "pay_forward" ? payForwardUsers : activeTab === "thinking" ? thinkingUsers : activeTab === "question" ? questionUsers : activeTab === "ippon" ? ipponUsers : teamRanking;
+    const currentList = activeTab === "battle_count" ? battleCountUsers : activeTab === "battle_wins" ? battleWinUsers : activeTab === "battle_damage" ? battleDamageUsers : activeTab === "total" ? users : activeTab === "weekly" ? weeklyUsers : activeTab === "streak" ? streakUsers : activeTab === "sankyu" ? sankyuUsers : activeTab === "sankyu_sent" ? sankyuSentUsers : activeTab === "challenge" ? challengeUsers : activeTab === "test" ? testUsers : activeTab === "advice" ? adviceUsers : activeTab === "learn" ? learnUsers : activeTab === "work" ? workUsers : activeTab === "kpi" ? kpiUsers : activeTab === "sales_month" ? salesMonthUsers : activeTab === "sales_total" ? salesTotalUsers : activeTab === "maru_total" ? maruTotalUsers : activeTab === "job_rank" ? jobRankUsers : activeTab === "pay_forward" ? payForwardUsers : activeTab === "thinking" ? thinkingUsers : activeTab === "question" ? questionUsers : activeTab === "ippon" ? ipponUsers : teamRanking;
 
     // ===== 順位変動（前回スナップショット）。テーブル未作成・履歴なしなら「—」のまま =====
     useEffect(() => {
@@ -607,7 +627,9 @@ export default function RankingPage() {
         if (activeTab === "sankyu") return `${user.points}個`;
         if (activeTab === "sankyu_sent") return `${user.points}個`;
         if (activeTab === "challenge") return `${user.points}個`;
-        if (activeTab === "thinking") return `${user.points}回`;
+        if (activeTab === "thinking" || activeTab === "battle_count") return `${user.points}回`;
+        if (activeTab === "battle_wins") return `${user.points}城`;
+        if (activeTab === "battle_damage") return `${user.points.toLocaleString()}ダメージ`;
         if (activeTab === "question") return `${user.points}件`;
         if (activeTab === "ippon") return `${user.points}IPPON`;
         if (activeTab === "test") return `${user.points}個`;
@@ -633,7 +655,9 @@ export default function RankingPage() {
         if (activeTab === "streak" || activeTab === "maru_total") return `${n}日`;
         if (["sankyu", "sankyu_sent", "challenge", "test", "learn", "work"].includes(activeTab)) return `${n}個`;
         if (["question", "advice", "pay_forward"].includes(activeTab)) return `${n}件`;
-        if (activeTab === "thinking") return `${n}回`;
+        if (activeTab === "thinking" || activeTab === "battle_count") return `${n}回`;
+        if (activeTab === "battle_wins") return `${n}城`;
+        if (activeTab === "battle_damage") return `${n.toLocaleString()}ダメージ`;
         if (activeTab === "ippon") return `${n}IPPON`;
         if (activeTab === "sales_month" || activeTab === "sales_total") return `${n.toLocaleString()}万円`;
         return `${n.toLocaleString()}pt`;
