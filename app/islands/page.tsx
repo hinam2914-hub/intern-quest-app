@@ -468,7 +468,7 @@ export default function IslandsGuildPage() {
                                 <span className="gx-cyc-el" style={{ borderColor: ELEMENTS.dark.color }}><ElIco k="dark" size={15} /><i>闇</i></span>
                                 <span style={{ fontSize: 10, fontWeight: 900, color: "#8b5cf6" }}>たがいに有利</span>
                             </div>
-                            <div className="gx-note">🛠️ 報酬ポイントの付与・ランク戦は、次のアップデートで有効になります（今は城HPや戦績は記録されません）</div>
+                            <div className="gx-note">🛠️ 攻撃すると相手に通知が届きます。報酬ポイントの付与とランク戦はまだありません</div>
                         </div>
                     )}
 

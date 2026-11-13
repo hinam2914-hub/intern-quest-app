@@ -51,6 +51,9 @@ export default function BattlePage() {
     const [castleHit, setCastleHit] = useState(false); // 城の被弾シェイク
     const [beam, setBeam] = useState<string | null>(null); // 属性エフェクトの色
     const idRef = useRef(1);
+    // サーバー保存モード：battle_server.sql が適用済みなら true（未適用の環境では従来の端末内デモで動く）
+    const [server, setServer] = useState(false);
+    const [shieldUntil, setShieldUntil] = useState<string | null>(null);
 
     const weapon = useMemo(() => WEAPONS.find((w) => w.key === weaponKey) || WEAPONS[0], [weaponKey]);
     const oppElement = useMemo(() => (oppId ? castleElementOf(oppId) : "fire"), [oppId]);
@@ -82,7 +85,16 @@ export default function BattlePage() {
                 };
             };
             setMe(mk(user.id)); setOpp(mk(oppId));
-            try { setAttacksUsed(Number(localStorage.getItem(DEMO_ATTACK_KEY(todayStr())) || 0)); } catch {}
+            // 城の状態をサーバーから取得（HP・シールド・今日の残り攻撃回数）。関数が無ければ端末内デモにフォールバック
+            const { data: st, error: stErr } = await supabase.rpc("battle_castle_state", { p_defender: oppId });
+            if (!stErr && st) {
+                setServer(true);
+                setHp(Number((st as any).hp));
+                setAttacksUsed(BATTLE_CONFIG.attacksPerDay - Number((st as any).attacks_left));
+                setShieldUntil((st as any).shield_until || null);
+            } else {
+                try { setAttacksUsed(Number(localStorage.getItem(DEMO_ATTACK_KEY(todayStr())) || 0)); } catch {}
+            }
             // 島探索ギルドの「装備して挑戦」から来た場合：?w=武器キー を事前選択
             try { const w = new URLSearchParams(window.location.search).get("w"); if (w && WEAPONS.some((x) => x.key === w)) setWeaponKey(w); } catch {}
             setLoading(false);
@@ -101,49 +113,66 @@ export default function BattlePage() {
         setTimeout(() => setBanners((b) => b.filter((x) => x.id !== id)), 1700);
     };
 
-    const useAttack = () => {
-        if (busy || victory || attacksLeft <= 0 || !opp) return;
-        setBusy(true);
-        setAttacking(true);
-        setBeam(ELEMENTS[weapon.element || "light"]?.color && weapon.element ? ELEMENTS[weapon.element].glow : "rgba(255,255,255,.85)");
+    const shieldActive = !!shieldUntil && new Date(shieldUntil).getTime() > Date.now();
 
-        const res = calcDamage(weapon, oppElement);
-        const dmg = boosted ? res.dmg * 2 : res.dmg;
-        const used = attacksUsed + 1;
-        setAttacksUsed(used);
-        try { localStorage.setItem(DEMO_ATTACK_KEY(todayStr()), String(used)); } catch {}
+    const useAttack = async () => {
+        if (busy || victory || attacksLeft <= 0 || !opp || shieldActive) return;
+        setBusy(true);
+
+        // ---- 結果を決める：サーバー保存モードはサーバーが計算（クライアントの値は使わない）／未適用環境は端末内デモ ----
+        let r: { dmg: number; mult: number; crit: boolean; skill: SkillKey | null; hits: number; next: number; used: number; boostedNow: boolean; burnTick: boolean };
+        if (server) {
+            const { data, error } = await supabase.rpc("battle_attack", { p_defender: oppId, p_weapon: weapon.key });
+            if (error || !data) {
+                const m = error?.message || "";
+                if (m.includes("SHIELD")) { pushBanner("この城は保護シールド中です", "#38bdf8", "🛡️"); setShieldUntil(new Date(Date.now() + 60000).toISOString()); }
+                else if (m.includes("DAILY_LIMIT")) { pushBanner("今日の攻撃回数を使い切りました", "#94a3b8", "🌙"); setAttacksUsed(BATTLE_CONFIG.attacksPerDay); }
+                else pushBanner("通信に失敗しました。もう一度お試しください", "#94a3b8", "⚠️");
+                setBusy(false);
+                return;
+            }
+            const d = data as any;
+            r = { dmg: d.damage, mult: Number(d.mult), crit: !!d.crit, skill: (d.skill as SkillKey) || null, hits: d.hits, next: d.hp_after, used: BATTLE_CONFIG.attacksPerDay - d.attacks_left, boostedNow: false, burnTick: false };
+            if (d.won) setShieldUntil(new Date(Date.now() + BATTLE_CONFIG.shieldHours * 3600 * 1000).toISOString());
+        } else {
+            const res = calcDamage(weapon, oppElement);
+            const dmg = boosted ? res.dmg * 2 : res.dmg;
+            const extra = burnLeft > 0 ? BATTLE_CONFIG.burnDamage : 0;
+            const used = attacksUsed + 1;
+            try { localStorage.setItem(DEMO_ATTACK_KEY(todayStr()), String(used)); } catch {}
+            r = { dmg, mult: res.mult, crit: res.crit, skill: res.skillFired, hits: res.hits, next: Math.max(0, hp - dmg - extra), used, boostedNow: boosted, burnTick: extra > 0 };
+        }
+
+        setAttacksUsed(r.used);
+        setAttacking(true);
+        setBeam(weapon.element ? ELEMENTS[weapon.element].glow : "rgba(255,255,255,.85)");
 
         // 演出：キャラ攻撃 → エフェクト → 着弾
         setTimeout(() => {
             setAttacking(false); setBeam(null); setCastleHit(true);
             setTimeout(() => setCastleHit(false), 450);
 
-            if (res.mult > 1) pushBanner(`属性有利！ダメージ×${BATTLE_CONFIG.multAdvantage.toFixed(1)}`, "#f472b6", ELEMENTS[weapon.element!].emoji);
-            if (res.mult < 1) pushBanner(`属性不利… ダメージ×${BATTLE_CONFIG.multDisadvantage.toFixed(1)}`, "#94a3b8", "💨");
-            if (boosted) { pushBanner("攻撃2倍 発動中！", "#f59e0b", "🌟"); setBoosted(false); }
-            if (res.crit) { pushBanner(`クリティカル！ -${dmg}`, "#ef4444", "💥"); pushPop(`-${dmg}`, "crit"); }
-            else pushPop(`-${dmg}`, "dmg");
-            if (res.skillFired && res.skillFired !== "double") pushBanner(`${SKILLS[res.skillFired].name} 発動！`, SKILLS[res.skillFired].color, SKILLS[res.skillFired].emoji);
-            if (res.hits === 2) pushBanner("2回攻撃！", "#64748b", "⚔️");
-            if (res.skillFired === "burn") setBurnLeft(BATTLE_CONFIG.burnTurns);
-            if (res.skillFired === "heal") pushPop(`+${BATTLE_CONFIG.healAmount}`, "heal");
-
-            // やけど継続ダメージ（デモ）
-            let extra = 0;
-            if (burnLeft > 0) {
-                extra = BATTLE_CONFIG.burnDamage;
+            if (r.mult > 1) pushBanner(`属性有利！ダメージ×${BATTLE_CONFIG.multAdvantage.toFixed(1)}`, "#f472b6", ELEMENTS[weapon.element!].emoji);
+            if (r.mult < 1) pushBanner(`属性不利… ダメージ×${BATTLE_CONFIG.multDisadvantage.toFixed(1)}`, "#94a3b8", "💨");
+            if (r.boostedNow) { pushBanner("攻撃2倍 発動中！", "#f59e0b", "🌟"); setBoosted(false); }
+            if (r.crit) { pushBanner(`クリティカル！ -${r.dmg}`, "#ef4444", "💥"); pushPop(`-${r.dmg}`, "crit"); }
+            else pushPop(`-${r.dmg}`, "dmg");
+            if (r.skill && r.skill !== "double") pushBanner(`${SKILLS[r.skill].name} 発動！`, SKILLS[r.skill].color, SKILLS[r.skill].emoji);
+            if (r.hits === 2) pushBanner("2回攻撃！", "#64748b", "⚔️");
+            if (r.skill === "burn" && !server) setBurnLeft(BATTLE_CONFIG.burnTurns);
+            if (r.skill === "heal") pushPop(`+${BATTLE_CONFIG.healAmount}`, "heal");
+            if (r.burnTick) {
                 setBurnLeft((t) => Math.max(0, t - 1));
                 setTimeout(() => pushPop(`-${BATTLE_CONFIG.burnDamage} やけど`, "burn"), 500);
             }
 
-            const next = Math.max(0, hp - dmg - extra);
-            setHp(next);
-            if (next <= 0) setTimeout(() => setVictory(true), 900);
-            // 攻略ミッション用の記録（この端末内のみ）：挑戦回数／勝利／連続勝利。回数を使い切って落とせなければ連勝リセット
+            setHp(r.next);
+            if (r.next <= 0) setTimeout(() => setVictory(true), 900);
+            // 攻略ミッション用の記録（この端末内）：挑戦回数／勝利／連続勝利。回数を使い切って落とせなければ連勝リセット
             const log = readBattleLog(oppId);
             log.attempts += 1;
-            if (next <= 0) { log.wins += 1; log.streak += 1; log.bestStreak = Math.max(log.bestStreak, log.streak); }
-            else if (used >= BATTLE_CONFIG.attacksPerDay) { log.streak = 0; }
+            if (r.next <= 0) { log.wins += 1; log.streak += 1; log.bestStreak = Math.max(log.bestStreak, log.streak); }
+            else if (r.used >= BATTLE_CONFIG.attacksPerDay) { log.streak = 0; }
             writeBattleLog(oppId, log);
             setTimeout(() => setBusy(false), 650); // アニメ後は必ず操作可能に戻す
         }, 620);
@@ -152,7 +181,7 @@ export default function BattlePage() {
     const previewSkill = (k: SkillKey) => {
         if (busy) return;
         const s = SKILLS[k];
-        if (k === "boost") { setBoosted(true); pushBanner("攻撃2倍！次の攻撃が強化される", s.color, s.emoji); return; }
+        if (k === "boost" && !server) { setBoosted(true); pushBanner("攻撃2倍！次の攻撃が強化される", s.color, s.emoji); return; }
         if (k === "heal") { pushBanner(`回復魔法！城のHPが${BATTLE_CONFIG.healAmount}回復`, s.color, s.emoji); return; }
         if (k === "guard") { pushBanner(`防御魔法発動！ダメージ${Math.round(BATTLE_CONFIG.guardCut * 100)}%カット`, s.color, s.emoji); return; }
         pushBanner(`${s.name}！ ${s.desc}`, s.color, s.emoji);
@@ -268,8 +297,10 @@ export default function BattlePage() {
                                 <div className="bt-win-chest">{CHEST_IMG ? <img src={CHEST_IMG} alt="" style={{ width: 150, height: 150, objectFit: "contain" }} /> : "🎁"}</div>
                                 <div className="bt-win-title">VICTORY!</div>
                                 <div className="bt-win-sub">城を落とした！</div>
-                                <div className="bt-win-reward">🪙 相手ポイントの{Math.round(BATTLE_CONFIG.lootRate * 100)}%を略奪<br />🛡️ 相手の城に{BATTLE_CONFIG.shieldHours}時間の保護シールド</div>
-                                <button className="bt-win-btn" onClick={resetDemo}>もう一度バトルする</button>
+                                <div className="bt-win-reward">🛡️ 相手の城に{BATTLE_CONFIG.shieldHours}時間の保護シールド{server && <><br />📣 {opp.name}さんに通知が届きました</>}</div>
+                                {server
+                                    ? <button className="bt-win-btn" onClick={() => router.push("/islands")}>島一覧へもどる</button>
+                                    : <button className="bt-win-btn" onClick={resetDemo}>もう一度バトルする</button>}
                             </div>
                         )}
                     </div>
@@ -285,9 +316,9 @@ export default function BattlePage() {
                     </div>
 
                     {/* 攻撃ボタン */}
-                    <button className={"bt-attack" + (busy || victory || attacksLeft <= 0 ? " bt-attack-off" : "")} onClick={useAttack}>
+                    <button className={"bt-attack" + (busy || victory || attacksLeft <= 0 || shieldActive ? " bt-attack-off" : "")} onClick={useAttack}>
                         ⚔️ 攻撃する
-                        <span>本日の残り {attacksLeft}/{BATTLE_CONFIG.attacksPerDay} 回{attacksLeft <= 0 && "（また明日！）"}</span>
+                        <span>{shieldActive && !victory ? "🛡️ この城は保護シールド中です" : <>本日の残り {attacksLeft}/{BATTLE_CONFIG.attacksPerDay} 回{attacksLeft <= 0 && "（また明日！）"}</>}</span>
                     </button>
                 </main>
 
