@@ -142,3 +142,15 @@ export const CHEST_IMG: string | null = "/battle/chest.webp";
 
 /** Phase 1 デモ：1日の攻撃回数を localStorage で仮管理（Phase 2 でサーバー検証に置き換え） */
 export const DEMO_ATTACK_KEY = (date: string) => `iq_battle_demo_attacks_${date}`;
+
+/** 島ごとの挑戦記録（この端末のブラウザ内のみ・DB保存なし）。攻略ミッションの進捗表示に使う。
+ *  サーバー側の戦績テーブルが承認・実装されたら、この読み書きをそちらへ置き換える。 */
+export type BattleLog = { attempts: number; wins: number; streak: number; bestStreak: number };
+export const BATTLE_LOG_KEY = (oppId: string) => `iq_battle_log_${oppId}`;
+export function readBattleLog(oppId: string): BattleLog {
+    const empty = { attempts: 0, wins: 0, streak: 0, bestStreak: 0 };
+    try { return { ...empty, ...(JSON.parse(localStorage.getItem(BATTLE_LOG_KEY(oppId)) || "{}")) }; } catch { return empty; }
+}
+export function writeBattleLog(oppId: string, log: BattleLog) {
+    try { localStorage.setItem(BATTLE_LOG_KEY(oppId), JSON.stringify(log)); } catch {}
+}

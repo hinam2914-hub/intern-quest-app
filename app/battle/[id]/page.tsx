@@ -16,7 +16,7 @@ import AvatarLayered from "../../components/AvatarLayered";
 import type { AvatarConfig } from "../../lib/avatar/catalog";
 import {
     BATTLE_CONFIG, ELEMENTS, ELEMENT_ORDER, ADVANTAGE, WEAPONS, SKILLS, CHEST_IMG,
-    calcDamage, castleElementOf, elementMultiplier, DEMO_ATTACK_KEY,
+    calcDamage, castleElementOf, elementMultiplier, DEMO_ATTACK_KEY, readBattleLog, writeBattleLog,
     type WeaponDef, type SkillKey,
 } from "../../lib/battle";
 
@@ -83,6 +83,8 @@ export default function BattlePage() {
             };
             setMe(mk(user.id)); setOpp(mk(oppId));
             try { setAttacksUsed(Number(localStorage.getItem(DEMO_ATTACK_KEY(todayStr())) || 0)); } catch {}
+            // 島探索ギルドの「装備して挑戦」から来た場合：?w=武器キー を事前選択
+            try { const w = new URLSearchParams(window.location.search).get("w"); if (w && WEAPONS.some((x) => x.key === w)) setWeaponKey(w); } catch {}
             setLoading(false);
         };
         load();
@@ -137,6 +139,12 @@ export default function BattlePage() {
             const next = Math.max(0, hp - dmg - extra);
             setHp(next);
             if (next <= 0) setTimeout(() => setVictory(true), 900);
+            // 攻略ミッション用の記録（この端末内のみ）：挑戦回数／勝利／連続勝利。回数を使い切って落とせなければ連勝リセット
+            const log = readBattleLog(oppId);
+            log.attempts += 1;
+            if (next <= 0) { log.wins += 1; log.streak += 1; log.bestStreak = Math.max(log.bestStreak, log.streak); }
+            else if (used >= BATTLE_CONFIG.attacksPerDay) { log.streak = 0; }
+            writeBattleLog(oppId, log);
             setTimeout(() => setBusy(false), 650); // アニメ後は必ず操作可能に戻す
         }, 620);
     };

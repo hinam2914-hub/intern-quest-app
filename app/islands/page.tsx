@@ -16,7 +16,7 @@ import { JOBS, type JobKey } from "../onboarding/job/page";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import {
     BATTLE_CONFIG, ELEMENTS, ADVANTAGE, WEAPONS, SKILLS,
-    castleElementOf, elementMultiplier, type ElementKey, type WeaponDef,
+    castleElementOf, elementMultiplier, readBattleLog, CHEST_IMG, type ElementKey, type WeaponDef, type BattleLog,
 } from "../lib/battle";
 
 type GIsland = {
@@ -84,6 +84,9 @@ export default function IslandsGuildPage() {
     const [doneChId, setDoneChId] = useState<Set<string>>(new Set());
     const [target, setTarget] = useState<{ id: string; name: string } | null>(null);
     const centerRef = useRef<HTMLDivElement>(null);
+    const stageRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(1);                 // 中央の島の拡大率（パネル幅に追従）
+    const [log, setLog] = useState<BattleLog>({ attempts: 0, wins: 0, streak: 0, bestStreak: 0 });
 
     useEffect(() => {
         const load = async () => {
@@ -131,6 +134,37 @@ export default function IslandsGuildPage() {
         load();
     }, [router]);
 
+    // クエストから戻ってきたとき：所持ポイント・達成済みチャレンジ・挑戦記録を取り直す
+    useEffect(() => {
+        if (!myId) return;
+        const refresh = async () => {
+            if (document.visibilityState !== "visible") return;
+            const [{ data: pt }, { data: subs }] = await Promise.all([
+                supabase.from("user_points").select("points").eq("id", myId).maybeSingle(),
+                supabase.from("challenge_submissions").select("challenge_id, status").eq("user_id", myId),
+            ]);
+            if (pt) setMyPoints((pt as any).points || 0);
+            if (subs) setDoneChId(new Set((subs as any[]).filter((x) => x.status === "approved").map((x) => x.challenge_id)));
+            if (selId) setLog(readBattleLog(selId));
+        };
+        window.addEventListener("focus", refresh);
+        document.addEventListener("visibilitychange", refresh);
+        return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
+    }, [myId, selId]);
+
+    // 選択中の島の挑戦記録（この端末内）
+    useEffect(() => { if (selId) setLog(readBattleLog(selId)); }, [selId]);
+
+    // 中央の島をパネル幅の約86%まで拡大（基準幅420px）
+    useEffect(() => {
+        const el = stageRef.current;
+        if (!el) return;
+        const fit = () => setScale(Math.max(0.8, Math.min(1.65, (el.clientWidth * 0.86) / 420)));
+        fit();
+        const ro = new ResizeObserver(fit); ro.observe(el);
+        return () => ro.disconnect();
+    }, [loading, selId]);
+
     const filtered = useMemo(() => {
         let l = islands.filter((i) => i.name.includes(search));
         if (fl === "battle") l = l.filter((i) => i.id !== myId);
@@ -160,6 +194,23 @@ export default function IslandsGuildPage() {
         try { localStorage.setItem(TARGET_KEY, JSON.stringify(t)); } catch {}
     };
     const clearTarget = () => { setTarget(null); try { localStorage.removeItem(TARGET_KEY); } catch {} };
+    const stepSel = (d: number) => {
+        if (!filtered.length) return;
+        const i = filtered.findIndex((x) => x.id === selId);
+        setSelId(filtered[(i + d + filtered.length) % filtered.length].id);
+    };
+
+    // ===== この島の攻略ミッション（進捗は端末内の挑戦記録。報酬制度は未実装のため付与しない） =====
+    const m4 = [log.attempts >= 1, log.attempts >= 3, log.wins >= 1, log.bestStreak >= 3];
+    const missions = [
+        { icon: "⚔️", label: "城に1回挑戦", done: m4[0], prog: `${Math.min(log.attempts, 1)}/1` },
+        { icon: "⚔️", label: "3回挑戦", done: m4[1], prog: `${Math.min(log.attempts, 3)}/3` },
+        { icon: "🏆", label: "1回勝利", done: m4[2], prog: `${Math.min(log.wins, 1)}/1` },
+        { icon: "🔥", label: "連続勝利（3回）", done: m4[3], prog: `${Math.min(log.bestStreak, 3)}/3` },
+        { icon: "chest", label: "完全攻略", done: m4.every(Boolean), prog: `${m4.filter(Boolean).length}/4` },
+    ];
+    const nextMission = missions.findIndex((m) => !m.done);
+    const missionPct = (missions.filter((m) => m.done).length / missions.length) * 100;
 
     // ===== 攻略情報（battle.ts 準拠） =====
     const guide = useMemo(() => {
@@ -280,8 +331,14 @@ export default function IslandsGuildPage() {
                             </div>
 
                             {/* HOMEと同じ島（DayIslandScene＝育成状態がそのまま反映される） */}
-                            <div className="gx-island">
-                                <DayIslandScene config={sel.islandCfg} totalEarned={sel.totalEarned} width="min(92%, 400px)" />
+                            <div className="gx-stage" ref={stageRef}>
+                                <div className="gx-glow" />
+                                <div className="gx-cloud gx-cloud-a" /><div className="gx-cloud gx-cloud-b" /><div className="gx-cloud gx-cloud-c" />
+                                <button className="gx-arrow gx-arrow-l" onClick={() => stepSel(-1)} aria-label="前の島">‹</button>
+                                <div className="gx-island" style={{ zoom: scale } as any}>
+                                    <DayIslandScene key={sel.id} config={sel.islandCfg} totalEarned={sel.totalEarned} width={420} />
+                                </div>
+                                <button className="gx-arrow gx-arrow-r" onClick={() => stepSel(1)} aria-label="次の島">›</button>
                             </div>
 
                             <div className="gx-btns">
@@ -291,6 +348,23 @@ export default function IslandsGuildPage() {
                                     ? <button className="gx-btn gx-btn-target gx-btn-target-on" onClick={clearTarget}><img src={GUILD_IMG.target} alt="" style={{ width: 18, height: 18, verticalAlign: "-3px" }} /> 攻略目標 設定中<span>タップで解除</span></button>
                                     : <button className="gx-btn gx-btn-target" onClick={saveTarget}><img src={GUILD_IMG.target} alt="" style={{ width: 18, height: 18, verticalAlign: "-3px" }} /> 攻略目標にする<span>この端末に保存</span></button>)}
                             </div>
+
+                            {!isSelf && (
+                                <div className="gx-mission">
+                                    <div className="gx-mission-title">⚜️ この島の攻略ミッション</div>
+                                    <div className="gx-mline">
+                                        <div className="gx-mline-bar"><div style={{ width: missionPct + "%" }} /></div>
+                                        {missions.map((m, idx) => (
+                                            <div key={m.label} className={"gx-mstep" + (m.done ? " gx-mstep-done" : idx === nextMission ? " gx-mstep-next" : "")}>
+                                                <div className="gx-mdot">{m.done ? "✓" : m.icon === "chest" ? (CHEST_IMG ? <img src={CHEST_IMG} alt="" /> : "🎁") : m.icon}</div>
+                                                <div className="gx-mlabel">{m.label}</div>
+                                                <div className="gx-mprog">{m.done ? "達成！" : m.prog}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="gx-mnote">進捗はこの端末でのバトル記録です。ミッション報酬はまだ設定されていません（報酬制度は準備中）</div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </main>
@@ -298,7 +372,7 @@ export default function IslandsGuildPage() {
                 {/* ===== 右：攻略情報タブ ===== */}
                 <aside className="gx-right">
                     <div className="gx-tabs">
-                        {([["guide", "攻略情報"], ["battle", "バトル情報"], ["growth", "成長状況"], ["quest", "クエスト提案"]] as const).map(([k, l]) => (
+                        {([["guide", "攻略情報"], ["battle", "バトル情報"], ["growth", "成長状況"], ["quest", "クエスト"]] as const).map(([k, l]) => (
                             <button key={k} className={"gx-tab" + (tab === k ? " gx-tab-on" : "")} onClick={() => setTab(k)}>{l}</button>
                         ))}
                     </div>
@@ -307,12 +381,13 @@ export default function IslandsGuildPage() {
                         <div className="gx-panel">
                             <div className="gx-sec">🧭 攻略サマリー</div>
                             <div className="gx-rows">
-                                <div className="gx-row"><span>攻略難易度</span><b>{"★".repeat(guide.dif.star)}{"☆".repeat(5 - guide.dif.star)} {guide.dif.label}</b></div>
+                                <div className="gx-row"><span>攻略難易度</span><b><span className="gx-stars">{"★".repeat(guide.dif.star)}<i>{"★".repeat(5 - guide.dif.star)}</i></span> <em className="gx-dif">{guide.dif.label}</em></b></div>
+                                <div className="gx-row"><span>バトルランク</span><b><img src={GUILD_IMG.rankNone} alt="" style={{ width: 18, height: 18, verticalAlign: "-4px" }} /> 未ランク</b></div>
                                 <div className="gx-row"><span>城の属性</span><b style={{ color: ELEMENTS[sel.element].color }}><ElIco k={sel.element} size={14} /> {ELEMENTS[sel.element].name}</b></div>
                                 <div className="gx-row"><span>弱点属性</span><b style={{ color: ELEMENTS[guide.weak].color }}><ElIco k={guide.weak} size={14} /> {ELEMENTS[guide.weak].name}（×{BATTLE_CONFIG.multAdvantage.toFixed(1)}）</b></div>
                                 {guide.resist && <div className="gx-row"><span>通りにくい属性</span><b style={{ color: "#94a3b8" }}><ElIco k={guide.resist} size={14} /> {ELEMENTS[guide.resist].name}（×{BATTLE_CONFIG.multDisadvantage.toFixed(1)}）</b></div>}
                                 <div className="gx-row"><span>城HP</span><b>{BATTLE_CONFIG.castleBaseHp}</b></div>
-                                <div className="gx-row"><span>推奨武器</span><b>{guide.recs[0].w.name}</b></div>
+                                <div className="gx-row"><span>推奨武器</span><b><WIco w={guide.recs[0].w} size={20} /> {guide.recs[0].w.name}</b></div>
                             </div>
 
                             <div className="gx-sec" style={{ marginTop: 14 }}>⚔️ おすすめ武器</div>
@@ -322,12 +397,34 @@ export default function IslandsGuildPage() {
                                     <span className="gx-wmid">
                                         <span className="gx-wname">{r.w.name}{idx === 0 && <i>イチオシ</i>}</span>
                                         <span className="gx-wsub">攻撃 {r.w.atk}・{r.w.element ? <span style={{ color: ELEMENTS[r.w.element].color, fontWeight: 900 }}><ElIco k={r.w.element} size={11} /> {ELEMENTS[r.w.element].name}</span> : "無属性"}{r.w.skill && <>・{SKILLS[r.w.skill].name}</>}</span>
-                                        <span className="gx-wreason">{r.mult > 1 ? `属性有利で期待ダメージ${r.dmg}` : r.mult < 1 ? "属性不利（非推奨）" : `安定の期待ダメージ${r.dmg}`}</span>
+                                        <span className="gx-wreason">{r.mult > 1 ? `属性有利で期待ダメージ${r.dmg}` : r.mult < 1 ? `属性不利・期待ダメージ${r.dmg}` : `安定の期待ダメージ${r.dmg}`}<em className="gx-own">使用可能</em></span>
                                     </span>
                                     <span className={"gx-wmult" + (r.mult > 1 ? " gx-wmult-adv" : r.mult < 1 ? " gx-wmult-dis" : "")}>×{r.mult.toFixed(1)}</span>
                                 </div>
                             ))}
-                            <div className="gx-note">✅ 武器はすべて使用可能です（武器ショップ・バトルコインは今後のアップデートで導入予定）</div>
+
+                            <div className="gx-sec" style={{ marginTop: 14 }}>🗝️ この武器の入手方法</div>
+                            <div className="gx-get">
+                                <WIco w={guide.recs[0].w} size={44} />
+                                <span className="gx-wmid">
+                                    <span className="gx-wname">{guide.recs[0].w.name}</span>
+                                    <span className="gx-wsub">いまは全員が使用できます（購入不要）</span>
+                                    <span className="gx-getpt">🪙 所持ポイント <b>{myPoints.toLocaleString()}pt</b></span>
+                                </span>
+                                {!isSelf && <button className="gx-qgo" onClick={() => router.push(`/battle/${sel.id}?w=${guide.recs[0].w.key}`)}>装備して挑戦</button>}
+                            </div>
+                            <div className="gx-note">🛠️ 武器ショップ（ポイントで購入）はまだありません。導入時にここへ「必要ポイント・不足ポイント」が表示されます</div>
+
+                            <div className="gx-sec" style={{ marginTop: 14 }}>📜 関連クエスト（ポイント獲得）</div>
+                            {questRecs.map((c) => (
+                                <button key={c.id} className="gx-rq" onClick={() => router.push("/challenge")}>
+                                    <span className="gx-qicon">{c.icon || "🏆"}</span>
+                                    <span className="gx-rq-name">{c.title}</span>
+                                    <span className="gx-rq-pt">🪙 +{c.points}pt</span><span className="gx-rq-go">›</span>
+                                </button>
+                            ))}
+                            <button className="gx-rq" onClick={() => router.push("/thinking")}><span className="gx-qicon">🧠</span><span className="gx-rq-name">思考の試練（1問ごと）</span><span className="gx-rq-pt">🪙 +5pt</span><span className="gx-rq-go">›</span></button>
+                            <button className="gx-rq" onClick={() => router.push("/learn")}><span className="gx-qicon">📚</span><span className="gx-rq-name">魔法の図書館（完了ごと）</span><span className="gx-rq-pt">🪙 +2pt</span><span className="gx-rq-go">›</span></button>
 
                             <div className="gx-sec" style={{ marginTop: 14 }}>💡 攻略アドバイス</div>
                             <ul className="gx-advice">
@@ -451,7 +548,7 @@ const CSS = `
 .gx-list::-webkit-scrollbar-thumb{background:rgba(217,164,65,.5);border-radius:999px}
 .gx-card{display:flex;align-items:center;gap:9px;background:rgba(255,249,237,.96);border:2px solid #e7cf96;border-radius:15px;padding:9px 10px;cursor:pointer;text-align:left;transition:transform .13s,border-color .13s;width:100%;box-sizing:border-box}
 .gx-card:hover{transform:translateY(-2px)}
-.gx-card-on{border-color:#1454B8;box-shadow:0 0 0 2px rgba(20,84,184,.3),0 6px 14px rgba(16,47,112,.2)}
+.gx-card-on{border-color:#2f7bf0;background:linear-gradient(180deg,#f3f8ff,#e6f0ff);box-shadow:0 0 0 3px rgba(47,123,240,.35),0 0 18px rgba(47,123,240,.45)}
 .gx-card-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .gx-card-name{font-size:13px;font-weight:900;color:#1f2a44;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gx-you{font-style:normal;margin-left:5px;font-size:9px;font-weight:900;color:#15803d;background:#dcfce7;border-radius:999px;padding:1px 7px}
@@ -474,10 +571,37 @@ const CSS = `
 .gx-pill-job{background:#eff6ff;border-color:#93c5fd;color:#1454B8}
 .gx-pill-rank{background:#f1f5f9;border-color:#cbd5e1;color:#64748b}
 .gx-sel-meta{margin-top:7px;font-size:11.5px;font-weight:800;color:#6b5a33}
-.gx-island{margin-top:4px;display:flex;justify-content:center}
-.gx-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px}
-.gx-btn{min-width:150px;padding:12px 18px;border-radius:999px;border:2.5px solid #F5D77E;color:#fff;font-size:14.5px;font-weight:900;cursor:pointer;transition:transform .13s;text-align:center}
-.gx-btn:hover{transform:translateY(-2px)}
+.gx-stage{position:relative;margin-top:6px;padding:26px 0 46px;display:flex;justify-content:center;align-items:flex-end;overflow:hidden;border-radius:16px}
+.gx-island{position:relative;z-index:3;width:420px}
+.gx-glow{position:absolute;left:50%;top:46%;width:86%;aspect-ratio:1.5;transform:translate(-50%,-50%);background:radial-gradient(ellipse,rgba(255,244,200,.85) 0%,rgba(255,244,200,.35) 38%,transparent 68%);z-index:1;pointer-events:none}
+.gx-cloud{position:absolute;z-index:2;background:radial-gradient(ellipse,#fff 0%,rgba(255,255,255,.85) 45%,transparent 72%);border-radius:50%;pointer-events:none;filter:blur(2px)}
+.gx-cloud-a{left:4%;bottom:2%;width:46%;height:74px}
+.gx-cloud-b{right:3%;bottom:0;width:50%;height:84px}
+.gx-cloud-c{left:28%;bottom:-14px;width:44%;height:70px}
+.gx-arrow{position:absolute;top:44%;z-index:5;width:38px;height:38px;border-radius:50%;border:2px solid #D9A441;background:rgba(255,249,237,.95);color:#a16207;font-size:22px;font-weight:900;line-height:1;cursor:pointer;box-shadow:0 3px 10px rgba(16,47,112,.25)}
+.gx-arrow:hover{background:#fff;transform:scale(1.08)}
+.gx-arrow-l{left:6px}.gx-arrow-r{right:6px}
+.gx-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.gx-mission{margin-top:16px;background:rgba(255,255,255,.72);border:2px solid #e7cf96;border-radius:16px;padding:12px 12px 10px}
+.gx-mission-title{display:table;margin:-26px auto 10px;background:linear-gradient(180deg,#2f6ad1,#1454B8);border:2px solid #F5D77E;border-radius:999px;padding:5px 20px;color:#fff;font-size:13px;font-weight:900;box-shadow:0 3px 10px rgba(16,47,112,.3)}
+.gx-mline{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.gx-mline-bar{position:absolute;left:10%;right:10%;top:19px;height:7px;border-radius:999px;background:#e7dcc0;overflow:hidden}
+.gx-mline-bar div{height:100%;background:linear-gradient(90deg,#7a3fd0,#2f6ad1);border-radius:999px;transition:width .6s ease}
+.gx-mstep{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px}
+.gx-mdot{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;background:#fff;border:3px solid #d9cfb3;box-shadow:0 2px 6px rgba(16,47,112,.15)}
+.gx-mdot img{width:34px;height:34px;object-fit:contain}
+.gx-mstep-done .gx-mdot{background:linear-gradient(180deg,#9b6ae0,#7a3fd0);border-color:#F5D77E;color:#fff;font-weight:900}
+.gx-mstep-next .gx-mdot{border-color:#1454B8;box-shadow:0 0 0 4px rgba(20,84,184,.22),0 2px 6px rgba(16,47,112,.2);animation:gxPulse 1.6s ease-in-out infinite}
+@keyframes gxPulse{50%{box-shadow:0 0 0 8px rgba(20,84,184,.08),0 2px 6px rgba(16,47,112,.2)}}
+.gx-mlabel{font-size:10.5px;font-weight:900;color:#1f2a44;line-height:1.3}
+.gx-mprog{font-size:10px;font-weight:900;color:#8b7b4f}
+.gx-mstep-done .gx-mprog{color:#7a3fd0}
+.gx-mstep-next .gx-mprog{color:#1454B8}
+.gx-mnote{margin-top:8px;text-align:center;font-size:9.5px;font-weight:800;color:#8b7b4f}
+.gx-btn{position:relative;overflow:hidden;flex:1;min-width:150px;max-width:230px;padding:14px 16px 12px;border-radius:18px;border:3px solid #F5D77E;color:#fff;font-size:16px;font-weight:900;cursor:pointer;transition:transform .13s,filter .13s;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.gx-btn::before{content:"";position:absolute;left:6%;right:6%;top:4px;height:42%;border-radius:14px 14px 40% 40%;background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0));pointer-events:none}
+.gx-btn:hover{transform:translateY(-3px);filter:brightness(1.08)}
+.gx-btn:active{transform:translateY(1px)}
 .gx-btn span{display:block;font-size:10px;font-weight:800;opacity:.85;margin-top:1px}
 .gx-btn-visit{background:linear-gradient(180deg,#2f6ad1,#1454B8);box-shadow:0 6px 16px rgba(16,47,112,.4)}
 .gx-btn-battle{background:linear-gradient(180deg,#ef4444,#b91c1c);box-shadow:0 6px 16px rgba(185,28,28,.4)}
@@ -500,6 +624,18 @@ const CSS = `
 .gx-wmult{font-size:13px;font-weight:900;color:#64748b;flex-shrink:0}
 .gx-wmult-adv{color:#dc2626}
 .gx-wmult-dis{color:#94a3b8}
+.gx-stars{color:#f59e0b;letter-spacing:1px;font-size:14px}
+.gx-stars i{font-style:normal;color:#d9cfb3}
+.gx-dif{font-style:normal;font-size:10px;font-weight:900;color:#fff;background:linear-gradient(180deg,#9b6ae0,#7a3fd0);border-radius:999px;padding:2px 9px;margin-left:4px}
+.gx-own{font-style:normal;margin-left:6px;font-size:9px;font-weight:900;color:#1454B8;background:#eff6ff;border:1px solid #93c5fd;border-radius:999px;padding:1px 7px}
+.gx-get{display:flex;align-items:center;gap:9px;background:linear-gradient(180deg,#fffdf5,#fdf6e3);border:2px solid #D9A441;border-radius:13px;padding:10px 11px}
+.gx-getpt{font-size:10.5px;font-weight:800;color:#6b5a33}
+.gx-getpt b{color:#a16207;font-size:12.5px}
+.gx-rq{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;background:#fff;border:1.5px solid #e7cf96;border-radius:12px;padding:8px 10px;margin-bottom:6px;cursor:pointer;text-align:left}
+.gx-rq:hover{border-color:#1454B8}
+.gx-rq-name{flex:1;min-width:0;font-size:11.5px;font-weight:900;color:#1f2a44;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gx-rq-pt{font-size:11.5px;font-weight:900;color:#b45309;flex-shrink:0}
+.gx-rq-go{color:#dc2626;font-weight:900;flex-shrink:0}
 .gx-note{margin-top:9px;background:rgba(219,234,254,.6);border:1.5px solid #93c5fd;border-radius:11px;padding:8px 11px;font-size:10.5px;font-weight:800;color:#1e3a8a;line-height:1.65}
 .gx-advice{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
 .gx-advice li{font-size:11.5px;font-weight:800;color:#5b4a23;line-height:1.6}
@@ -532,6 +668,9 @@ const CSS = `
   .gx-card{min-width:235px;scroll-snap-align:start}
   .gx-title h1{font-size:20px}
   .gx-sel-ava{width:76px}
-  .gx-btn{flex:1;min-width:130px;font-size:13px}
+  .gx-btn{min-width:130px;max-width:none;font-size:14px}
+  .gx-mlabel{font-size:9.5px}
+  .gx-mdot{width:38px;height:38px;font-size:16px}
+  .gx-mline-bar{top:16px}
 }
 `;
