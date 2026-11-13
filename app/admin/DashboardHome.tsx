@@ -2,6 +2,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { calculateSibyl, calculateDepartmentMatch, isExcluded } from "../lib/sibyl";
+import { ADMIN_ICONS } from "./adminTheme";
+
+/** ChatGPT素材アイコン（未納品キーは絵文字で代替） */
+const Ico = ({ k, emoji, size = 30 }: { k: string; emoji: string; size?: number }) =>
+  ADMIN_ICONS[k]
+    ? <img src={ADMIN_ICONS[k]!} alt="" style={{ width: size, height: size, objectFit: "contain", verticalAlign: "middle" }} />
+    : <span style={{ fontSize: size * 0.8 }}>{emoji}</span>;
 
 /* ===== 判定しきい値（調整はここ） ===== */
 const TH = {
@@ -20,60 +27,6 @@ type Stats = {
   pendingMentor?: number; pendingMtg?: number; pendingTest?: number; pendingRecruit?: number; pendingChallenge?: number; pendingRequest?: number; pendingQuestion?: number; pendingMgrTest?: number; pendingLearn?: number; pendingJourney?: number; pendingRookie?: number; pendingFb?: number; pendingSkill?: number;
 };
 type Card = { key: string; icon: string; title: string; desc?: string; badgeKey?: keyof Stats };
-
-const QUICK: Card[] = [
-  { key: "users", icon: "🧑", title: "ユーザー一覧", desc: "メンバーの詳細と管理" },
-  { key: "teams", icon: "👨‍👩‍👧", title: "チーム管理", desc: "チーム編成" },
-  { key: "reports", icon: "📋", title: "日報", desc: "確認と評価", badgeKey: "pendingCount" },
-  { key: "schedule", icon: "🗓️", title: "スケジュール", desc: "予定の管理" },
-  { key: "task_management", icon: "✅", title: "タスク管理", desc: "配布と確認", badgeKey: "pendingTask" },
-  { key: "recruit", icon: "🔥", title: "HRキャンペーン承認", desc: "採用アクション承認", badgeKey: "pendingRecruit" },
-  { key: "kpi", icon: "🎯", title: "KPI設定", desc: "KPI項目の設定" },
-  { key: "monthly_kpi", icon: "📈", title: "月次KPI", desc: "月次の進捗" },
-  { key: "sibyl", icon: "🔮", title: "シビュラ", desc: "AI適性分析" },
-  { key: "course", icon: "🎓", title: "講座スタンプ", desc: "受講・講師の承認" },
-  { key: "required_check", icon: "📌", title: "必修チェック", desc: "宿題の完了状況・未提出者" },
-  { key: "rookie", icon: "🏅", title: "一人前チャレンジ", desc: "新人の進捗・営業研修OK判定", badgeKey: "pendingRookie" },
-  { key: "fb_requests", icon: "💌", title: "FBリクエスト", desc: "FBを求めている日報・クエスト発行", badgeKey: "pendingFb" },
-  { key: "skill_check", icon: "🗺️", title: "スキル認定", desc: "SKILL BOARDのメンター認定・自己申告の審査", badgeKey: "pendingSkill" },
-  { key: "journey", icon: "🗺️", title: "冒険マップ進捗", desc: "STEP1〜5の申請承認", badgeKey: "pendingJourney" },
-  { key: "script_practice", icon: "🎤", title: "スクリプト練習", desc: "練習進捗・テスト合格チェック" },
-  { key: "shop", icon: "🛍", title: "ショップ管理", desc: "景品・アバター・島の購入承認", badgeKey: "pendingShop" },
-  { key: "sibyl_guide", icon: "📖", title: "シビュラの見方", desc: "5軸・ランク・配属ルール" },
-];
-
-const OTHERS: { label: string; cards: Card[] }[] = [
-  { label: "承認・申請", cards: [
-    { key: "requests", icon: "📮", title: "各種申請", badgeKey: "pendingRequest" },
-    { key: "mtg_report", icon: "📝", title: "MTG報告書", badgeKey: "pendingMtg" },
-    { key: "mentor_report", icon: "🧑‍🏫", title: "ペイフォワード", badgeKey: "pendingMentor" },
-    { key: "advice", icon: "💡", title: "アドバイス", badgeKey: "pendingAdvice" },
-    { key: "kkc", icon: "🧩", title: "KKC", badgeKey: "pendingKkc" },
-    { key: "tests", icon: "🧪", title: "テスト結果", badgeKey: "pendingTest" },
-    { key: "report_eval", icon: "⭐", title: "日報評価" },
-  ]},
-  { label: "コミュニティ", cards: [
-    { key: "announce", icon: "📢", title: "お知らせ" },
-    { key: "thinking_manage", icon: "🧠", title: "思考クエスト" },
-    { key: "survey", icon: "📊", title: "アンケート" },
-    { key: "medaka_manage", icon: "🐟", title: "メダカBOX", badgeKey: "pendingMedaka" },
-    { key: "thanks_history", icon: "💌", title: "サンキュー" },
-    { key: "badge", icon: "🎖️", title: "バッジ" },
-  ]},
-  { label: "コンテンツ・データ", cards: [
-    { key: "contents", icon: "🎓", title: "学習コンテンツ", badgeKey: "pendingLearn" },
-    { key: "resources", icon: "🗂️", title: "資料管理" },
-    { key: "wiki", icon: "📖", title: "用語集" },
-    { key: "shop", icon: "🛍️", title: "ショップ" },
-    { key: "career", icon: "🧭", title: "就活ボックス" },
-    { key: "companies", icon: "🏢", title: "企業管理" },
-    { key: "es", icon: "🧾", title: "総合ES" },
-    { key: "roadmap", icon: "🗺️", title: "ロードマップ" },
-    { key: "challenges", icon: "🏔️", title: "チャレンジ", badgeKey: "pendingChallenge" },
-    { key: "talent_archive", icon: "📇", title: "人材アーカイブ" },
-    { key: "sales", icon: "💰", title: "売上管理" },
-  ]},
-];
 
 export default function DashboardHome({ stats, onNavigate, notSubmittedList = [] }: { stats: Stats; onNavigate: (key: string) => void; notSubmittedList?: { name: string; department_id: string | null }[] }) {
   const [sibyl, setSibyl] = useState({ health: 0, hard: 0, risk: 0, mismatch: 0, leader: 0, total: 0 });
@@ -209,203 +162,307 @@ export default function DashboardHome({ stats, onNavigate, notSubmittedList = []
   const healthColor = sibyl.health >= 80 ? "#34d399" : sibyl.health >= 60 ? "#fbbf24" : "#f87171";
   const circ = 2 * Math.PI * 52;
 
+  // ===== 王国統括司令室リデザイン：以下は表示のみ（集計ロジックは上の既存コードのまま） =====
+  const [anns, setAnns] = useState<{ id: string; title: string }[]>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from("announcements").select("id,title").eq("is_active", true).order("created_at", { ascending: false }).limit(3);
+        setAnns((data || []).map((a: any) => ({ id: a.id, title: a.title })));
+      } catch { /* お知らせ機能が無い場合は空表示 */ }
+    })();
+  }, []);
+
+  // 本日の王国状況（既存の値をそのまま表示）
+  const kpis = [
+    { label: "日報未提出", value: stats.notSubmitted, unit: "人", icon: "📋", ik: "kpi_report", tone: stats.notSubmitted > 0 ? "red" : "green", onClick: () => setShowNotSubmitted(true) },
+    { label: "昨日の提出率", value: stats.submitRate, unit: "%", icon: "📊", ik: "kpi_rate", tone: "blue", onClick: () => onNavigate("reports") },
+    { label: "育成優先", value: loading ? null : sibyl.hard, unit: "人", icon: "🌱", ik: "kpi_grow", tone: "pink", onClick: () => onNavigate("sibyl") },
+    { label: "配置変更推奨", value: loading ? null : sibyl.mismatch, unit: "人", icon: "🔄", ik: "kpi_move", tone: "gold", onClick: () => onNavigate("sibyl") },
+  ];
+
+  // 本日の優先対応（既存の判定結果のみ使用・新ロジックなし）
+  const priorities: { pr: "高" | "中" | "低"; icon: string; title: string; desc: string; onClick: () => void }[] = [];
+  if (!loading) {
+    if (stats.notSubmitted > 0) priorities.push({ pr: "高", icon: "📋", title: "日報未提出のフォロー", desc: `${stats.notSubmitted}名に提出を声かけ`, onClick: () => setShowNotSubmitted(true) });
+    if (sibyl.mismatch > 0) priorities.push({ pr: "高", icon: "🔄", title: "配置変更推奨の確認", desc: `${sibyl.mismatch}名の配置変更を検討`, onClick: () => onNavigate("sibyl") });
+    if (sibyl.hard > 0) priorities.push({ pr: "中", icon: "🌱", title: "育成優先メンバーのフォロー", desc: `${sibyl.hard}名の育成計画を確認`, onClick: () => onNavigate("sibyl") });
+    if (sibyl.leader > 0) priorities.push({ pr: "低", icon: "👑", title: "次世代リーダー候補の育成", desc: `${sibyl.leader}名の進捗を確認`, onClick: () => onNavigate("sibyl") });
+  }
+
+  // 管理アクション（既存の未処理カウントのみ）
+  const actions = [
+    { label: "申請の承認", n: stats.pendingRequest || 0, key: "requests" },
+    { label: "FBリクエストの確認", n: stats.pendingFb || 0, key: "fb_requests" },
+    { label: "ショップ申請の確認", n: stats.pendingShop || 0, key: "shop" },
+    { label: "タスク報告の確認", n: stats.pendingTask || 0, key: "task_management" },
+    { label: "MTG報告書の確認", n: stats.pendingMtg || 0, key: "mtg_report" },
+    { label: "テスト結果の確認", n: stats.pendingTest || 0, key: "tests" },
+    { label: "冒険マップの承認", n: stats.pendingJourney || 0, key: "journey" },
+  ].filter((a) => a.n > 0).slice(0, 6);
+
+  const favorites = [
+    { icon: "👥", label: "ユーザー一覧", key: "users" },
+    { icon: "📋", label: "日報", key: "reports" },
+    { icon: "🎯", label: "KPI設定", key: "kpi" },
+    { icon: "🛍️", label: "ショップ", key: "shop" },
+  ];
+
+  const prColor: Record<string, string> = { 高: "#ef4444", 中: "#f59e0b", 低: "#3b82f6" };
+  const toneBg: Record<string, string> = {
+    green: "linear-gradient(180deg,#eafcf3,#d7f5e6)", blue: "linear-gradient(180deg,#eaf3fe,#d8e9fc)",
+    pink: "linear-gradient(180deg,#fdeef5,#fbdcea)", gold: "linear-gradient(180deg,#fdf6e3,#f8ecc8)", red: "linear-gradient(180deg,#fdecec,#fad7d7)",
+  };
+  const toneFg: Record<string, string> = { green: "#15803d", blue: "#1454B8", pink: "#be3d7f", gold: "#a16207", red: "#b91c1c" };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
+    <div className="ad-root">
       <style>{`
-        @keyframes scanline { 0% { top: -8% } 100% { top: 108% } }
-        @keyframes blink { 0%,100% { opacity: .4 } 50% { opacity: 1 } }
-        @keyframes ringIn { from { stroke-dashoffset: ${circ} } }
-        .dh-card { transition: all .18s ease; }
-        .dh-card:hover { border-color: rgba(139,92,246,.55) !important; box-shadow: 0 0 22px rgba(139,92,246,.16); transform: translateY(-2px); }
+        .ad-root{color:#172B50}
+        .ad-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+        .ad-sec{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(180deg,#2f6ad1,#1454B8);border:2px solid #F5D77E;border-radius:999px;padding:6px 18px;color:#fff;font-size:13.5px;font-weight:900;box-shadow:0 3px 10px rgba(16,47,112,.3);margin-bottom:12px}
+        .ad-panel{background:rgba(255,249,237,.95);border:2px solid #D9A441;border-radius:18px;padding:16px 18px;box-shadow:0 6px 18px rgba(16,47,112,.12)}
+        .ad-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+        .ad-kpi{border:2px solid rgba(217,164,65,.55);border-radius:16px;padding:14px 12px;text-align:center;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 3px 10px rgba(16,47,112,.08)}
+        .ad-kpi:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(16,47,112,.18)}
+        .ad-kpi-ico{font-size:22px}
+        .ad-kpi-label{font-size:12px;font-weight:900;margin-top:2px}
+        .ad-kpi-val{font-size:34px;font-weight:900;line-height:1.15}
+        .ad-kpi-val span{font-size:14px}
+        .ad-mid{display:grid;grid-template-columns:1fr 1.35fr;gap:14px;margin-top:18px;align-items:stretch}
+        .ad-pri{display:flex;flex-direction:column;gap:9px}
+        .ad-pri-row{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid rgba(217,164,65,.5);border-radius:13px;padding:11px 13px;cursor:pointer;transition:transform .12s}
+        .ad-pri-row:hover{transform:translateX(3px)}
+        .ad-pri-chip{flex-shrink:0;width:30px;height:30px;border-radius:9px;color:#fff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center}
+        .ad-pri-t{font-size:13px;font-weight:900}
+        .ad-pri-d{font-size:11px;color:#6b5a33;font-weight:700;margin-top:1px}
+        .ad-sibyl{position:relative;overflow:hidden;background:linear-gradient(150deg,#f3ecff 0%,#ece0ff 45%,#f8f1ff 100%);border:2px solid #8855D5;border-radius:18px;padding:16px 18px;box-shadow:0 6px 20px rgba(136,85,213,.2)}
+        .ad-sibyl-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+        .ad-sibyl-title{font-size:14px;font-weight:900;color:#5a2ea6;letter-spacing:1px}
+        .ad-sibyl-meta{font-size:10.5px;font-weight:800;color:#8168b0}
+        .ad-sibyl-body{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+        .ad-sibyl-chara{width:110px;flex-shrink:0;filter:drop-shadow(0 8px 10px rgba(90,46,166,.3))}
+        .ad-ring{position:relative;width:128px;height:128px;flex-shrink:0;margin:0 auto}
+        .ad-mets{flex:1;min-width:190px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .ad-met{background:rgba(255,255,255,.85);border:1.5px solid rgba(136,85,213,.35);border-radius:12px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+        .ad-met-l{font-size:11px;font-weight:900;color:#5a2ea6}
+        .ad-met-v{font-size:17px;font-weight:900}
+        .ad-ai{margin-top:12px;background:rgba(255,255,255,.9);border:1.5px solid rgba(136,85,213,.4);border-radius:12px;padding:10px 13px;font-size:12px;font-weight:800;color:#44306b;display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+        .ad-sibyl-btn{margin-top:12px;display:inline-block;padding:11px 26px;border-radius:999px;border:2px solid #F5D77E;background:linear-gradient(135deg,#9b6ae0,#7a3fd0);color:#fff;font-size:13.5px;font-weight:900;cursor:pointer;box-shadow:0 5px 16px rgba(122,63,208,.4)}
+        .ad-week{margin-top:18px}
+        .ad-week-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+        .ad-week-card{border:2px solid rgba(217,164,65,.5);border-radius:14px;padding:12px;text-align:center}
+        .ad-week-l{font-size:11.5px;font-weight:900}
+        .ad-week-v{font-size:28px;font-weight:900;line-height:1.2}
+        .ad-week-v span{font-size:13px}
+        .ad-dept{margin-top:14px;background:#fff;border:1.5px solid rgba(217,164,65,.45);border-radius:14px;padding:13px 15px}
+        .ad-dept-t{font-size:12.5px;font-weight:900;margin-bottom:9px}
+        .ad-dept-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+        .ad-dept-code{width:30px;font-size:11.5px;font-weight:900;color:#172B50}
+        .ad-dept-bar{flex:1;height:11px;border-radius:999px;background:#eee4cc;overflow:hidden}
+        .ad-dept-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#34d399,#22B981);transition:width .8s ease}
+        .ad-dept-pct{width:42px;text-align:right;font-size:11.5px;font-weight:900}
+        .ad-aside{display:flex;flex-direction:column;gap:14px}
+        .ad-aside-t{font-size:13px;font-weight:900;color:#172B50;margin-bottom:9px}
+        .ad-act{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid rgba(217,164,65,.45);border-radius:11px;padding:9px 11px;font-size:12px;font-weight:800;cursor:pointer;margin-bottom:6px}
+        .ad-act:hover{border-color:#1454B8}
+        .ad-fav{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .ad-fav-b{background:#fff;border:2px solid rgba(217,164,65,.55);border-radius:13px;padding:12px 8px;text-align:center;cursor:pointer;transition:transform .12s}
+        .ad-fav-b:hover{transform:translateY(-2px);border-color:#1454B8}
+        .ad-fav-i{font-size:21px}
+        .ad-fav-l{font-size:11.5px;font-weight:900;margin-top:3px}
+        @keyframes adRing{from{stroke-dashoffset:${circ}}}
+        @media (max-width: 1080px){ .ad-grid{grid-template-columns:1fr} .ad-mid{grid-template-columns:1fr} }
+        @media (max-width: 640px){ .ad-kpis{grid-template-columns:1fr 1fr} .ad-week-grid{grid-template-columns:1fr 1fr} .ad-sibyl-chara{width:84px} }
       `}</style>
 
-      {/* ① TODAY'S ALERT */}
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, color: "#8b8fa8", marginBottom: 12 }}>⚡ TODAY'S ALERT</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14 }}>
-          {alerts.map((a) => (
-            <div key={a.label} className="dh-card" onClick={() => { if (a.label === "未提出日報") { setShowNotSubmitted(true); } else { onNavigate(a.key); } }} style={{ cursor: "pointer", padding: "18px 20px", borderRadius: 16, background: "linear-gradient(160deg, rgba(30,30,52,.92), rgba(14,14,28,.92))", border: `1px solid ${a.color}33`, borderLeft: `3px solid ${a.color}` }}>
-              <div style={{ fontSize: 12, color: "#8b8fa8", fontWeight: 700, marginBottom: 8 }}>{a.icon} {a.label}</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontSize: 40, fontWeight: 900, color: a.color, lineHeight: 1 }}>{a.value}</span>
-                <span style={{ fontSize: 13, color: "#8b8fa8", fontWeight: 700 }}>{a.unit}</span>
+      <div className="ad-grid">
+        {/* ===== 中央メイン ===== */}
+        <div>
+          {/* 本日の王国状況 */}
+          <div className="ad-sec">🛡️ 本日の王国状況（主要KPI）</div>
+          <div className="ad-kpis">
+            {kpis.map((k) => (
+              <div key={k.label} className="ad-kpi" onClick={k.onClick} style={{ background: toneBg[k.tone === "red" ? "red" : k.tone] }}>
+                <div className="ad-kpi-ico"><Ico k={k.ik} emoji={k.icon} size={34} /></div>
+                <div className="ad-kpi-label" style={{ color: toneFg[k.tone] }}>{k.label}</div>
+                <div className="ad-kpi-val" style={{ color: toneFg[k.tone] }}>{k.value === null ? "…" : k.value}<span>{k.unit}</span></div>
+              </div>
+            ))}
+          </div>
+
+          {/* 優先対応 ＋ SIBYL */}
+          <div className="ad-mid">
+            <div>
+              <div className="ad-sec">🚩 本日の優先対応</div>
+              <div className="ad-panel ad-pri">
+                {loading ? (
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: "#8168b0" }}>判定中...</div>
+                ) : priorities.length === 0 ? (
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#15803d" }}>✅ 今日の優先対応はありません</div>
+                ) : priorities.slice(0, 4).map((p) => (
+                  <div key={p.title} className="ad-pri-row" onClick={p.onClick}>
+                    <span className="ad-pri-chip" style={{ background: prColor[p.pr] }}>{p.pr}</span>
+                    <span style={{ fontSize: 18 }}>{p.icon}</span>
+                    <span style={{ flex: 1 }}>
+                      <div className="ad-pri-t">{p.title}</div>
+                      <div className="ad-pri-d">{p.desc}</div>
+                    </span>
+                    <span style={{ color: "#D9A441", fontWeight: 900 }}>›</span>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+
+            <div>
+              <div className="ad-sec" style={{ background: "linear-gradient(180deg,#9b6ae0,#7a3fd0)" }}><Ico k="crystal" emoji="🔮" size={20} /> SIBYL SYSTEM（シビュラ）</div>
+              <div className="ad-sibyl">
+                <div className="ad-sibyl-head">
+                  <span className="ad-sibyl-title">組織分析AI</span>
+                  <span className="ad-sibyl-meta">{loading ? "SCANNING..." : `最終分析 ${scanTime}｜対象 ${sibyl.total}名`}</span>
+                </div>
+                <div className="ad-sibyl-body">
+                  <img className="ad-sibyl-chara" src="/jobs/mage.webp" alt="" />
+                  <div className="ad-ring">
+                    <svg width="128" height="128" style={{ transform: "rotate(-90deg)" }}>
+                      <circle cx="64" cy="64" r="52" fill="none" stroke="rgba(136,85,213,.18)" strokeWidth="11" />
+                      <circle cx="64" cy="64" r="52" fill="none" stroke={healthColor} strokeWidth="11" strokeLinecap="round"
+                        strokeDasharray={circ} strokeDashoffset={loading ? circ : circ * (1 - sibyl.health / 100)}
+                        style={{ transition: "stroke-dashoffset 1.2s ease", animation: "adRing 1.2s ease" }} />
+                    </svg>
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ fontSize: 27, fontWeight: 900, color: "#5a2ea6", lineHeight: 1 }}>{loading ? "…" : sibyl.health}<span style={{ fontSize: 13 }}>%</span></div>
+                      <div style={{ fontSize: 9.5, fontWeight: 900, color: "#8168b0", marginTop: 3 }}>組織健全度</div>
+                    </div>
+                  </div>
+                  <div className="ad-mets">
+                    {[
+                      { label: "育成優先", value: sibyl.hard, color: "#e11d48" },
+                      { label: "離職リスク", value: sibyl.risk, color: "#b91c1c" },
+                      { label: "配置変更推奨", value: sibyl.mismatch, color: "#a16207" },
+                      { label: "次世代リーダー候補", value: sibyl.leader, color: "#15803d" },
+                    ].map((m) => (
+                      <div key={m.label} className="ad-met" onClick={() => onNavigate("sibyl")}>
+                        <span className="ad-met-l">{m.label}</span>
+                        <span className="ad-met-v" style={{ color: m.color }}>{loading ? "…" : m.value}<span style={{ fontSize: 11 }}>人</span></span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {!loading && proposals[0] && (
+                  <div className="ad-ai" onClick={() => { if (proposals[0].uid) window.location.href = `/admin/sibyl/${proposals[0].uid}`; }}>
+                    <span>⭐</span>
+                    <span style={{ flex: 1 }}><b>AI提案（抜粋）</b><br />{proposals[0].icon} {proposals[0].text}</span>
+                    {proposals[0].uid && <span style={{ color: "#7a3fd0" }}>›</span>}
+                  </div>
+                )}
+                <button className="ad-sibyl-btn" onClick={() => onNavigate("sibyl")}>シビュラの詳細を見る →</button>
+              </div>
+            </div>
+          </div>
+
+          {/* WEEKLY SUMMARY */}
+          <div className="ad-week">
+            <div className="ad-sec">🏅 WEEKLY SUMMARY（直近3日）</div>
+            <div className="ad-panel">
+              <div className="ad-week-grid">
+                {[
+                  { label: "日報提出率", v: week.submitRate, unit: "%", tone: "green", icon: "📋" },
+                  { label: "アクティブ率", v: week.activeRate, unit: "%", tone: "blue", icon: "👥" },
+                  { label: "サンキュー", v: week.thanks, unit: "件", tone: "pink", icon: "💗" },
+                ].map((c) => (
+                  <div key={c.label} className="ad-week-card" style={{ background: toneBg[c.tone] }}>
+                    <div style={{ fontSize: 19 }}>{c.icon}</div>
+                    <div className="ad-week-l" style={{ color: toneFg[c.tone] }}>{c.label}</div>
+                    <div className="ad-week-v" style={{ color: toneFg[c.tone] }}>{loading ? "…" : c.v}<span>{c.unit}</span></div>
+                  </div>
+                ))}
+              </div>
+              <div className="ad-dept">
+                <div className="ad-dept-t">部署別 日報提出率</div>
+                {(loading ? [] : deptRates).map((d) => (
+                  <div key={d.code} className="ad-dept-row">
+                    <span className="ad-dept-code">{d.code}</span>
+                    <div className="ad-dept-bar"><div className="ad-dept-fill" style={{ width: `${d.rate}%`, background: `linear-gradient(90deg, ${rateColor(d.rate)}, ${rateColor(d.rate)}cc)` }} /></div>
+                    <span className="ad-dept-pct" style={{ color: rateColor(d.rate) }}>{d.rate}%</span>
+                  </div>
+                ))}
+                {loading && <div style={{ fontSize: 12, color: "#8b7b4f", fontWeight: 700 }}>集計中...</div>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== 右サイドパネル ===== */}
+        <div className="ad-aside">
+          <div className="ad-panel">
+            <div className="ad-aside-t"><Ico k="bell" emoji="⚡" size={22} /> 管理アクション</div>
+            {actions.length === 0 ? (
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: "#15803d" }}>✅ 未処理の承認はありません</div>
+            ) : actions.map((a) => (
+              <div key={a.key + a.label} className="ad-act" onClick={() => onNavigate(a.key)}>
+                <span style={{ color: "#22B981" }}>●</span>
+                <span style={{ flex: 1 }}>{a.label}（{a.n}件）</span>
+                <span style={{ color: "#D9A441", fontWeight: 900 }}>›</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="ad-panel">
+            <div className="ad-aside-t"><Ico k="horn" emoji="📣" size={22} /> お知らせ</div>
+            {anns.length === 0 ? (
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#8b7b4f" }}>お知らせはありません</div>
+            ) : anns.map((a) => (
+              <div key={a.id} className="ad-act" onClick={() => onNavigate("announce")}>
+                <span style={{ color: "#D9A441" }}>⭐</span>
+                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</span>
+                <span style={{ color: "#D9A441", fontWeight: 900 }}>›</span>
+              </div>
+            ))}
+            <div onClick={() => onNavigate("announce")} style={{ textAlign: "center", fontSize: 12, fontWeight: 900, color: "#1454B8", cursor: "pointer", marginTop: 4 }}>すべて見る →</div>
+          </div>
+
+          <div className="ad-panel">
+            <div className="ad-aside-t">⭐ よく使う機能</div>
+            <div className="ad-fav">
+              {favorites.map((f) => (
+                <div key={f.key} className="ad-fav-b" onClick={() => onNavigate(f.key)}>
+                  <div className="ad-fav-i">{f.icon}</div>
+                  <div className="ad-fav-l">{f.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 未提出者モーダル */}
+      {/* 未提出者モーダル（機能そのまま・配色のみ王国風） */}
       {showNotSubmitted && (
-        <div onClick={() => setShowNotSubmitted(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "#12121f", border: "1px solid rgba(248,113,113,.35)", borderRadius: 18, padding: 28, width: "100%", maxWidth: 440, maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
+        <div onClick={() => setShowNotSubmitted(false)} style={{ position: "fixed", inset: 0, background: "rgba(16,47,112,.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#FFF9ED", border: "2px solid #D9A441", borderRadius: 18, padding: 26, width: "100%", maxWidth: 440, maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 18px 50px rgba(16,47,112,.4)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <div style={{ fontSize: 17, fontWeight: 900, color: "#f9fafb" }}>📋 日報 未提出者</div>
-              <button onClick={() => setShowNotSubmitted(false)} style={{ background: "none", border: "none", color: "#8b8fa8", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
+              <div style={{ fontSize: 17, fontWeight: 900, color: "#172B50" }}>📋 日報 未提出者</div>
+              <button onClick={() => setShowNotSubmitted(false)} style={{ background: "none", border: "none", color: "#8b7b4f", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>
             </div>
-            <div style={{ fontSize: 12, color: "#8b8fa8", marginBottom: 14 }}>直近3日間（今日・昨日・一昨日）に1回も提出がない {notSubmittedList.length}名</div>
+            <div style={{ fontSize: 12, color: "#6b5a33", fontWeight: 700, marginBottom: 14 }}>直近3日間（今日・昨日・一昨日）に1回も提出がない {notSubmittedList.length}名</div>
             <div style={{ overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
               {notSubmittedList.length === 0 ? (
-                <div style={{ fontSize: 13, color: "#34d399", padding: "12px 0" }}>✅ 全員提出済みです</div>
+                <div style={{ fontSize: 13, color: "#15803d", fontWeight: 800, padding: "12px 0" }}>✅ 全員提出済みです</div>
               ) : notSubmittedList.map((u, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,.03)" }}>
-                  <span style={{ fontSize: 11, color: "#6b7280", width: 20 }}>{i + 1}</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", flex: 1 }}>{u.name}</span>
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, background: "#fff", border: "1px solid rgba(217,164,65,.4)" }}>
+                  <span style={{ fontSize: 11, color: "#8b7b4f", width: 20 }}>{i + 1}</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: "#172B50", flex: 1 }}>{u.name}</span>
                 </div>
               ))}
             </div>
             {notSubmittedList.length > 0 && (
-              <button onClick={() => { navigator.clipboard.writeText(notSubmittedList.map((u) => `・${u.name}`).join("\n")); }} style={{ marginTop: 14, padding: "10px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#8b5cf6,#6366f1)", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
+              <button onClick={() => { navigator.clipboard.writeText(notSubmittedList.map((u) => `・${u.name}`).join("\n")); }} style={{ marginTop: 14, padding: "11px", borderRadius: 999, border: "2px solid #F5D77E", background: "linear-gradient(180deg,#2f6ad1,#1454B8)", color: "#fff", fontWeight: 900, fontSize: 13, cursor: "pointer" }}>
                 📋 名前リストをコピー
               </button>
             )}
           </div>
         </div>
       )}
-
-      {/* ② SIBYL SYSTEM */}
-      <div style={{ position: "relative", overflow: "hidden", borderRadius: 24, padding: "28px 30px", background: "linear-gradient(135deg, rgba(49,32,95,.95), rgba(16,14,42,.98) 55%, rgba(8,8,22,1))", border: "1.5px solid rgba(139,92,246,.4)", boxShadow: "0 0 50px rgba(99,102,241,.15)" }}>
-        <div style={{ position: "absolute", left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, rgba(139,92,246,.65), transparent)", animation: "scanline 5s linear infinite", pointerEvents: "none" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 5, color: "#a78bfa" }}>🔮 SIBYL SYSTEM</div>
-          <div style={{ display: "flex", gap: 14, alignItems: "center", fontSize: 10, fontWeight: 700, color: "#8b8fa8" }}>
-            <span style={{ color: "#34d399", display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34d399", animation: "blink 1.6s infinite", display: "inline-block" }} />
-              {loading ? "SCANNING..." : "ANALYSIS ACTIVE"}
-            </span>
-            {!loading && <span>LAST SCAN {scanTime} ／ 対象 {sibyl.total}名</span>}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 26, flexWrap: "wrap", alignItems: "center", marginBottom: 22 }}>
-          {/* 組織健全度リング */}
-          <div style={{ position: "relative", width: 130, height: 130, flexShrink: 0 }}>
-            <svg width="130" height="130" style={{ transform: "rotate(-90deg)" }}>
-              <circle cx="65" cy="65" r="52" fill="none" stroke="rgba(255,255,255,.07)" strokeWidth="10" />
-              <circle cx="65" cy="65" r="52" fill="none" stroke={healthColor} strokeWidth="10" strokeLinecap="round"
-                strokeDasharray={circ} strokeDashoffset={loading ? circ : circ * (1 - sibyl.health / 100)}
-                style={{ transition: "stroke-dashoffset 1.2s ease", animation: "ringIn 1.2s ease" }} />
-            </svg>
-            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ fontSize: 30, fontWeight: 900, color: healthColor, lineHeight: 1 }}>{loading ? "…" : sibyl.health}<span style={{ fontSize: 14 }}>%</span></div>
-              <div style={{ fontSize: 9.5, fontWeight: 800, color: "#8b8fa8", marginTop: 4, letterSpacing: 1 }}>組織健全度</div>
-            </div>
-          </div>
-          {/* メトリクス */}
-          <div style={{ flex: 1, minWidth: 260, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
-            {[
-              { label: "育成優先メンバー", value: sibyl.hard, color: "#f87171" },
-              { label: "離職リスク", value: sibyl.risk, color: "#ef4444" },
-              { label: "配属変更推奨", value: sibyl.mismatch, color: "#fbbf24" },
-              { label: "次世代リーダー候補", value: sibyl.leader, color: "#34d399" },
-            ].map((m) => (
-              <div key={m.label} style={{ padding: "14px 12px", borderRadius: 14, background: "rgba(255,255,255,.04)", border: "1px solid rgba(139,92,246,.2)", textAlign: "center" }}>
-                <div style={{ fontSize: 30, fontWeight: 900, color: m.color, lineHeight: 1 }}>{loading ? "…" : m.value}<span style={{ fontSize: 12 }}>人</span></div>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: "#a5a8c0", marginTop: 7 }}>{m.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, color: "#8b8fa8", marginBottom: 10 }}>💬 AI PROPOSAL</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {loading ? (
-              <div style={{ padding: "11px 16px", borderRadius: 10, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", fontSize: 13.5, fontWeight: 600, color: "#e0d9ff" }}>▸ 組織をスキャンしています...</div>
-            ) : proposals.map((p, i) => (
-              <div key={i} onClick={() => { if (p.uid) window.location.href = `/admin/sibyl/${p.uid}`; }} style={{ padding: "11px 16px", borderRadius: 10, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.25)", fontSize: 13.5, fontWeight: 600, color: "#e0d9ff", cursor: p.uid ? "pointer" : "default", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <span>{p.icon}</span><span style={{ flex: 1 }}>{p.text}</span>{p.uid && <span style={{ fontSize: 11, color: "#a78bfa" }}>詳細 →</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-        <button onClick={() => onNavigate("sibyl")} style={{ padding: "13px 36px", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 900, color: "#fff", background: "linear-gradient(135deg, #8b5cf6, #6366f1)", boxShadow: "0 4px 20px rgba(139,92,246,.4)" }}>🔮 シビュラシステムを開く →</button>
-      </div>
-
-      {/* ③ WEEKLY SUMMARY */}
-      <div style={{ borderRadius: 20, padding: "24px 26px", background: "rgba(18,18,36,.85)", border: "1px solid rgba(255,255,255,.07)" }}>
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, color: "#8b8fa8", marginBottom: 16 }}>📊 WEEKLY SUMMARY（直近3日）</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "14px 26px", marginBottom: 22 }}>
-          {weekly.map((b) => (
-            <div key={b.label}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
-                <span style={{ color: "#c7c9dd" }}>{b.label}</span>
-                <span style={{ color: b.color }}>{loading ? "…" : b.value}{b.unit}</span>
-              </div>
-              <div style={{ height: 7, borderRadius: 999, background: "rgba(255,255,255,.06)" }}>
-                <div style={{ height: "100%", width: `${loading ? 0 : Math.min(100, (b.value / b.max) * 100)}%`, borderRadius: 999, background: `linear-gradient(90deg, ${b.color}, ${b.color}88)`, transition: "width .8s ease" }} />
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, color: "#8b8fa8", marginBottom: 12 }}>部署別 日報提出率</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-          {(loading ? [] : deptRates).map((d) => (
-            <div key={d.code} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ width: 34, fontSize: 12, fontWeight: 900, color: "#c7c9dd" }}>{d.code}</span>
-              <div style={{ flex: 1, height: 12, borderRadius: 999, background: "rgba(255,255,255,.06)" }}>
-                <div style={{ height: "100%", width: `${d.rate}%`, borderRadius: 999, background: `linear-gradient(90deg, ${rateColor(d.rate)}, ${rateColor(d.rate)}88)`, transition: "width .8s ease" }} />
-              </div>
-              <span style={{ width: 42, textAlign: "right", fontSize: 12, fontWeight: 900, color: rateColor(d.rate) }}>{d.rate}%</span>
-            </div>
-          ))}
-          {loading && <div style={{ fontSize: 12, color: "#6b7280" }}>集計中...</div>}
-        </div>
-      </div>
-
-      {/* ④ QUICK ACCESS */}
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, color: "#8b8fa8", marginBottom: 12 }}>🚀 QUICK ACCESS</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 12 }}>
-          {QUICK.map((c) => {
-            const badge = c.badgeKey ? (stats[c.badgeKey] as number) || 0 : 0;
-            return (
-              <div key={c.key} className="dh-card" onClick={() => onNavigate(c.key)} style={{ position: "relative", cursor: "pointer", padding: "18px 20px", borderRadius: 16, background: "linear-gradient(160deg, rgba(30,30,52,.85), rgba(16,16,32,.85))", border: "1px solid rgba(255,255,255,.08)" }}>
-                {badge > 0 && <span style={{ position: "absolute", top: 12, right: 12, minWidth: 20, height: 20, padding: "0 6px", borderRadius: 999, background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{badge}</span>}
-                <div style={{ fontSize: 26, marginBottom: 8 }}>{c.icon}</div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{c.title}</div>
-                {c.desc && <div style={{ fontSize: 11, color: "#8b8fa8", marginTop: 3 }}>{c.desc}</div>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ⑤ OTHER TOOLS */}
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, color: "#8b8fa8", marginBottom: 12 }}>🧰 OTHER TOOLS</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {OTHERS.map((sec) => {
-            const open = !!openSec[sec.label];
-            const secBadge = sec.cards.reduce((sum, c) => sum + (c.badgeKey ? (stats[c.badgeKey] as number) || 0 : 0), 0);
-            return (
-              <div key={sec.label} style={{ borderRadius: 14, background: "rgba(18,18,36,.7)", border: "1px solid rgba(255,255,255,.06)", overflow: "hidden" }}>
-                <div onClick={() => setOpenSec((o) => ({ ...o, [sec.label]: !o[sec.label] }))} style={{ cursor: "pointer", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: "#c7c9dd" }}>
-                    {sec.label}
-                    {secBadge > 0 && <span style={{ marginLeft: 8, padding: "1px 8px", borderRadius: 999, background: "#ef4444", color: "#fff", fontSize: 10.5, fontWeight: 800 }}>{secBadge}</span>}
-                  </span>
-                  <span style={{ fontSize: 12, color: "#8b8fa8", transform: open ? "rotate(90deg)" : "none", transition: "transform .2s" }}>▶</span>
-                </div>
-                {open && (
-                  <div style={{ padding: "0 14px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
-                    {sec.cards.map((c) => {
-                      const badge = c.badgeKey ? (stats[c.badgeKey] as number) || 0 : 0;
-                      return (
-                        <div key={c.key} className="dh-card" onClick={() => onNavigate(c.key)} style={{ position: "relative", cursor: "pointer", padding: "11px 13px", borderRadius: 10, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", display: "flex", alignItems: "center", gap: 9 }}>
-                          <span style={{ fontSize: 16 }}>{c.icon}</span>
-                          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#d5d7e8" }}>{c.title}</span>
-                          {badge > 0 && <span style={{ marginLeft: "auto", minWidth: 18, height: 18, padding: "0 5px", borderRadius: 999, background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{badge}</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

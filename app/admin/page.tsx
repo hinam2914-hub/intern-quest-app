@@ -24,6 +24,7 @@ import ThinkingAdminTab from "./ThinkingAdminTab";
 import QuestionsAdminTab from "./QuestionsAdminTab";
 import ScheduleManagementTab from "./ScheduleManagementTab";
 import DashboardHome from "./DashboardHome";
+import AdminSidebar from "./AdminSidebar";
 import RecruitTab from "./RecruitTab";
 import RequiredCheckTab from "./RequiredCheckTab";
 import RookieTab from "./RookieTab";
@@ -1324,26 +1325,41 @@ export default function AdminPage() {
         );
     }
 
-    return (
-        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
-            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
-            <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto" }}>
+    // 王国統括司令室：サイドバー用の未処理バッジ（既存カウントを渡すだけ・ロジック変更なし）
+    const sidebarBadges: Record<string, number> = {
+        pendingCount, pendingTask: pendingTaskReportCount, pendingKkc: pendingKkcCount, pendingAdvice: pendingAdviceCount,
+        pendingMedaka: pendingMedakaCount, pendingMentor: pendingMentorCount, pendingMtg: pendingMtgCount, pendingTest: pendingTestCount,
+        pendingRecruit: pendingRecruitCount, pendingShop: pendingAvatarCount + pendingIslandCount + pendingGearCount,
+        pendingJourney: pendingJourneyCount, pendingRookie: pendingRookieCount, pendingFb: pendingFbCount, pendingSkill: pendingSkillCount,
+        pendingLearn: contentCompletions.filter((c: any) => c.status === "pending").length,
+        pendingChallenge: challengeSubmissions.filter((c: any) => c.status === "pending").length,
+        pendingRequest: pendingCount,
+    };
+    const navTo = (key: string) => { if (key === "sibyl_guide") { router.push("/admin/sibyl/guide"); return; } setActiveTab(key as any); window.scrollTo({ top: 0 }); };
+    const todayLabel = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" });
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+    return (
+        <main style={{ minHeight: "100vh", background: "#bfdcf5 url(/images/onboarding/job-selection-bg.webp) center top / cover no-repeat fixed", fontFamily: "'Hiragino Sans','Noto Sans JP',system-ui,sans-serif" }}>
+            <AdminSidebar activeTab={activeTab} badges={sidebarBadges} onNavigate={navTo} onExit={() => router.push("/home")} isMobile={isMobile} />
+            <div style={{ position: "relative", zIndex: 1, maxWidth: 1240, margin: "0 auto", padding: isMobile ? "16px 14px 90px" : "22px 26px 64px", marginLeft: isMobile ? undefined : 240 }}>
+
+                {/* 王国ヘッダー */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 18, background: "rgba(255,249,237,.92)", border: "2px solid #D9A441", borderRadius: 18, padding: "14px 20px", boxShadow: "0 6px 20px rgba(16,47,112,.15)" }}>
                     <div>
-                        <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer" }}>INTERN QUEST</div>
-                        <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>管理ダッシュボード</h1>
+                        <div style={{ fontSize: 10.5, color: "#1454B8", fontWeight: 900, letterSpacing: 3 }}>INTERN QUEST / ADMINISTRATION</div>
+                        <h1 style={{ fontSize: isMobile ? 20 : 26, fontWeight: 900, color: "#172B50", margin: "2px 0 0" }}>管理者ダッシュボード</h1>
+                        <div style={{ fontSize: 11.5, color: "#6b5a33", fontWeight: 700, marginTop: 2 }}>組織の状況を把握し、メンバーの成長と戦略を指揮しましょう</div>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                        <span />
-                    </div>
+                    <div style={{ background: "#fff", border: "2px solid #F5D77E", borderRadius: 12, padding: "8px 16px", fontSize: 13, fontWeight: 900, color: "#172B50" }}>📅 {todayLabel}</div>
                 </div>
 
                 {activeTab !== "home" && (
-                    <div style={{ marginBottom: 20 }}>
-                        <button onClick={() => setActiveTab("home")} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 12, border: "1px solid rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.12)", color: "#c4b5fd", fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>← ダッシュボードに戻る</button>
+                    <div style={{ marginBottom: 14 }}>
+                        <button onClick={() => { setActiveTab("home"); window.scrollTo({ top: 0 }); }} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 999, border: "2px solid #D9A441", background: "linear-gradient(180deg,#2f6ad1,#1454B8)", color: "#fff", fontSize: 13.5, fontWeight: 900, cursor: "pointer", boxShadow: "0 4px 12px rgba(16,47,112,.3)" }}>← ダッシュボードに戻る</button>
                     </div>
                 )}
+                {/* 既存のタブ機能は中身そのまま。読みやすさ維持のためダークパネルの器に載せる（homeは器なし） */}
+                <div style={activeTab === "home" ? undefined : { background: "rgba(13,13,24,.96)", border: "2px solid #D9A441", borderRadius: 22, padding: isMobile ? 14 : 24, boxShadow: "0 10px 30px rgba(16,47,112,.25)" }}>
                 {false && (
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 12, marginBottom: 24 }}>
                     {[
@@ -5619,17 +5635,18 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+                </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 24 }}>
+            <div style={{ display: "flex", justifyContent: "center", paddingBottom: 28, marginLeft: isMobile ? 0 : 240 }}>
                 <button
                     onClick={() => router.push("/menu")}
                     style={{
-                        background: "rgba(255,255,255,0.05)",
-                        color: "#d1d5db",
+                        background: "rgba(255,249,237,.92)",
+                        color: "#172B50",
                         padding: "12px 32px",
-                        borderRadius: 10,
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        fontWeight: 600,
+                        borderRadius: 999,
+                        border: "2px solid #D9A441",
+                        fontWeight: 900,
                         cursor: "pointer",
                         fontSize: 14
                     }}
