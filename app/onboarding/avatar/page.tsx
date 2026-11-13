@@ -68,7 +68,7 @@ type GearItem = { id: string; gear_key: string; name: string; price: number };
 export default function AvatarCustomizePage() {
     const router = useRouter();
     const [from, setFrom] = useState<string>("");   // ?from=mypage|home：既存ユーザーの編集（保存後／キャンセルで元の画面へ戻る）
-    useEffect(() => { try { setFrom(new URLSearchParams(window.location.search).get("from") || ""); } catch {} }, []);
+    useEffect(() => { try { const q = new URLSearchParams(window.location.search); setFrom(q.get("from") || ""); if (q.get("tab") === "gear") setTab("gear"); } catch {} }, []);
     const fromMypage = from === "mypage" || from === "home";
     const backTo = from === "home" ? "/home" : "/mypage";
     const [userId, setUserId] = useState<string | null>(null);

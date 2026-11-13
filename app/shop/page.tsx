@@ -29,6 +29,7 @@ export default function ShopPage() {
     const [success, setSuccess] = useState(false);
     const [note, setNote] = useState<Record<string, string>>({});
     const [shopTab, setShopTab] = useState<"gift" | "avatar" | "island">("gift");
+    useEffect(() => { try { const t = new URLSearchParams(window.location.search).get("tab"); if (t === "island" || t === "avatar" || t === "gift") setShopTab(t); } catch {} }, []);
     const [avatarItems, setAvatarItems] = useState<AvatarItem[]>([]);
     const [ownedAvatars, setOwnedAvatars] = useState<string[]>([]);
     const [pendingAvatars, setPendingAvatars] = useState<string[]>([]);
