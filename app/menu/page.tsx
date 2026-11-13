@@ -110,16 +110,6 @@ const CSS = `
 .mn-item .lb{flex:1;font-size:13px;font-weight:800;color:#3a4256}
 .mn-item .ar{font-size:12px;color:#b09a6a;font-weight:900}
 .mn-shop{display:flex;align-items:center;gap:14px;margin-top:14px;background:linear-gradient(180deg,#fffdf4,#f6e7c8);border:3px solid #d8b55e;border-radius:20px;padding:12px 16px;cursor:pointer;font-family:inherit;box-shadow:0 0 0 3px rgba(255,255,255,.4),0 8px 20px rgba(140,100,30,.22);text-align:left;width:100%}
-.mn-sheet-bg{position:fixed;inset:0;z-index:300;background:rgba(16,47,112,.5);display:flex;align-items:center;justify-content:center;padding:20px}
-.mn-sheet{width:100%;max-width:420px;background:linear-gradient(180deg,#fffdf4,#f6e7c8);border:3px solid #d8b55e;border-radius:22px;padding:18px 16px 14px;box-shadow:0 18px 50px rgba(16,47,112,.45)}
-.mn-sheet h3{margin:0 0 4px;font-size:17px;font-weight:900;color:#17397d;text-align:center}
-.mn-sheet .bal{text-align:center;font-size:12px;font-weight:800;color:#8a6a3a;margin-bottom:12px}
-.mn-sheet button.go{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:2px solid #e7cf96;border-radius:16px;padding:13px 14px;margin-bottom:9px;cursor:pointer}
-.mn-sheet button.go:hover{border-color:#1454B8}
-.mn-sheet .em{font-size:28px;flex-shrink:0}
-.mn-sheet .tt{display:block;font-size:15px;font-weight:900;color:#17397d}
-.mn-sheet .ds{display:block;font-size:11px;font-weight:700;color:#8a6a3a;margin-top:1px}
-.mn-sheet button.cl{display:block;width:100%;margin-top:4px;padding:10px;border:none;background:none;color:#8a6a3a;font-size:13px;font-weight:900;cursor:pointer}
 .mn-shop img{height:58px;width:auto;filter:drop-shadow(0 3px 5px rgba(120,80,20,.3))}
 .mn-shop .t{font-size:12px;font-weight:900;color:#8a6a3a;letter-spacing:.06em}
 .mn-shop .p{font-size:22px;font-weight:900;color:#17397d;line-height:1.2}
@@ -148,7 +138,6 @@ export default function MenuPage() {
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const [balance, setBalance] = useState<number | null>(null);
-    const [shopOpen, setShopOpen] = useState(false);   // ポイントショップの行き先えらび
 
     useEffect(() => {
         const init = async () => {
@@ -206,7 +195,7 @@ export default function MenuPage() {
                 </div>
 
                 {/* ポイントショップ */}
-                <button className="mn-shop" onClick={() => setShopOpen(true)}>
+                <button className="mn-shop" onClick={() => router.push("/shop")}>
                     <img src="/menu/icon_shop.webp" alt="" />
                     <span style={{ flex: 1, minWidth: 0 }}>
                         <span className="t">ポイントショップ</span>
@@ -215,18 +204,6 @@ export default function MenuPage() {
                     </span>
                     <span style={{ fontSize: 16, color: "#b09a6a", fontWeight: 900 }}>→</span>
                 </button>
-                {shopOpen && (
-                    <div className="mn-sheet-bg" onClick={() => setShopOpen(false)}>
-                        <div className="mn-sheet" onClick={(e) => e.stopPropagation()}>
-                            <h3>ポイントショップ</h3>
-                            <div className="bal">{balance !== null ? `いまの所持ポイント ${balance.toLocaleString()} pt` : "どこで使う？"}</div>
-                            <button className="go" onClick={() => router.push("/shop?tab=island")}><span className="em">🏝️</span><span><span className="tt">島をかざる</span><span className="ds">島のアイテムを買って、島に置く</span></span></button>
-                            <button className="go" onClick={() => router.push("/onboarding/avatar?from=mypage&tab=gear")}><span className="em">⚔️</span><span><span className="tt">装備を買う</span><span className="ds">アバターの帽子・マント・武器・アクセサリー</span></span></button>
-                            <button className="go" onClick={() => router.push("/shop")}><span className="em">🎁</span><span><span className="tt">ギフトと交換</span><span className="ds">ポイントを景品と交換する</span></span></button>
-                            <button className="cl" onClick={() => setShopOpen(false)}>とじる</button>
-                        </div>
-                    </div>
-                )}
 
                 {/* 管理者（権限のあるユーザーのみ） */}
                 {isAdmin && (

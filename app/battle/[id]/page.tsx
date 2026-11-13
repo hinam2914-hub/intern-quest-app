@@ -15,7 +15,7 @@ import { JOBS, type JobKey } from "../../onboarding/job/page";
 import AvatarLayered from "../../components/AvatarLayered";
 import type { AvatarConfig } from "../../lib/avatar/catalog";
 import {
-    BATTLE_CONFIG, ELEMENTS, ELEMENT_ORDER, ADVANTAGE, WEAPONS, SKILLS, CHEST_IMG,
+    BATTLE_CONFIG, ELEMENTS, ELEMENT_ORDER, ADVANTAGE, WEAPONS, SKILLS, CHEST_IMG, loadWeaponShop, canUseWeapon, type WeaponShop,
     calcDamage, castleElementOf, elementMultiplier, DEMO_ATTACK_KEY, readBattleLog, writeBattleLog,
     type WeaponDef, type SkillKey,
 } from "../../lib/battle";
@@ -41,6 +41,7 @@ export default function BattlePage() {
     const [hp, setHp] = useState<number>(BATTLE_CONFIG.castleBaseHp);
     const [attacksUsed, setAttacksUsed] = useState(0);
     const [weaponKey, setWeaponKey] = useState(WEAPONS[0].key);
+    const [wshop, setWshop] = useState<WeaponShop>({ enabled: false, prices: {}, owned: new Set() });  // 武器ショップ（未導入なら全武器使用可）
     const [busy, setBusy] = useState(false);
     const [victory, setVictory] = useState(false);
     const [boosted, setBoosted] = useState(false);     // 攻撃2倍（次の1回）
@@ -96,7 +97,10 @@ export default function BattlePage() {
                 try { setAttacksUsed(Number(localStorage.getItem(DEMO_ATTACK_KEY(todayStr())) || 0)); } catch {}
             }
             // 島探索ギルドの「装備して挑戦」から来た場合：?w=武器キー を事前選択
-            try { const w = new URLSearchParams(window.location.search).get("w"); if (w && WEAPONS.some((x) => x.key === w)) setWeaponKey(w); } catch {}
+            // 持っている武器だけ選べる（未購入の武器は事前選択もしない）
+            const ws = await loadWeaponShop(supabase, user.id);
+            setWshop(ws);
+            try { const w = new URLSearchParams(window.location.search).get("w"); if (w && WEAPONS.some((x) => x.key === w) && canUseWeapon(ws, w)) setWeaponKey(w); } catch {}
             setLoading(false);
         };
         load();
@@ -126,6 +130,7 @@ export default function BattlePage() {
             if (error || !data) {
                 const m = error?.message || "";
                 if (m.includes("SHIELD")) { pushBanner("この城は保護シールド中です", "#38bdf8", "🛡️"); setShieldUntil(new Date(Date.now() + 60000).toISOString()); }
+                else if (m.includes("NOT_OWNED")) { pushBanner("この武器はまだ持っていません", "#94a3b8", "🔒"); setWeaponKey(WEAPONS[0].key); }
                 else if (m.includes("DAILY_LIMIT")) { pushBanner("今日の攻撃回数を使い切りました", "#94a3b8", "🌙"); setAttacksUsed(BATTLE_CONFIG.attacksPerDay); }
                 else pushBanner("通信に失敗しました。もう一度お試しください", "#94a3b8", "⚠️");
                 setBusy(false);
@@ -327,13 +332,19 @@ export default function BattlePage() {
                     <div className="bt-panel">
                         <div className="bt-ptitle">🗡️ 武器を選択</div>
                         <div className="bt-weapons">
-                            {WEAPONS.map((w) => (
+                            {WEAPONS.map((w) => canUseWeapon(wshop, w.key) ? (
                                 <button key={w.key} className={"bt-weapon" + (w.key === weaponKey ? " bt-weapon-on" : "")} onClick={() => setWeaponKey(w.key)}>
                                     <span className="bt-weapon-ico">{wIcon(w)}</span>
                                     <span className="bt-weapon-name">{w.name}</span>
                                     <span className="bt-weapon-el" style={{ color: w.element ? ELEMENTS[w.element].color : "#94a3b8" }}>
                                         {w.element ? <>{elIcon(w.element, 12)} {ELEMENTS[w.element].name}</> : "無"}
                                     </span>
+                                </button>
+                            ) : (
+                                <button key={w.key} className="bt-weapon bt-weapon-lock" onClick={() => router.push("/shop")} title="ショップで購入すると使えます">
+                                    <span className="bt-weapon-ico">{wIcon(w)}</span>
+                                    <span className="bt-weapon-name">{w.name}</span>
+                                    <span className="bt-weapon-el" style={{ color: "#a16207" }}>🔒 {(wshop.prices[w.key] ?? 0).toLocaleString()}pt</span>
                                 </button>
                             ))}
                         </div>
@@ -459,6 +470,8 @@ const CSS = `
 .bt-reset{border:none;background:none;color:#1d4ed8;font-weight:900;font-size:11px;cursor:pointer;text-decoration:underline;padding:0}
 .bt-weapons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bt-weapon{display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid #e7cf96;border-radius:14px;background:#fff;padding:9px 6px;cursor:pointer;transition:all .15s ease}
+.bt-weapon-lock{background:#f3ecd9;border-style:dashed}
+.bt-weapon-lock .bt-weapon-ico,.bt-weapon-lock .bt-weapon-name{opacity:.45;filter:grayscale(.8)}
 .bt-weapon-on{border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 2px rgba(37,99,235,.25)}
 .bt-weapon-ico{font-size:24px;height:28px;display:flex;align-items:center}
 .bt-weapon-name{font-size:11px;font-weight:900;color:#1f2a44}

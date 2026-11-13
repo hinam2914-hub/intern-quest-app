@@ -16,7 +16,7 @@ import { getCastleStage } from "../lib/castle";
 import { JOBS, type JobKey } from "../onboarding/job/page";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import {
-    BATTLE_CONFIG, ELEMENTS, ADVANTAGE, WEAPONS, SKILLS,
+    BATTLE_CONFIG, ELEMENTS, ADVANTAGE, WEAPONS, SKILLS, loadWeaponShop, canUseWeapon, type WeaponShop,
     castleElementOf, elementMultiplier, readBattleLog, CHEST_IMG, type ElementKey, type WeaponDef, type BattleLog,
 } from "../lib/battle";
 
@@ -77,6 +77,7 @@ export default function IslandsGuildPage() {
     const [loading, setLoading] = useState(true);
     const [myId, setMyId] = useState("");
     const [myPoints, setMyPoints] = useState(0);
+    const [wshop, setWshop] = useState<WeaponShop>({ enabled: false, prices: {}, owned: new Set() });
     const [search, setSearch] = useState("");
     const [fl, setFl] = useState<"osusume" | "battle" | "level" | "streak">("osusume");
     const [selId, setSelId] = useState<string>("");
@@ -146,9 +147,11 @@ export default function IslandsGuildPage() {
                 supabase.from("challenge_submissions").select("challenge_id, status").eq("user_id", myId),
             ]);
             if (pt) setMyPoints((pt as any).points || 0);
+            setWshop(await loadWeaponShop(supabase, myId));
             if (subs) setDoneChId(new Set((subs as any[]).filter((x) => x.status === "approved").map((x) => x.challenge_id)));
             if (selId) setLog(readBattleLog(selId));
         };
+        refresh();
         window.addEventListener("focus", refresh);
         document.addEventListener("visibilitychange", refresh);
         return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
@@ -396,23 +399,35 @@ export default function IslandsGuildPage() {
                                     <span className="gx-wmid">
                                         <span className="gx-wname">{r.w.name}{idx === 0 && <i>イチオシ</i>}</span>
                                         <span className="gx-wsub">攻撃 {r.w.atk}・{r.w.element ? <span style={{ color: ELEMENTS[r.w.element].color, fontWeight: 900 }}><ElIco k={r.w.element} size={11} /> {ELEMENTS[r.w.element].name}</span> : "無属性"}{r.w.skill && <>・{SKILLS[r.w.skill].name}</>}</span>
-                                        <span className="gx-wreason">{r.mult > 1 ? `属性有利で期待ダメージ${r.dmg}` : r.mult < 1 ? `属性不利・期待ダメージ${r.dmg}` : `安定の期待ダメージ${r.dmg}`}<em className="gx-own">使用可能</em></span>
+                                        <span className="gx-wreason">{r.mult > 1 ? `属性有利で期待ダメージ${r.dmg}` : r.mult < 1 ? `属性不利・期待ダメージ${r.dmg}` : `安定の期待ダメージ${r.dmg}`}{canUseWeapon(wshop, r.w.key) ? <em className="gx-own">{wshop.enabled ? "所持済み" : "使用可能"}</em> : <em className="gx-own gx-own-no">🔒 {(wshop.prices[r.w.key] ?? 0).toLocaleString()}pt</em>}</span>
                                     </span>
                                     <span className={"gx-wmult" + (r.mult > 1 ? " gx-wmult-adv" : r.mult < 1 ? " gx-wmult-dis" : "")}>×{r.mult.toFixed(1)}</span>
                                 </div>
                             ))}
 
                             <div className="gx-sec" style={{ marginTop: 14 }}>🗝️ この武器の入手方法</div>
-                            <div className="gx-get">
-                                <WIco w={guide.recs[0].w} size={44} />
-                                <span className="gx-wmid">
-                                    <span className="gx-wname">{guide.recs[0].w.name}</span>
-                                    <span className="gx-wsub">いまは全員が使用できます（購入不要）</span>
-                                    <span className="gx-getpt">🪙 所持ポイント <b>{myPoints.toLocaleString()}pt</b></span>
-                                </span>
-                                {!isSelf && <button className="gx-qgo" onClick={() => router.push(`/battle/${sel.id}?w=${guide.recs[0].w.key}`)}>装備して挑戦</button>}
-                            </div>
-                            <div className="gx-note">🛠️ 武器ショップ（ポイントで購入）はまだありません。導入時にここへ「必要ポイント・不足ポイント」が表示されます</div>
+                            {(() => {
+                                const w = guide.recs[0].w; const usable = canUseWeapon(wshop, w.key); const price = wshop.prices[w.key] ?? 0; const lack = Math.max(0, price - myPoints);
+                                return (
+                                    <div className="gx-get">
+                                        <WIco w={w} size={44} />
+                                        <span className="gx-wmid">
+                                            <span className="gx-wname">{w.name}</span>
+                                            {usable
+                                                ? <span className="gx-wsub">{!wshop.enabled ? "いまは全員が使用できます（購入不要）" : price === 0 ? "はじめから全員が持っています" : "購入済み。島バトルで使えます"}</span>
+                                                : <>
+                                                    <span className="gx-wsub">ポイントショップで購入・必要 <b>{price.toLocaleString()}pt</b></span>
+                                                    <span className="gx-getbar"><i style={{ width: `${Math.min(100, price > 0 ? (myPoints / price) * 100 : 100)}%` }} /></span>
+                                                    <span className="gx-wsub">{lack > 0 ? <>あと <b style={{ color: "#dc2626" }}>{lack.toLocaleString()}pt</b> で購入できます</> : <b style={{ color: "#15803d" }}>いま購入できます！</b>}</span>
+                                                </>}
+                                            <span className="gx-getpt">🪙 所持ポイント <b>{myPoints.toLocaleString()}pt</b></span>
+                                        </span>
+                                        {usable
+                                            ? (!isSelf && <button className="gx-qgo" onClick={() => router.push(`/battle/${sel.id}?w=${w.key}`)}>装備して挑戦</button>)
+                                            : <button className="gx-qgo" onClick={() => router.push("/shop")}>武器ショップへ</button>}
+                                    </div>
+                                );
+                            })()}
 
                             <div className="gx-sec" style={{ marginTop: 14 }}>📜 関連クエスト（ポイント獲得）</div>
                             {questRecs.map((c) => (
@@ -626,6 +641,9 @@ const CSS = `
 .gx-stars{color:#f59e0b;letter-spacing:1px;font-size:14px}
 .gx-stars i{font-style:normal;color:#d9cfb3}
 .gx-dif{font-style:normal;font-size:10px;font-weight:900;color:#fff;background:linear-gradient(180deg,#9b6ae0,#7a3fd0);border-radius:999px;padding:2px 9px;margin-left:4px}
+.gx-own-no{background:#fef3c7 !important;color:#a16207 !important;border-color:#fcd34d !important}
+.gx-getbar{display:block;height:7px;border-radius:99px;background:#e9dfc4;overflow:hidden;margin:4px 0 2px}
+.gx-getbar i{display:block;height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:99px}
 .gx-own{font-style:normal;margin-left:6px;font-size:9px;font-weight:900;color:#1454B8;background:#eff6ff;border:1px solid #93c5fd;border-radius:999px;padding:1px 7px}
 .gx-get{display:flex;align-items:center;gap:9px;background:linear-gradient(180deg,#fffdf5,#fdf6e3);border:2px solid #D9A441;border-radius:13px;padding:10px 11px}
 .gx-getpt{font-size:10.5px;font-weight:800;color:#6b5a33}

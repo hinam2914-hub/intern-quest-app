@@ -154,3 +154,21 @@ export function readBattleLog(oppId: string): BattleLog {
 export function writeBattleLog(oppId: string, log: BattleLog) {
     try { localStorage.setItem(BATTLE_LOG_KEY(oppId), JSON.stringify(log)); } catch {}
 }
+
+/** 武器ショップの状態（価格表と自分の所持武器）。
+ *  enabled=false は battle_server.sql が未適用の環境：その場合は従来どおり全武器を使用可能として扱う。 */
+export type WeaponShop = { enabled: boolean; prices: Record<string, number>; owned: Set<string> };
+export async function loadWeaponShop(sb: { from: (t: string) => any }, userId: string): Promise<WeaponShop> {
+    try {
+        const [{ data: pr, error: e1 }, { data: ow, error: e2 }] = await Promise.all([
+            sb.from("battle_weapon_prices").select("weapon_key, price"),
+            sb.from("battle_weapon_owned").select("weapon_key").eq("user_id", userId),
+        ]);
+        if (e1 || e2 || !pr || pr.length === 0) return { enabled: false, prices: {}, owned: new Set() };
+        const prices: Record<string, number> = {};
+        (pr as any[]).forEach((r) => { prices[r.weapon_key] = Number(r.price); });
+        return { enabled: true, prices, owned: new Set(((ow || []) as any[]).map((r) => r.weapon_key)) };
+    } catch { return { enabled: false, prices: {}, owned: new Set() }; }
+}
+/** その武器を使えるか（ショップ未導入なら全部使える／価格0は全員使える） */
+export const canUseWeapon = (shop: WeaponShop, key: string) => !shop.enabled || (shop.prices[key] ?? 0) === 0 || shop.owned.has(key);
