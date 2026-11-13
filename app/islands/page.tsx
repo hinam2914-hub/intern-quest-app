@@ -91,7 +91,7 @@ export default function IslandsGuildPage() {
             if (!user) { router.push("/login"); return; }
             setMyId(user.id);
             const [{ data: profiles }, { data: points }, { data: jsubs }, { data: chs }, { data: mySubs }] = await Promise.all([
-                supabase.from("profiles").select("id, name, streak, avatar_config, island_config, licenses, job_class").eq("is_active", true),
+                supabase.from("profiles").select("id, name, streak, avatar_config, island_config, licenses, job_class, exclude_from_stats").eq("is_active", true),
                 supabase.from("user_points").select("id, points, total_earned"),
                 supabase.from("journey_submissions").select("user_id, step_no, status").eq("status", "approved"),
                 supabase.from("challenges").select("id, title, category, points, icon").eq("is_active", true),
@@ -101,7 +101,9 @@ export default function IslandsGuildPage() {
             (points || []).forEach((p: any) => { ptMap[p.id] = { points: p.points || 0, te: p.total_earned || 0 }; });
             const stepMap: Record<string, number> = {};
             (jsubs || []).forEach((s: any) => { stepMap[s.user_id] = Math.max(stepMap[s.user_id] || 0, s.step_no); });
-            const list: GIsland[] = (profiles || []).map((p: any) => {
+            // 離職者（exclude_from_stats）と名前未設定のアカウントは一覧に出さない
+            const visible = (profiles || []).filter((p: any) => !p.exclude_from_stats && p.name && p.name.trim());
+            const list: GIsland[] = visible.map((p: any) => {
                 const te = ptMap[p.id]?.te || 0;
                 const job = (p.job_class as JobKey) || "knight";
                 const ac = p.avatar_config;
