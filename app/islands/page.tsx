@@ -31,6 +31,14 @@ type Challenge = { id: string; title: string; category: string | null; points: n
 const jobName = (j: JobKey) => (JOBS.find((x) => x.key === j)?.name || "ナイト");
 const TARGET_KEY = "iq_guild_target";
 
+// ギルド素材（ChatGPT制作）。ランクメダルはランク機能実装時に bronze〜master を使用
+const GUILD_IMG = {
+    emblem: "/guild/guild_emblem.webp",
+    target: "/guild/target.webp",
+    rankNone: "/guild/rank_none.webp",
+    rank: { bronze: "/guild/rank_bronze.webp", silver: "/guild/rank_silver.webp", gold: "/guild/rank_gold.webp", platinum: "/guild/rank_platinum.webp", diamond: "/guild/rank_diamond.webp", master: "/guild/rank_master.webp" },
+} as const;
+
 /** 城の属性に対して×2.0が取れる属性（ADVANTAGE＝battle.ts正本から逆引き） */
 const weakOf = (castleEl: ElementKey): ElementKey =>
     (Object.keys(ADVANTAGE) as ElementKey[]).find((e) => ADVANTAGE[e].includes(castleEl)) || castleEl;
@@ -196,13 +204,16 @@ export default function IslandsGuildPage() {
             {/* ヘッダー */}
             <div className="gx-head">
                 <div className="gx-title">
-                    <h1>🏝️ みんなの島へ行く</h1>
-                    <p>仲間の島を訪問し、交流・バトル・攻略を楽しもう</p>
+                    <img className="gx-emblem" src={GUILD_IMG.emblem} alt="" />
+                    <div>
+                        <h1>みんなの島へ行く</h1>
+                        <p>仲間の島を訪問し、交流・バトル・攻略を楽しもう</p>
+                    </div>
                 </div>
                 <div className="gx-head-r">
                     {target && (
                         <button className="gx-target-chip" onClick={() => pick(target.id)} title="攻略目標の島を表示">
-                            🎯 目標：{target.name}の島 <span onClick={(e) => { e.stopPropagation(); clearTarget(); }}>×</span>
+                            <img src={GUILD_IMG.target} alt="" style={{ width: 17, height: 17, verticalAlign: "-3px" }} /> 目標：{target.name}の島 <span onClick={(e) => { e.stopPropagation(); clearTarget(); }}>×</span>
                         </button>
                     )}
                     <button className="gx-head-btn" onClick={() => router.push("/ranking")}>🏆 ランキング</button>
@@ -231,7 +242,7 @@ export default function IslandsGuildPage() {
                                     <span className="gx-card-mid">
                                         <span className="gx-card-name">{i.name}{i.id === myId && <i className="gx-you">自分</i>}</span>
                                         <span className="gx-card-sub">Lv.{i.level}・{jobName(i.job)}</span>
-                                        <span className="gx-card-sub2"><span className="gx-rank">未ランク</span><span style={{ color: ELEMENTS[i.element].color, fontWeight: 900 }}><ElIco k={i.element} size={12} /> {ELEMENTS[i.element].name}</span></span>
+                                        <span className="gx-card-sub2"><span className="gx-rank"><img src={GUILD_IMG.rankNone} alt="" />未ランク</span><span style={{ color: ELEMENTS[i.element].color, fontWeight: 900 }}><ElIco k={i.element} size={12} /> {ELEMENTS[i.element].name}</span></span>
                                     </span>
                                     <span className="gx-card-castle">
                                         <img src={castle.img} alt="" />
@@ -259,7 +270,7 @@ export default function IslandsGuildPage() {
                                     <div className="gx-sel-chips">
                                         <span className="gx-pill gx-pill-lv">Lv.{sel.level}</span>
                                         <span className="gx-pill gx-pill-job">{jobName(sel.job)}</span>
-                                        <span className="gx-pill gx-pill-rank">未ランク</span>
+                                        <span className="gx-pill gx-pill-rank"><img src={GUILD_IMG.rankNone} alt="" style={{ width: 16, height: 16 }} />未ランク</span>
                                         <span className="gx-pill" style={{ color: ELEMENTS[sel.element].color, borderColor: ELEMENTS[sel.element].color }}><ElIco k={sel.element} size={13} /> {ELEMENTS[sel.element].name}属性の城</span>
                                     </div>
                                     <div className="gx-sel-meta">🔥 連続 {sel.streak}日 ／ 🏰 城 第{getCastleStage(sel.totalEarned).stage}段階 ／ 📍 {STEP_TITLE[sel.stepNo] || STEP_TITLE[0]}</div>
@@ -275,8 +286,8 @@ export default function IslandsGuildPage() {
                                 <button className="gx-btn gx-btn-visit" onClick={() => router.push("/profile/" + sel.id)}>🏰 島を訪問<span>ホームを見る</span></button>
                                 {!isSelf && <button className="gx-btn gx-btn-battle" onClick={() => router.push("/battle/" + sel.id)}>⚔️ バトルに挑む<span>城を攻めよう</span></button>}
                                 {!isSelf && (target?.id === sel.id
-                                    ? <button className="gx-btn gx-btn-target gx-btn-target-on" onClick={clearTarget}>🎯 攻略目標 設定中<span>タップで解除</span></button>
-                                    : <button className="gx-btn gx-btn-target" onClick={saveTarget}>🎯 攻略目標にする<span>この端末に保存</span></button>)}
+                                    ? <button className="gx-btn gx-btn-target gx-btn-target-on" onClick={clearTarget}><img src={GUILD_IMG.target} alt="" style={{ width: 18, height: 18, verticalAlign: "-3px" }} /> 攻略目標 設定中<span>タップで解除</span></button>
+                                    : <button className="gx-btn gx-btn-target" onClick={saveTarget}><img src={GUILD_IMG.target} alt="" style={{ width: 18, height: 18, verticalAlign: "-3px" }} /> 攻略目標にする<span>この端末に保存</span></button>)}
                             </div>
                         </div>
                     )}
@@ -416,6 +427,8 @@ export default function IslandsGuildPage() {
 const CSS = `
 .gx-root{min-height:100vh;min-height:100dvh;background:#7fc3ef url(/images/onboarding/job-selection-bg.webp) center 26%/cover no-repeat fixed;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:#2b2416;padding:16px 16px calc(40px + env(safe-area-inset-bottom));box-sizing:border-box}
 .gx-head{max-width:1340px;margin:0 auto 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.gx-title{display:flex;align-items:center;gap:11px}
+.gx-emblem{width:54px;height:54px;filter:drop-shadow(0 4px 10px rgba(16,47,112,.45))}
 .gx-title h1{margin:0;font-size:24px;font-weight:900;color:#fff;text-shadow:0 2px 0 #1e3a8a,0 4px 14px rgba(16,47,112,.5)}
 .gx-title p{margin:3px 0 0;font-size:12px;font-weight:800;color:#f0f6ff;text-shadow:0 1px 6px rgba(16,47,112,.6)}
 .gx-head-r{display:flex;gap:8px;flex-wrap:wrap}
@@ -442,7 +455,8 @@ const CSS = `
 .gx-you{font-style:normal;margin-left:5px;font-size:9px;font-weight:900;color:#15803d;background:#dcfce7;border-radius:999px;padding:1px 7px}
 .gx-card-sub{font-size:10.5px;font-weight:800;color:#6b5a33}
 .gx-card-sub2{display:flex;gap:7px;align-items:center;font-size:10px}
-.gx-rank{font-weight:900;color:#64748b;background:#f1f5f9;border-radius:999px;padding:1px 7px;font-size:9px}
+.gx-rank{display:inline-flex;align-items:center;gap:3px;font-weight:900;color:#64748b;background:#f1f5f9;border-radius:999px;padding:1px 7px;font-size:9px}
+.gx-rank img{width:13px;height:13px}
 .gx-card-castle{display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0}
 .gx-card-castle img{width:44px;height:38px;object-fit:contain}
 .gx-card-castle i{font-style:normal;font-size:8.5px;font-weight:900;color:#a16207}
