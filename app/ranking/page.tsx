@@ -190,6 +190,7 @@ export default function RankingPage() {
     const [thinkingUsers, setThinkingUsers] = useState<RankingUser[]>([]);
     const [questionUsers, setQuestionUsers] = useState<RankingUser[]>([]);
     const [ipponUsers, setIpponUsers] = useState<RankingUser[]>([]);
+    const [facesReady, setFacesReady] = useState(false);
     const [faces, setFaces] = useState<Record<string, FaceSource>>({});   // 全員分のアバター（id → 顔アイコンの元データ）
     const [battleCountUsers, setBattleCountUsers] = useState<RankingUser[]>([]);
     const [battleWinUsers, setBattleWinUsers] = useState<RankingUser[]>([]);
@@ -229,7 +230,7 @@ export default function RankingPage() {
             supabase.from("profiles").select("id, job_class, avatar_config").eq("is_active", true).then(({ data }) => {
                 const m: Record<string, FaceSource> = {};
                 (data || []).forEach((r: any) => { m[r.id] = faceSourceOf(r); });
-                setFaces(m);
+                setFaces(m); setFacesReady(true);
             });
 
             // ===== 総合ランキング =====
@@ -620,8 +621,8 @@ export default function RankingPage() {
                 </div>
             );
         }
-        // 本人が設定したアバター（なければ職業キャラ）を優先。どちらも無い人だけ従来の写真・頭文字
-        if (faces[user.id]?.job) return <AvatarFace src={faces[user.id]} size={size} border="none" />;
+        // 本人が設定したアバター（なければ職業キャラ）。どちらも未設定の人は写真ではなくデフォルトのキャラ（島一覧と同じナイト）
+        if (facesReady) return <AvatarFace src={faces[user.id]?.job ? faces[user.id] : { job: "knight", cfg: null }} size={size} border="none" />;
         if (user.avatar_url) {
             return <img src={user.avatar_url} alt={user.name} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", display: "block" }} />;
         }
