@@ -121,9 +121,12 @@ export const GEAR_READY = new Set<string>([]);
 export const HEAD_BEHIND_HAIR = new Set<string>([]);  // 後ろ配置は髪に埋もれたため不使用（前被りに戻した）
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "43";
+export const ASSET_V = "44";
 
-export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean }[] {
+/** 被ると髪を帽子の中に収める頭装備。帽子より上にはみ出す髪を <id>__hairmask.png で隠す（＝ちゃんと被って見える） */
+export const HEAD_HAIR_MASK = new Set<string>(["mage_hat", "mage_hat_star", "mage_hat_moon"]);
+
+export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src: string | null; missing: boolean; mask?: string }[] {
     const g = GEAR[job];
     const find = (list: Part[], id: string) => list.find((p) => p.id === id);
     const hair = find(HAIR[c.base], c.hair);
@@ -157,5 +160,11 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
         head_back: behind ? headGear : none,
         hair_front: { src: hairSrc("front"), missing: !(hair?.src && colorOk) }, head: behind ? none : headGear, weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
     };
-    return LAYER_ORDER.map((layer) => { const p = parts[layer]; return { layer, src: p.src ? p.src + "?v=" + ASSET_V : p.src, missing: p.missing }; });
+    // 帽子を被っている間、髪レイヤーにマスクを掛ける（帽子画像が表示できるときだけ）
+    const hairMask = HEAD_HAIR_MASK.has(c.head) && headGear.src ? `/avatar/head/${c.head}__hairmask.png?v=${ASSET_V}` : undefined;
+    return LAYER_ORDER.map((layer) => {
+        const p = parts[layer];
+        const mask = (layer === "hair_back" || layer === "hair_front") ? hairMask : undefined;
+        return { layer, src: p.src ? p.src + "?v=" + ASSET_V : p.src, missing: p.missing, mask };
+    });
 }
