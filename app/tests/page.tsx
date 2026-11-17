@@ -1,363 +1,239 @@
 "use client";
-
+// テスト一覧「試練の間」。合格／不合格／未受験を区別し、不合格のテストは結果詳細（間違えた問題と解説）→復習→再受験へ進める。
+// 一覧に出す成績は自分の受験履歴（test_attempts / quiz_attempts）だけ。問題・正解・解説は TestReview がサーバーから本人の分だけ受け取る。
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import TestReview from "./TestReview";
+import { TESTS, CATEGORY_ORDER, TEST_ORDER, TEST_MAX_SCORES, TEST_IMG, formatDate, type TestItem, type Attempt } from "./meta";
 
-const TEST_MAX_SCORES: Record<string, number> = {
-    quiz: 15,
-    common_sense: 15,
-    social_standard: 15,
-    profit_thinking: 15,
-    long_term_thinking: 15,
-    essence_thinking: 15,
-    standard_keeping: 15,
-    market_value: 15,
-    teiou: 15,
-    mentor: 100,
-    retention: 100,
-    entrepreneur: 100,
-    marketer: 100,
-    sales: 100,
-    planner: 100,
-    manager: 100,
-    standard_raising: 15,
-    management_collab: 15,
-    cert_market_value: 15,
-    improvement_force: 15,
-    apology_escape: 15,
-    logical_thinking: 15,
-    progress_update: 15,
-    life_improvement: 15,
-    market_eval: 15,
-    quick_response: 15,
-    self_protection: 15,
-};
-type TestItem = {
-    key: string;
-    label: string;
-    desc: string;
-    path: string;
-    icon: string;
-    color: string;
-    passedField?: string;
-    rewardText: string;
-    table: "quiz_attempts" | "test_attempts" | "manual";
-    category?: "mind" | "conduct" | "aptitude" | "market";
-};
-
-const CATEGORY_ORDER = [
-    { key: "mind", label: "マインド・価値観", desc: "土台となる思考をつくる", icon: "🧠", color: "#a78bfa" },
-    { key: "conduct", label: "素行・改善", desc: "行動のクセを整える", icon: "📋", color: "#f97316" },
-    { key: "aptitude", label: "職種適性", desc: "自分に向いた道を知る", icon: "💼", color: "#8b5cf6" },
-    { key: "market", label: "市場価値・キャリア認識", desc: "評価される基準を知る", icon: "📈", color: "#ef4444" },
-];
-
-const TEST_ORDER: Record<string, number> = {
-    quiz: 1, common_sense: 2, social_standard: 3, standard_keeping: 4, standard_raising: 5,
-    long_term_thinking: 6, profit_thinking: 7, essence_thinking: 8, logical_thinking: 9, teiou: 10,
-    quick_response: 1, progress_update: 2, improvement_force: 3, apology_escape: 4,
-    self_protection: 5, life_improvement: 6, management_collab: 7,
-    sales: 1, marketer: 2, planner: 3, mentor: 4, manager: 5, entrepreneur: 6,
-    market_eval: 1, cert_market_value: 2, retention: 3,
-};
-
-type Attempt = {
-    score: number;
-    passed: boolean;
-    created_at: string;
-    written_answers?: any;
-    answers?: any;
-    written_evaluation?: "high" | "mid" | "none" | null;
-    written_points_awarded?: number;
-};
-
-const TESTS: TestItem[] = [
-    { key: "common_sense", label: "常識・デリカシーテスト", desc: "人として基本のキ", path: "/tests/common-sense", icon: "🧠", color: "#a78bfa", passedField: "common_sense_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "mind" },
-    { key: "social_standard", label: "社会人基準・現実認識", desc: "“まだまだ”を理解する基準テスト", path: "/tests/social-standard", icon: "🎯", color: "#ec4899", passedField: "social_standard_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "mind" },
-    { key: "long_term_thinking", label: "長期思考・複利思考", desc: "未来の自分を優先できるか", path: "/tests/long-term-thinking", icon: "📈", color: "#3b82f6", passedField: "long_term_thinking_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "mind" },
-    { key: "profit_thinking", label: "利益思考・判断センス", desc: "感情ではなく利益で動けるか", path: "/tests/profit-thinking", icon: "💰", color: "#10b981", passedField: "profit_thinking_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "mind" },
-    { key: "essence_thinking", label: "本質思考・タスク整理", desc: "“余計なことを増やさない人”になる", path: "/tests/essence-thinking", icon: "🔍", color: "#06b6d4", passedField: "essence_thinking_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "mind" },
-    { key: "standard_keeping", label: "基準維持・妥協耐性", desc: "“すぐ妥協しない人”になる", path: "/tests/standard-keeping", icon: "⚖️", color: "#f97316", passedField: "standard_keeping_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "mind" },
-    { key: "quiz", label: "確認ワークテスト", desc: "価値観と仕事の基本をチェック", path: "/quiz", icon: "🧠", color: "#a78bfa", passedField: "quiz_passed", rewardText: "合格で +10pt", table: "quiz_attempts", category: "mind" },
-    { key: "teiou", label: "Dot.A 帝王学", desc: "思想・判断・覚悟の最高ランク", path: "/tests/teiou", icon: "👑", color: "#fbbf24", passedField: "teiou_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "mind" },
-    { key: "marketer", label: "マーケター適性テスト", desc: "売れる仕組みを作れるか", path: "/tests/marketer", icon: "📊", color: "#06b6d4", passedField: "marketer_passed", rewardText: "満点合格で +10pt", table: "test_attempts", category: "aptitude" },
-    { key: "sales", label: "営業デビュー適性テスト", desc: "現場に出る準備ができているか", path: "/tests/sales", icon: "💼", color: "#8b5cf6", passedField: "sales_passed", rewardText: "満点合格で +10pt", table: "test_attempts", category: "aptitude" },
-    { key: "mentor", label: "メンターテスト", desc: "育成者としての思考判定", path: "/tests/mentor", icon: "🌱", color: "#10b981", passedField: "mentor_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "aptitude" },
-    { key: "planner", label: "企画職適性テスト", desc: "売上責任を持つ設計者か", path: "/tests/planner", icon: "💡", color: "#ec4899", passedField: "planner_passed", rewardText: "満点合格で +10pt", table: "test_attempts", category: "aptitude" },
-    { key: "entrepreneur", label: "起業適性テスト", desc: "今やるべきか、まだやるな", path: "/tests/entrepreneur", icon: "🚀", color: "#f59e0b", passedField: "entrepreneur_passed", rewardText: "満点合格で +10pt", table: "test_attempts", category: "aptitude" },
-    { key: "manager", label: "マネージャーテスト", desc: "チームで勝つための思考", path: "/manager-test", icon: "👔", color: "#6366f1", rewardText: "合格で +10pt", table: "manual", category: "aptitude" },
-    { key: "retention", label: "Dot.A 雇用テスト", desc: "雇用継続の判定テスト", path: "/tests/retention", icon: "🔥", color: "#ef4444", passedField: "retention_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "market" },
-    { key: "standard_raising", label: "基準上昇・人生現実テスト", desc: "親世代と同じ生活基準を理解する", path: "/tests/standard-raising", icon: "🚀", color: "#f43f5e", passedField: "standard_raising_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "mind" },
-    { key: "management_collab", label: "マネジメント・協働価値テスト", desc: "他人と成果を作れる人になる", path: "/tests/management-collab", icon: "🤝", color: "#06b6d4", passedField: "management_collab_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "conduct" },
-    { key: "cert_market_value", label: "資格依存・市場価値現実テスト", desc: "資格より実務価値を理解する", path: "/tests/cert-market-value", icon: "💎", color: "#14b8a6", passedField: "cert_market_value_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "market" },
-    { key: "improvement_force", label: "改善力・逃避防止テスト", desc: "宣言だけで終わらない人になる", path: "/tests/improvement-force", icon: "🔧", color: "#f97316", passedField: "improvement_force_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "conduct" },
-    { key: "apology_escape", label: "謝罪逃避・責任転嫁防止テスト", desc: "謝って終わる人にならない", path: "/tests/apology-escape", icon: "🪞", color: "#eab308", passedField: "apology_escape_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "conduct" },
-    { key: "logical_thinking", label: "論理思考・感情逃避防止テスト", desc: "感情論で押し切らない判断力", path: "/tests/logical-thinking", icon: "🧮", color: "#6366f1", passedField: "logical_thinking_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "mind" },
-    { key: "progress_update", label: "進捗更新・ケアレスミス改善テスト", desc: "報連相と確認力の徹底", path: "/tests/progress-update", icon: "📡", color: "#84cc16", passedField: "progress_update_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "conduct" },
-    { key: "life_improvement", label: "生活改善・時間価値テスト", desc: "堕落せず積み上げ続ける", path: "/tests/life-improvement", icon: "⏰", color: "#d946ef", passedField: "life_improvement_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "conduct" },
-    { key: "market_eval", label: "市場価値・評価認識テスト", desc: "評価は自分で決めるものではない", path: "/tests/market-eval", icon: "📊", color: "#ef4444", passedField: "market_eval_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "market" },
-    { key: "quick_response", label: "即レス・反応速度テスト", desc: "相手の時間を止めない意識", path: "/tests/quick-response", icon: "⚡", color: "#facc15", passedField: "quick_response_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "conduct" },
-    { key: "self_protection", label: "保身・自己防衛過剰改善テスト", desc: "自分を守るより問題と向き合う", path: "/tests/self-protection", icon: "🛡️", color: "#a855f7", passedField: "self_protection_passed", rewardText: "合格で +10pt", table: "test_attempts", category: "conduct" },
-];
-
-function formatDate(iso: string): string {
-    const d = new Date(iso);
-    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
+const EVAL_LABEL: Record<string, string> = { high: "記述評価：高", mid: "記述評価：中", none: "記述評価：なし" };
 
 export default function TestsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState<any>(null);
-    const [attemptsByKey, setAttemptsByKey] = useState<Record<string, Attempt[]>>({});
-    const [selectedTest, setSelectedTest] = useState<TestItem | null>(null);
-    const [activeCat, setActiveCat] = useState<string>("mind");
+    const [byKey, setByKey] = useState<Record<string, Attempt[]>>({});
+    const [cat, setCat] = useState<string>("mind");
+    const [openKey, setOpenKey] = useState<string | null>(null);
+    const [pick, setPick] = useState<string | null>(null);   // 結果詳細を見ている受験（既定は最新）
+    const [showW, setShowW] = useState<string | null>(null);  // 記述回答を開いている受験
 
     useEffect(() => {
-        const load = async () => {
+        (async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
-            const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+            const [{ data: p }, { data: quiz }, { data: tests }] = await Promise.all([
+                supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+                supabase.from("quiz_attempts").select("score, passed, created_at, written_answers, written_evaluation, written_points_awarded").eq("user_id", user.id).order("created_at", { ascending: false }),
+                supabase.from("test_attempts").select("id, test_key, score, passed, created_at, written_answers, written_evaluation, written_points_awarded").eq("user_id", user.id).order("created_at", { ascending: false }),
+            ]);
             setProfile(p);
-
-            // 確認ワーク（quiz_attempts）を取得（評価情報も含む）
-            const { data: quizAttempts } = await supabase
-                .from("quiz_attempts")
-                .select("score, passed, created_at, answers, written_answers, written_evaluation, written_points_awarded")
-                .eq("user_id", user.id)
-                .order("created_at", { ascending: false });
-
-            // 他テスト（test_attempts）を取得（評価情報も含む）
-            const { data: testAttempts } = await supabase
-                .from("test_attempts")
-                .select("test_key, score, passed, created_at, written_answers, written_evaluation, written_points_awarded")
-                .eq("user_id", user.id)
-                .order("created_at", { ascending: false });
-
-            const byKey: Record<string, Attempt[]> = {};
-            byKey["quiz"] = (quizAttempts || []) as Attempt[];
-            (testAttempts || []).forEach((a: any) => {
-                if (!byKey[a.test_key]) byKey[a.test_key] = [];
-                byKey[a.test_key].push({
-                    score: a.score,
-                    passed: a.passed,
-                    created_at: a.created_at,
-                    written_answers: a.written_answers,
-                    written_evaluation: a.written_evaluation,
-                    written_points_awarded: a.written_points_awarded,
-                });
-            });
-            setAttemptsByKey(byKey);
-
+            const m: Record<string, Attempt[]> = { quiz: (quiz || []) as Attempt[] };
+            (tests || []).forEach((a: any) => { (m[a.test_key] = m[a.test_key] || []).push({ ...a, id: String(a.id) }); });
+            setByKey(m);
+            // ?open=テストキー で、そのテストの結果詳細を開いた状態にする（受験画面の「復習する」から来たとき）
+            try {
+                const k = new URLSearchParams(window.location.search).get("open");
+                const t = k ? TESTS.find((x) => x.key === k) : null;
+                if (t) { setCat(t.category || "mind"); setOpenKey(t.key); }
+            } catch {}
             setLoading(false);
-        };
-        load();
+        })();
     }, [router]);
 
-    if (loading) return (
-        <main style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ color: "#6366f1", fontSize: 18, fontWeight: 700 }}>Loading...</div>
-        </main>
-    );
+    if (loading) return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#7fc3ef", color: "#fff", fontWeight: 900 }}>📜 試練の間を開いています...</div>;
 
-    const getStats = (testKey: string) => {
-        const attempts = attemptsByKey[testKey] || [];
-        if (attempts.length === 0) return null;
-        const maxScore = Math.max(...attempts.map(a => a.score));
-        const lastAttempt = attempts[0]; // 既に降順なので先頭が最新
-        return { count: attempts.length, maxScore, lastScore: lastAttempt.score, lastAt: lastAttempt.created_at };
+    const list = TESTS.filter((t) => t.category === cat).sort((a, b) => (TEST_ORDER[a.key] || 99) - (TEST_ORDER[b.key] || 99));
+    const max = (k: string) => TEST_MAX_SCORES[k] || 15;
+    const info = (t: TestItem) => {
+        const at = byKey[t.key] || [];
+        const passed = !!(t.passedField && profile?.[t.passedField]) || at.some((a) => a.passed);
+        const last = at[0] || null;
+        const retryAt = last && !last.passed ? new Date(new Date(last.created_at).getTime() + 24 * 3600 * 1000) : null;
+        return { at, passed, last, status: passed ? "pass" : at.length ? "fail" : "none", best: at.length ? Math.max(...at.map((a) => a.score)) : null, retryAt };
     };
+    const waitText = (d: Date | null) => { if (!d || d.getTime() <= Date.now()) return ""; const m = Math.ceil((d.getTime() - Date.now()) / 60000); return m >= 60 ? `あと約${Math.ceil(m / 60)}時間` : `あと約${m}分`; };
+    const toggle = (k: string) => { setPick(null); setShowW(null); setOpenKey((o) => (o === k ? null : k)); };
 
     return (
-        <main style={{ minHeight: "100vh", background: "#0a0a0f", padding: "40px 24px 64px", fontFamily: "'Inter', sans-serif" }}>
-            <div style={{ maxWidth: 800, margin: "0 auto" }}>
+        <div className="tq-root">
+            <style>{CSS}</style>
+            <header className="tq-head">
+                <div className="tq-left"><button className="tq-back" onClick={() => router.push("/menu")}>← メニュー</button><span className="tq-logo">INTERN<br />QUEST</span></div>
+                <div className="tq-sign">📝 テスト一覧</div>
+                <div className="tq-right" />
+            </header>
+            <p className="tq-copy"><span>あなたの価値観・適性・覚悟を測るテスト</span></p>
 
-                {/* ===== ヘッダー（統一） ===== */}
-                <div style={{ marginBottom: 32 }}>
-                    <div onClick={() => router.push("/home")} style={{ fontSize: 12, color: "#6366f1", fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", cursor: "pointer", display: "inline-block" }}>INTERN QUEST</div>
-                    <h1 style={{ fontSize: 28, fontWeight: 800, color: "#f9fafb", margin: "4px 0 0" }}>📝 テスト一覧</h1>
-                    <p style={{ color: "#9ca3af", fontSize: 14, margin: "8px 0 0" }}>あなたの価値観・適性・覚悟を測るテスト</p>
-                </div>
-
-                {/* ===== カテゴリ切り替えタブ ===== */}
-                <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-                  {CATEGORY_ORDER.map(cat => {
-                    const count = TESTS.filter(t => t.category === cat.key).length;
-                    const active = activeCat === cat.key;
-                    return (
-                      <button key={cat.key} onClick={() => setActiveCat(cat.key)}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12,
-                          background: active ? `${cat.color}22` : "rgba(255,255,255,0.03)",
-                          border: `1px solid ${active ? cat.color : "rgba(255,255,255,0.08)"}`,
-                          color: active ? "#f9fafb" : "#9ca3af", cursor: "pointer", transition: "all 0.15s",
-                          fontWeight: active ? 800 : 600, fontSize: 14,
-                        }}>
-                        <span style={{ fontSize: 18 }}>{cat.icon}</span>
-                        <span>{cat.label}</span>
-                        <span style={{ fontSize: 11, color: active ? cat.color : "#6b7280", fontWeight: 700 }}>{count}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {CATEGORY_ORDER.filter(cat => cat.key === activeCat).map(cat => {
-                  const catTests = TESTS
-                    .filter(t => t.category === cat.key)
-                    .sort((a, b) => (TEST_ORDER[a.key] ?? 99) - (TEST_ORDER[b.key] ?? 99));
-                  return (
-                    <div key={cat.key} style={{ marginBottom: 36 }}>
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 13, color: "#9ca3af" }}>{cat.desc}</div>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {catTests.map(t => {
-                        const passed = t.passedField ? (profile?.[t.passedField] || false) : false;
-                        const stats = getStats(t.key);
-                        return (
-                            <div key={t.key} style={{ padding: "20px 24px", borderRadius: 14, background: passed ? "rgba(16,185,129,0.05)" : "rgba(255,255,255,0.03)", border: `1px solid ${passed ? "rgba(16,185,129,0.3)" : "rgba(255,255,255,0.08)"}`, transition: "all 0.2s" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                                    <div onClick={() => router.push(t.path)} style={{ width: 56, height: 56, borderRadius: 12, background: `${t.color}20`, border: `1px solid ${t.color}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0, cursor: "pointer" }}>{t.icon}</div>
-                                    <div style={{ flex: 1, cursor: "pointer" }} onClick={() => router.push(t.path)}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                                            <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{t.label}</div>
-                                            {passed && <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(16,185,129,0.2)", color: "#10b981", fontSize: 11, fontWeight: 700 }}>✅ 合格済</span>}
-                                        </div>
-                                        <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>{t.desc}</div>
-                                        <div style={{ fontSize: 11, color: t.color, fontWeight: 600 }}>{t.rewardText}</div>
-                                    </div>
-                                    <div style={{ fontSize: 20, color: "#6b7280" }}>›</div>
-                                </div>
-
-                                {/* スコアサマリー */}
-                                {stats && (
-                                    <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                                        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#9ca3af", flexWrap: "wrap" }}>
-                                            <span>📊 受験 <strong style={{ color: "#f9fafb" }}>{stats.count}回</strong></span>
-                                            <span>🏆 最高 <strong style={{ color: "#fbbf24" }}>{stats.maxScore}/{TEST_MAX_SCORES[t.key] || 100}</strong></span>
-                                            <span>📅 前回 <strong style={{ color: "#f9fafb" }}>{stats.lastScore}/{TEST_MAX_SCORES[t.key] || 100}</strong></span>
-                                            <span style={{ color: "#6b7280" }}>{formatDate(stats.lastAt)}</span>
-                                        </div>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setSelectedTest(t); }}
-                                            style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                                        >
-                                            📜 履歴を見る
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* ===== メニューへ戻るボタン（統一） ===== */}
-                <div style={{ display: "flex", justifyContent: "center", marginTop: 48, marginBottom: 32 }}>
-                    <button onClick={() => router.push("/menu")} style={{ padding: "12px 32px", borderRadius: 10, background: "linear-gradient(135deg, #8b5cf6, #6366f1)", color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", boxShadow: "0 4px 12px rgba(139,92,246,0.3)" }}>
-                        メニューへ戻る
+            <nav className="tq-tabs">
+                {CATEGORY_ORDER.map((c) => (
+                    <button key={c.key} className={"tq-tab" + (cat === c.key ? " on" : "")} onClick={() => { setCat(c.key); setOpenKey(null); }}>
+                        <span>{c.icon}</span>{c.label}<i>{TESTS.filter((t) => t.category === c.key).length}</i>
                     </button>
-                </div>
-            </div>
+                ))}
+            </nav>
 
-            {/* ===== 履歴モーダル ===== */}
-            {selectedTest && (
-                <div onClick={() => setSelectedTest(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-                    <div onClick={(e) => e.stopPropagation()} style={{ background: "#0f0f1a", border: `1px solid ${selectedTest.color}40`, borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", overflowY: "auto" }}>
-                        {/* モーダルヘッダー */}
-                        <div style={{ padding: "24px 28px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, background: "#0f0f1a", zIndex: 1 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                <span style={{ fontSize: 28 }}>{selectedTest.icon}</span>
-                                <div>
-                                    <div style={{ fontSize: 11, color: selectedTest.color, fontWeight: 700, letterSpacing: 2, marginBottom: 2 }}>HISTORY</div>
-                                    <h2 style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", margin: 0 }}>{selectedTest.label}</h2>
+            <main className="tq-main">
+                {list.map((t) => {
+                    const s = info(t); const isOpen = openKey === t.key; const mx = max(t.key);
+                    const manual = t.table === "manual";
+                    const cur = s.at.find((a) => a.id && a.id === pick) || s.last;
+                    const curIdx = cur ? s.at.indexOf(cur) : -1;
+                    const prev = curIdx >= 0 ? s.at[curIdx + 1] : null;
+                    // 正解数で保存しているテストだけ前回比較を出す（正答率保存のテストは問題数に戻せる場合のみ）
+                    const prevCorrect = prev ? (mx === 100 ? null : prev.score) : null;
+                    const wait = waitText(s.retryAt);
+                    return (
+                        <article key={t.key} className={"tq-card tq-" + s.status + (isOpen ? " open" : "")}>
+                            <div className="tq-row">
+                                <span className="tq-ico" style={{ background: `${t.color}26`, borderColor: `${t.color}66` }}>{t.icon}</span>
+                                <div className="tq-mid">
+                                    <div className="tq-name">{t.label}
+                                        {s.status === "pass" && <em className="tq-badge g">✅ 合格</em>}
+                                        {s.status === "fail" && <em className="tq-badge r">✕ 不合格</em>}
+                                        {s.status === "none" && <em className="tq-badge n">未受験</em>}
+                                    </div>
+                                    <div className="tq-desc">{t.desc}<i>{t.rewardText}</i></div>
+                                    {s.at.length > 0 && s.last && (
+                                        <div className="tq-stats">
+                                            <span>📊 受験 <b>{s.at.length}回</b></span>
+                                            <span>🏆 最高 <b>{s.best}/{mx}</b></span>
+                                            <span>🗓️ 前回 <b>{s.last.score}/{mx}</b></span>
+                                            <span className="d">{formatDate(s.last.created_at)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="tq-side">
+                                    {s.best !== null && (
+                                        <div className={"tq-score" + (s.status === "pass" ? " g" : "")}>
+                                            {s.status === "pass" && <img src={TEST_IMG.crown} alt="" />}
+                                            <b>{s.status === "pass" ? s.best : s.last?.score}</b><i>/{mx}</i>
+                                        </div>
+                                    )}
+                                    {s.status === "none" && <button className="tq-btn" onClick={() => router.push(t.path)}><img src={TEST_IMG.challenge} alt="" />挑戦する</button>}
+                                    {s.status === "pass" && !manual && <button className="tq-btn sub" onClick={() => toggle(t.key)}>📜 {isOpen ? "とじる" : "履歴を見る"}</button>}
+                                    {s.status === "fail" && <button className="tq-btn" onClick={() => toggle(t.key)}><img src={TEST_IMG.book} alt="" />{isOpen ? "とじる" : "復習して再受験"}</button>}
                                 </div>
                             </div>
-                            <button onClick={() => setSelectedTest(null)} style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#9ca3af", fontSize: 16, cursor: "pointer" }}>✕</button>
-                        </div>
 
-                        {/* 履歴コンテンツ */}
-                        <div style={{ padding: "24px 28px" }}>
-                            {(() => {
-                                const attempts = attemptsByKey[selectedTest.key] || [];
-                                if (attempts.length === 0) {
-                                    return <div style={{ color: "#6b7280", fontSize: 14, textAlign: "center", padding: 40 }}>まだ受験履歴がありません</div>;
-                                }
-                                return (
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                                        {attempts.map((a, i) => (
-                                            <div key={i} style={{ padding: 16, borderRadius: 12, background: a.passed ? "rgba(16,185,129,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${a.passed ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.06)"}` }}>
-                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: a.written_answers ? 12 : 0, flexWrap: "wrap", gap: 8 }}>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                        <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 700 }}>第{attempts.length - i}回</span>
-                                                        <span style={{ fontSize: 13, color: "#9ca3af" }}>{formatDate(a.created_at)}</span>
-                                                    </div>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                                        <span style={{ fontSize: 18, fontWeight: 800, color: a.passed ? "#10b981" : "#f59e0b" }}>{a.score}/{TEST_MAX_SCORES[selectedTest.key] || 100}</span>
-                                                        <span style={{ padding: "3px 10px", borderRadius: 6, background: a.passed ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)", color: a.passed ? "#10b981" : "#f59e0b", fontSize: 11, fontWeight: 700 }}>{a.passed ? "✅ 合格" : "❌ 不合格"}</span>
-                                                        {a.written_evaluation === "high" && (
-                                                            <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(251,191,36,0.2)", border: "1px solid rgba(251,191,36,0.4)", color: "#fbbf24", fontSize: 11, fontWeight: 700 }}>🥇 高評価 +{a.written_points_awarded}pt</span>
-                                                        )}
-                                                        {a.written_evaluation === "mid" && (
-                                                            <span style={{ padding: "3px 10px", borderRadius: 6, background: "rgba(148,163,184,0.2)", border: "1px solid rgba(148,163,184,0.4)", color: "#cbd5e1", fontSize: 11, fontWeight: 700 }}>🥈 中評価 +{a.written_points_awarded}pt</span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                            {isOpen && (
+                                <div className="tq-detail">
+                                    {cur?.id
+                                        ? <TestReview attemptId={cur.id} title={t.label} prevCorrect={prevCorrect} retryPath={s.status === "fail" ? t.path : undefined} retryAt={s.retryAt} />
+                                        : <div className="tq-note">このテストは、問題ごとの結果表示にまだ対応していません（点数と履歴のみ表示します）
+                                            {s.status === "fail" && <div style={{ marginTop: 10 }}><button className="tq-btn" disabled={!!wait} onClick={() => router.push(t.path)}>{wait ? `再受験は${wait}` : "もう一度挑戦する"}</button></div>}
+                                        </div>}
 
-                                                {/* 記述式回答 */}
-                                                {a.written_answers && (
-                                                    <details style={{ marginTop: 8 }}>
-                                                        <summary style={{ cursor: "pointer", fontSize: 12, color: "#818cf8", fontWeight: 600, padding: "6px 0" }}>✍️ 記述式回答を振り返る</summary>
-                                                        {a.written_evaluation === "high" && (
-                                                            <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 10, background: "linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.05))", border: "1px solid rgba(251,191,36,0.4)", fontSize: 12, color: "#fbbf24", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                                                                <span style={{ fontSize: 18 }}>🥇</span>
-                                                                <span>この記述、高評価してもらいました！ +{a.written_points_awarded}pt 獲得</span>
-                                                            </div>
-                                                        )}
-                                                        {a.written_evaluation === "mid" && (
-                                                            <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 10, background: "linear-gradient(135deg, rgba(148,163,184,0.15), rgba(148,163,184,0.05))", border: "1px solid rgba(148,163,184,0.4)", fontSize: 12, color: "#cbd5e1", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                                                                <span style={{ fontSize: 18 }}>🥈</span>
-                                                                <span>この記述、中評価してもらいました！ +{a.written_points_awarded}pt 獲得</span>
-                                                            </div>
-                                                        )}
-                                                        <div style={{ marginTop: 8, padding: 14, borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                                                            {Array.isArray(a.written_answers) ? (
-                                                                a.written_answers.map((ans: any, j: number) => {
-                                                                    const isObj = typeof ans === "object" && ans !== null;
-                                                                    const answerText = isObj ? (ans.answer || "") : (ans || "");
-                                                                    const questionText = isObj ? ans.question : null;
-                                                                    return (
-                                                                    <div key={j} style={{ marginBottom: j < a.written_answers.length - 1 ? 12 : 0 }}>
-                                                                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>{questionText || `Q${j + 1}`}</div>
-                                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{answerText || "(未記入)"}</div>
-                                                                    </div>
-                                                                    );
-                                                                })
-                                                            ) : typeof a.written_answers === "object" ? (
-                                                                Object.entries(a.written_answers).map(([key, val], j) => (
-                                                                    <div key={key} style={{ marginBottom: j < Object.keys(a.written_answers).length - 1 ? 12 : 0 }}>
-                                                                        <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, marginBottom: 4 }}>{key}</div>
-                                                                        <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{(val as string) || "(未記入)"}</div>
-                                                                    </div>
-                                                                ))
-                                                            ) : (
-                                                                <div style={{ fontSize: 13, color: "#6b7280" }}>記述データなし</div>
-                                                            )}
-                                                        </div>
-                                                    </details>
+                                    <div className="tq-hist">
+                                        <div className="tq-hh">🗂️ 受験履歴（{s.at.length}回）</div>
+                                        {s.at.map((a, i) => (
+                                            <div key={a.id || i} className={"tq-hrow" + (cur === a ? " cur" : "")}>
+                                                <button className="tq-hmain" onClick={() => a.id && setPick(a.id)} disabled={!a.id}>
+                                                    <span className="d">{formatDate(a.created_at)}</span>
+                                                    <b>{a.score}/{mx}</b>
+                                                    <em className={a.passed ? "g" : "r"}>{a.passed ? "合格" : "不合格"}</em>
+                                                    {a.written_evaluation && <em className="e">{EVAL_LABEL[a.written_evaluation] || ""}{a.written_points_awarded ? `（+${a.written_points_awarded}pt）` : ""}</em>}
+                                                </button>
+                                                {a.written_answers && <button className="tq-wbtn" onClick={() => setShowW(showW === (a.id || String(i)) ? null : (a.id || String(i)))}>記述回答 {showW === (a.id || String(i)) ? "▲" : "▼"}</button>}
+                                                {showW === (a.id || String(i)) && a.written_answers && (
+                                                    <div className="tq-written">
+                                                        {(Array.isArray(a.written_answers)
+                                                            ? a.written_answers.map((w: any, j: number) => (typeof w === "string" ? [`記述${j + 1}`, w] : [w?.question || `記述${j + 1}`, w?.answer || ""]))
+                                                            : Object.entries(a.written_answers as Record<string, string>)
+                                                        ).map(([q, ans]: any, j: number) => <div key={j}><b>{String(q)}</b><p>{String(ans || "（未回答）")}</p></div>)}
+                                                    </div>
                                                 )}
                                             </div>
                                         ))}
                                     </div>
-                                );
-                            })()}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </main>
+                                </div>
+                            )}
+                        </article>
+                    );
+                })}
+            </main>
+        </div>
     );
 }
+
+const CSS = `
+.tq-root{min-height:100vh;min-height:100dvh;background:#7fc3ef url(/images/onboarding/job-selection-bg.webp) center 22%/cover no-repeat fixed;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:#2b2416;padding:14px 14px calc(44px + env(safe-area-inset-bottom));box-sizing:border-box}
+.tq-head{max-width:1180px;margin:0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.tq-left,.tq-right{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.tq-back{border:2px solid #F5D77E;background:rgba(255,249,237,.96);color:#102F70;font-weight:900;font-size:12.5px;border-radius:999px;padding:10px 15px;cursor:pointer;min-height:44px}
+.tq-logo{font-family:Georgia,"Times New Roman",serif;font-size:21px;line-height:1.05;font-weight:700;letter-spacing:2px;color:#f6dc9a;text-shadow:0 2px 0 #7a5516,0 3px 8px rgba(16,47,112,.55)}
+.tq-sign{border-radius:22px;padding:13px 56px 15px;background:linear-gradient(180deg,#3f66b8,#1d3a82 55%,#162c66);border:3px solid #F5D77E;box-shadow:0 0 0 2px #b98a35,0 6px 0 #0d1c45,0 14px 26px rgba(16,47,112,.45),inset 0 2px 0 rgba(255,255,255,.35);font-size:34px;font-weight:900;color:#fff;letter-spacing:5px;text-shadow:0 2px 0 #0a1f4a;white-space:nowrap}
+.tq-copy{max-width:1180px;margin:-4px auto 0;text-align:center;position:relative;z-index:1}
+.tq-copy span{display:inline-block;background:linear-gradient(180deg,#fffdf6,#f3e9d2);color:#4a3b1c;border:2px solid #e2c98c;border-radius:6px;padding:6px 34px;font-size:15px;font-weight:900;letter-spacing:1px;box-shadow:0 4px 10px rgba(16,47,112,.25)}
+.tq-tabs{max-width:1180px;margin:16px auto 0;display:flex;gap:12px;justify-content:center;position:relative;z-index:2}
+.tq-tab{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;border:3px solid #D9A441;border-radius:999px;padding:11px 20px;font-size:15.5px;font-weight:900;cursor:pointer;background:linear-gradient(180deg,#fffef9,#f3ead6);color:#3b3524;box-shadow:0 0 0 2px #fff6dc inset,0 5px 12px rgba(16,47,112,.3);min-height:48px}
+.tq-tab span{font-size:19px}
+.tq-tab i{font-style:normal;font-size:13px;color:#8a6a3a;margin-left:2px}
+.tq-tab.on{background:linear-gradient(180deg,#3d8af0,#1554c4 55%,#0f3f9c);border-color:#F5D77E;color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.35) inset,0 0 22px rgba(90,160,255,.95),0 5px 12px rgba(16,47,112,.4)}
+.tq-tab.on i{color:#dbe7ff}
+.tq-main{max-width:1180px;margin:-24px auto 0;padding:44px 22px 22px;border-radius:14px;background:linear-gradient(180deg,rgba(38,52,104,.93),rgba(27,38,82,.95));border:3px solid #E8C876;box-shadow:0 0 0 2px #9c7430,inset 0 0 0 2px rgba(232,200,118,.35),0 14px 36px rgba(10,20,60,.45)}
+.tq-card{background:linear-gradient(180deg,#fffdf6,#f8eed8);border:3px solid #e9d6a6;border-radius:16px;margin-bottom:12px;box-shadow:inset 0 0 0 2px #fff,0 5px 12px rgba(8,14,44,.35)}
+.tq-card.open{border-color:#E8C876}
+.tq-row{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.tq-ico{flex-shrink:0;width:62px;height:62px;border-radius:14px;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:32px;background:#fff}
+.tq-mid{flex:1;min-width:0}
+.tq-name{font-size:20px;font-weight:900;color:#17307a;display:flex;align-items:center;gap:10px;flex-wrap:wrap;overflow-wrap:anywhere}
+.tq-badge{font-style:normal;font-size:12.5px;font-weight:900;border-radius:999px;padding:3px 12px;color:#fff;white-space:nowrap}
+.tq-badge.g{background:linear-gradient(180deg,#34c06b,#1c9a4e)}
+.tq-badge.r{background:linear-gradient(180deg,#f0506e,#d42a4c)}
+.tq-badge.n{background:#b9b2a0}
+.tq-desc{font-size:13px;font-weight:700;color:#6b5a33;margin-top:2px}
+.tq-desc i{font-style:normal;font-size:11.5px;color:#a16207;margin-left:10px;white-space:nowrap}
+.tq-stats{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(217,164,65,.45);font-size:13px;color:#5b4a23;font-weight:700}
+.tq-stats b{color:#23284a;font-size:14.5px}
+.tq-stats .d{color:#8a7a55}
+.tq-side{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.tq-score{position:relative;display:flex;align-items:baseline;justify-content:center;min-width:92px;padding:6px 14px;border-radius:999px;background:#fff;border:2px solid #e7dcc2;color:#2a2f52}
+.tq-score b{font-size:28px;font-weight:900}
+.tq-score i{font-style:normal;font-size:16px;font-weight:900}
+.tq-score.g{border-color:#E8C876;background:linear-gradient(180deg,#fffdf0,#fbefc4);color:#8a5a0a;padding-left:46px}
+.tq-score img{position:absolute;left:4px;top:50%;transform:translateY(-50%);width:40px;height:40px;object-fit:contain}
+.tq-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:3px solid #F5D77E;background:linear-gradient(180deg,#3b78e0,#1454B8);color:#fff;font-weight:900;font-size:14.5px;border-radius:999px;padding:9px 20px;cursor:pointer;min-height:48px;white-space:nowrap;box-shadow:0 5px 12px rgba(16,47,112,.3)}
+.tq-btn img{width:26px;height:26px;object-fit:contain}
+.tq-btn.sub{background:linear-gradient(180deg,#fffdf4,#f1e1bd);color:#17397d;border-color:#D9A441}
+.tq-btn:disabled{background:#cbbf9f;border-color:#e3d9bd;box-shadow:none;cursor:not-allowed}
+.tq-detail{padding:0 16px 16px}
+.tq-note{background:#fff;border:2px dashed #d9c489;border-radius:12px;padding:14px;font-size:13px;font-weight:800;color:#6b5a33;text-align:center;margin-top:10px}
+.tq-hist{margin-top:14px;background:#fff;border:2px solid #ead9b0;border-radius:14px;padding:10px 12px}
+.tq-hh{font-size:13.5px;font-weight:900;color:#2a2f52;margin-bottom:6px}
+.tq-hrow{border-top:1px dashed rgba(217,164,65,.5);padding:4px 0}
+.tq-hrow.cur{background:#f2f6ff;border-radius:8px}
+.tq-hmain{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;border:none;background:none;padding:8px 6px;cursor:pointer;font-size:13px;color:#4b4530;min-height:44px;text-align:left}
+.tq-hmain:disabled{cursor:default}
+.tq-hmain b{font-size:15px;color:#23284a}
+.tq-hmain em{font-style:normal;font-size:11.5px;font-weight:900;border-radius:999px;padding:2px 9px}
+.tq-hmain em.g{background:#e1f6e6;color:#166534}.tq-hmain em.r{background:#fdecee;color:#b4233f}.tq-hmain em.e{background:#eef2ff;color:#3730a3}
+.tq-wbtn{border:1.5px solid #d9c489;background:#fffaf0;color:#8a6a3a;font-size:12px;font-weight:900;border-radius:999px;padding:6px 12px;cursor:pointer;margin-left:6px;min-height:36px}
+.tq-written{margin:6px 6px 8px;background:#fbf8f0;border-radius:10px;padding:10px 12px}
+.tq-written b{display:block;font-size:12.5px;color:#1f4fb0;margin-top:8px;overflow-wrap:anywhere}
+.tq-written b:first-child{margin-top:0}
+.tq-written p{margin:3px 0 0;font-size:13.5px;line-height:1.7;color:#2a2f52;white-space:pre-wrap;overflow-wrap:anywhere}
+@media (max-width:820px){
+  .tq-root{padding:10px 10px calc(40px + env(safe-area-inset-bottom))}
+  .tq-head{flex-wrap:wrap;align-items:center}
+  .tq-left{flex-direction:row;align-items:center}
+  .tq-right{display:none}
+  .tq-logo{font-size:12px;letter-spacing:1px}
+  .tq-sign{order:3;width:100%;box-sizing:border-box;text-align:center;font-size:22px;letter-spacing:3px;padding:8px 10px 10px}
+  .tq-copy{margin-top:8px}
+  .tq-copy span{font-size:11.5px;padding:5px 10px;letter-spacing:0}
+  .tq-tabs{justify-content:flex-start;overflow-x:auto;gap:8px;margin-top:12px;padding:4px 2px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tq-tabs::-webkit-scrollbar{display:none}
+  .tq-tab{font-size:13.5px;padding:9px 14px;flex-shrink:0}
+  .tq-main{margin-top:0;padding:12px 8px}
+  .tq-row{flex-wrap:wrap;padding:12px;gap:10px}
+  .tq-ico{width:48px;height:48px;font-size:25px}
+  .tq-mid{flex-basis:calc(100% - 60px)}
+  .tq-name{font-size:16.5px;gap:6px}
+  .tq-desc i{display:block;margin-left:0}
+  .tq-side{width:100%;justify-content:space-between}
+  .tq-side .tq-btn{flex:1}
+  .tq-detail{padding:0 8px 12px}
+}
+`;
