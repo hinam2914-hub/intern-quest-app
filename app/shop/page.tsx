@@ -1,6 +1,6 @@
 "use client";
 // 王国のポイントショップ。タブは「⚔️ 装備」「🏝️ 島」の2つ。
-// ・装備＝島バトルの武器。価格と所持は battle_weapon_prices / battle_weapon_owned、購入は battle_buy_weapon()（サーバー側で残高確認と減算を一括処理）
+// ・装備＝アバター装備（gear_items / gear_purchases、自分の職業のもの）。購入は shop_buy_gear()。島バトルの武器は battle_server.sql 適用後のみ下段に表示。価格と所持は battle_weapon_prices / battle_weapon_owned、購入は battle_buy_weapon()（サーバー側で残高確認と減算を一括処理）
 // ・島＝既存の island_items / island_purchases をそのまま利用（購入は申請→管理者の承認でポイント減算、という従来の流れ）。設置は profiles.island_config
 // ・旧「景品」「アバター」タブは画面から外しただけで、データ（shop_items / point_requests / avatar_items / avatar_purchases）には触れない
 // ・使うポイントは user_points.points（育成ポイント）。累計pt・バトルの戦績とは別
@@ -9,7 +9,17 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { ELEMENTS, SKILLS, WEAPONS, loadWeaponShop, type WeaponDef, type WeaponShop } from "../lib/battle";
 import { GROUND_IMG, TREE_IMG, DECO_IMG, SKY_IMG, ANIMAL_IMG } from "../lib/island";
+import { GEAR, ASSET_V } from "../lib/avatar/catalog";
+import { GEAR_BOX } from "../lib/avatar/gearThumb";
+import { JOBS, type JobKey } from "../onboarding/job/page";
 
+// アバター装備（gear_items）。自分の職業の装備だけを売る（他職業の装備は身につけられないため）
+type GearItem = { id: string; gear_key: string; job: string; slot: string; name: string; price: number; rarity: string };
+const SLOTS: { key: string; label: string }[] = [
+    { key: "weapon", label: "⚔️ 武器" }, { key: "head", label: "🎩 帽子・頭飾り" }, { key: "cape", label: "🧥 マント" }, { key: "accessory", label: "💎 アクセサリー" },
+];
+/** 関数がまだ無い（shop_instant_buy.sql 未実行）ときのエラーかどうか */
+const noFn = (e: any) => !!e && (e.code === "PGRST202" || e.code === "42883" || /could not find the function|does not exist/i.test(e.message || ""));
 type IslandItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string };
 const ISLAND_IMG: Record<string, string> = { ...GROUND_IMG, ...TREE_IMG, ...DECO_IMG, ...SKY_IMG, ...ANIMAL_IMG };
 const CATS: { key: string; label: string }[] = [
@@ -27,13 +37,18 @@ export default function ShopPage() {
     const [ownedIsland, setOwnedIsland] = useState<string[]>([]);
     const [pendingIsland, setPendingIsland] = useState<string[]>([]);
     const [islandConfig, setIslandConfig] = useState<Record<string, string>>({});
+    const [job, setJob] = useState<JobKey | null>(null);
+    const [gearItems, setGearItems] = useState<GearItem[]>([]);
+    const [ownedGear, setOwnedGear] = useState<string[]>([]);
+    const [pendingGear, setPendingGear] = useState<string[]>([]);
+    const [selG, setSelG] = useState<GearItem | null>(null);        // アバター装備の詳細
     const [selW, setSelW] = useState<WeaponDef | null>(null);       // 武器の詳細
     const [selI, setSelI] = useState<IslandItem | null>(null);      // 島アイテムの詳細
     const [busy, setBusy] = useState(false);
     const [askAt, setAskAt] = useState(0);   // 購入確認を出した時刻（0=未表示）。出た直後の連打で確定しないよう少し待つ
     const confirmOk = () => askAt > 0 && Date.now() - askAt > 450;
     const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
-    const [done, setDone] = useState<{ title: string; sub: string; img: string | null; emoji: string } | null>(null);  // 購入完了の演出
+    const [done, setDone] = useState<{ title: string; sub: string; img: string | null; emoji: string; gear?: string; go?: "avatar" | "home" } | null>(null);  // 購入完了の演出
 
     useEffect(() => { try { if (new URLSearchParams(window.location.search).get("tab") === "island") setTab("island"); } catch {} }, []);
 
@@ -42,13 +57,23 @@ export default function ShopPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
-            const [{ data: pointRow }, { data: profRow }, { data: isItems }, { data: isPur }, ws] = await Promise.all([
+            const [{ data: pointRow }, { data: profRow }, { data: isItems }, { data: isPur }, ws, { data: gItems }, { data: gPur }] = await Promise.all([
                 supabase.from("user_points").select("points").eq("id", user.id).maybeSingle(),
-                supabase.from("profiles").select("island_config").eq("id", user.id).maybeSingle(),
+                supabase.from("profiles").select("island_config, job_class").eq("id", user.id).maybeSingle(),
                 supabase.from("island_items").select("*").eq("is_active", true).order("sort_order"),
                 supabase.from("island_purchases").select("item_id,status").eq("user_id", user.id),
                 loadWeaponShop(supabase, user.id),
+                supabase.from("gear_items").select("id, gear_key, job, slot, name, price, rarity").eq("is_active", true).order("sort_order"),
+                supabase.from("gear_purchases").select("item_id, status").eq("user_id", user.id),
             ]);
+            const j = (profRow as any)?.job_class as JobKey | undefined;
+            const myJob = j && JOBS.some((x) => x.key === j) ? j : null;
+            setJob(myJob);
+            // 自分の職業の装備のうち、いまアバター編集で選べるもの（カタログに残っているもの）だけを並べる
+            const live = new Set<string>(myJob ? (["head", "cape", "weapon", "accessory"] as const).flatMap((sl) => GEAR[myJob][sl].map((x) => x.id)) : []);
+            setGearItems(((gItems || []) as GearItem[]).filter((g) => g.job === myJob && live.has(g.gear_key) && GEAR_BOX[g.gear_key]));
+            setOwnedGear((gPur || []).filter((x: any) => x.status === "approved").map((x: any) => x.item_id));
+            setPendingGear((gPur || []).filter((x: any) => x.status === "pending").map((x: any) => x.item_id));
             setPoints((pointRow as any)?.points || 0);
             setIslandConfig(((profRow as any)?.island_config || {}) as Record<string, string>);
             setIslandItems((isItems || []) as IslandItem[]);
@@ -80,16 +105,54 @@ export default function ShopPage() {
         setDone({ title: "購入完了！", sub: `「${w.name}」を手に入れた！ 島バトルで使えます`, img: w.img, emoji: w.emoji });
     };
 
-    // ---- 島アイテム：従来どおり「申請→管理者の承認」。ポイントは承認時に管理画面側で減算される ----
+    // ---- アバター装備・島アイテムを買う：サーバー側の購入処理（shop_buy_gear / shop_buy_island）でその場で購入。
+    //      残高確認・減算・所持の記録はサーバーが一括で行う。その処理がまだ無い環境では、従来どおり「申請→管理者の承認」になる ----
+    const buyGear = async (g: GearItem) => {
+        if (busy || !userId) return;
+        if (points < g.price) { flash(false, "ポイントが足りません"); return; }
+        setBusy(true);
+        const { data, error } = await supabase.rpc("shop_buy_gear", { p_item: g.id });
+        if (!error && data) {
+            setBusy(false);
+            setPoints(Number((data as any).points)); setOwnedGear((p) => [...p, g.id]); setPendingGear((p) => p.filter((x) => x !== g.id)); setSelG(null);
+            setDone({ title: "購入完了！", sub: `「${g.name}」を手に入れた！ アバター編集で身につけられます`, img: null, emoji: "🎁", gear: g.gear_key, go: "avatar" });
+            return;
+        }
+        if (!noFn(error)) {
+            setBusy(false);
+            const m = error?.message || "";
+            if (m.includes("ALREADY_OWNED")) { setOwnedGear((p) => [...p, g.id]); setSelG(null); }
+            flash(false, m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "この装備はすでに持っています" : "購入できませんでした。もう一度お試しください");
+            return;
+        }
+        const { error: e2 } = await supabase.from("gear_purchases").insert({ user_id: userId, item_id: g.id, status: "pending" });
+        setBusy(false);
+        if (e2) { flash(false, "申請できませんでした。もう一度お試しください"); return; }
+        setPendingGear((p) => [...p, g.id]); setSelG(null);
+        setDone({ title: "購入を申請しました！", sub: `「${g.name}」は承認されると使えるようになります（ポイントは承認時に引かれます）`, img: null, emoji: "🎁", gear: g.gear_key });
+    };
     const requestIsland = async (it: IslandItem) => {
         if (busy || !userId) return;
         if (points < it.price) { flash(false, "ポイントが足りません"); return; }
         setBusy(true);
-        const { error } = await supabase.from("island_purchases").insert({ user_id: userId, item_id: it.id, status: "pending" });
+        const { data, error } = await supabase.rpc("shop_buy_island", { p_item: it.id });
+        if (!error && data) {
+            setBusy(false);
+            setPoints(Number((data as any).points)); setOwnedIsland((p) => [...p, it.id]); setPendingIsland((p) => p.filter((x) => x !== it.id)); setSelI(null);
+            setDone({ title: "購入完了！", sub: `「${it.name}」を手に入れた！ タップして島に設置できます`, img: ISLAND_IMG[it.css_key] || null, emoji: it.emoji || "🎁", go: "home" });
+            return;
+        }
+        if (!noFn(error)) {
+            setBusy(false);
+            const m = error?.message || "";
+            if (m.includes("ALREADY_OWNED")) { setOwnedIsland((p) => [...p, it.id]); setSelI(null); }
+            flash(false, m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "このアイテムはすでに持っています" : "購入できませんでした。もう一度お試しください");
+            return;
+        }
+        const { error: e2 } = await supabase.from("island_purchases").insert({ user_id: userId, item_id: it.id, status: "pending" });
         setBusy(false);
-        if (error) { flash(false, "申請できませんでした。もう一度お試しください"); return; }
-        setPendingIsland((p) => [...p, it.id]);
-        setSelI(null);
+        if (e2) { flash(false, "申請できませんでした。もう一度お試しください"); return; }
+        setPendingIsland((p) => [...p, it.id]); setSelI(null);
         setDone({ title: "購入を申請しました！", sub: `「${it.name}」は承認されると使えるようになります（ポイントは承認時に引かれます）`, img: ISLAND_IMG[it.css_key] || null, emoji: it.emoji || "🎁" });
     };
     const toggleIsland = async (it: IslandItem) => {
@@ -115,11 +178,32 @@ export default function ShopPage() {
         if (points < price) return { kind: "short", label: `あと ${(price - points).toLocaleString()}pt`, price };
         return { kind: "buy", label: "購入できます", price };
     };
+    const gState = (g: GearItem) => {
+        if (ownedGear.includes(g.id)) return { kind: "owned", label: "所持済み" };
+        if (pendingGear.includes(g.id)) return { kind: "pending", label: "承認待ち" };
+        if (points < g.price) return { kind: "short", label: `あと ${(g.price - points).toLocaleString()}pt` };
+        return { kind: "buy", label: "購入できます" };
+    };
+    // 装備レイヤー画像から、装備が描かれている部分だけを枠いっぱいに見せる（画像は加工しない）
+    const GImg = ({ k, size }: { k: string; size: number }) => {
+        const b = GEAR_BOX[k]; if (!b) return <span style={{ fontSize: size * 0.6 }}>🎁</span>;
+        const [slot, x, y, w, h, W, H] = b; const sc = (size * 0.94) / Math.max(w, h);
+        return <span role="img" aria-label="" style={{ display: "block", width: size, height: size, backgroundImage: `url(/avatar/${slot}/${k}.png?v=${ASSET_V})`, backgroundRepeat: "no-repeat", backgroundSize: `${W * sc}px ${H * sc}px`, backgroundPosition: `${(size - w * sc) / 2 - x * sc}px ${(size - h * sc) / 2 - y * sc}px` }} />;
+    };
     const iState = (it: IslandItem) => {
         if (ownedIsland.includes(it.id)) return islandConfig[it.category] === it.css_key ? { kind: "on", label: "設置中" } : { kind: "owned", label: "所持済み" };
         if (pendingIsland.includes(it.id)) return { kind: "pending", label: "承認待ち" };
         if (points < it.price) return { kind: "short", label: `あと ${(it.price - points).toLocaleString()}pt` };
         return { kind: "buy", label: "購入できます" };
+    };
+    // 既存データのレアリティ表記をバッジ用にそろえる（normal/common などの通常品はバッジなし）
+    const rare = (r: string | null | undefined): string | null => {
+        const v = (r || "").trim().toLowerCase();
+        if (!v || ["normal", "common", "n", "none"].includes(v)) return null;
+        if (["ssr", "legend", "legendary"].includes(v)) return "SSR";
+        if (["sr", "epic", "super_rare"].includes(v)) return "SR";
+        if (["r", "rare"].includes(v)) return "R";
+        return v.toUpperCase().slice(0, 4);
     };
     const WImg = ({ w, size }: { w: WeaponDef; size: number }) => w.img ? <img src={w.img} alt={w.name} style={{ width: size, height: size, objectFit: "contain" }} /> : <span style={{ fontSize: size * 0.7 }}>{w.emoji}</span>;
     const IImg = ({ it, size }: { it: IslandItem; size: number }) => ISLAND_IMG[it.css_key] ? <img src={ISLAND_IMG[it.css_key]} alt={it.name} style={{ width: size, height: size, objectFit: "contain" }} /> : <span style={{ fontSize: size * 0.66 }}>{it.emoji || "🎁"}</span>;
@@ -130,14 +214,13 @@ export default function ShopPage() {
             <style>{CSS}</style>
 
             <header className="sp-head">
-                <button className="sp-back" onClick={() => router.push("/menu")}>← メニュー</button>
+                <div className="sp-left"><button className="sp-back" onClick={() => router.push("/menu")}>← メニュー</button><span className="sp-logo">INTERN<br />QUEST</span></div>
                 <div className="sp-sign">
-                    <span className="sp-sign-en">INTERN QUEST</span>
                     <span className="sp-sign-main">🛍️ ポイントショップ</span>
                 </div>
-                <div className="sp-pt"><span>所持ポイント</span><b>🪙 {points.toLocaleString()}<i>pt</i></b></div>
+                <div className="sp-pt"><div className="sp-pt-box"><span>所持ポイント</span><b>🪙 {points.toLocaleString()}<i>pt</i></b></div></div>
             </header>
-            <p className="sp-copy">ポイントを使って、装備や島のアイテムを手に入れよう</p>
+            <p className="sp-copy"><span>ポイントを使って、装備や島のアイテムを手に入れよう</span></p>
 
             <div className="sp-tabs">
                 <button className={"sp-tab" + (tab === "gear" ? " on" : "")} onClick={() => setTab("gear")}>⚔️ 装備</button>
@@ -147,15 +230,43 @@ export default function ShopPage() {
             <main className="sp-main">
                 {tab === "gear" && (
                     <>
+                        {!job && <div className="sp-info">まず職業を選ぶと、その職業の装備が買えるようになります</div>}
+                        {job && gearItems.length === 0 && <div className="sp-info">いま販売中の装備はありません</div>}
+                        {SLOTS.map((sl) => {
+                            const list = gearItems.filter((g) => g.slot === sl.key);
+                            if (!list.length) return null;
+                            return (
+                                <section key={sl.key}>
+                                    <div className="sp-sec">{sl.label}<i>{JOBS.find((x) => x.key === job)?.name}の装備</i></div>
+                                    <div className="sp-grid">
+                                        {list.map((g) => {
+                                            const st = gState(g);
+                                            return (
+                                                <button key={g.id} className={"sp-card sp-st-" + st.kind} onClick={() => { setAskAt(0); setSelG(g); }}>
+                                                    {st.kind === "owned" && <span className="sp-ribbon">✓ 所持済み</span>}
+                                                    {st.kind === "pending" && <span className="sp-ribbon wait">⏳ 承認待ち</span>}
+                                                    {rare(g.rarity) && <span className={"sp-rare sp-rare-" + rare(g.rarity)!.toLowerCase()}>{rare(g.rarity)}</span>}
+                                                    <span className="sp-card-img"><GImg k={g.gear_key} size={112} /></span>
+                                                    <span className="sp-card-name">{g.name}</span>
+                                                    {st.kind === "owned"
+                                                        ? <span className="sp-price have">アバターで使える</span>
+                                                        : <span className={"sp-price" + (st.kind === "short" ? " short" : "")}>🪙 {g.price.toLocaleString()}pt{st.kind === "short" && <i>{st.label}</i>}</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                            );
+                        })}
+                        {shop.enabled && (<>
                         <div className="sp-sec">⚔️ 島バトルの武器</div>
-                        {!shop.enabled && <div className="sp-info">🛠️ 武器の販売は準備中です。いまは全員がすべての武器を使えます</div>}
                         <div className="sp-grid">
                             {WEAPONS.map((w) => {
                                 const st = wState(w);
                                 return (
                                     <button key={w.key} className={"sp-card sp-st-" + st.kind} onClick={() => { setAskAt(0); setSelW(w); }}>
                                         {st.kind === "owned" && <span className="sp-ribbon">✓ {st.label}</span>}
-                                        <span className="sp-card-img"><WImg w={w} size={92} /></span>
+                                        <span className="sp-card-img"><WImg w={w} size={112} /></span>
                                         <span className="sp-card-name">{w.name}</span>
                                         <span className="sp-card-sub">攻撃 {w.atk}・{w.element ? <El k={w.element} /> : "無属性"}</span>
                                         {shop.enabled && st.price > 0 && !shop.owned.has(w.key)
@@ -165,9 +276,10 @@ export default function ShopPage() {
                                 );
                             })}
                         </div>
+                        </>)}
                         <button className="sp-link" onClick={() => router.push("/onboarding/avatar?from=mypage&tab=gear")}>
                             <span style={{ fontSize: 26 }}>🧍</span>
-                            <span><b>アバターの見た目装備はこちら</b><i>帽子・マント・武器の飾り・アクセサリー（アバター編集で購入）</i></span>
+                            <span><b>買った装備を身につける</b><i>アバター編集で、帽子・マント・武器・アクセサリーを着せ替えできます</i></span>
                             <span className="sp-link-go">›</span>
                         </button>
                     </>
@@ -191,7 +303,8 @@ export default function ShopPage() {
                                                     {st.kind === "on" && <span className="sp-ribbon on">✓ 設置中</span>}
                                                     {st.kind === "owned" && <span className="sp-ribbon">✓ 所持済み</span>}
                                                     {st.kind === "pending" && <span className="sp-ribbon wait">⏳ 承認待ち</span>}
-                                                    <span className="sp-card-img"><IImg it={it} size={92} /></span>
+                                                    {rare(it.rarity) && <span className={"sp-rare sp-rare-" + rare(it.rarity)!.toLowerCase()}>{rare(it.rarity)}</span>}
+                                                    <span className="sp-card-img"><IImg it={it} size={104} /></span>
                                                     <span className="sp-card-name">{it.name}</span>
                                                     {have
                                                         ? <span className="sp-price have">{st.kind === "on" ? "タップで片付け" : "タップで設置"}</span>
@@ -244,6 +357,38 @@ export default function ShopPage() {
                 );
             })()}
 
+            {/* アバター装備の詳細 */}
+            {selG && (() => {
+                const g = selG; const st = gState(g);
+                return (
+                    <div className="sp-modal-bg" onClick={() => !busy && setSelG(null)}>
+                        <div className="sp-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="sp-modal-img"><GImg k={g.gear_key} size={156} /></div>
+                            <h3>{g.name}</h3>
+                            <div className="sp-stats">
+                                <div><span>種類</span><b>{SLOTS.find((x) => x.key === g.slot)?.label || g.slot}</b></div>
+                                <div><span>職業</span><b>{JOBS.find((x) => x.key === g.job)?.name || g.job}</b></div>
+                                {rare(g.rarity) && <div><span>レアリティ</span><b>{rare(g.rarity)}</b></div>}
+                                <div><span>必要ポイント</span><b>🪙 {g.price.toLocaleString()}pt</b></div>
+                                <div><span>所持状況</span><b>{st.kind === "owned" ? "所持済み" : st.kind === "pending" ? "承認待ち" : "未所持"}</b></div>
+                            </div>
+                            {st.kind === "buy" && askAt === 0 && <button className="sp-buy" onClick={() => setAskAt(Date.now())}>🪙 {g.price.toLocaleString()}pt で購入する</button>}
+                            {st.kind === "buy" && askAt > 0 && (
+                                <div className="sp-ask">
+                                    <b>「{g.name}」を {g.price.toLocaleString()}pt で購入しますか？</b>
+                                    <div><button className="sp-no" disabled={busy} onClick={() => setAskAt(0)}>やめる</button><button className="sp-buy" disabled={busy} onClick={() => confirmOk() && buyGear(g)}>{busy ? "購入中..." : "購入する"}</button></div>
+                                </div>
+                            )}
+                            {st.kind === "buy" && <div className="sp-after">購入後の残り：{(points - g.price).toLocaleString()}pt</div>}
+                            {st.kind === "short" && <button className="sp-buy off" disabled>ポイントが足りません（{st.label}）</button>}
+                            {st.kind === "pending" && <button className="sp-buy off" disabled>⏳ 承認をお待ちください</button>}
+                            {st.kind === "owned" && <button className="sp-buy alt" onClick={() => router.push("/onboarding/avatar?from=mypage&tab=gear")}>🧍 アバター編集で身につける</button>}
+                            <button className="sp-close" onClick={() => setSelG(null)} disabled={busy}>とじる</button>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* 島アイテムの詳細 */}
             {selI && (() => {
                 const it = selI; const st = iState(it);
@@ -257,14 +402,14 @@ export default function ShopPage() {
                                 <div><span>必要ポイント</span><b>🪙 {it.price.toLocaleString()}pt</b></div>
                                 <div><span>所持状況</span><b>{st.kind === "on" ? "所持済み・設置中" : st.kind === "owned" ? "所持済み" : st.kind === "pending" ? "承認待ち" : "未所持"}</b></div>
                             </div>
-                            {st.kind === "buy" && askAt === 0 && <button className="sp-buy" onClick={() => setAskAt(Date.now())}>🪙 {it.price.toLocaleString()}pt で購入を申請する</button>}
+                            {st.kind === "buy" && askAt === 0 && <button className="sp-buy" onClick={() => setAskAt(Date.now())}>🪙 {it.price.toLocaleString()}pt で購入する</button>}
                             {st.kind === "buy" && askAt > 0 && (
                                 <div className="sp-ask">
-                                    <b>「{it.name}」（{it.price.toLocaleString()}pt）の購入を申請しますか？</b>
-                                    <div><button className="sp-no" disabled={busy} onClick={() => setAskAt(0)}>やめる</button><button className="sp-buy" disabled={busy} onClick={() => confirmOk() && requestIsland(it)}>{busy ? "申請中..." : "申請する"}</button></div>
+                                    <b>「{it.name}」を {it.price.toLocaleString()}pt で購入しますか？</b>
+                                    <div><button className="sp-no" disabled={busy} onClick={() => setAskAt(0)}>やめる</button><button className="sp-buy" disabled={busy} onClick={() => confirmOk() && requestIsland(it)}>{busy ? "購入中..." : "購入する"}</button></div>
                                 </div>
                             )}
-                            {st.kind === "buy" && <div className="sp-after">承認されるとポイントが引かれ、島に置けるようになります</div>}
+                            {st.kind === "buy" && <div className="sp-after">購入後の残り：{(points - it.price).toLocaleString()}pt</div>}
                             {st.kind === "short" && <button className="sp-buy off" disabled>ポイントが足りません（{st.label}）</button>}
                             {st.kind === "pending" && <button className="sp-buy off" disabled>⏳ 承認をお待ちください</button>}
                             {(st.kind === "owned" || st.kind === "on") && <button className="sp-buy alt" disabled={busy} onClick={async () => { await toggleIsland(it); setSelI(null); }}>{st.kind === "on" ? "島から片付ける" : "🏝️ 島に設置する"}</button>}
@@ -280,9 +425,11 @@ export default function ShopPage() {
                     <div className="sp-done" onClick={(e) => e.stopPropagation()}>
                         <div className="sp-rays" />
                         {[...Array(10)].map((_, i) => <span key={i} className="sp-spark" style={{ left: `${8 + i * 9}%`, animationDelay: `${(i % 5) * 0.14}s` }}>✦</span>)}
-                        <div className="sp-done-img">{done.img ? <img src={done.img} alt="" /> : <span>{done.emoji}</span>}</div>
+                        <div className="sp-done-img">{done.gear ? <GImg k={done.gear} size={136} /> : done.img ? <img src={done.img} alt="" /> : <span>{done.emoji}</span>}</div>
                         <h3>{done.title}</h3>
                         <p>{done.sub}</p>
+                        {done.go === "avatar" && <button className="sp-buy alt" style={{ marginBottom: 8 }} onClick={() => router.push("/onboarding/avatar?from=mypage&tab=gear")}>🧍 さっそく身につける</button>}
+                        {done.go === "home" && <button className="sp-buy alt" style={{ marginBottom: 8 }} onClick={() => router.push("/home")}>🏝️ 自分の島へ行く</button>}
                         <button className="sp-buy" onClick={() => setDone(null)}>OK</button>
                     </div>
                 </div>
@@ -367,6 +514,41 @@ const CSS = `
 .sp-done .sp-buy{position:relative}
 .sp-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:400;background:#7f1d1d;color:#fff;font-size:13.5px;font-weight:900;border-radius:999px;padding:11px 22px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:92vw}
 .sp-toast.ok{background:#166534}
+/* ---- 完成イメージ準拠：紺のパネル＋金フレーム、ピル型タブ、金茶の価格プレート ---- */
+.sp-head{max-width:1180px;align-items:flex-start;flex-wrap:nowrap}
+.sp-left{display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex:1;min-width:0}
+.sp-logo{font-family:Georgia,"Times New Roman",serif;font-size:21px;line-height:1.05;font-weight:700;letter-spacing:2px;color:#f6dc9a;text-shadow:0 2px 0 #7a5516,0 3px 8px rgba(16,47,112,.55)}
+.sp-sign{flex:0 1 auto;border-radius:22px;padding:13px 56px 15px;background:linear-gradient(180deg,#3f66b8,#1d3a82 55%,#162c66);border:3px solid #F5D77E;box-shadow:0 0 0 2px #b98a35,0 6px 0 #0d1c45,0 14px 26px rgba(16,47,112,.45),inset 0 2px 0 rgba(255,255,255,.35)}
+.sp-sign-main{font-size:34px;letter-spacing:5px}
+.sp-head>.sp-pt{flex:1;display:flex;justify-content:flex-end;background:none;border:none;box-shadow:none;padding:0}
+.sp-pt{position:static}
+.sp-copy{margin-top:-4px;position:relative;z-index:1}
+.sp-copy span{display:inline-block;background:linear-gradient(180deg,#fffdf6,#f3e9d2);color:#4a3b1c;border:2px solid #e2c98c;border-radius:6px;padding:6px 34px;font-size:14px;letter-spacing:1px;text-shadow:none;box-shadow:0 4px 10px rgba(16,47,112,.25)}
+.sp-tabs{max-width:920px;gap:26px;margin-top:18px;position:relative;z-index:2}
+.sp-tab{border-radius:999px;border:3px solid #D9A441;border-bottom:3px solid #D9A441;padding:15px 10px;font-size:25px;letter-spacing:8px;background:linear-gradient(180deg,#fffef9,#f3ead6);color:#3b3524;box-shadow:0 0 0 2px #fff6dc inset,0 5px 12px rgba(16,47,112,.3)}
+.sp-tab.on{background:linear-gradient(180deg,#3d8af0,#1554c4 55%,#0f3f9c);border-color:#F5D77E;box-shadow:0 0 0 2px rgba(255,255,255,.35) inset,0 0 26px rgba(90,160,255,.95),0 5px 12px rgba(16,47,112,.4)}
+.sp-main{max-width:1180px;margin-top:-26px;padding:54px 30px 26px;border-radius:14px;background:linear-gradient(180deg,rgba(38,52,104,.93),rgba(27,38,82,.95));border:3px solid #E8C876;box-shadow:0 0 0 2px #9c7430,inset 0 0 0 2px rgba(232,200,118,.35),0 14px 36px rgba(10,20,60,.45)}
+.sp-sec{background:none;border:none;box-shadow:none;padding:0;color:#f6dc9a;font-size:15px;letter-spacing:2px}
+.sp-sec i{color:#c9d3f2}
+.sp-info{background:rgba(255,255,255,.12);border-color:rgba(232,200,118,.6);color:#fff}
+.sp-grid{grid-template-columns:repeat(4,1fr);gap:20px}
+.sp-card{border:3px solid #e9d6a6;border-radius:14px;padding:16px 12px 12px;background:radial-gradient(ellipse at 50% 34%,#ffffff 0%,#f4f1fa 45%,#fbf4e3 100%);box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px rgba(217,164,65,.45),0 6px 14px rgba(8,14,44,.4)}
+.sp-card:hover{box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px rgba(217,164,65,.45),0 14px 26px rgba(8,14,44,.5),0 0 24px rgba(245,215,126,.95)}
+.sp-card-img{height:124px}
+.sp-card-name{font-size:19px;letter-spacing:2px;color:#2a2f52;margin-top:2px}
+.sp-card-sub{font-size:12px}
+.sp-price{flex-direction:row;gap:6px;justify-content:center;align-self:stretch;margin:6px 6px 0;padding:7px 10px;border:2px solid #e6c98a;background:linear-gradient(180deg,#c9a45f,#a8803f);color:#fff;font-size:18px;text-shadow:0 1px 2px rgba(60,35,5,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+.sp-price i{color:#fff3c4;font-size:10.5px;align-self:center}
+.sp-price.short{background:linear-gradient(180deg,#b9b2a0,#958d7a);border-color:#d8d0bb;color:#fff}
+.sp-price.have{background:linear-gradient(180deg,#4fbf8b,#2f9a68);border-color:#bff0d6;color:#fff;font-size:14px}
+.sp-rare{position:absolute;top:8px;right:8px;z-index:2;font-family:Georgia,serif;font-weight:700;font-size:15px;padding:3px 9px;border-radius:8px;color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);background:linear-gradient(180deg,#5aa0f0,#2563c9)}
+.sp-rare-sr{background:linear-gradient(180deg,#a678e8,#6d3fc0)}
+.sp-rare-ssr{background:linear-gradient(180deg,#f3cf6a,#c98a1c);text-shadow:0 1px 1px rgba(90,50,0,.6)}
+.sp-pt-box{display:inline-block;background:linear-gradient(180deg,#2b3f7c,#18265a);border:3px solid #E8C876;border-radius:22px;padding:8px 22px;text-align:right;box-shadow:0 0 0 2px #9c7430,0 6px 16px rgba(10,20,60,.4)}
+.sp-pt-box span{display:block;font-size:11px;font-weight:900;color:#f6dc9a}
+.sp-pt-box b{font-size:25px;font-weight:900;color:#fff}
+.sp-pt-box i{font-style:normal;font-size:13px;margin-left:3px}
+@media (max-width:900px){ .sp-grid{grid-template-columns:repeat(3,1fr)} }
 @media (max-width:640px){
   .sp-root{padding:10px 10px calc(40px + env(safe-area-inset-bottom))}
   .sp-sign{order:3;width:100%;box-sizing:border-box;padding:6px 10px 8px}
@@ -380,6 +562,26 @@ const CSS = `
   .sp-card{padding:12px 6px 10px}
   .sp-card-img{height:84px}
   .sp-card-name{font-size:13px}
+  .sp-head{flex-wrap:wrap;align-items:center}
+  .sp-left{flex-direction:row;align-items:center;flex:1}
+  .sp-logo{font-size:12px;letter-spacing:1px}
+  .sp-sign{order:3;width:100%;padding:8px 10px 10px}
+  .sp-sign-main{font-size:21px;letter-spacing:3px}
+  .sp-head>.sp-pt{flex:0 0 auto;position:fixed;top:8px;right:10px;z-index:50}
+  .sp-left{min-height:44px;padding-right:150px}
+  .sp-pt-box{padding:4px 14px;border-radius:16px}
+  .sp-pt-box b{font-size:18px}
+  .sp-copy{margin-top:8px}
+  .sp-copy span{font-size:11px;padding:5px 10px;letter-spacing:0}
+  .sp-tabs{gap:10px;margin-top:12px}
+  .sp-tab{font-size:18px;letter-spacing:4px;padding:12px 6px}
+  .sp-main{margin-top:-22px;padding:40px 10px 16px}
+  .sp-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .sp-card{padding:12px 6px 10px}
+  .sp-card-img{height:92px}
+  .sp-card-name{font-size:15px;letter-spacing:1px}
+  .sp-price{font-size:15px;margin:6px 2px 0;flex-wrap:wrap;gap:2px 6px}
+  .sp-price.have{font-size:11.5px;white-space:nowrap}
 }
 @media (prefers-reduced-motion: reduce){ .sp-rays,.sp-spark,.sp-done{animation:none} }
 `;

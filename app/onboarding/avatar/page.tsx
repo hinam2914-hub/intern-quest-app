@@ -162,6 +162,21 @@ export default function AvatarCustomizePage() {
         if (!buyGear || !userId || buying) return;
         if (points < buyGear.price) { setMsg("ポイントが足りません"); setBuyGear(null); return; }
         setBuying(true);
+        // その場で購入（サーバー側で残高確認・減算・所持記録を一括処理）。処理が未導入の環境だけ、従来の「申請→承認」になる
+        const r = await supabase.rpc("shop_buy_gear", { p_item: buyGear.id });
+        if (!r.error && r.data) {
+            setOwnedGear((prev) => new Set([...prev, buyGear.gear_key]));
+            setPendingGear((prev) => { const n = new Set(prev); n.delete(buyGear.gear_key); return n; });
+            setPoints(Number((r.data as any).points));
+            setBuying(false); setBuyGear(null);
+            setMsg("✅ 購入しました！さっそく装備できます");
+            return;
+        }
+        const em = r.error?.message || "";
+        if (!(r.error?.code === "PGRST202" || r.error?.code === "42883" || /could not find the function|does not exist/i.test(em))) {
+            setMsg(em.includes("NO_POINTS") ? "ポイントが足りません" : em.includes("ALREADY_OWNED") ? "この装備はすでに持っています" : "購入できませんでした。もう一度お試しください");
+            setBuying(false); setBuyGear(null); return;
+        }
         const { error } = await supabase.from("gear_purchases").insert({ user_id: userId, item_id: buyGear.id, status: "pending" });
         if (error) { setMsg("申請に失敗しました（" + error.message + "）"); setBuying(false); setBuyGear(null); return; }
         setPendingGear((prev) => new Set([...prev, buyGear.gear_key]));
