@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { ELEMENTS, SKILLS, WEAPONS, loadWeaponShop, type WeaponDef, type WeaponShop } from "../lib/battle";
-import { GROUND_IMG, TREE_IMG, DECO_IMG, SKY_IMG, ANIMAL_IMG } from "../lib/island";
+import { ITEM_IMG, ISLAND_CATS, PLACE_LIMIT, placedOf, skyListOf } from "../lib/island";
 import { GEAR, ASSET_V } from "../lib/avatar/catalog";
 import { GEAR_BOX } from "../lib/avatar/gearThumb";
 import { JOBS, type JobKey } from "../onboarding/job/page";
@@ -20,11 +20,9 @@ const SLOTS: { key: string; label: string }[] = [
 ];
 /** 関数がまだ無い（shop_instant_buy.sql 未実行）ときのエラーかどうか */
 const noFn = (e: any) => !!e && (e.code === "PGRST202" || e.code === "42883" || /could not find the function|does not exist/i.test(e.message || ""));
-type IslandItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string };
-const ISLAND_IMG: Record<string, string> = { ...GROUND_IMG, ...TREE_IMG, ...DECO_IMG, ...SKY_IMG, ...ANIMAL_IMG };
-const CATS: { key: string; label: string }[] = [
-    { key: "ground", label: "🌱 地面" }, { key: "tree", label: "🌳 木" }, { key: "deco", label: "🏡 装飾" }, { key: "sky", label: "✨ 空" }, { key: "animal", label: "🐾 どうぶつ" },
-];
+type IslandItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string; max_owned?: number };
+const ISLAND_IMG: Record<string, string> = ITEM_IMG;
+const CATS = ISLAND_CATS;
 
 export default function ShopPage() {
     const router = useRouter();
@@ -36,7 +34,7 @@ export default function ShopPage() {
     const [islandItems, setIslandItems] = useState<IslandItem[]>([]);
     const [ownedIsland, setOwnedIsland] = useState<string[]>([]);
     const [pendingIsland, setPendingIsland] = useState<string[]>([]);
-    const [islandConfig, setIslandConfig] = useState<Record<string, string>>({});
+    const [islandConfig, setIslandConfig] = useState<Record<string, any>>({});
     const [job, setJob] = useState<JobKey | null>(null);
     const [gearItems, setGearItems] = useState<GearItem[]>([]);
     const [ownedGear, setOwnedGear] = useState<string[]>([]);
@@ -48,7 +46,7 @@ export default function ShopPage() {
     const [askAt, setAskAt] = useState(0);   // 購入確認を出した時刻（0=未表示）。出た直後の連打で確定しないよう少し待つ
     const confirmOk = () => askAt > 0 && Date.now() - askAt > 450;
     const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
-    const [done, setDone] = useState<{ title: string; sub: string; img: string | null; emoji: string; gear?: string; go?: "avatar" | "home" } | null>(null);  // 購入完了の演出
+    const [done, setDone] = useState<{ title: string; sub: string; img: string | null; emoji: string; gear?: string; go?: "avatar" | "edit" } | null>(null);  // 購入完了の演出
 
     useEffect(() => { try { if (new URLSearchParams(window.location.search).get("tab") === "island") setTab("island"); } catch {} }, []);
 
@@ -75,8 +73,9 @@ export default function ShopPage() {
             setOwnedGear((gPur || []).filter((x: any) => x.status === "approved").map((x: any) => x.item_id));
             setPendingGear((gPur || []).filter((x: any) => x.status === "pending").map((x: any) => x.item_id));
             setPoints((pointRow as any)?.points || 0);
-            setIslandConfig(((profRow as any)?.island_config || {}) as Record<string, string>);
-            setIslandItems((isItems || []) as IslandItem[]);
+            setIslandConfig(((profRow as any)?.island_config || {}) as Record<string, any>);
+            // 画像がまだ無いアイテムは並べない（絵文字で代用しない）
+            setIslandItems(((isItems || []) as IslandItem[]).filter((it) => !!ITEM_IMG[it.css_key]));
             setOwnedIsland((isPur || []).filter((p: any) => p.status === "approved").map((p: any) => p.item_id));
             setPendingIsland((isPur || []).filter((p: any) => p.status === "pending").map((p: any) => p.item_id));
             setShop(ws);
@@ -139,14 +138,14 @@ export default function ShopPage() {
         if (!error && data) {
             setBusy(false);
             setPoints(Number((data as any).points)); setOwnedIsland((p) => [...p, it.id]); setPendingIsland((p) => p.filter((x) => x !== it.id)); setSelI(null);
-            setDone({ title: "購入完了！", sub: `「${it.name}」を手に入れた！ タップして島に設置できます`, img: ISLAND_IMG[it.css_key] || null, emoji: it.emoji || "🎁", go: "home" });
+            setDone({ title: "購入完了！", sub: `「${it.name}」を手に入れた！ 飾りつけ画面で島に置けます`, img: ISLAND_IMG[it.css_key] || null, emoji: it.emoji || "🎁", go: "edit" });
             return;
         }
         if (!noFn(error)) {
             setBusy(false);
             const m = error?.message || "";
-            if (m.includes("ALREADY_OWNED")) { setOwnedIsland((p) => [...p, it.id]); setSelI(null); }
-            flash(false, m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "このアイテムはすでに持っています" : "購入できませんでした。もう一度お試しください");
+            if (m.includes("ALREADY_OWNED")) setSelI(null);
+            flash(false, m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "これ以上は持てません" : "購入できませんでした。もう一度お試しください");
             return;
         }
         const { error: e2 } = await supabase.from("island_purchases").insert({ user_id: userId, item_id: it.id, status: "pending" });
@@ -155,19 +154,6 @@ export default function ShopPage() {
         setPendingIsland((p) => [...p, it.id]); setSelI(null);
         setDone({ title: "購入を申請しました！", sub: `「${it.name}」は承認されると使えるようになります（ポイントは承認時に引かれます）`, img: ISLAND_IMG[it.css_key] || null, emoji: it.emoji || "🎁" });
     };
-    const toggleIsland = async (it: IslandItem) => {
-        if (busy || !userId) return;
-        const cur: Record<string, string> = { ...islandConfig };
-        const removing = cur[it.category] === it.css_key;
-        if (removing) delete cur[it.category]; else cur[it.category] = it.css_key;
-        setBusy(true);
-        const { error } = await supabase.from("profiles").update({ island_config: cur }).eq("id", userId);
-        setBusy(false);
-        if (error) { flash(false, "保存に失敗しました"); return; }
-        setIslandConfig(cur);
-        flash(true, removing ? `「${it.name}」を片付けました` : `「${it.name}」を島に設置しました！`);
-    };
-
     if (loading) return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#7fc3ef", color: "#fff", fontWeight: 900 }}>🛍️ ショップを開いています...</div>;
 
     const wState = (w: WeaponDef) => {
@@ -190,11 +176,15 @@ export default function ShopPage() {
         const [slot, x, y, w, h, W, H] = b; const sc = (size * 0.94) / Math.max(w, h);
         return <span role="img" aria-label="" style={{ display: "block", width: size, height: size, backgroundImage: `url(/avatar/${slot}/${k}.png?v=${ASSET_V})`, backgroundRepeat: "no-repeat", backgroundSize: `${W * sc}px ${H * sc}px`, backgroundPosition: `${(size - w * sc) / 2 - x * sc}px ${(size - h * sc) / 2 - y * sc}px` }} />;
     };
+    // 島アイテムの状態。have=持っている数、max=持てる数（木・装飾・動物は複数、地面・空は1）、placed=いま島に置いている数
     const iState = (it: IslandItem) => {
-        if (ownedIsland.includes(it.id)) return islandConfig[it.category] === it.css_key ? { kind: "on", label: "設置中" } : { kind: "owned", label: "所持済み" };
-        if (pendingIsland.includes(it.id)) return { kind: "pending", label: "承認待ち" };
-        if (points < it.price) return { kind: "short", label: `あと ${(it.price - points).toLocaleString()}pt` };
-        return { kind: "buy", label: "購入できます" };
+        const have = ownedIsland.filter((id) => id === it.id).length; const max = it.max_owned || 1;
+        const placed = it.category === "ground" ? (islandConfig.ground === it.css_key ? 1 : 0) : it.category === "sky" ? (skyListOf(islandConfig).includes(it.css_key) ? 1 : 0) : placedOf(islandConfig).filter((q) => q.k === it.css_key).length;
+        const extra = { have, max, placed };
+        if (pendingIsland.includes(it.id)) return { kind: "pending", label: "承認待ち", ...extra };
+        if (have >= max) return { kind: "owned", label: "所持済み", ...extra };
+        if (points < it.price) return { kind: have ? "more-short" : "short", label: `あと ${(it.price - points).toLocaleString()}pt`, ...extra };
+        return { kind: have ? "more" : "buy", label: "購入できます", ...extra };
     };
     // 既存データのレアリティ表記をバッジ用にそろえる（normal/common などの通常品はバッジなし）
     const rare = (r: string | null | undefined): string | null => {
@@ -293,22 +283,23 @@ export default function ShopPage() {
                             if (!list.length) return null;
                             return (
                                 <section key={c.key}>
-                                    <div className="sp-sec">{c.label}<i>1つだけ設置できます</i></div>
+                                    <div className="sp-sec">{c.label}<i>{c.key === "ground" ? "島全体の地面を1種類えらべます" : `島に${PLACE_LIMIT[c.key]}個まで置けます`}</i></div>
                                     <div className="sp-grid">
                                         {list.map((it) => {
                                             const st = iState(it);
-                                            const have = st.kind === "on" || st.kind === "owned";
+                                            const canBuy = st.kind === "buy" || st.kind === "more"; const short = st.kind === "short" || st.kind === "more-short";
                                             return (
-                                                <button key={it.id} className={"sp-card sp-st-" + st.kind} onClick={() => { setAskAt(0); setSelI(it); }}>
-                                                    {st.kind === "on" && <span className="sp-ribbon on">✓ 設置中</span>}
-                                                    {st.kind === "owned" && <span className="sp-ribbon">✓ 所持済み</span>}
+                                                <button key={it.id} className={"sp-card sp-st-" + (st.kind === "short" ? "short" : st.kind)} onClick={() => { setAskAt(0); setSelI(it); }}>
+                                                    {st.placed > 0 ? <span className="sp-ribbon on">✓ 設置中{st.max > 1 ? ` ${st.placed}個` : ""}</span>
+                                                        : st.have > 0 ? <span className="sp-ribbon">✓ 所持{st.max > 1 ? ` ${st.have}/${st.max}` : "済み"}</span> : null}
                                                     {st.kind === "pending" && <span className="sp-ribbon wait">⏳ 承認待ち</span>}
                                                     {rare(it.rarity) && <span className={"sp-rare sp-rare-" + rare(it.rarity)!.toLowerCase()}>{rare(it.rarity)}</span>}
                                                     <span className="sp-card-img"><IImg it={it} size={104} /></span>
                                                     <span className="sp-card-name">{it.name}</span>
-                                                    {have
-                                                        ? <span className="sp-price have">{st.kind === "on" ? "タップで片付け" : "タップで設置"}</span>
-                                                        : <span className={"sp-price" + (st.kind === "short" ? " short" : "")}>🪙 {it.price.toLocaleString()}pt{st.kind === "short" && <i>{st.label}</i>}</span>}
+                                                    <span className="sp-card-sub">{it.max_owned && it.max_owned > 1 ? `${it.max_owned}個まで持てる` : "1つ持てばOK"}</span>
+                                                    {canBuy || short || st.kind === "pending"
+                                                        ? <span className={"sp-price" + (short ? " short" : "")}>🪙 {it.price.toLocaleString()}pt{short && <i>{st.label}</i>}</span>
+                                                        : <span className="sp-price have">飾りつけで使える</span>}
                                                 </button>
                                             );
                                         })}
@@ -316,9 +307,9 @@ export default function ShopPage() {
                                 </section>
                             );
                         })}
-                        <button className="sp-link" onClick={() => router.push("/home")}>
+                        <button className="sp-link" onClick={() => router.push("/island/edit")}>
                             <span style={{ fontSize: 26 }}>🏝️</span>
-                            <span><b>自分の島へ行く</b><i>設置したアイテムはホームの島と「みんなの島」に反映されます</i></span>
+                            <span><b>島の飾りつけへ</b><i>買ったアイテムを島に置く・動かす。ホームの島と「みんなの島」に同じ島が出ます</i></span>
                             <span className="sp-link-go">›</span>
                         </button>
                     </>
@@ -400,19 +391,21 @@ export default function ShopPage() {
                             <div className="sp-stats">
                                 <div><span>種類</span><b>{CATS.find((c) => c.key === it.category)?.label || it.category}</b></div>
                                 <div><span>必要ポイント</span><b>🪙 {it.price.toLocaleString()}pt</b></div>
-                                <div><span>所持状況</span><b>{st.kind === "on" ? "所持済み・設置中" : st.kind === "owned" ? "所持済み" : st.kind === "pending" ? "承認待ち" : "未所持"}</b></div>
+                                {rare(it.rarity) && <div><span>レアリティ</span><b>{rare(it.rarity)}</b></div>}
+                                <div><span>所持状況</span><b>{st.kind === "pending" ? "承認待ち" : st.have > 0 ? `所持 ${st.have}${st.max > 1 ? `/${st.max}個` : ""}` : "未所持"}{st.placed > 0 ? `・設置中${st.max > 1 ? ` ${st.placed}個` : ""}` : ""}</b></div>
+                                <div><span>設置できる数</span><b>{it.category === "ground" ? "1（島全体）" : `${st.max > 1 ? `持っている数まで（最大${st.max}個）` : "1"}`}</b></div>
                             </div>
-                            {st.kind === "buy" && askAt === 0 && <button className="sp-buy" onClick={() => setAskAt(Date.now())}>🪙 {it.price.toLocaleString()}pt で購入する</button>}
-                            {st.kind === "buy" && askAt > 0 && (
+                            {(st.kind === "buy" || st.kind === "more") && askAt === 0 && <button className="sp-buy" onClick={() => setAskAt(Date.now())}>🪙 {it.price.toLocaleString()}pt で{st.have > 0 ? "もう1個" : ""}購入する</button>}
+                            {(st.kind === "buy" || st.kind === "more") && askAt > 0 && (
                                 <div className="sp-ask">
                                     <b>「{it.name}」を {it.price.toLocaleString()}pt で購入しますか？</b>
                                     <div><button className="sp-no" disabled={busy} onClick={() => setAskAt(0)}>やめる</button><button className="sp-buy" disabled={busy} onClick={() => confirmOk() && requestIsland(it)}>{busy ? "購入中..." : "購入する"}</button></div>
                                 </div>
                             )}
-                            {st.kind === "buy" && <div className="sp-after">購入後の残り：{(points - it.price).toLocaleString()}pt</div>}
-                            {st.kind === "short" && <button className="sp-buy off" disabled>ポイントが足りません（{st.label}）</button>}
+                            {(st.kind === "buy" || st.kind === "more") && <div className="sp-after">購入後の残り：{(points - it.price).toLocaleString()}pt</div>}
+                            {(st.kind === "short" || st.kind === "more-short") && <button className="sp-buy off" disabled>ポイントが足りません（{st.label}）</button>}
                             {st.kind === "pending" && <button className="sp-buy off" disabled>⏳ 承認をお待ちください</button>}
-                            {(st.kind === "owned" || st.kind === "on") && <button className="sp-buy alt" disabled={busy} onClick={async () => { await toggleIsland(it); setSelI(null); }}>{st.kind === "on" ? "島から片付ける" : "🏝️ 島に設置する"}</button>}
+                            {st.have > 0 && <button className="sp-buy alt" style={{ marginTop: 8 }} onClick={() => router.push("/island/edit")}>🏝️ 飾りつけ画面で島に置く</button>}
                             <button className="sp-close" onClick={() => setSelI(null)} disabled={busy}>とじる</button>
                         </div>
                     </div>
@@ -429,7 +422,7 @@ export default function ShopPage() {
                         <h3>{done.title}</h3>
                         <p>{done.sub}</p>
                         {done.go === "avatar" && <button className="sp-buy alt" style={{ marginBottom: 8 }} onClick={() => router.push("/onboarding/avatar?from=mypage&tab=gear")}>🧍 さっそく身につける</button>}
-                        {done.go === "home" && <button className="sp-buy alt" style={{ marginBottom: 8 }} onClick={() => router.push("/home")}>🏝️ 自分の島へ行く</button>}
+                        {done.go === "edit" && <button className="sp-buy alt" style={{ marginBottom: 8 }} onClick={() => router.push("/island/edit")}>🏝️ さっそく島に置く</button>}
                         <button className="sp-buy" onClick={() => setDone(null)}>OK</button>
                     </div>
                 </div>

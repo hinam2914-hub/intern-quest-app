@@ -42,7 +42,8 @@ export default function HomeIsland({ userId, totalEarned, onHouseClick }: { user
 
     const view = editing ? draft : config;
     const stage = getCastleStage(totalEarned);   // 城の段階（レベル連動・lib/castle.ts）
-    const startEdit = () => { setDraft({ ...config }); setEditing(true); setToast(""); };
+    // 島の編集は専用の「島の飾りつけ」画面で行う（複数配置・ドラッグ移動に対応）
+    const startEdit = () => { router.push("/island/edit"); };
     const cancelEdit = () => { setEditing(false); setToast(""); };
     const tapItem = (it: ShopItem) => {
         if (!owned.includes(it.id)) { setDetail(it); return; }

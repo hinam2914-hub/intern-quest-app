@@ -20,8 +20,8 @@ export function avatarSrc(avatarId: string): string { return "/avatars/" + avata
 export const TREE_EMOJI: Record<string, string> = { tree_sakura: "🌸", tree_yashi: "🌴", tree_momi: "🎄", tree_momiji: "🍁" };
 export const DECO_EMOJI: Record<string, string> = { deco_funsui: "⛲", deco_bench: "🪑", deco_gaitou: "💡", deco_yukidaruma: "⛄", deco_torii: "⛩️" };
 export const SKY_EMOJI: Record<string, string> = { sky_niji: "🌈", sky_chocho: "🦋", sky_fuusen: "🎈" };
-export const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "🐈", animal_inu: "🐕" };
-export const ANIMAL_NAME: Record<string, string> = { animal_neko: "ねこ", animal_inu: "いぬ" };
+export const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "🐈", animal_inu: "🐕", animal_usagi: "🐇", animal_tori: "🐦" };
+export const ANIMAL_NAME: Record<string, string> = { animal_neko: "ねこ", animal_inu: "いぬ", animal_usagi: "うさぎ", animal_tori: "ことり" };
 
 /** 夜の島（みんなの島・プロフィール）の地面グラデーション */
 export const GROUND_BG: Record<string, string> = {
@@ -38,15 +38,77 @@ export const GROUND_TOP: Record<string, string> = {
     ground_momiji: "linear-gradient(180deg, #f6b878, #e07d3a)",
 };
 
-/** 画像があるアイテム（home の島とショップ一覧で使用） */
-export const TREE_IMG: Record<string, string> = { tree_sakura: "/island/trees/tree_sakura.png" };
-export const DECO_IMG: Record<string, string> = { deco_funsui: "/island/deco/deco_funsui.png" };
-export const SKY_IMG: Record<string, string> = { sky_niji: "/island/sky/sky_niji.png" };
-export const GROUND_IMG: Record<string, string> = { ground_hanabatake: "/island/ground/ground_hanabatake.png" };
-export const ANIMAL_IMG: Record<string, string> = { animal_neko: "/island/animals/cat.png", animal_inu: "/island/animals/dog.png" };
+/** 画像があるアイテム（島の描画・飾りつけ画面・ショップ一覧で使用）。素材はすべてChatGPT制作の画像をそのまま使う */
+export const TREE_IMG: Record<string, string> = { tree_sakura: "/island/trees/tree_sakura.png", tree_yashi: "/island/trees/tree_yashi.webp", tree_momiji: "/island/trees/tree_momiji.webp", tree_kadan: "/island/trees/tree_kadan.webp" };
+export const DECO_IMG: Record<string, string> = { deco_funsui: "/island/deco/deco_funsui.png", deco_bench: "/island/deco/deco_bench.webp", deco_gaitou: "/island/deco/deco_gaitou.webp", deco_torii: "/island/deco/deco_torii.webp", deco_yukidaruma: "/island/deco/deco_yukidaruma.webp", deco_fuusha: "/island/deco/deco_fuusha.webp", deco_takarabako: "/island/deco/deco_takarabako.webp" };
+export const SKY_IMG: Record<string, string> = { sky_niji: "/island/sky/sky_niji.png", sky_chocho: "/island/sky/sky_chocho.webp", sky_fuusen: "/island/sky/sky_fuusen.webp", sky_hikari: "/island/sky/sky_hikari.webp" };
+export const GROUND_IMG: Record<string, string> = { ground_hanabatake: "/island/ground/ground_hanabatake.png", ground_yukihara: "/island/ground/ground_yukihara.webp", ground_sunahama: "/island/ground/ground_sunahama.webp", ground_momiji: "/island/ground/ground_momiji.webp", ground_ishidatami: "/island/ground/ground_ishidatami.webp", ground_mahoujin: "/island/ground/ground_mahoujin.webp" };
+export const ANIMAL_IMG: Record<string, string> = { animal_neko: "/island/animals/cat.png", animal_inu: "/island/animals/dog.png", animal_usagi: "/island/animals/animal_usagi.webp", animal_tori: "/island/animals/animal_tori.webp" };
 export const ITEM_IMG: Record<string, string> = { ...TREE_IMG, ...DECO_IMG, ...SKY_IMG, ...GROUND_IMG, ...ANIMAL_IMG };
 
-export type IslandConfig = Record<string, string>;
+/** 地面画像のうち「島の土台ごと描かれている」もの（上面＋岩の側面）。この地面のときは、CSSで描く土台の代わりに画像をそのまま島として表示する */
+export const GROUND_PLATFORM = new Set(["ground_yukihara", "ground_sunahama", "ground_momiji", "ground_ishidatami", "ground_mahoujin"]);
+
+// ===== 島の飾りつけ（複数配置） =====
+// 保存先は従来どおり profiles.island_config。そこに placed（配置リスト）と skyList を足す形で、既存の ground / tree / deco / animal / sky キーも残す。
+//   placed: [{ k: アイテムのcss_key, x: 0〜100（左→右）, y: 0〜100（奥→手前）, s: 大きさ倍率, f: 左右反転 }]
+// placed が無い（＝まだ飾りつけ画面で保存していない）島は、従来の1個ずつの設定を「いつもの位置」に置いたものとして描く。
+export type Placed = { k: string; x: number; y: number; s?: number; f?: boolean };
+export type IslandCategory = "ground" | "tree" | "deco" | "animal" | "sky";
+export const ISLAND_CATS: { key: IslandCategory; label: string }[] = [
+    { key: "ground", label: "🌱 地面" }, { key: "tree", label: "🌳 木・植物" }, { key: "deco", label: "🏡 建物・装飾" }, { key: "animal", label: "🐾 動物" }, { key: "sky", label: "✨ 空・エフェクト" },
+];
+/** 島に置ける数の上限（種類ごと） */
+export const PLACE_LIMIT: Record<IslandCategory, number> = { ground: 1, tree: 6, deco: 6, animal: 3, sky: 2 };
+export const SCALE_MIN = 0.6, SCALE_MAX = 1.5;
+export function categoryOf(key: string): IslandCategory | null {
+    const c = key.split("_")[0];
+    return c === "ground" || c === "tree" || c === "deco" || c === "animal" || c === "sky" ? c : null;
+}
+/** 置いたときの基準の横幅（島の横幅に対する％）。大きさ倍率 s はこれに掛ける */
+const BASE_W: Record<string, number> = {
+    tree_sakura: 34, tree_yashi: 30, tree_momiji: 34, tree_momi: 26, tree_kadan: 26,
+    deco_funsui: 25, deco_bench: 26, deco_gaitou: 13, deco_torii: 27, deco_yukidaruma: 17, deco_fuusha: 24, deco_takarabako: 16, deco_hata: 13,
+    animal_neko: 14, animal_inu: 14, animal_usagi: 12, animal_tori: 10,
+};
+export function baseWidthOf(key: string): number { return BASE_W[key] || (categoryOf(key) === "tree" ? 28 : categoryOf(key) === "animal" ? 13 : 20); }
+/** 島の上面（だ円）の中に収める */
+export function clampToIsland(x: number, y: number): { x: number; y: number } {
+    let dx = (x - 50) / 50, dy = (y - 50) / 50; const d = Math.sqrt(dx * dx + dy * dy);
+    if (d > 1) { dx /= d; dy /= d; }
+    return { x: Math.round((50 + dx * 50) * 10) / 10, y: Math.round((50 + dy * 50) * 10) / 10 };
+}
+/** 描画・編集に使う配置リスト。placed があればそれ、無ければ従来の1個ずつの設定をいつもの位置に置いたもの */
+export function placedOf(config: any): Placed[] {
+    if (config && Array.isArray(config.placed)) {
+        return (config.placed as any[]).filter((p) => p && typeof p.k === "string" && typeof p.x === "number" && typeof p.y === "number")
+            .map((p) => ({ k: p.k, x: p.x, y: p.y, s: typeof p.s === "number" ? p.s : 1, f: !!p.f }));
+    }
+    const out: Placed[] = [];
+    if (config?.tree) out.push({ k: String(config.tree), x: 14, y: 30, s: 1, f: false });
+    if (config?.deco) out.push({ k: String(config.deco), x: 86, y: 60, s: 1, f: false });
+    if (config?.animal) out.push({ k: String(config.animal), x: 70, y: 84, s: 1, f: config.animal === "animal_inu" });
+    return out;
+}
+/** 空の飾り（最大2つ）。skyList があればそれ、無ければ従来の sky */
+export function skyListOf(config: any): string[] {
+    if (config && Array.isArray(config.skyList)) return (config.skyList as any[]).filter((k) => typeof k === "string").slice(0, PLACE_LIMIT.sky);
+    return config?.sky ? [String(config.sky)] : [];
+}
+/** 保存する形に組み立てる。従来のキー（tree / deco / animal / sky）も先頭の1個で埋めておく（古い画面との互換用） */
+export function buildIslandConfig(prev: any, ground: string | null, skies: string[], placed: Placed[]): Record<string, any> {
+    const c: Record<string, any> = { ...(prev || {}) };
+    delete c.ground; delete c.tree; delete c.deco; delete c.animal; delete c.sky;
+    if (ground) c.ground = ground;
+    if (skies[0]) c.sky = skies[0];
+    c.skyList = skies.slice(0, PLACE_LIMIT.sky);
+    c.placed = placed.map((p) => ({ k: p.k, x: p.x, y: p.y, s: Math.round((p.s || 1) * 100) / 100, f: !!p.f }));
+    (["tree", "deco", "animal"] as const).forEach((cat) => { const f = placed.find((p) => categoryOf(p.k) === cat); if (f) c[cat] = f.k; });
+    c.v = 2;
+    return c;
+}
+
+export type IslandConfig = Record<string, any>;
 
 /** みんなの島カードの称号（最大2つ）。islands 一覧とロビーの島フォーカスで共用 */
 export function titleBadges(i: { stepNo: number; streak: number; level: number }): string[] {
