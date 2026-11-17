@@ -39,7 +39,7 @@ export const GROUND_TOP: Record<string, string> = {
 };
 
 /** 画像があるアイテム（島の描画・飾りつけ画面・ショップ一覧で使用）。素材はすべてChatGPT制作の画像をそのまま使う */
-export const TREE_IMG: Record<string, string> = { tree_sakura: "/island/trees/tree_sakura.png", tree_yashi: "/island/trees/tree_yashi.webp", tree_momiji: "/island/trees/tree_momiji.webp", tree_kadan: "/island/trees/tree_kadan.webp" };
+export const TREE_IMG: Record<string, string> = { tree_sakura: "/island/trees/tree_sakura.png", tree_yashi: "/island/trees/tree_yashi.webp", tree_momiji: "/island/trees/tree_momiji.webp", tree_momi: "/island/trees/tree_momi.webp", tree_kadan: "/island/trees/tree_kadan.webp" };
 export const DECO_IMG: Record<string, string> = { deco_funsui: "/island/deco/deco_funsui.png", deco_bench: "/island/deco/deco_bench.webp", deco_gaitou: "/island/deco/deco_gaitou.webp", deco_torii: "/island/deco/deco_torii.webp", deco_yukidaruma: "/island/deco/deco_yukidaruma.webp", deco_fuusha: "/island/deco/deco_fuusha.webp", deco_takarabako: "/island/deco/deco_takarabako.webp" };
 export const SKY_IMG: Record<string, string> = { sky_niji: "/island/sky/sky_niji.png", sky_chocho: "/island/sky/sky_chocho.webp", sky_fuusen: "/island/sky/sky_fuusen.webp", sky_hikari: "/island/sky/sky_hikari.webp" };
 export const GROUND_IMG: Record<string, string> = { ground_hanabatake: "/island/ground/ground_hanabatake.png", ground_yukihara: "/island/ground/ground_yukihara.webp", ground_sunahama: "/island/ground/ground_sunahama.webp", ground_momiji: "/island/ground/ground_momiji.webp", ground_ishidatami: "/island/ground/ground_ishidatami.webp", ground_mahoujin: "/island/ground/ground_mahoujin.webp" };
