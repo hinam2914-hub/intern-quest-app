@@ -246,9 +246,17 @@ export default function RankingPage() {
             })));
 
             // ===== 週間ランキング =====
-            const { data: weeklyData } = await supabase.from("points_history").select("user_id, change, created_at").gte("created_at", getOneWeekAgoISO());
+            // 今週「獲得した」ポイントだけを数える。
+            //   ・ショップでの購入など、使った分（マイナスの履歴）は引かない
+            //   ・島バトルで奪った分（battle_loot_win）は、ほかの人から移っただけなので獲得には数えない
+            //   ・履歴は1回の取得が1000件までなので、1000件ずつ最後まで読む
             const weeklyTotals: Record<string, number> = {};
-            (weeklyData || []).forEach((item) => { weeklyTotals[item.user_id] = (weeklyTotals[item.user_id] || 0) + item.change; });
+            const weekAgo = getOneWeekAgoISO();
+            for (let from = 0; from < 20000; from += 1000) {
+                const { data: page } = await supabase.from("points_history").select("user_id, change, reason, created_at").gte("created_at", weekAgo).gt("change", 0).order("created_at", { ascending: true }).range(from, from + 999);
+                (page || []).forEach((item: any) => { if (item.reason === "battle_loot_win") return; weeklyTotals[item.user_id] = (weeklyTotals[item.user_id] || 0) + item.change; });
+                if (!page || page.length < 1000) break;
+            }
             const weeklyIds = Object.keys(weeklyTotals);
             if (weeklyIds.length > 0) {
                 const { data: weeklyProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").in("id", weeklyIds);
