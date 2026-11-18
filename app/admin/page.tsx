@@ -16,6 +16,7 @@ import DailyReportEvalTab from "./DailyReportEvalTab";
 import SalesManagementTab from "./SalesManagementTab";
 import BadgeManagementTab from "./BadgeManagementTab";
 import UrgentNotifyTab from "./UrgentNotifyTab";
+import NewsTab from "./NewsTab";
 import MedakaManageTab from "./MedakaManageTab";
 import MentorReportTab from "./MentorReportTab";
 import { createNotification } from "../lib/createNotification";
@@ -1642,82 +1643,8 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {activeTab === "announce" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 20 }}>NEW ANNOUNCEMENT</div>
-                            <div style={{ marginBottom: 12 }}>
-                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>タイトル</div>
-                                <input value={announceTitle} onChange={(e) => setAnnounceTitle(e.target.value)} placeholder="例：今週のMTGについて" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-                            </div>
-                            <div style={{ marginBottom: 16 }}>
-                                <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 600 }}>内容</div>
-                                <textarea value={announceContent} onChange={(e) => setAnnounceContent(e.target.value)} placeholder="お知らせの内容を入力してください..." style={{ width: "100%", height: 120, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#f9fafb", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
-                            </div>
-                            <button onClick={handlePostAnnounce} disabled={announceSending} style={{ padding: "12px 24px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-                                {announceSending ? "投稿中..." : "📢 投稿する"}
-                            </button>
-                            {announceMessage && <div style={{ marginTop: 12, fontSize: 13, color: "#34d399" }}>{announceMessage}</div>}
-                        </div>
-                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 24 }}>
-                            <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, letterSpacing: 2, marginBottom: 16 }}>ANNOUNCEMENTS</div>
-                            {announceList.length === 0 ? <div style={{ color: "#6b7280", fontSize: 14 }}>お知らせはありません</div> : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                    {announceList.map((item) => (
-                                        <div key={item.id} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: `1px solid ${item.is_active ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.05)"}` }}>
-                                            {editingAnnounceId === item.id ? (
-                                                /* ===== 編集モード ===== */
-                                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                                                    <div style={{ fontSize: 11, color: "#818cf8", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>📝 編集中</div>
-                                                    <div>
-                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>タイトル</div>
-                                                        <input value={editAnnounceTitle} onChange={(e) => setEditAnnounceTitle(e.target.value)} style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4, fontWeight: 600 }}>内容</div>
-                                                        <textarea value={editAnnounceContent} onChange={(e) => setEditAnnounceContent(e.target.value)} style={{ width: "100%", height: 120, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.05)", color: "#f9fafb", fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
-                                                    </div>
-                                                    <div style={{ display: "flex", gap: 8 }}>
-                                                        <button onClick={async () => {
-                                                            await supabase.from("announcements").update({
-                                                                title: editAnnounceTitle.trim(),
-                                                                content: editAnnounceContent.trim(),
-                                                            }).eq("id", item.id);
-                                                            setAnnounceList(prev => prev.map(a => a.id === item.id ? { ...a, title: editAnnounceTitle.trim(), content: editAnnounceContent.trim() } : a));
-                                                            setEditingAnnounceId(null);
-                                                        }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>💾 保存</button>
-                                                        <button onClick={() => setEditingAnnounceId(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>キャンセル</button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                /* ===== 通常モード ===== */
-                                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div style={{ fontSize: 14, fontWeight: 700, color: item.is_active ? "#f9fafb" : "#6b7280", marginBottom: 4 }}>{item.title}</div>
-                                                        <div style={{ fontSize: 13, color: item.is_active ? "#9ca3af" : "#4b5563", lineHeight: 1.6 }}>{item.content}</div>
-                                                        <div style={{ fontSize: 11, color: "#4b5563", marginTop: 6 }}>{formatDateTime(item.created_at)}</div>
-                                                    </div>
-                                                    <div style={{ display: "flex", gap: 6, marginLeft: 12 }}>
-                                                        <button onClick={() => {
-                                                            setEditingAnnounceId(item.id);
-                                                            setEditAnnounceTitle(item.title || "");
-                                                            setEditAnnounceContent(item.content || "");
-                                                        }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
-                                                            ✏️ 編集
-                                                        </button>
-                                                        <button onClick={async () => { await supabase.from("announcements").update({ is_active: !item.is_active }).eq("id", item.id); setAnnounceList(prev => prev.map(a => a.id === item.id ? { ...a, is_active: !a.is_active } : a)); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: item.is_active ? "rgba(248,113,113,0.2)" : "rgba(52,211,153,0.2)", color: item.is_active ? "#f87171" : "#34d399", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
-                                                            {item.is_active ? "非表示" : "表示する"}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                {/* お知らせ配信：HOMEのお知らせ（カテゴリ・公開日時・重要表示つき）。投稿はサーバー側で管理者確認 */}
+                {activeTab === "announce" && <NewsTab />}
 
                 {activeTab === "kpi" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

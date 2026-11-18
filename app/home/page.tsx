@@ -12,6 +12,7 @@ import { JOBS, type JobKey } from "../onboarding/job/page";
 import DotKun from "../components/DotKun";
 import { getCastleStage, CASTLE_STAGES } from "../lib/castle";
 import HomeIsland from "../components/HomeIsland";
+import { useNews, NewsBell, NewsPanel, NewsImportantCard, NewsLayer } from "../components/HomeNews";
 import HomeHeader2 from "../components/HomeHeader2";
 import { fetchCurrentTitle } from "../lib/mypage2";
 
@@ -141,6 +142,7 @@ export default function HomePage() {
   };
   const [totalEarned, setTotalEarned] = useState(0);
   const [homeUserId, setHomeUserId] = useState("");
+  const news = useNews(homeUserId);   // 運営からのお知らせ（ベル・PCパネル・重要カード・一覧／詳細で共有）
   const [licenses, setLicenses] = useState<Record<string, boolean>>({});
   const [applyingLicense, setApplyingLicense] = useState(false);
   const [theme, setTheme] = useState<Theme>("light");
@@ -381,7 +383,8 @@ export default function HomePage() {
       .hq-page{min-height:100vh;overflow-x:clip;background:url(/home/bg_mobile.webp) center top / cover no-repeat fixed, #bfe3f5;display:flex;flex-direction:column;align-items:center;padding:14px 14px 132px;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}
       .hq-col{width:100%;max-width:480px;display:flex;flex-direction:column}
       @media (min-width:700px){ .hq-page{background-image:url(/home/bg_pc.webp);padding-top:28px} .hq-col{max-width:640px} }
-      .hq-top{display:flex;justify-content:flex-end;margin:0 2px 8px}
+      .hq-top{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:0 2px 8px}
+      .hq-wrap{width:100%;display:flex;justify-content:center;align-items:flex-start;gap:22px}
       .hq-title{position:relative;width:min(94%,560px);margin:26px auto 0;container-type:inline-size;z-index:2}
       .hq-title img{display:block;width:100%;height:auto;filter:drop-shadow(0 6px 14px rgba(20,40,90,.3))}
       .hq-title>div{position:absolute;inset:25.9% 10% 11.8%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;pointer-events:none}
@@ -417,9 +420,11 @@ export default function HomePage() {
       .hq-nav .lbl{font-size:10.5px;font-weight:800}
     `}</style>
     <div className="hq-page">
+      <div className="hq-wrap">
       <div className="hq-col">
         {/* 右上：サウンド切替（既存機能） */}
         <div className="hq-top">
+          <NewsBell news={news} />
           <button onClick={toggleSound} style={{ border: "none", background: "rgba(255,255,255,.85)", borderRadius: 20, padding: "7px 12px", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 14px rgba(43,52,64,.15)", opacity: soundOn ? 1 : 0.55 }}>{soundOn ? "🔊" : "🔇"}</button>
         </div>
 
@@ -489,6 +494,9 @@ export default function HomePage() {
           })}
         </div>
 
+        {/* 重要なお知らせ（未読のときだけ・スマホ／タブレットのみ） */}
+        <NewsImportantCard news={news} />
+
         {/* D. ルクの案内（タップで今日のおすすめへ。ルクをなでると喜ぶ＝既存のなでなで機能） */}
         <div className="hq-luku" style={{ animation: "popIn 0.5s ease-out 0.5s both" }}>
           <div className="lk" onClick={handlePet}>
@@ -503,6 +511,10 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      {/* PC（1024px以上）：島の右にお知らせパネル */}
+      <NewsPanel news={news} />
+      </div>
+      <NewsLayer news={news} />
 
       {/* E. 下部ナビ（4項目・リンク先・動作は既存のまま。帯とホーム/おうちは提供素材、他は従来表示） */}
       <div className="hq-nav">
