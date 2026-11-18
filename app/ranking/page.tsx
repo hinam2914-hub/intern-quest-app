@@ -70,7 +70,6 @@ const TABS: { key: TabKey; em: string; label: string }[] = [
     { key: "kpi", em: "📊", label: "KPI" },
     { key: "sales_month", em: "💰", label: "販売(今月)" },
     { key: "sales_total", em: "💰", label: "販売(累計)" },
-    { key: "maru_total", em: "☀️", label: "スケジュール" },
     { key: "job_rank", em: "🎓", label: "就活ランク" },
     { key: "pay_forward", em: "🤝", label: "ペイフォワード" },
     { key: "thinking", em: "🧠", label: "思考クエスト" },
@@ -519,20 +518,7 @@ export default function RankingPage() {
                     points: Math.round((salesTotalByUser[row.id] || 0) / 10000),
                 })).filter(u => u.points > 0).sort((a, b) => b.points - a.points));
             }
-            // ===== 全丸(累計)ランキング =====
-            const { data: maruRows } = await supabase
-                .from("profiles")
-                .select("id, name, avatar_url, is_active, total_maru_days")
-                .eq("is_active", true)
-                .gt("total_maru_days", 0)
-                .order("total_maru_days", { ascending: false });
-            setMaruTotalUsers((maruRows || []).map((row: any) => ({
-                id: row.id,
-                name: row.name,
-                avatar_url: row.avatar_url,
-                is_active: row.is_active,
-                points: row.total_maru_days || 0,
-            })));
+            // スケジュール（全丸）ランキングは、スケジュール機能の廃止に合わせてタブごと廃止。profiles.total_maru_days のデータは残している
             // ===== 就活市場ランクランキング =====
             const { data: jobRankRows } = await supabase
                 .from("profiles")
