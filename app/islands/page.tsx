@@ -16,7 +16,7 @@ import { getCastleStage } from "../lib/castle";
 import { JOBS, type JobKey } from "../onboarding/job/page";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import {
-    BATTLE_CONFIG, ELEMENTS, ADVANTAGE, WEAPONS, SKILLS, loadWeaponShop, canUseWeapon, type WeaponShop,
+    BATTLE_CONFIG, ELEMENTS, ADVANTAGE, WEAPONS, SKILLS, loadWeaponShop, canUseWeapon, type WeaponShop, loadLootConfig, lootRateFor, type LootConfig,
     castleElementOf, elementMultiplier, readBattleLog, CHEST_IMG, type ElementKey, type WeaponDef, type BattleLog,
 } from "../lib/battle";
 
@@ -77,6 +77,8 @@ export default function IslandsGuildPage() {
     const [loading, setLoading] = useState(true);
     const [myId, setMyId] = useState("");
     const [myPoints, setMyPoints] = useState(0);
+    const [myLevel, setMyLevel] = useState(1);
+    const [loot, setLoot] = useState<LootConfig | null>(null);   // 勝利時の略奪の設定（未導入なら null＝報酬なし）
     const [wshop, setWshop] = useState<WeaponShop>({ enabled: false, prices: {}, owned: new Set() });
     const [search, setSearch] = useState("");
     const [fl, setFl] = useState<"osusume" | "battle" | "level" | "streak">("osusume");
@@ -104,6 +106,8 @@ export default function IslandsGuildPage() {
             ]);
             const ptMap: Record<string, { points: number; te: number }> = {};
             (points || []).forEach((p: any) => { ptMap[p.id] = { points: p.points || 0, te: p.total_earned || 0 }; });
+            setMyLevel(getLevel(ptMap[user.id]?.te || 0));
+            loadLootConfig(supabase).then(setLoot);
             const stepMap: Record<string, number> = {};
             (jsubs || []).forEach((s: any) => { stepMap[s.user_id] = Math.max(stepMap[s.user_id] || 0, s.step_no); });
             // 管理画面のユーザー一覧と同じ母集団（is_active=true）。名前未設定のアカウントだけ除外する。
@@ -454,7 +458,8 @@ export default function IslandsGuildPage() {
                                 <div className="gx-row"><span>城の基本HP</span><b>{BATTLE_CONFIG.castleBaseHp}</b></div>
                                 <div className="gx-row"><span>攻撃回数</span><b>1日 {BATTLE_CONFIG.attacksPerDay}回まで</b></div>
                                 <div className="gx-row"><span>クリティカル</span><b>×{BATTLE_CONFIG.critMult}</b></div>
-                                <div className="gx-row"><span>勝利報酬</span><b>相手BPの{Math.round(BATTLE_CONFIG.lootRate * 100)}%（上限{BATTLE_CONFIG.lootCap}pt）</b></div>
+                                <div className="gx-row"><span>勝利報酬</span><b>{loot?.enabled ? (isSelf ? `相手の所持ポイントの${Math.round(loot.rate_low * 100)}〜${Math.round(loot.rate_high * 100)}%（上限${loot.cap_points}pt）` : `この相手なら所持ポイントの${Math.round(lootRateFor(loot, myLevel, sel.level) * 100)}%（上限${loot.cap_points}pt）`) : "なし"}</b></div>
+                                {loot?.enabled && <div className="gx-row"><span>奪える割合</span><b>格上（Lv差{loot.level_gap}以上）{Math.round(loot.rate_high * 100)}%／同格 {Math.round(loot.rate_same * 100)}%／格下 {Math.round(loot.rate_low * 100)}%</b></div>}
                                 <div className="gx-row"><span>敗北側の保護</span><b>シールド{BATTLE_CONFIG.shieldHours}時間</b></div>
                             </div>
                             <div className="gx-sec" style={{ marginTop: 14 }}>🔮 属性の相性（×{BATTLE_CONFIG.multAdvantage.toFixed(1)} 有利）</div>
@@ -470,7 +475,9 @@ export default function IslandsGuildPage() {
                                 <span className="gx-cyc-el" style={{ borderColor: ELEMENTS.dark.color }}><ElIco k="dark" size={15} /><i>闇</i></span>
                                 <span style={{ fontSize: 10, fontWeight: 900, color: "#8b5cf6" }}>たがいに有利</span>
                             </div>
-                            <div className="gx-note">🛠️ 攻撃すると相手に通知が届きます。報酬ポイントの付与とランク戦はまだありません</div>
+                            <div className="gx-note">{loot?.enabled
+                                ? <>🪙 城を落とすと、相手のショップ用ポイントの一部を奪えます（相手のポイントのうち{loot.protect_points}ptまでは奪えません）。自分の城が落とされると奪われます。レベルと累計ptは変わりません。攻撃すると相手に通知が届きます</>
+                                : <>🛠️ 攻撃すると相手に通知が届きます。勝ってもポイントは動きません</>}</div>
                         </div>
                     )}
 

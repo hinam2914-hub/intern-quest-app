@@ -102,8 +102,6 @@ export const BATTLE_CONFIG = {
     burnTurns: 3,            // やけど継続ターン
     guardTurns: 2,           // 防御UP継続ターン
     guardCut: 0.5,           // 防御UP時の被ダメージ倍率
-    lootRate: 0.10,          // 勝利時：相手バトルポイントの略奪率（Phase 3）
-    lootCap: 50,             // 略奪の1回上限（Phase 3）
     shieldHours: 12,         // 城破壊後の保護シールド時間（Phase 2）
     hpRegenPerHour: 5,       // 城HPの自然回復/時（Phase 2）
 } as const;
@@ -172,3 +170,19 @@ export async function loadWeaponShop(sb: { from: (t: string) => any }, userId: s
 }
 /** その武器を使えるか（ショップ未導入なら全部使える／価格0は全員使える） */
 export const canUseWeapon = (shop: WeaponShop, key: string) => !shop.enabled || (shop.prices[key] ?? 0) === 0 || shop.owned.has(key);
+
+/** 勝利時の略奪の設定（サーバーの battle_loot_config テーブルと同じ形）。計算はサーバー側で行い、ここは画面の説明表示にだけ使う */
+export type LootConfig = { enabled: boolean; rate_high: number; rate_same: number; rate_low: number; level_gap: number; cap_points: number; protect_points: number };
+export async function loadLootConfig(sb: { from: (t: string) => any }): Promise<LootConfig | null> {
+    try {
+        const { data, error } = await sb.from("battle_loot_config").select("*").eq("id", 1).maybeSingle();
+        if (error || !data) return null;
+        return { enabled: !!data.enabled, rate_high: Number(data.rate_high), rate_same: Number(data.rate_same), rate_low: Number(data.rate_low), level_gap: Number(data.level_gap), cap_points: Number(data.cap_points), protect_points: Number(data.protect_points) };
+    } catch { return null; }
+}
+/** 自分と相手のレベルから、奪える割合を返す（格上ほど多い） */
+export function lootRateFor(cfg: LootConfig, myLevel: number, oppLevel: number): number {
+    if (oppLevel - myLevel >= cfg.level_gap) return cfg.rate_high;
+    if (myLevel - oppLevel >= cfg.level_gap) return cfg.rate_low;
+    return cfg.rate_same;
+}

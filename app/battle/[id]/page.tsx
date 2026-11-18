@@ -55,6 +55,7 @@ export default function BattlePage() {
     // サーバー保存モード：battle_server.sql が適用済みなら true（未適用の環境では従来の端末内デモで動く）
     const [server, setServer] = useState(false);
     const [shieldUntil, setShieldUntil] = useState<string | null>(null);
+    const [loot, setLoot] = useState(0);   // 勝利時に奪ったポイント（サーバーが計算した値）
 
     const weapon = useMemo(() => WEAPONS.find((w) => w.key === weaponKey) || WEAPONS[0], [weaponKey]);
     const oppElement = useMemo(() => (oppId ? castleElementOf(oppId) : "fire"), [oppId]);
@@ -138,6 +139,7 @@ export default function BattlePage() {
             }
             const d = data as any;
             r = { dmg: d.damage, mult: Number(d.mult), crit: !!d.crit, skill: (d.skill as SkillKey) || null, hits: d.hits, next: d.hp_after, used: BATTLE_CONFIG.attacksPerDay - d.attacks_left, boostedNow: false, burnTick: false };
+            if (d.won) setLoot(Number(d.loot || 0));
             if (d.won) setShieldUntil(new Date(Date.now() + BATTLE_CONFIG.shieldHours * 3600 * 1000).toISOString());
         } else {
             const res = calcDamage(weapon, oppElement);
@@ -302,7 +304,7 @@ export default function BattlePage() {
                                 <div className="bt-win-chest">{CHEST_IMG ? <img src={CHEST_IMG} alt="" style={{ width: 150, height: 150, objectFit: "contain" }} /> : "🎁"}</div>
                                 <div className="bt-win-title">VICTORY!</div>
                                 <div className="bt-win-sub">城を落とした！</div>
-                                <div className="bt-win-reward">🛡️ 相手の城に{BATTLE_CONFIG.shieldHours}時間の保護シールド{server && <><br />📣 {opp.name}さんに通知が届きました</>}</div>
+                                <div className="bt-win-reward">{loot > 0 && <><b style={{ fontSize: 17, color: "#b45309" }}>🪙 {loot.toLocaleString()}pt うばった！</b><br /></>}🛡️ 相手の城に{BATTLE_CONFIG.shieldHours}時間の保護シールド{server && <><br />📣 {opp.name}さんに通知が届きました</>}</div>
                                 {server
                                     ? <button className="bt-win-btn" onClick={() => router.push("/islands")}>島一覧へもどる</button>
                                     : <button className="bt-win-btn" onClick={resetDemo}>もう一度バトルする</button>}
