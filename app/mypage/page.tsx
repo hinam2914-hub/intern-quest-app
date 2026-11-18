@@ -1426,7 +1426,7 @@ const handleRoutineCheck = async (routineId: string) => {
     return (
         <main className="mp-root" style={{ minHeight: "100vh", padding: "0 16px 120px", fontFamily: fontFamily, color: textPrimary }}>
             <style>{MYPAGE_CSS}</style>
-            <header className="mp-header"><div className="mp-logo">Intern<br/>Quest</div><div className="mp-htitle">マイページ<small>MY PAGE</small></div><div className="mp-hbtns"><button onClick={() => router.push("/notifications")} aria-label="通知">🔔{unreadNotifCount > 0 && <i />}</button><button onClick={() => setShowProfileModal(true)} aria-label="設定">⚙️</button></div></header>
+            <header className="mp-header"><div className="mp-logo">Intern<br/>Quest</div><div className="mp-htitle">マイページ<small>MY PAGE</small></div><div className="mp-hbtns"><button onClick={() => setShowProfileModal(true)} aria-label="設定">⚙️</button></div></header>
 
             {/* ===== パーティクルキャンバス ===== */}
             <canvas
@@ -1771,41 +1771,7 @@ const handleRoutineCheck = async (routineId: string) => {
                         </div>
                     </div>
                 )}
-                {/* ===== 🔔 通知バナー ===== */}
-                {unreadNotifCount > 0 && (
-                    <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
-                        <div onClick={() => router.push("/notifications")} style={{
-                            padding: "16px 20px",
-                            background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.10))",
-                            border: "2px solid rgba(99,102,241,0.4)",
-                            borderRadius: 16,
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 12,
-                            transition: "all 0.2s ease",
-                        }}
-                            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
-                        >
-                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                <div style={{ fontSize: 28 }}>🔔</div>
-                                <div>
-                                    <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb", marginBottom: 2 }}>
-                                        新しい通知が {unreadNotifCount} 件あります
-                                    </div>
-                                    <div style={{ fontSize: 12, color: "#a5b4fc" }}>
-                                        タップして確認 →
-                                    </div>
-                                </div>
-                            </div>
-                            <div style={{ background: "#ef4444", color: "#fff", padding: "4px 12px", borderRadius: 999, fontSize: 13, fontWeight: 800 }}>
-                                {unreadNotifCount}
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* 通知はHOMEのベル（お知らせ・あなたへの通知）とメニューの「通知」から見る。マイページのベルと通知バナーは廃止 */}
                 {pendingSurveys.length > 0 && (
                     <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto 24px" }}>
                         <div
