@@ -34,7 +34,7 @@ const CATS: Cat[] = [
             { icon: "📚", label: "学習コンテンツ", path: "/learn" },
             { icon: "🎯", label: "チャレンジ", path: "/challenge" },
             { icon: "📝", label: "テスト", path: "/tests" },
-            { icon: "🗺️", label: "冒険マップ", path: "/journey" },
+            { icon: "🗺️", label: "冒険マップ", path: "/skill-board?journey=1" },
             { icon: "🏝️", label: "みんなの島へ行く", path: "/islands" },
             { icon: "🏅", label: "一人前チャレンジ", path: "/rookie" },
             { icon: "📖", label: "Wiki・資料", path: "/wiki" },

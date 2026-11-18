@@ -12,6 +12,8 @@ import { AREAS, NODE_POS, START, AREA_COLOR, type Pt } from "./world";
 import type { CamCmd } from "./camera";
 import { evaluateStages, submitStageClaim, stageText, type StageResult } from "../lib/stages";
 import StagePanel from "./StagePanel";
+import { useJourney, StepCard } from "../journey/core";
+import { JOURNEY_POS } from "./world";
 
 type Celebration = { id?: string; title: string; sub: string; icon: string; key: boolean };
 
@@ -38,6 +40,14 @@ export default function SkillBoardPage() {
   const [stageRes, setStageRes] = useState<StageResult | null>(null);
   const [stageOpen, setStageOpen] = useState(false);
   const locRef = useRef<string | null>(null);
+  // 冒険マップ（7STEP）。地図の「はじまりの道」に並べ、タップで申請カードを開く
+  const jr = useJourney();
+  const [jrSel, setJrSel] = useState<number | null>(null);
+  const jrOpened = useRef(false);
+  function goJourney(open = true) {
+    const no = jr.currentNo; const p = JOURNEY_POS[no]; if (!p) return;
+    setNavArea("comm"); setCamCmd({ key: Date.now(), mode: "quest", target: p }); if (open) setJrSel(no);
+  }
 
   function lastUnlockedId(r: EvalResult) {
     return [...r.nodes].filter((n) => n.status === "unlocked" && n.unlocked_at).sort((a, b) => (b.unlocked_at! > a.unlocked_at! ? 1 : -1))[0]?.id ?? null;
@@ -162,6 +172,14 @@ export default function SkillBoardPage() {
     setCamCmd({ key: Date.now(), mode: "quest", target: p });
   }
 
+  // メニューの「冒険マップ」（?journey=1）から来たら、今いるSTEPへ寄って申請カードを開く
+  useEffect(() => {
+    if (jrOpened.current || jr.loading || !res) return;
+    if (typeof window === "undefined" || new URLSearchParams(window.location.search).get("journey") !== "1") return;
+    jrOpened.current = true; setTimeout(() => goJourney(true), 400);   // 途中で再描画されても取り消さない（1回だけ開く）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jr.loading, res]);
+
   if (!res) return <div style={{ minHeight: "100vh", background: "linear-gradient(180deg,#8fd3ff,#e6f6ff)", display: "flex", alignItems: "center", justifyContent: "center", color: "#1e3a5f", fontWeight: 800 }}>🌱 スキルワールドを読み込み中...</div>;
   const total = res.nodes.filter((n) => n.status === "unlocked").length;
   const focusState = sel ? (focus.current === sel.id ? "current" : focus.subs.includes(sel.id) ? "sub" : "none") : "none";
@@ -174,13 +192,14 @@ export default function SkillBoardPage() {
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
       <TutorialMark id="skill" />
-      <SkillWorld res={res} avatarId={avatarId} layered={layered} selectedId={sel?.id ?? null} onSelect={setSel} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} camCmd={camCmd} stages={stageRes?.stages} onStageTap={() => setStageOpen(true)} onAreaTap={(k) => setNavArea(k)} onCamMode={(m, a) => { if (m === "area" && a) setNavArea(a); }} />
+      <SkillWorld res={res} avatarId={avatarId} layered={layered} selectedId={sel?.id ?? null} onSelect={(n) => { if (n) setJrSel(null); setSel(n); }} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} camCmd={camCmd} stages={stageRes?.stages} onStageTap={() => setStageOpen(true)} onAreaTap={(k) => setNavArea(k)} onCamMode={(m, a) => { if (m === "area" && a) setNavArea(a); }} journey={jr.loading ? undefined : jr.steps.map((s) => ({ no: s.no, displayNo: s.displayNo ?? s.no, img: s.img, title: s.title, state: jr.stateOf(s.no) }))} journeySel={jrSel} onJourneyTap={(no) => { setSel(null); setJrSel(no); }} />
 
       {/* HUD 上 */}
       {isMobile ? (
         <div style={{ position: "absolute", top: 10, left: 10, right: 10, display: "flex", gap: 8, alignItems: "flex-start", zIndex: 40, pointerEvents: "none" }}>
           <button onClick={() => router.back()} style={{ pointerEvents: "auto", width: 38, height: 38, borderRadius: 19, border: "2px solid #fff", background: "linear-gradient(180deg,#fff,#eef6ff)", fontWeight: 900, fontSize: 16, color: "#1e3a5f", cursor: "pointer", boxShadow: "0 4px 12px rgba(30,58,95,.18)" }}>←</button>
           <div style={{ background: "linear-gradient(180deg,#fff,#eef6ff)", border: "2px solid #fff", borderRadius: 999, padding: "8px 12px", fontWeight: 900, fontSize: 12, color: "#1e3a5f", boxShadow: "0 4px 12px rgba(30,58,95,.18)", whiteSpace: "nowrap" }}>🌱 SKILL WORLD <span style={{ color: "#8b5cf6", marginLeft: 4 }}>{total}/{res.nodes.length}</span></div>
+          {!jr.loading && <button onClick={() => goJourney(true)} style={{ pointerEvents: "auto", height: 38, borderRadius: 19, border: "2px solid #16a34a", background: "linear-gradient(180deg,#fff,#dcfce7)", padding: "0 10px", fontWeight: 900, fontSize: 12, color: "#166534", cursor: "pointer", boxShadow: "0 4px 12px rgba(22,101,52,.2)", whiteSpace: "nowrap" }}>🗺️ {jr.doneCount}/{jr.steps.length}</button>}
           <div style={{ flex: 1 }} />
           {!curNode && stageRes && (
             <button onClick={() => setStageOpen(true)} style={{ pointerEvents: "auto", width: 40, height: 40, borderRadius: 20, border: "2px solid #fbbf24", background: "#fff", fontSize: 18, cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.2)" }}>🏁</button>
@@ -210,6 +229,7 @@ export default function SkillBoardPage() {
         <div style={{ position: "absolute", top: 12, left: 12, right: 12, display: "flex", gap: 8, alignItems: "flex-start", zIndex: 40, pointerEvents: "none" }}>
           <button onClick={() => router.back()} style={{ pointerEvents: "auto", border: "2px solid #fff", background: "linear-gradient(180deg,#fff,#eef6ff)", borderRadius: 999, padding: "9px 14px", fontWeight: 900, fontSize: 13, color: "#1e3a5f", cursor: "pointer", boxShadow: "0 4px 12px rgba(30,58,95,.18)" }}>← 戻る</button>
           <div style={{ background: "linear-gradient(180deg,#fff,#eef6ff)", border: "2px solid #fff", borderRadius: 999, padding: "9px 16px", fontWeight: 900, fontSize: 13, color: "#1e3a5f", boxShadow: "0 4px 12px rgba(30,58,95,.18)", whiteSpace: "nowrap" }}>🌱 SKILL WORLD <span style={{ color: "#8b5cf6", marginLeft: 6 }}>{total} / {res.nodes.length}</span></div>
+          {!jr.loading && <button onClick={() => goJourney(true)} style={{ pointerEvents: "auto", border: "2px solid #16a34a", background: "linear-gradient(180deg,#fff,#dcfce7)", borderRadius: 999, padding: "9px 14px", fontWeight: 900, fontSize: 13, color: "#166534", cursor: "pointer", boxShadow: "0 4px 12px rgba(22,101,52,.2)", whiteSpace: "nowrap" }}>🗺️ 冒険マップ <span style={{ marginLeft: 4 }}>{jr.doneCount} / {jr.steps.length}</span></button>}
           <div style={{ flex: 1 }} />
           {stageRes && (
             <button onClick={() => setStageOpen(true)} style={{ pointerEvents: "auto", border: "2px solid #fbbf24", background: "linear-gradient(180deg,#fff,#fff7ed)", borderRadius: 16, padding: "7px 12px", textAlign: "left", cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.2)", maxWidth: 240 }}>
@@ -260,6 +280,30 @@ export default function SkillBoardPage() {
 
       {stageOpen && stageRes && <StagePanel res={stageRes} isMobile={isMobile} onClose={() => setStageOpen(false)} onClaim={onStageClaim} />}
       {sel && <DetailPanel node={sel} jobs={res.jobs} isMobile={isMobile} onClose={() => setSel(null)} onRequestCheck={onRequestCheck} onClaim={onClaim} focusState={focusState} nextNode={nextNode} prevNode={prevNode} recos={recos} onChallenge={async (n) => { await onChallenge(n); setSel(null); }} onPromote={async (n) => { await onPromote(n); setSel(null); }} onRemoveFocus={async (n) => { await onRemoveFocus(n); setSel(null); }} />}
+
+      {/* 冒険マップのSTEP詳細（申請カード） */}
+      {jrSel !== null && (() => {
+        const idx = jr.steps.findIndex((s) => s.no === jrSel); const step = jr.steps[idx]; if (!step) return null;
+        const prev = jr.steps[idx - 1], next = jr.steps[idx + 1];
+        const move = (no: number) => { setJrSel(no); const p = JOURNEY_POS[no]; if (p) setFocusTo({ key: Date.now(), target: p }); };
+        const navBtn: React.CSSProperties = { flex: 1, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", borderRadius: 12, padding: "10px 8px", fontWeight: 800, fontSize: 12.5, cursor: "pointer", minHeight: 44 };
+        // スキルの詳細パネル（DetailPanel）と同じ見た目・同じ位置に出す
+        const wrap: React.CSSProperties = isMobile
+          ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "72vh", borderRadius: "24px 24px 0 0", zIndex: 60 }
+          : { position: "fixed", top: 16, right: 16, bottom: 16, width: 380, borderRadius: 24, zIndex: 60 };
+        return (
+          <div style={{ ...wrap, background: "linear-gradient(180deg,#ffffff,#f0f9ff)", boxShadow: "0 16px 50px rgba(30,41,59,.25)", border: "2px solid #fff", overflowY: "auto", padding: isMobile ? "20px 20px calc(20px + env(safe-area-inset-bottom, 0px))" : 20, color: "#1e293b", fontFamily: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif', animation: isMobile ? "swSlideUp .3s ease-out" : "swSlideIn .3s ease-out" }}>
+            <button onClick={() => setJrSel(null)} aria-label="閉じる" style={{ position: "absolute", top: 12, right: 14, border: "none", background: "#e2e8f0", width: 30, height: 30, borderRadius: 15, fontWeight: 900, cursor: "pointer", color: "#475569", zIndex: 2 }}>×</button>
+            <StepCard key={step.no} step={step} state={jr.stateOf(step.no)} onCta={(path) => router.push(path)} sub={jr.subOf(step.no)} userId={jr.userId} onSaved={(st) => jr.saveSub(step.no, st)} stepContents={jr.stepContents} doneContentIds={jr.doneContentIds} onOpenContent={(id) => router.push("/learn?open=" + id)} passedTests={jr.passedTests} onGoTest={(p) => router.push(p)} b1ok={jr.b1ok} />
+            <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
+              <button disabled={!prev} onClick={() => prev && move(prev.no)} style={{ ...navBtn, opacity: prev ? 1 : 0.4, cursor: prev ? "pointer" : "default" }}>← 前のSTEP</button>
+              <button disabled={!next} onClick={() => next && move(next.no)} style={{ ...navBtn, opacity: next ? 1 : 0.4, cursor: next ? "pointer" : "default" }}>次のSTEP →</button>
+            </div>
+            <div style={{ marginTop: 12, fontSize: 12, color: "#475569", textAlign: "center" }}>冒険マップ {jr.doneCount} / {jr.steps.length} クリア（{jr.pct}%）</div>
+            <style>{`@keyframes swSlideIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}@keyframes swSlideUp{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}`}</style>
+          </div>
+        );
+      })()}
 
       {/* SKILL UNLOCKED 演出 */}
       {celebrate.length > 0 && (

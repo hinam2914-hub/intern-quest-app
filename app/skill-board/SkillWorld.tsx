@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { questMission, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
-import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, pt, curve, type Pt } from "./world";
+import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, JOURNEY_POS, pt, curve, type Pt } from "./world";
 import type { StageState } from "../lib/stages";
 import AvatarLayered from "../components/AvatarLayered";
 import type { AvatarConfig } from "../lib/avatar/catalog";
@@ -11,6 +11,8 @@ import { TERRAIN_IMG, blobPath, LAND_PTS, MEADOW_PTS, HILL_PTS, STONE_PTS, STREA
 
 type Cam = { x: number; y: number; s: number };
 export type Walk = { key: number; from: Pt; to: Pt };
+/** 冒険マップのSTEP（地図に置く目印用。判定は app/journey/core.tsx が正） */
+export type JourneyMark = { no: number; displayNo: number; img: string; title: string; state: "done" | "now" | "lock" };
 
 /* ============================================================
    ランドマーク定義（場所として見せる）。img = public の既存素材
@@ -51,7 +53,7 @@ function LmSvg({ kind, color, size = 60 }: { kind: NonNullable<LM["svg"]>; color
 /* 木（SVG use）座標は世界座標 */
 function treeSeeds(): { x: number; y: number; k: number; s: number }[] {
   // 手配置の塊のみ（ノード付近は避ける）
-  const nodes = Object.values(NODE_POS).concat(Object.values(JOB_POS), [START]);
+  const nodes = Object.values(NODE_POS).concat(Object.values(JOB_POS), Object.values(JOURNEY_POS), [START]);
   return clusterItems(COMM_CLUSTERS.concat(WORLD_CLUSTERS)).filter((t) => !nodes.some((p) => Math.hypot(p.x - t.x, p.y - t.y) < 58));
 }
 
@@ -71,7 +73,9 @@ function useTerrainImages(): Record<string, boolean> {
   return ok;
 }
 
-export default function SkillWorld({ res, avatarId, layered, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title, camCmd, onAreaTap, onCamMode, hud, stages, onStageTap }: {
+export default function SkillWorld({ res, avatarId, layered, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title, camCmd, onAreaTap, onCamMode, hud, stages, onStageTap, journey, journeySel, onJourneyTap }: {
+  /** 冒険マップの7STEP（START→SALES の道沿い） */
+  journey?: JourneyMark[]; journeySel?: number | null; onJourneyTap?: (no: number) => void;
   res: EvalResult; avatarId: string | null; layered?: { cfg: AvatarConfig; job: JobKey } | null; selectedId: string | null; onSelect: (n: NodeState | null) => void; focusTo?: { key: number; target: Pt };
   focus: Focus; locNodeId: string | null; walk: Walk | null; onWalkEnd?: () => void; recos?: Reco[]; title?: { name: string; icon: string | null } | null;
   /** カメラ指示（WORLD / AREA / QUEST）。key が変わるたびに実行 */
@@ -526,6 +530,32 @@ export default function SkillWorld({ res, avatarId, layered, selectedId, onSelec
                   <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: 10, background: "linear-gradient(180deg,#fff,#fef3c7)", color: "#1e293b", fontSize: isMobile ? 15 : 13, fontWeight: 900, boxShadow: "0 3px 8px rgba(0,0,0,.2)", border: "2px solid #fbbf24" }}>{fog ? "？？？" : n.name}</span>
                 ) : (
                   <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: fog ? "#b9a68a" : u ? "#8a5a2b" : "#a8713a", color: fog ? "#efe6d6" : "#fff7e6", fontSize: isMobile ? (isSub ? 13 : a ? 12.5 : 11) : key ? 10.5 : 9.5, fontWeight: 800, boxShadow: "0 2px 3px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.25)", border: "1.5px solid #6b4423", opacity: fog ? 0.7 : n.status === "locked" ? 0.75 : 1, letterSpacing: 0.3 }}>{fog ? "？？？" : n.name}</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ---------- 冒険マップ：はじまりの道の7STEP ---------- */}
+        {(journey ?? []).length > 0 && (
+          <div style={{ position: "absolute", left: 250, top: 1276, transform: `scale(${Math.min(inv, 1.6)})`, transformOrigin: "0 0", padding: "4px 12px", borderRadius: 12, background: "linear-gradient(180deg,#fff,#fdf6e3)", border: "2px solid #16a34a", fontSize: 12, fontWeight: 900, color: "#166534", whiteSpace: "nowrap", boxShadow: "0 3px 8px rgba(0,0,0,.18)", zIndex: 9, pointerEvents: "none" }}>🗺️ 冒険マップ　{(journey ?? []).filter((j) => j.state === "done").length} / {(journey ?? []).length}</div>
+        )}
+        {(journey ?? []).map((j) => {
+          const p = JOURNEY_POS[j.no]; if (!p) return null;
+          const done = j.state === "done", now = j.state === "now", lock = j.state === "lock"; const jsel = journeySel === j.no; const w = 92;
+          return (
+            <div key={"jr" + j.no} onClick={(e) => { e.stopPropagation(); if (drag.current?.moved) return; nodeClicked.current = true; onJourneyTap?.(j.no); }} style={{ position: "absolute", left: p.x - w / 2, top: p.y - 78, width: w, textAlign: "center", cursor: "pointer", zIndex: jsel ? 20 : now ? 13 : 10, transform: jsel ? "scale(1.1)" : "none", transition: "transform .2s" }}>
+              {now && <>
+                <div style={{ position: "absolute", left: "50%", bottom: 14, width: w + 26, height: 26, marginLeft: -(w + 26) / 2, borderRadius: "50%", border: "4px solid #34d399", boxShadow: "0 0 16px #34d399, inset 0 0 14px rgba(52,211,153,.6)", pointerEvents: "none", animation: "swPulse 2s ease-in-out infinite" }} />
+                <div style={{ position: "absolute", top: -22, left: "50%", transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 100%", fontSize: 10, fontWeight: 900, color: "#fff", background: "#16a34a", borderRadius: 6, padding: "1px 7px", whiteSpace: "nowrap", zIndex: 3, animation: "swBounce 1.4s ease-in-out infinite" }}>今ここ</div>
+              </>}
+              <div style={{ position: "relative", height: 62, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                <img src={j.img} alt="" style={{ width: 66, height: 66, objectFit: "contain", display: "block", filter: lock ? "grayscale(.85) brightness(.8) opacity(.75)" : done ? "drop-shadow(0 0 10px #34d399) drop-shadow(0 5px 4px rgba(0,0,0,.25))" : "drop-shadow(0 5px 4px rgba(0,0,0,.25))" }} />
+                <span style={{ position: "absolute", left: 6, top: 2, width: 24, height: 24, borderRadius: 12, background: done ? "#16a34a" : now ? "#fff" : "#94a3b8", border: `2px solid ${now ? "#16a34a" : "#fff"}`, color: now ? "#166534" : "#fff", fontSize: 12, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 5px rgba(0,0,0,.25)" }}>{done ? "✓" : lock ? "🔒" : j.displayNo}</span>
+              </div>
+              <div style={{ marginTop: 2, whiteSpace: "nowrap", transform: `scale(${inv})`, transformOrigin: "50% 0" }}>
+                {isMobile && lock && !jsel ? null : (
+                  <span style={{ display: "inline-block", padding: now || jsel ? "3px 10px" : "2px 8px", borderRadius: now || jsel ? 10 : 4, background: now || jsel ? "linear-gradient(180deg,#fff,#dcfce7)" : done ? "#166534" : "#8b9a8f", border: now || jsel ? "2px solid #16a34a" : "none", color: now || jsel ? "#14532d" : "#fff", fontSize: isMobile ? (now ? 13 : 11) : now || jsel ? 12 : 9.5, fontWeight: 900, boxShadow: "0 2px 4px rgba(0,0,0,.25)" }}>{j.displayNo}. {j.title}</span>
                 )}
               </div>
             </div>

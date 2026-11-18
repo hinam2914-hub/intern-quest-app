@@ -14,6 +14,14 @@ export const NODE_POS: Record<string, Pt> = {
   ai_1: { x: 300, y: 330 }, ai_2: { x: 440, y: 280 }, ai_3: { x: 580, y: 320 }, ai_4: { x: 720, y: 260 }, ai_5: { x: 860, y: 300 }, ai_6: { x: 1000, y: 240 },
 };
 export const JOB_POS: Record<string, Pt> = { closer: { x: 1940, y: 880 }, mentor: { x: 1700, y: 760 }, manager: { x: 1880, y: 300 } };
+/** 冒険マップ（入社〜営業配属の7STEP）の位置。START から SALES の入口へ続く「はじまりの道」に沿って並べる（キー＝STEPの内部番号） */
+export const JOURNEY_ORDER = [1, 2, 7, 3, 4, 5, 6];
+export const JOURNEY_VIA: Pt = { x: 700, y: 1330 };
+export const JOURNEY_POS: Record<number, Pt> = (() => {
+  const a = START, c = JOURNEY_VIA, b = NODE_POS.sales_1; const out: Record<number, Pt> = {};
+  JOURNEY_ORDER.forEach((no, i) => { const t = (i + 1) / 8; out[no] = { x: Math.round((1 - t) * (1 - t) * a.x + 2 * (1 - t) * t * c.x + t * t * b.x), y: Math.round((1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * c.y + t * t * b.y) }; });
+  return out;
+})();
 export const JOB_ICON: Record<string, string> = { closer: "🏟️", mentor: "🏛️", manager: "🏯" };
 
 // エリア（地形ブロブ）
