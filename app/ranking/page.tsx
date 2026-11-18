@@ -52,6 +52,16 @@ async function fetchAllUserIds(table: string, filters: [string, string | boolean
     return rows;
 }
 
+/** チームのロゴ（各チームから届いた画像をそのまま使用）。チーム名で決める。ロゴが無いチーム（ドットなど）は従来の色つきアイコン */
+function teamLogo(name: string): string | null {
+    const n = (name || "").replace(/\s/g, "");
+    const second = /[②2２]$/.test(n);
+    if (n.startsWith("ランフリー")) return "/teams/runfree.webp";
+    if (n.startsWith("ロジャー")) return "/teams/roger.webp";
+    if (n.startsWith("ロード")) return "/teams/road.webp";
+    if (n.startsWith("チルビー")) return second ? "/teams/chillb_green.webp" : "/teams/chillb_blue.webp";   // 青＝チルビー①、緑＝チルビー②
+    return null;
+}
 type TabKey = "total" | "weekly" | "teams" | "streak" | "sankyu" | "sankyu_sent" | "challenge" | "test" | "advice" | "learn" | "work" | "kpi" | "sales_month" | "sales_total" | "maru_total" | "job_rank" | "pay_forward" | "thinking" | "question" | "ippon" | "battle_count" | "battle_wins" | "battle_damage";
 
 // タブ（旧ページの種別・ラベルをそのまま維持）
@@ -609,6 +619,9 @@ export default function RankingPage() {
 
     const renderAvatar = (user: RankingUser, size: number) => {
         if (user.isTeam) {
+            const logo = teamLogo(user.name);
+            // eslint-disable-next-line @next/next/no-img-element
+            if (logo) return <img src={logo} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", background: "#fff", display: "block" }} />;
             return (
                 <div style={{ width: size, height: size, borderRadius: "50%", background: user.color || "#6366f1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.5, fontWeight: 700, color: "#fff" }}>
                     👥
