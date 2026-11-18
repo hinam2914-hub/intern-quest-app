@@ -7,7 +7,8 @@ import { stageText } from "../lib/stages";
 export default function StagePanel({ res, isMobile, onClose, onClaim }: {
   res: StageResult; isMobile: boolean; onClose: () => void; onClaim: (stageId: string, text: string, url: string) => Promise<void> | void;
 }) {
-  const [text, setText] = useState(""); const [url, setUrl] = useState(""); const [busy, setBusy] = useState(false);
+  // 申告の入力はステップごとに持つ（メインと採用コースで同時に2つ出るため）
+  const [texts, setTexts] = useState<Record<string, string>>({}); const [urls, setUrls] = useState<Record<string, string>>({}); const [busy, setBusy] = useState(false);
   const wrap: React.CSSProperties = isMobile
     ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "78vh", borderRadius: "24px 24px 0 0", zIndex: 60 }
     : { position: "fixed", top: 16, right: 16, bottom: 16, width: 380, borderRadius: 24, zIndex: 60 };
@@ -15,7 +16,9 @@ export default function StagePanel({ res, isMobile, onClose, onClaim }: {
   const cleared = res.stages.filter((s) => s.cleared).length;
 
   const row = (s: StageState, i: number) => {
-    const isCur = res.current?.id === s.id;
+    const isCur = res.current?.id === s.id || res.currentRef?.id === s.id;
+    const text = texts[s.id] ?? "", url = urls[s.id] ?? "";
+    const setText = (v: string) => setTexts((t) => ({ ...t, [s.id]: v })), setUrl = (v: string) => setUrls((t) => ({ ...t, [s.id]: v }));
     const left = Math.max(0, s.threshold - Math.min(s.current, s.threshold));
     return (
       <div key={s.id} style={{ position: "relative", marginBottom: 8 }}>
@@ -40,9 +43,9 @@ export default function StagePanel({ res, isMobile, onClose, onClaim }: {
           )}
           {isCur && s.type === "stage_claim" && !s.pending && (
             <div style={{ marginTop: 8 }}>
-              <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={s.claimHint ?? "受けた内容を書いてください"} rows={3} style={{ width: "100%", borderRadius: 10, border: "1px solid #cbd5e1", padding: 9, fontSize: 13, boxSizing: "border-box" }} />
+              <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={s.claimHint ?? "達成した内容を書いてください"} rows={3} style={{ width: "100%", borderRadius: 10, border: "1px solid #cbd5e1", padding: 9, fontSize: 13, boxSizing: "border-box" }} />
               <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="資料やメモのURL（任意）" style={{ width: "100%", marginTop: 6, borderRadius: 10, border: "1px solid #cbd5e1", padding: 9, fontSize: 13, boxSizing: "border-box" }} />
-              <button disabled={busy || !text.trim()} onClick={async () => { setBusy(true); await onClaim(s.id, text, url); setBusy(false); setText(""); setUrl(""); }} style={{ width: "100%", marginTop: 6, padding: 11, borderRadius: 12, border: "none", fontWeight: 900, fontSize: 13, cursor: "pointer", background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", opacity: !text.trim() ? 0.5 : 1 }}>📨 研修を受けたことを申告する</button>
+              <button disabled={busy || !text.trim()} onClick={async () => { setBusy(true); await onClaim(s.id, text, url); setBusy(false); setText(""); setUrl(""); }} style={{ width: "100%", marginTop: 6, padding: 11, borderRadius: 12, border: "none", fontWeight: 900, fontSize: 13, cursor: "pointer", background: "linear-gradient(135deg,#f59e0b,#f97316)", color: "#fff", opacity: !text.trim() ? 0.5 : 1 }}>📨 {s.id === "referral_training" ? "研修を受けたことを申告する" : "達成を申告する"}</button>
             </div>
           )}
           {isCur && s.type !== "stage_claim" && left > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#92400e", marginTop: 6 }}>🏁 {stageText(s)}</div>}
@@ -56,7 +59,7 @@ export default function StagePanel({ res, isMobile, onClose, onClaim }: {
       <button onClick={onClose} style={{ position: "absolute", top: 12, right: 14, border: "none", background: "#e2e8f0", width: 30, height: 30, borderRadius: 15, fontWeight: 900, cursor: "pointer", color: "#475569" }}>×</button>
       <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: "#b45309" }}>🏁 STAGE</div>
       <div style={{ fontSize: 19, fontWeight: 900, marginTop: 2 }}>キャリアの階段</div>
-      <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, marginBottom: 12 }}>{deptLabel} ・ {cleared} / {res.stages.length} クリア</div>
+      <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, marginBottom: 12 }}>{deptLabel} ・ {res.stages.filter((s) => !s.track && s.cleared).length} / {res.stages.filter((s) => !s.track).length} クリア</div>
       {res.current ? (
         <div style={{ background: "linear-gradient(180deg,#fffbeb,#fef3c7)", border: "2px solid #fde68a", borderRadius: 14, padding: "10px 12px", marginBottom: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 900, color: "#b45309", letterSpacing: 1 }}>NEXT STAGE</div>
@@ -66,10 +69,38 @@ export default function StagePanel({ res, isMobile, onClose, onClaim }: {
       ) : (
         <div style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)", borderRadius: 14, padding: 14, textAlign: "center", marginBottom: 14, fontWeight: 900 }}>👑 全STAGEクリア！</div>
       )}
-      <div style={{ position: "relative", paddingLeft: 22 }}>
-        <div style={{ position: "absolute", left: 6, top: 16, bottom: 16, width: 3, borderRadius: 2, background: "linear-gradient(180deg,#f59e0b,#e2e8f0)" }} />
-        {res.stages.map(row)}
-      </div>
+      {(() => {
+        const main = res.stages.filter((s) => !s.track), ref = res.stages.filter((s) => s.track === "ref");
+        const line = (list: StageState[], col: string) => (
+          <div style={{ position: "relative", paddingLeft: 22 }}>
+            <div style={{ position: "absolute", left: 6, top: 16, bottom: 16, width: 3, borderRadius: 2, background: `linear-gradient(180deg,${col},#e2e8f0)` }} />
+            {list.map(row)}
+          </div>
+        );
+        const ymLabel = (ym: string) => { const [y, m] = ym.split("-"); return `${y}年${Number(m)}月`; };
+        return (<>
+          {line(main, "#f59e0b")}
+          {res.dept === "IP" && (
+            <div style={{ margin: "6px 0 14px", background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 14, padding: "10px 12px" }}>
+              <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 1, color: "#b45309" }}>🔓 月ごとの解除数</div>
+              {res.months.length === 0 ? (
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>まだ記録がありません。月次KPIに解除数を入力すると、ここに載ります。</div>
+              ) : res.months.slice(0, 12).map((m) => (
+                <div key={m.ym} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, flex: 1 }}>{ymLabel(m.ym)}</span>
+                  {m.result >= 7 ? <span style={{ fontSize: 10, fontWeight: 900, color: "#92400e", background: "#fde68a", borderRadius: 6, padding: "1px 6px" }}>7解除</span> : m.result >= 4 ? <span style={{ fontSize: 10, fontWeight: 900, color: "#166534", background: "#dcfce7", borderRadius: 6, padding: "1px 6px" }}>4解除</span> : null}
+                  <span style={{ fontSize: 14, fontWeight: 900, color: "#b45309" }}>{m.result}<span style={{ fontSize: 11, marginLeft: 2 }}>解除</span></span>
+                </div>
+              ))}
+            </div>
+          )}
+          {ref.length > 0 && (<>
+            <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: "#0f766e", marginTop: 4 }}>🤝 採用コース</div>
+            <div style={{ fontSize: 12, color: "#64748b", margin: "2px 0 10px" }}>リファラル研修に参加すると始まる、採用の道 ・ {ref.filter((s) => s.cleared).length} / {ref.length} クリア</div>
+            {line(ref, "#14b8a6")}
+          </>)}
+        </>);
+      })()}
       {!res.dept && <div style={{ fontSize: 12, color: "#b45309", background: "#fef3c7", borderRadius: 10, padding: "8px 12px", marginTop: 8 }}>事業部が未設定です。プロフィールで事業部を設定すると、事業部の階段が表示されます。</div>}
       <style>{`@keyframes swSlideIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}@keyframes swSlideUp{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}`}</style>
     </div>

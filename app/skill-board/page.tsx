@@ -233,7 +233,7 @@ export default function SkillBoardPage() {
           <div style={{ flex: 1 }} />
           {stageRes && (
             <button onClick={() => setStageOpen(true)} style={{ pointerEvents: "auto", border: "2px solid #fbbf24", background: "linear-gradient(180deg,#fff,#fff7ed)", borderRadius: 16, padding: "7px 12px", textAlign: "left", cursor: "pointer", boxShadow: "0 4px 12px rgba(180,120,0,.2)", maxWidth: 240 }}>
-              <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#b45309" }}>🏁 STAGE {stageRes.stages.filter((x) => x.cleared).length}/{stageRes.stages.length}</div>
+              <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: 1, color: "#b45309" }}>🏁 STAGE {stageRes.stages.filter((x) => !x.track && x.cleared).length}/{stageRes.stages.filter((x) => !x.track).length}</div>
               <div style={{ fontSize: 12.5, fontWeight: 900, color: "#1e293b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{stageRes.current ? `${stageRes.current.icon} ${stageText(stageRes.current)}` : "👑 全STAGEクリア"}</div>
             </button>
           )}
