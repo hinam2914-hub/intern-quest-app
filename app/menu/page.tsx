@@ -37,7 +37,6 @@ const CATS: Cat[] = [
             { icon: "🗺️", label: "冒険マップ", path: "/journey" },
             { icon: "🏝️", label: "みんなの島へ行く", path: "/islands" },
             { icon: "🏅", label: "一人前チャレンジ", path: "/rookie" },
-            { icon: "🎓", label: "講座スタンプ", path: "/courses" },
             { icon: "📖", label: "Wiki・資料", path: "/wiki" },
         ]
     },
@@ -46,7 +45,6 @@ const CATS: Cat[] = [
             { icon: "🏆", label: "ランキング", path: "/ranking" },
             { icon: "📜", label: "ポイント・獲得履歴", path: "/history" },
             { icon: "🎖️", label: "バッジ・称号", path: "/badges" },
-            { icon: "📈", label: "成長の記録", path: "/growth" },
         ]
     },
     {
@@ -65,7 +63,6 @@ const CATS: Cat[] = [
             { icon: "📈", label: "就活市場ランク", path: "/rank" },
             { icon: "🗺️", label: "ロードマップ", path: "/roadmap" },
             { icon: "💼", label: "キャリアBOX", path: "/career" },
-            { icon: "🎯", label: "月次KPI", path: "/kpi" },
         ]
     },
     {
