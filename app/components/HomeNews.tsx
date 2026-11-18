@@ -8,8 +8,12 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { categoryInfo, newsDate, safeLink, NEWS_IMG, type News } from "../lib/news";
 
+/** 自分宛ての通知（既存の notifications テーブル：島バトルで攻撃された、テストの再挑戦など）。通知ページと同じデータ */
+export type Notice = { id: string; type: string; title: string; message: string; link: string | null; icon: string | null; is_read: boolean; created_at: string };
 export type NewsState = {
     list: News[]; unread: number; isUnread: (id: string) => boolean;
+    notices: Notice[]; noticeUnread: number; openNotice: (n: Notice) => string | null;
+    tab: "news" | "notice"; setTab: (t: "news" | "notice") => void;
     view: "none" | "list" | "detail"; current: News | null;
     openList: () => void; openDetail: (n: News) => void; back: () => void; close: () => void;
 };
@@ -20,14 +24,18 @@ export function useNews(userId: string): NewsState {
     const [view, setView] = useState<"none" | "list" | "detail">("none");
     const [current, setCurrent] = useState<News | null>(null);
     const [fromList, setFromList] = useState(false);
+    const [notices, setNotices] = useState<Notice[]>([]);
+    const [tab, setTab] = useState<"news" | "notice">("news");
 
     useEffect(() => {
         if (!userId) return;
         let alive = true;
         (async () => {
-            const [{ data: rows }, { data: reads, error: rErr }] = await Promise.all([
+            const [{ data: rows }, { data: reads, error: rErr }, { data: nts }] = await Promise.all([
                 supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false }).limit(50),
                 supabase.from("announcement_reads").select("announcement_id").eq("user_id", userId),
+                // 自分宛ての通知。未来日時のもの（シールド解除・クールダウン明けの予約分）は時刻が来るまで出さない＝通知ページと同じ条件
+                supabase.from("notifications").select("id, type, title, message, link, icon, is_read, created_at").eq("user_id", userId).lte("created_at", new Date().toISOString()).order("created_at", { ascending: false }).limit(30),
             ]);
             if (!alive) return;
             const now = Date.now();
@@ -38,6 +46,7 @@ export function useNews(userId: string): NewsState {
                 .sort((a, b) => new Date(b.publish_at).getTime() - new Date(a.publish_at).getTime());
             setList(items);
             setRead(rErr ? null : new Set(((reads || []) as any[]).map((x) => String(x.announcement_id))));
+            setNotices(((nts || []) as any[]).map((x) => ({ id: String(x.id), type: x.type || "", title: x.title || "", message: x.message || "", link: safeLink(x.link), icon: x.icon || null, is_read: !!x.is_read, created_at: x.created_at })));
         })();
         return () => { alive = false; };
     }, [userId]);
@@ -49,9 +58,19 @@ export function useNews(userId: string): NewsState {
         setRead(new Set([...read, n.id]));
         await supabase.from("announcement_reads").upsert({ user_id: userId, announcement_id: n.id }, { onConflict: "user_id,announcement_id", ignoreDuplicates: true });
     };
+    const noticeUnread = useMemo(() => notices.filter((n) => !n.is_read).length, [notices]);
+    // 通知をひらく：既読にして、行き先（アプリ内のページ）があれば返す
+    const openNotice = (n: Notice): string | null => {
+        if (!n.is_read) {
+            setNotices((ns) => ns.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+            supabase.from("notifications").update({ is_read: true }).eq("id", n.id).eq("user_id", userId).then(() => {});
+        }
+        return n.link;
+    };
     return {
-        list, unread, isUnread, view, current,
-        openList: () => { setFromList(false); setView("list"); },
+        list, unread, isUnread, view, current, notices, noticeUnread, openNotice, tab, setTab,
+        // ベルから開いたとき：お知らせに未読がなく、自分宛ての通知に未読があれば、通知タブを先に見せる
+        openList: () => { setFromList(false); setTab(unread === 0 && noticeUnread > 0 ? "notice" : "news"); setView("list"); },
         openDetail: (n) => { setFromList(view === "list"); setCurrent(n); setView("detail"); markRead(n); },
         back: () => { if (fromList) setView("list"); else setView("none"); setCurrent(null); },
         close: () => { setView("none"); setCurrent(null); },
@@ -63,10 +82,10 @@ const summary = (s: string) => s.replace(/\s+/g, " ").trim();
 /** 右上の通知ベル（未読件数の赤バッジつき） */
 export function NewsBell({ news }: { news: NewsState }) {
     return (
-        <button className="hn-bell" onClick={news.openList} aria-label={news.unread ? `お知らせ（未読${news.unread}件）` : "お知らせ"}>
+        <button className="hn-bell" onClick={news.openList} aria-label={news.unread + news.noticeUnread ? `お知らせ・通知（未読${news.unread + news.noticeUnread}件）` : "お知らせ・通知"}>
             <style>{CSS}</style>
             <img src={NEWS_IMG.bell} alt="" />
-            {news.unread > 0 && <span className="hn-badge">{news.unread > 99 ? "99+" : news.unread}</span>}
+            {news.unread + news.noticeUnread > 0 && <span className="hn-badge">{news.unread + news.noticeUnread > 99 ? "99+" : news.unread + news.noticeUnread}</span>}
         </button>
     );
 }
@@ -132,13 +151,36 @@ export function NewsLayer({ news }: { news: NewsState }) {
             <div className="hn-sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
                 <div className="hn-sheet-head">
                     {news.view === "detail" ? <button className="hn-x" onClick={news.back} aria-label="もどる">‹</button> : <span className="hn-x ghost" />}
-                    <b>📣 お知らせ</b>
+                    <b>{news.view === "list" ? "🔔 お知らせ・通知" : "📣 お知らせ"}</b>
                     <button className="hn-x" onClick={news.close} aria-label="とじる">✕</button>
                 </div>
                 {news.view === "list" && (
+                    <div className="hn-tabs">
+                        <button className={news.tab === "news" ? "on" : ""} onClick={() => news.setTab("news")}>お知らせ{news.unread > 0 && <i>{news.unread}</i>}</button>
+                        <button className={news.tab === "notice" ? "on" : ""} onClick={() => news.setTab("notice")}>あなたへの通知{news.noticeUnread > 0 && <i>{news.noticeUnread}</i>}</button>
+                    </div>
+                )}
+                {news.view === "list" && news.tab === "news" && (
                     <div className="hn-scroll">
                         {news.list.length === 0 && <div className="hn-empty">いまお知らせはありません</div>}
                         {news.list.map((x) => <Row key={x.id} n={x} news={news} />)}
+                    </div>
+                )}
+                {news.view === "list" && news.tab === "notice" && (
+                    <div className="hn-scroll">
+                        {news.notices.length === 0 && <div className="hn-empty">あなたへの通知はまだありません</div>}
+                        {news.notices.map((x) => (
+                            <button key={x.id} className={"hn-row" + (x.is_read ? "" : " unread")} onClick={() => { const u = news.openNotice(x); if (u) { news.close(); router.push(u); } }}>
+                                {x.icon && x.icon.startsWith("/") ? <img className="hn-cat" src={x.icon} alt="" /> : <span className="hn-cat emo">{x.icon || "🔔"}</span>}
+                                <span className="hn-mid">
+                                    <span className="hn-meta">{!x.is_read && <em className="hn-new">NEW</em>}<time>{newsDate(x.created_at)}</time></span>
+                                    <span className="hn-title">{x.title}</span>
+                                    <span className="hn-sum">{x.message}</span>
+                                </span>
+                                {x.link && <span className="hn-go">›</span>}
+                            </button>
+                        ))}
+                        <button className="hn-all" onClick={() => { news.close(); router.push("/notifications"); }}>通知ページをひらく ›</button>
                     </div>
                 )}
                 {news.view === "detail" && n && c && (
@@ -191,6 +233,11 @@ const CSS = `
 .hn-sheet-head b{font-size:17px;font-weight:900;color:#17397d;letter-spacing:2px}
 .hn-x{width:44px;height:44px;border-radius:50%;border:2px solid #e2bf63;background:#fff;color:#17397d;font-size:19px;font-weight:900;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit}
 .hn-x.ghost{visibility:hidden}
+.hn-tabs{display:flex;gap:8px;padding:10px 12px 0}
+.hn-tabs button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:2px solid #e2bf63;background:linear-gradient(180deg,#fffef9,#f3ead6);color:#6b5a33;font-size:13.5px;font-weight:900;border-radius:999px;padding:9px 6px;cursor:pointer;min-height:44px;font-family:inherit}
+.hn-tabs button.on{background:linear-gradient(180deg,#3d8af0,#1554c4);border-color:#F5D77E;color:#fff}
+.hn-tabs i{font-style:normal;min-width:18px;height:18px;box-sizing:border-box;padding:0 5px;border-radius:999px;background:#e11d48;color:#fff;font-size:10.5px;display:inline-flex;align-items:center;justify-content:center}
+.hn-cat.emo{display:flex;align-items:center;justify-content:center;font-size:28px}
 .hn-scroll{overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch}
 .hn-detail h3{margin:8px 0 10px;font-size:19px;font-weight:900;color:#17397d;line-height:1.45;overflow-wrap:anywhere}
 .hn-detail p{margin:0;font-size:14.5px;line-height:1.85;color:#3b3524;white-space:pre-wrap;overflow-wrap:anywhere}
