@@ -7,6 +7,8 @@ export type StageDef = {
   type: "sales_count" | "kpi_dept" | "position" | "closer_sales" | "stage_claim" | "referral_hire" | "kpi_hr" | "script_test" | "kpi_month" | "kpi_streak";
   /** "ref"＝リファラル研修から派生する採用コース（IP）。無指定はメインの階段 */
   track?: "ref";
+  /** 地図上の拠点（IP）。同じ拠点のステップは1つの建物にまとめて表示する */
+  point?: string;
   param?: string; threshold: number;
   gate?: { x: number; y: number };             // マップ上のゲート位置（無ければパネルのみ）
   claimHint?: string;
@@ -40,31 +42,41 @@ const BASE_STAGES: StageDef[] = [
  *  debut / ip_4 / ip_7 / referral_training / referral_1 は以前と同じIDなので、達成済みの記録はそのまま残る */
 const claim = (what: string) => `${what}（申告して承認されると達成）`;
 export const IP_STAGES: StageDef[] = [
-  { id: "ip_script1", order_no: 1, name: "スクリプトテスト1合格", icon: "📜", label: "スクリプトテスト①に合格", dept: "IP", type: "script_test", param: "test1_passed", threshold: 1 },
-  { id: "ip_script2", order_no: 2, name: "スクリプトテスト2合格", icon: "📜", label: "スクリプトテスト②に合格", dept: "IP", type: "script_test", param: "test2_passed", threshold: 1 },
-  { id: "ip_script3", order_no: 3, name: "スクリプトテスト3合格", icon: "📜", label: "スクリプトテスト③に合格", dept: "IP", type: "script_test", param: "test3_passed", threshold: 1 },
-  { id: "ip_mtg", order_no: 4, name: "全体MTG参加", icon: "🏛️", label: claim("全体MTGに参加"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "参加した日を書いてください" },
-  { id: "ip_kengaku", order_no: 5, name: "見学", icon: "👀", label: claim("見学をする"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "見学した日と、気づいたことを書いてください" },
-  { id: "ip_jissen1", order_no: 6, name: "実践1", icon: "⚔️", label: claim("実践1回目"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "実践した日と、やってみてどうだったかを書いてください" },
-  { id: "ip_jissen2", order_no: 7, name: "実践2", icon: "⚔️", label: claim("実践2回目"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "実践した日と、やってみてどうだったかを書いてください" },
-  { id: "ip_jissen3", order_no: 8, name: "実践3", icon: "⚔️", label: claim("実践3回目"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "実践した日と、やってみてどうだったかを書いてください" },
-  { id: "ip_first_work", order_no: 9, name: "初稼働", icon: "🚀", label: claim("初めて稼働する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "初稼働の日を書いてください" },
-  { id: "debut", order_no: 10, name: "初獲得", icon: "🏁", label: "初めての獲得（1件）", dept: "IP", type: "sales_count", threshold: 1, gate: { x: 1112, y: 1082 } },
-  { id: "ip_4", order_no: 11, name: "4解除達成", icon: "🔓", label: "1か月で4解除", dept: "IP", type: "kpi_month", threshold: 4, gate: { x: 1400, y: 988 } },
-  { id: "ip_7", order_no: 12, name: "7解除達成", icon: "🔓", label: "1か月で7解除", dept: "IP", type: "kpi_month", threshold: 7, gate: { x: 1650, y: 985 } },
-  { id: "ip_pay10", order_no: 13, name: "給料10万円", icon: "💰", label: claim("月の給料が10万円に届く"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "達成した月を書いてください" },
-  { id: "ip_pay15", order_no: 14, name: "給料15万円", icon: "💰", label: claim("月の給料が15万円に届く"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "達成した月を書いてください" },
-  { id: "ip_pay20", order_no: 15, name: "給料20万円", icon: "💰", label: claim("月の給料が20万円に届く"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "達成した月を書いてください" },
-  { id: "ip_7x3", order_no: 16, name: "3ヶ月連続7解除", icon: "👑", label: "7解除以上の月が3か月続く", dept: "IP", type: "kpi_streak", param: "7", threshold: 3 },
+  { id: "ip_script1", point: "script", order_no: 1, name: "スクリプトテスト1合格", icon: "📜", label: "スクリプトテスト①に合格", dept: "IP", type: "script_test", param: "test1_passed", threshold: 1 },
+  { id: "ip_script2", point: "script", order_no: 2, name: "スクリプトテスト2合格", icon: "📜", label: "スクリプトテスト②に合格", dept: "IP", type: "script_test", param: "test2_passed", threshold: 1 },
+  { id: "ip_script3", point: "script", order_no: 3, name: "スクリプトテスト3合格", icon: "📜", label: "スクリプトテスト③に合格", dept: "IP", type: "script_test", param: "test3_passed", threshold: 1 },
+  { id: "ip_mtg", point: "mtg", order_no: 4, name: "全体MTG参加", icon: "🏛️", label: claim("全体MTGに参加"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "参加した日を書いてください" },
+  { id: "ip_kengaku", point: "kengaku", order_no: 5, name: "見学", icon: "👀", label: claim("見学をする"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "見学した日と、気づいたことを書いてください" },
+  { id: "ip_jissen1", point: "jissen", order_no: 6, name: "実践1", icon: "⚔️", label: claim("実践1回目"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "実践した日と、やってみてどうだったかを書いてください" },
+  { id: "ip_jissen2", point: "jissen", order_no: 7, name: "実践2", icon: "⚔️", label: claim("実践2回目"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "実践した日と、やってみてどうだったかを書いてください" },
+  { id: "ip_jissen3", point: "jissen", order_no: 8, name: "実践3", icon: "⚔️", label: claim("実践3回目"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "実践した日と、やってみてどうだったかを書いてください" },
+  { id: "ip_first_work", point: "work", order_no: 9, name: "初稼働", icon: "🚀", label: claim("初めて稼働する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "初稼働の日を書いてください" },
+  { id: "debut", point: "work", order_no: 10, name: "初獲得", icon: "🏁", label: "初めての獲得（1件）", dept: "IP", type: "sales_count", threshold: 1 },
+  { id: "ip_4", point: "result", order_no: 11, name: "4解除達成", icon: "🔓", label: "1か月で4解除", dept: "IP", type: "kpi_month", threshold: 4 },
+  { id: "ip_7", point: "result", order_no: 12, name: "7解除達成", icon: "🔓", label: "1か月で7解除", dept: "IP", type: "kpi_month", threshold: 7 },
+  { id: "ip_pay10", point: "result", order_no: 13, name: "給料10万円", icon: "💰", label: claim("月の給料が10万円に届く"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "達成した月を書いてください" },
+  { id: "ip_pay15", point: "result", order_no: 14, name: "給料15万円", icon: "💰", label: claim("月の給料が15万円に届く"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "達成した月を書いてください" },
+  { id: "ip_pay20", point: "result", order_no: 15, name: "給料20万円", icon: "💰", label: claim("月の給料が20万円に届く"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "達成した月を書いてください" },
+  { id: "ip_7x3", point: "result", order_no: 16, name: "3ヶ月連続7解除", icon: "👑", label: "7解除以上の月が3か月続く", dept: "IP", type: "kpi_streak", param: "7", threshold: 3 },
   // 採用コース（リファラル研修参加から派生）
-  { id: "referral_training", order_no: 101, track: "ref", name: "リファラル研修参加", icon: "🎓", label: claim("リファラル研修に参加"), dept: "IP", type: "stage_claim", threshold: 1, gate: { x: 1245, y: 612 }, claimHint: "受けた日と、研修で決めた最初の行動を書いてください" },
-  { id: "referral_1", order_no: 102, track: "ref", name: "リファラルで1人採用", icon: "🤝", label: "リファラル採用 1人", dept: "IP", type: "referral_hire", threshold: 1, gate: { x: 1500, y: 642 } },
-  { id: "ip_ref_work", order_no: 103, track: "ref", name: "採用した子が稼働", icon: "🌱", label: claim("採用した子が稼働する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "誰が、いつ稼働したかを書いてください" },
-  { id: "ip_ref_4", order_no: 104, track: "ref", name: "稼働した子が4解除", icon: "🔓", label: claim("稼働した子が4解除する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "誰が、何月に達成したかを書いてください" },
-  { id: "ip_ref_7", order_no: 105, track: "ref", name: "稼働した子が7解除", icon: "🔓", label: claim("稼働した子が7解除する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "誰が、何月に達成したかを書いてください" },
-  { id: "ip_hr_watch", order_no: 106, track: "ref", name: "人事面談見学", icon: "🎤", label: claim("人事面談を見学する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "見学した日を書いてください" },
-  { id: "ip_hr_training", order_no: 107, track: "ref", name: "人事研修実施", icon: "📚", label: claim("人事研修を実施する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "実施した日を書いてください" },
-  { id: "ip_hr_member", order_no: 108, track: "ref", name: "人事メンバーへ", icon: "🏅", label: claim("人事メンバーになる"), dept: "IP", type: "stage_claim", threshold: 1, gate: { x: 1960, y: 560 }, claimHint: "いつから人事メンバーになったかを書いてください" },
+  { id: "referral_training", point: "recruit", order_no: 101, track: "ref", name: "リファラル研修参加", icon: "🎓", label: claim("リファラル研修に参加"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "受けた日と、研修で決めた最初の行動を書いてください" },
+  { id: "referral_1", point: "recruit", order_no: 102, track: "ref", name: "リファラルで1人採用", icon: "🤝", label: "リファラル採用 1人", dept: "IP", type: "referral_hire", threshold: 1 },
+  { id: "ip_ref_work", point: "recruit", order_no: 103, track: "ref", name: "採用した子が稼働", icon: "🌱", label: claim("採用した子が稼働する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "誰が、いつ稼働したかを書いてください" },
+  { id: "ip_ref_4", point: "recruit", order_no: 104, track: "ref", name: "稼働した子が4解除", icon: "🔓", label: claim("稼働した子が4解除する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "誰が、何月に達成したかを書いてください" },
+  { id: "ip_ref_7", point: "recruit", order_no: 105, track: "ref", name: "稼働した子が7解除", icon: "🔓", label: claim("稼働した子が7解除する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "誰が、何月に達成したかを書いてください" },
+  { id: "ip_hr_watch", point: "recruit", order_no: 106, track: "ref", name: "人事面談見学", icon: "🎤", label: claim("人事面談を見学する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "見学した日を書いてください" },
+  { id: "ip_hr_training", point: "recruit", order_no: 107, track: "ref", name: "人事研修実施", icon: "📚", label: claim("人事研修を実施する"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "実施した日を書いてください" },
+  { id: "ip_hr_member", point: "recruit", order_no: 108, track: "ref", name: "人事メンバーへ", icon: "🏅", label: claim("人事メンバーになる"), dept: "IP", type: "stage_claim", threshold: 1, claimHint: "いつから人事メンバーになったかを書いてください" },
+];
+/** IPの拠点（地図に置く建物）。SALESエリアの街道の下を、営業配属から順に進む。採用コースは山道の入口 */
+export const IP_POINTS: { key: string; name: string; img: string; x: number; y: number }[] = [
+  { key: "script", name: "スクリプトテスト", img: "/world/ip/script_book.webp", x: 1255, y: 1222 },
+  { key: "mtg", name: "全体MTG", img: "/world/ip/mtg_board.webp", x: 1380, y: 1200 },
+  { key: "kengaku", name: "見学", img: "/world/ip/kengaku_tent.webp", x: 1505, y: 1224 },
+  { key: "jissen", name: "実践", img: "/world/ip/jissen_ground.webp", x: 1630, y: 1202 },
+  { key: "work", name: "初稼働・初獲得", img: "/world/ip/result_crystal.webp", x: 1755, y: 1222 },
+  { key: "result", name: "解除・給料", img: "/world/ip/work_castle.webp", x: 1880, y: 1196 },
+  { key: "recruit", name: "採用コース", img: "/world/ip/recruit_hall.webp", x: 1245, y: 612 },
 ];
 /** 全ステージ（管理画面の申告承認で名前を引くのに使う） */
 export const STAGES: StageDef[] = [...BASE_STAGES, ...IP_STAGES.filter((s) => !BASE_STAGES.some((b) => b.id === s.id))];

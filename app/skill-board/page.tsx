@@ -10,7 +10,7 @@ import SkillWorld, { type Walk } from "./SkillWorld";
 import DetailPanel from "./DetailPanel";
 import { AREAS, NODE_POS, START, AREA_COLOR, type Pt } from "./world";
 import type { CamCmd } from "./camera";
-import { evaluateStages, submitStageClaim, stageText, type StageResult } from "../lib/stages";
+import { evaluateStages, submitStageClaim, stageText, IP_POINTS, type StageResult } from "../lib/stages";
 import StagePanel from "./StagePanel";
 import { useJourney, StepCard } from "../journey/core";
 import { JOURNEY_POS } from "./world";
@@ -39,6 +39,7 @@ export default function SkillBoardPage() {
   const [questOpen, setQuestOpen] = useState(false);
   const [stageRes, setStageRes] = useState<StageResult | null>(null);
   const [stageOpen, setStageOpen] = useState(false);
+  const [stageFocus, setStageFocus] = useState<string | null>(null);   // STAGEパネルで最初に見せる拠点
   const locRef = useRef<string | null>(null);
   // 冒険マップ（7STEP）。地図の「はじまりの道」に並べ、タップで申請カードを開く
   const jr = useJourney();
@@ -192,7 +193,9 @@ export default function SkillBoardPage() {
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden" }}>
       <TutorialMark id="skill" />
-      <SkillWorld res={res} avatarId={avatarId} layered={layered} selectedId={sel?.id ?? null} onSelect={(n) => { if (n) setJrSel(null); setSel(n); }} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} camCmd={camCmd} stages={stageRes?.stages} onStageTap={() => setStageOpen(true)} onAreaTap={(k) => setNavArea(k)} onCamMode={(m, a) => { if (m === "area" && a) setNavArea(a); }} journey={jr.loading ? undefined : jr.steps.map((s) => ({ no: s.no, displayNo: s.displayNo ?? s.no, img: s.img, title: s.title, state: jr.stateOf(s.no) }))} journeySel={jrSel} onJourneyTap={(no) => { setSel(null); setJrSel(no); }} />
+      <SkillWorld res={res} avatarId={avatarId} layered={layered} selectedId={sel?.id ?? null} onSelect={(n) => { if (n) setJrSel(null); setSel(n); }} focusTo={focusTo} focus={focus} locNodeId={locId} walk={walk} onWalkEnd={onWalkEnd} recos={recos} title={title} camCmd={camCmd} stages={stageRes?.stages} onStageTap={() => setStageOpen(true)} onAreaTap={(k) => setNavArea(k)} onCamMode={(m, a) => { if (m === "area" && a) setNavArea(a); }} journey={jr.loading ? undefined : jr.steps.map((s) => ({ no: s.no, displayNo: s.displayNo ?? s.no, img: s.img, title: s.title, state: jr.stateOf(s.no) }))} journeySel={jrSel} onJourneyTap={(no) => { setSel(null); setStageOpen(false); setJrSel(no); }}
+        stagePoints={stageRes?.dept === "IP" ? IP_POINTS.map((q) => { const ss = stageRes.stages.filter((x) => x.point === q.key); return { ...q, done: ss.filter((x) => x.cleared).length, total: ss.length, cur: ss.some((x) => x.id === stageRes.current?.id || x.id === stageRes.currentRef?.id) }; }) : undefined}
+        onStagePointTap={(k) => { setSel(null); setJrSel(null); setStageFocus(k); setStageOpen(true); }} />
 
       {/* HUD 上 */}
       {isMobile ? (
@@ -278,7 +281,7 @@ export default function SkillBoardPage() {
         </div>
       )}
 
-      {stageOpen && stageRes && <StagePanel res={stageRes} isMobile={isMobile} onClose={() => setStageOpen(false)} onClaim={onStageClaim} />}
+      {stageOpen && stageRes && <StagePanel key={stageFocus ?? "all"} focusPoint={stageFocus} res={stageRes} isMobile={isMobile} onClose={() => { setStageOpen(false); setStageFocus(null); }} onClaim={onStageClaim} />}
       {sel && <DetailPanel node={sel} jobs={res.jobs} isMobile={isMobile} onClose={() => setSel(null)} onRequestCheck={onRequestCheck} onClaim={onClaim} focusState={focusState} nextNode={nextNode} prevNode={prevNode} recos={recos} onChallenge={async (n) => { await onChallenge(n); setSel(null); }} onPromote={async (n) => { await onPromote(n); setSel(null); }} onRemoveFocus={async (n) => { await onRemoveFocus(n); setSel(null); }} />}
 
       {/* 冒険マップのSTEP詳細（申請カード） */}

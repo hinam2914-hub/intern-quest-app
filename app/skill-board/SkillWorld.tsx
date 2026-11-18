@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { questMission, type EvalResult, type NodeState, type JobState, type Focus, type Reco } from "../lib/skills";
 import { WORLD_W, WORLD_H, START, NODE_POS, JOB_POS, AREAS, AREA_COLOR, ROADS, JOURNEY_POS, pt, curve, type Pt } from "./world";
-import type { StageState } from "../lib/stages";
+import { IP_POINTS, type StageState } from "../lib/stages";
 import AvatarLayered from "../components/AvatarLayered";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import type { JobKey } from "../onboarding/job/page";
@@ -12,6 +12,8 @@ import { TERRAIN_IMG, blobPath, LAND_PTS, MEADOW_PTS, HILL_PTS, STONE_PTS, STREA
 type Cam = { x: number; y: number; s: number };
 export type Walk = { key: number; from: Pt; to: Pt };
 /** 冒険マップのSTEP（地図に置く目印用。判定は app/journey/core.tsx が正） */
+/** IPの拠点（STAGEをまとめた建物） */
+export type StagePoint = { key: string; name: string; img: string; x: number; y: number; done: number; total: number; cur: boolean };
 export type JourneyMark = { no: number; displayNo: number; img: string; title: string; state: "done" | "now" | "lock" };
 
 /* ============================================================
@@ -53,7 +55,7 @@ function LmSvg({ kind, color, size = 60 }: { kind: NonNullable<LM["svg"]>; color
 /* 木（SVG use）座標は世界座標 */
 function treeSeeds(): { x: number; y: number; k: number; s: number }[] {
   // 手配置の塊のみ（ノード付近は避ける）
-  const nodes = Object.values(NODE_POS).concat(Object.values(JOB_POS), Object.values(JOURNEY_POS), [START]);
+  const nodes = Object.values(NODE_POS).concat(Object.values(JOB_POS), Object.values(JOURNEY_POS), IP_POINTS.map((q) => ({ x: q.x, y: q.y })), [START]);
   return clusterItems(COMM_CLUSTERS.concat(WORLD_CLUSTERS)).filter((t) => !nodes.some((p) => Math.hypot(p.x - t.x, p.y - t.y) < 58));
 }
 
@@ -73,7 +75,8 @@ function useTerrainImages(): Record<string, boolean> {
   return ok;
 }
 
-export default function SkillWorld({ res, avatarId, layered, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title, camCmd, onAreaTap, onCamMode, hud, stages, onStageTap, journey, journeySel, onJourneyTap }: {
+export default function SkillWorld({ res, avatarId, layered, selectedId, onSelect, focusTo, focus, locNodeId, walk, onWalkEnd, recos, title, camCmd, onAreaTap, onCamMode, hud, stages, onStageTap, journey, journeySel, onJourneyTap, stagePoints, onStagePointTap }: {
+  stagePoints?: StagePoint[]; onStagePointTap?: (key: string) => void;
   /** 冒険マップの7STEP（START→SALES の道沿い） */
   journey?: JourneyMark[]; journeySel?: number | null; onJourneyTap?: (no: number) => void;
   res: EvalResult; avatarId: string | null; layered?: { cfg: AvatarConfig; job: JobKey } | null; selectedId: string | null; onSelect: (n: NodeState | null) => void; focusTo?: { key: number; target: Pt };
@@ -256,6 +259,18 @@ export default function SkillWorld({ res, avatarId, layered, selectedId, onSelec
     j.requires.forEach((rid) => { const a = NODE_POS[rid]; if (!a) return; const lit = byId.get(rid)?.status === "unlocked";
       roadEls.push(<path key={`j${j.id}${rid}`} d={curve(a, jp)} fill="none" stroke={lit ? "#fbbf24" : "#fde68a"} strokeWidth={lit ? 5 : 2.5} strokeDasharray={lit ? undefined : "4 10"} strokeLinecap="round" opacity={lit ? 0.9 : j.is_obtainable ? 0.3 : 0.15} style={lit ? { filter: "drop-shadow(0 0 6px rgba(251,191,36,.9))" } : undefined} />); });
   });
+
+  /* IPの拠点をつなぐ道（営業の入口 → スクリプトテスト → … → 解除・給料） */
+  { const ps = (stagePoints ?? []).filter((q) => q.key !== "recruit");
+    if (ps.length) {
+      const chain: Pt[] = [NODE_POS.sales_1, ...ps.map((q) => ({ x: q.x, y: q.y }))];
+      for (let i = 0; i < chain.length - 1; i++) {
+        const a = chain[i], b = chain[i + 1]; const lit = i === 0 || ps[i - 1].done >= ps[i - 1].total;
+        const d = i === 0 ? `M ${a.x} ${a.y} Q ${a.x - 10} ${b.y - 20} ${b.x} ${b.y}` : wavy(a, b, i);
+        roadEls.push(<path key={`ipb${i}`} d={d} fill="none" stroke="#9a9a9a" strokeWidth={18} strokeLinecap="round" opacity={0.9} />);
+        roadEls.push(<path key={`ipt${i}`} d={d} fill="none" stroke={lit ? "#fde68a" : "#e5e0d2"} strokeWidth={10} strokeLinecap="round" style={lit ? { filter: "drop-shadow(0 0 6px rgba(251,191,36,.8))" } : undefined} />);
+      }
+    } }
 
   /* 足跡（CURRENT QUEST へ） */
   const steps: { x: number; y: number; r: number }[] = [];
@@ -556,6 +571,28 @@ export default function SkillWorld({ res, avatarId, layered, selectedId, onSelec
               <div style={{ marginTop: 2, whiteSpace: "nowrap", transform: `scale(${inv})`, transformOrigin: "50% 0" }}>
                 {isMobile && lock && !jsel ? null : (
                   <span style={{ display: "inline-block", padding: now || jsel ? "3px 10px" : "2px 8px", borderRadius: now || jsel ? 10 : 4, background: now || jsel ? "linear-gradient(180deg,#fff,#dcfce7)" : done ? "#166534" : "#8b9a8f", border: now || jsel ? "2px solid #16a34a" : "none", color: now || jsel ? "#14532d" : "#fff", fontSize: isMobile ? (now ? 13 : 11) : now || jsel ? 12 : 9.5, fontWeight: 900, boxShadow: "0 2px 4px rgba(0,0,0,.25)" }}>{j.displayNo}. {j.title}</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ---------- IPの拠点（STAGEをまとめた建物） ---------- */}
+        {(stagePoints ?? []).map((q) => {
+          const full = q.done >= q.total, none = q.done === 0 && !q.cur; const w = 96;
+          return (
+            <div key={"ipp" + q.key} onClick={(e) => { e.stopPropagation(); if (drag.current?.moved) return; nodeClicked.current = true; onStagePointTap?.(q.key); }} style={{ position: "absolute", left: q.x - w / 2, top: q.y - 76, width: w, textAlign: "center", cursor: "pointer", zIndex: q.cur ? 13 : 10 }}>
+              {q.cur && <>
+                <div style={{ position: "absolute", left: "50%", bottom: 16, width: w + 22, height: 26, marginLeft: -(w + 22) / 2, borderRadius: "50%", border: "4px solid #fbbf24", boxShadow: "0 0 16px #fbbf24, inset 0 0 14px rgba(251,191,36,.6)", pointerEvents: "none", animation: "swPulse 2s ease-in-out infinite" }} />
+                <div style={{ position: "absolute", top: -20, left: "50%", transform: `translateX(-50%) scale(${inv})`, transformOrigin: "50% 100%", fontSize: 10, fontWeight: 900, color: "#fff", background: "#f59e0b", borderRadius: 6, padding: "1px 7px", whiteSpace: "nowrap", zIndex: 3, animation: "swBounce 1.4s ease-in-out infinite" }}>NOW</div>
+              </>}
+              <div style={{ position: "relative", height: 64, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                <img src={q.img} alt="" style={{ maxWidth: 70, maxHeight: 66, objectFit: "contain", display: "block", filter: full ? "drop-shadow(0 0 10px #fbbf24) drop-shadow(0 5px 4px rgba(0,0,0,.25))" : none ? "saturate(.35) opacity(.85) drop-shadow(0 4px 4px rgba(0,0,0,.2))" : "drop-shadow(0 5px 4px rgba(0,0,0,.25))" }} />
+                {full && <span style={{ position: "absolute", right: 8, top: 0, fontSize: 16, animation: "swFlag 1s ease-in-out infinite alternate" }}>🏁</span>}
+              </div>
+              <div style={{ marginTop: 2, whiteSpace: "nowrap", transform: `scale(${inv})`, transformOrigin: "50% 0" }}>
+                {isMobile && none ? null : (
+                  <span style={{ display: "inline-block", padding: q.cur ? "3px 10px" : "2px 8px", borderRadius: q.cur ? 10 : 4, background: q.cur ? "linear-gradient(180deg,#fff,#fef3c7)" : full ? "#b45309" : "#a8713a", border: q.cur ? "2px solid #fbbf24" : "none", color: q.cur ? "#78350f" : "#fff7e6", fontSize: isMobile ? (q.cur ? 13 : 11) : q.cur ? 12 : 9.5, fontWeight: 900, boxShadow: "0 2px 4px rgba(0,0,0,.25)" }}>{q.name}{q.total > 1 ? ` ${q.done}/${q.total}` : full ? " ✓" : ""}</span>
                 )}
               </div>
             </div>

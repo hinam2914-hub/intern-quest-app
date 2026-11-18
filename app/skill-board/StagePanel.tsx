@@ -1,10 +1,12 @@
 "use client";
 // STAGE パネル：事業部別のキャリアの階段
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { StageResult, StageState } from "../lib/stages";
 import { stageText } from "../lib/stages";
 
-export default function StagePanel({ res, isMobile, onClose, onClaim }: {
+export default function StagePanel({ res, isMobile, onClose, onClaim, focusPoint }: {
+  /** 地図の拠点から開いたとき、その拠点の最初のステップまでスクロールする */
+  focusPoint?: string | null;
   res: StageResult; isMobile: boolean; onClose: () => void; onClaim: (stageId: string, text: string, url: string) => Promise<void> | void;
 }) {
   // 申告の入力はステップごとに持つ（メインと採用コースで同時に2つ出るため）
@@ -15,13 +17,20 @@ export default function StagePanel({ res, isMobile, onClose, onClaim }: {
   const deptLabel = res.dept === "IP" ? "IP" : res.dept === "CB" || res.dept === "SP" ? `${res.dept}${res.position === "closer" ? "・クローザー" : res.position === "appointer" ? "・アポインター" : ""}` : res.dept || "未設定";
   const cleared = res.stages.filter((s) => s.cleared).length;
 
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!focusPoint) return; const first = res.stages.find((x) => x.point === focusPoint); if (!first) return;
+    const t = setTimeout(() => { const el = boxRef.current?.querySelector(`[data-stage="${first.id}"]`) as HTMLElement | null; const box = boxRef.current; if (el && box) box.scrollTo({ top: el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 70, behavior: "smooth" }); }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusPoint]);
   const row = (s: StageState, i: number) => {
     const isCur = res.current?.id === s.id || res.currentRef?.id === s.id;
     const text = texts[s.id] ?? "", url = urls[s.id] ?? "";
     const setText = (v: string) => setTexts((t) => ({ ...t, [s.id]: v })), setUrl = (v: string) => setUrls((t) => ({ ...t, [s.id]: v }));
     const left = Math.max(0, s.threshold - Math.min(s.current, s.threshold));
     return (
-      <div key={s.id} style={{ position: "relative", marginBottom: 8 }}>
+      <div key={s.id} data-stage={s.id} style={{ position: "relative", marginBottom: 8 }}>
         <div style={{ position: "absolute", left: -21, top: 16, width: 14, height: 14, borderRadius: 7, background: s.cleared ? "#f59e0b" : "#fff", border: `3px solid ${s.cleared ? "#f59e0b" : isCur ? "#f59e0b" : "#cbd5e1"}`, boxShadow: isCur ? "0 0 0 4px #fde68a" : "none" }} />
         <div style={{ border: isCur ? "2px solid #fbbf24" : "1.5px solid #e2e8f0", background: s.cleared ? "#fffbeb" : "#fff", borderRadius: 14, padding: "9px 12px", opacity: !s.cleared && !isCur ? 0.75 : 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -55,7 +64,7 @@ export default function StagePanel({ res, isMobile, onClose, onClaim }: {
   };
 
   return (
-    <div style={{ ...wrap, background: "linear-gradient(180deg,#ffffff,#fff7ed)", boxShadow: "0 16px 50px rgba(30,41,59,.25)", border: "2px solid #fff", overflowY: "auto", padding: 20, color: "#1e293b", animation: isMobile ? "swSlideUp .3s ease-out" : "swSlideIn .3s ease-out" }}>
+    <div ref={boxRef} style={{ ...wrap, background: "linear-gradient(180deg,#ffffff,#fff7ed)", boxShadow: "0 16px 50px rgba(30,41,59,.25)", border: "2px solid #fff", overflowY: "auto", padding: 20, color: "#1e293b", animation: isMobile ? "swSlideUp .3s ease-out" : "swSlideIn .3s ease-out" }}>
       <button onClick={onClose} style={{ position: "absolute", top: 12, right: 14, border: "none", background: "#e2e8f0", width: 30, height: 30, borderRadius: 15, fontWeight: 900, cursor: "pointer", color: "#475569" }}>×</button>
       <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: "#b45309" }}>🏁 STAGE</div>
       <div style={{ fontSize: 19, fontWeight: 900, marginTop: 2 }}>キャリアの階段</div>
