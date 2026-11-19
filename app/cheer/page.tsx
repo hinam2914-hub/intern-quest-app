@@ -2,22 +2,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { CHEER_LABEL as LABEL } from "../lib/cheer";
 
 type Item = { name: string; text: string; sub: string; icon: string; when: string; key: string; uid: string; avatar: string | null; cat: string; ts: number };
 
-const LABEL = (r: string): { text: string; icon: string; cat: string } | null => {
-  if (r.includes("challenge_complete")) return { text: "ライフチャレンジを達成！", icon: "🎯", cat: "other" };
-  if (r.includes("es_first_completed")) return { text: "ESを完成させた！", icon: "📝", cat: "learn" };
-  if (r.includes("thinking_ippon_received")) return { text: "IPPONを獲得！", icon: "🎤", cat: "other" };
-  if (r.startsWith("course_受講")) return { text: "講座を受講！", icon: "🎓", cat: "learn" };
-  if (r.startsWith("course_講師")) return { text: "講師デビュー！", icon: "🧑‍🏫", cat: "learn" };
-  if (r.includes("recruit_入社")) return { text: "新メンバーを入社に導いた！", icon: "🎉", cat: "sales" };
-  if (r.includes("recruit_採用面談")) return { text: "採用面談を実施！", icon: "🤝", cat: "sales" };
-  if (r.includes("content_complete")) return { text: "学習コンテンツを完了！", icon: "📚", cat: "learn" };
-  if (r.includes("スクリプト") && r.includes("合格")) return { text: "スクリプトテストに合格！", icon: "🎤", cat: "learn" };
-  if (r.includes("kpi")) return { text: "月間KPIを達成！", icon: "🏆", cat: "sales" };
-  return null;
-};
 const EMOJIS = ["👏", "🔥", "🎉", "💪"];
 const CAT_STYLE: Record<string, { color: string; label: string }> = {
   sales: { color: "#f59e0b", label: "営業成果" },

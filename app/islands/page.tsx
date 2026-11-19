@@ -15,6 +15,7 @@ import { STEP_TITLE, getLevel, type IslandConfig } from "../lib/island";
 import { getCastleStage } from "../lib/castle";
 import { JOBS, type JobKey } from "../onboarding/job/page";
 import type { AvatarConfig } from "../lib/avatar/catalog";
+import CheerTeaser from "../components/CheerTeaser";
 import {
     BATTLE_CONFIG, ELEMENTS, ADVANTAGE, WEAPONS, SKILLS, loadWeaponShop, canUseWeapon, type WeaponShop, loadLootConfig, lootRateFor, type LootConfig,
     castleElementOf, elementMultiplier, readBattleLog, CHEST_IMG, type ElementKey, type WeaponDef, type BattleLog,
@@ -275,6 +276,7 @@ export default function IslandsGuildPage() {
                             <img src={GUILD_IMG.target} alt="" style={{ width: 17, height: 17, verticalAlign: "-3px" }} /> 目標：{target.name}の島 <span onClick={(e) => { e.stopPropagation(); clearTarget(); }}>×</span>
                         </button>
                     )}
+                    <button className="gx-head-btn" onClick={() => router.push("/cheer")}>📣 応援掲示板</button>
                     <button className="gx-head-btn" onClick={() => router.push("/ranking")}>🏆 ランキング</button>
                     <button className="gx-head-btn" onClick={() => router.push("/home")}>🏠 ホームへ</button>
                 </div>
@@ -373,6 +375,8 @@ export default function IslandsGuildPage() {
                             )}
                         </div>
                     )}
+                    {/* 応援掲示板の小窓（最近の活躍3件） */}
+                    <CheerTeaser />
                 </main>
 
                 {/* ===== 右：攻略情報タブ ===== */}
