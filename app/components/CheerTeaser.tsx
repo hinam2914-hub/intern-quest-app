@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { CHEER_LABEL, cheerWhen } from "../lib/cheer";
+import AvatarFace, { faceSourceOf, type FaceSource } from "./AvatarFace";
 
-type Row = { key: string; uid: string; name: string; icon: string; text: string; when: string; manual: boolean; reacts: number; comments: number };
+type Row = { key: string; uid: string; face: FaceSource | null; name: string; icon: string; text: string; when: string; manual: boolean; reacts: number; comments: number };
 
 export default function CheerTeaser({ limit = 3 }: { limit?: number }) {
   const router = useRouter();
@@ -31,13 +32,13 @@ export default function CheerTeaser({ limit = 3 }: { limit?: number }) {
         const top = [...auto, ...manual].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, limit);
         const ids = [...new Set(top.map((t) => t.uid))]; const keys = top.map((t) => t.key);
         const [{ data: profs }, { data: rs }, { data: cs }] = await Promise.all([
-          ids.length ? supabase.from("profiles").select("id,name").in("id", ids) : Promise.resolve({ data: [] as any[] }),
+          ids.length ? supabase.from("profiles").select("id,name,avatar_config,job_class").in("id", ids) : Promise.resolve({ data: [] as any[] }),
           keys.length ? supabase.from("achievement_reactions").select("target_user_id,target_key").in("target_key", keys) : Promise.resolve({ data: [] as any[] }),
           keys.length ? supabase.from("achievement_comments").select("target_user_id,target_key").in("target_key", keys) : Promise.resolve({ data: [] as any[] }),
         ]);
-        const nameOf: Record<string, string> = {}; (profs || []).forEach((p: any) => { nameOf[p.id] = p.name; });
+        const nameOf: Record<string, string> = {}; const faceOf: Record<string, FaceSource> = {}; (profs || []).forEach((p: any) => { nameOf[p.id] = p.name; faceOf[p.id] = faceSourceOf(p); });
         const cnt = (list: any[] | null, t: any) => (list || []).filter((r: any) => r.target_key === t.key && r.target_user_id === t.uid).length;
-        if (alive) setRows(top.map((t) => ({ key: t.uid + "|" + t.key, uid: t.uid, name: nameOf[t.uid] || "メンバー", icon: t.icon, text: t.text, when: cheerWhen(t.created_at), manual: t.manual, reacts: cnt(rs as any, t), comments: cnt(cs as any, t) })));
+        if (alive) setRows(top.map((t) => ({ key: t.uid + "|" + t.key, uid: t.uid, face: faceOf[t.uid] || null, name: nameOf[t.uid] || "メンバー", icon: t.icon, text: t.text, when: cheerWhen(t.created_at), manual: t.manual, reacts: cnt(rs as any, t), comments: cnt(cs as any, t) })));
       } catch { if (alive) setRows([]); }
     })();
     return () => { alive = false; };
@@ -57,7 +58,10 @@ export default function CheerTeaser({ limit = 3 }: { limit?: number }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 8 }}>
           {rows.map((r) => (
             <button key={r.key} onClick={() => router.push("/cheer")} style={{ textAlign: "left", display: "flex", gap: 9, alignItems: "flex-start", padding: "10px 12px", borderRadius: 14, border: "2px solid #ecd9a6", background: "linear-gradient(180deg,#fffefa,#fbf2de)", cursor: "pointer", fontFamily: "inherit", color: "inherit", minWidth: 0 }}>
-              <span style={{ fontSize: 22, lineHeight: 1.2, flexShrink: 0 }} aria-hidden>{r.icon}</span>
+              <span style={{ position: "relative", flexShrink: 0, display: "block", width: 44, height: 44 }}>
+                <AvatarFace src={r.face} size={44} border="2px solid #E2BF63" fallback={<span style={{ width: 44, height: 44, borderRadius: "50%", background: "#dbeafe", border: "2px solid #E2BF63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxSizing: "border-box" }} aria-hidden>👤</span>} />
+                <span style={{ position: "absolute", right: -5, bottom: -5, width: 22, height: 22, borderRadius: "50%", background: "#fff", border: "1.5px solid #E2BF63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, lineHeight: 1 }} aria-hidden>{r.icon}</span>
+              </span>
               <span style={{ minWidth: 0, flex: 1 }}>
                 <span style={{ display: "flex", justifyContent: "space-between", gap: 6, fontSize: 11.5, fontWeight: 800, color: "#8a7a55" }}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}さん{r.manual ? "" : "が"}</span><span style={{ flexShrink: 0 }}>{r.when}</span></span>
                 <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 13.5, fontWeight: 900, color: "#1b2a5e", lineHeight: 1.5, marginTop: 2, overflowWrap: "anywhere" } as any}>{r.text}</span>

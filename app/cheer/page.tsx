@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { CHEER_LABEL as LABEL } from "../lib/cheer";
+import AvatarFace, { faceSourceOf, type FaceSource } from "../components/AvatarFace";
 
-type Item = { name: string; text: string; sub: string; icon: string; when: string; key: string; uid: string; avatar: string | null; cat: string; ts: number };
+type Item = { name: string; text: string; sub: string; icon: string; when: string; key: string; uid: string; avatar: string | null; face: FaceSource | null; cat: string; ts: number };
 
 const EMOJIS = ["👏", "🔥", "🎉", "💪"];
 const CAT_STYLE: Record<string, { color: string; label: string }> = {
@@ -46,16 +47,16 @@ export default function CheerPage() {
     const manual = (posts || []).map((p: any) => ({ uid: p.user_id, created_at: p.created_at, manual: true, text: p.body, icon: p.category === "sales" ? "💼" : p.category === "learn" ? "📖" : "✨", cat: p.category || "other", postId: p.id }));
     const merged = [...uniq, ...manual].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 120);
     const ids = [...new Set(merged.map((u: any) => u.uid))];
-    const profMap: Record<string, { name: string; avatar: string | null }> = {};
+    const profMap: Record<string, { name: string; avatar: string | null; face: FaceSource }> = {};
     if (ids.length) {
-      const { data: profs } = await supabase.from("profiles").select("id,name,avatar_config").in("id", ids);
-      (profs || []).forEach((p: any) => { profMap[p.id] = { name: p.name, avatar: p.avatar_config?.id || null }; });
+      const { data: profs } = await supabase.from("profiles").select("id,name,avatar_config,job_class").in("id", ids);
+      (profs || []).forEach((p: any) => { profMap[p.id] = { name: p.name, avatar: p.avatar_config?.id || null, face: faceSourceOf(p) }; });
     }
     const list: Item[] = merged.map((u: any) => {
       const diff = Math.floor((Date.now() - new Date(u.created_at).getTime()) / 3600000);
       const when = diff < 1 ? "さっき" : diff < 24 ? `${diff}時間前` : `${Math.floor(diff / 24)}日前`;
       const key = u.manual ? "post_" + u.postId : u.text + "_" + (u.created_at || "").slice(0, 10);
-      return { name: profMap[u.uid]?.name || "メンバー", text: u.text, sub: "", icon: u.icon, when, key, uid: u.uid, avatar: profMap[u.uid]?.avatar || null, cat: u.cat, ts: new Date(u.created_at).getTime() };
+      return { name: profMap[u.uid]?.name || "メンバー", text: u.text, sub: "", icon: u.icon, when, key, uid: u.uid, avatar: profMap[u.uid]?.avatar || null, face: profMap[u.uid]?.face || null, cat: u.cat, ts: new Date(u.created_at).getTime() };
     });
     setItems(list);
     const keys = list.map(l => l.key);
@@ -139,9 +140,12 @@ export default function CheerPage() {
   const sorted = [...items].sort((a, b) => rTotal(b) - rTotal(a));
   const mvp = sorted[0] && rTotal(sorted[0]) > 0 ? sorted[0] : null;
   const hot = sorted.filter(i => rTotal(i) > 0 && i !== mvp).slice(0, 3);
-  const AV = (a: Item, size: number) => a.avatar
-    ? <img src={`/avatars/${a.avatar}.png`} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", objectPosition: "top", background: "#1e1b3a", border: "2px solid rgba(139,92,246,.4)" }} />
-    : <div style={{ width: size, height: size, borderRadius: "50%", background: "#1e1b3a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.5, border: "2px solid rgba(139,92,246,.4)" }}>👤</div>;
+  // 顔アイコン：①本人のアバター ②職業キャラ ③昔の固定アバター画像 ④人型マーク（アプリ共通の優先順）
+  const AV = (a: Item, size: number) => (
+    <AvatarFace src={a.face} size={size} border="2px solid rgba(139,92,246,.4)" fallback={a.avatar
+      ? <img src={`/avatars/${a.avatar}.png`} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", objectPosition: "top", background: "#1e1b3a", border: "2px solid rgba(139,92,246,.4)" }} />
+      : <div style={{ width: size, height: size, borderRadius: "50%", background: "#1e1b3a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.5, border: "2px solid rgba(139,92,246,.4)" }}>👤</div>} />
+  );
 
   const CARD: React.CSSProperties = { background: "rgba(18,16,40,.8)", border: "1px solid rgba(139,92,246,.25)", borderRadius: 16 };
 
