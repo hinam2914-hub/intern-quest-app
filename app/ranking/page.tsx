@@ -76,7 +76,6 @@ const TABS: { key: TabKey; em: string; label: string }[] = [
     { key: "test", em: "📚", label: "テスト" },
     { key: "advice", em: "💡", label: "アドバイス送信" },
     { key: "learn", em: "📚", label: "学習" },
-    { key: "work", em: "💼", label: "仕事完遂" },
     { key: "kpi", em: "📊", label: "KPI" },
     { key: "sales_month", em: "💰", label: "販売(今月)" },
     { key: "sales_total", em: "💰", label: "販売(累計)" },
@@ -450,31 +449,6 @@ export default function RankingPage() {
                     avatar_url: row.avatar_url,
                     is_active: row.is_active,
                     points: learnCounts[row.id] || 0,
-                })).sort((a, b) => b.points - a.points));
-            }
-            // ===== 仕事完遂量ランキング（KKC + MTG + タスク + ルーティン連続） =====
-            const workCounts: { [id: string]: number } = {};
-            const kkcRows = await fetchAllUserIds("problem_solutions", [["status", "approved"]]);
-            (kkcRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
-            const mtgRows = await fetchAllUserIds("mtg_reports", [["status", "approved"]]);
-            (mtgRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
-            const personalTaskRows = await fetchAllUserIds("personal_tasks", [["is_done", true]]);
-            (personalTaskRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
-            const taskReportRows = await fetchAllUserIds("task_reports", [["status", "approved"]]);
-            (taskReportRows || []).forEach((row: { user_id: string }) => { if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1; });
-            const allRoutineChecksCount = await fetchAllUserIds("routine_checks", []);
-            (allRoutineChecksCount || []).forEach((row: { user_id: string }) => {
-                if (row.user_id) workCounts[row.user_id] = (workCounts[row.user_id] || 0) + 1;
-            });
-            const workIds = Object.keys(workCounts);
-            if (workIds.length > 0) {
-                const { data: workProfiles } = await supabase.from("profiles").select("id, name, avatar_url, is_active").eq("is_active", true).in("id", workIds);
-                setWorkUsers((workProfiles || []).map((row: { id: string; name: string; avatar_url: string; is_active: boolean }) => ({
-                    id: row.id,
-                    name: row.name,
-                    avatar_url: row.avatar_url,
-                    is_active: row.is_active,
-                    points: workCounts[row.id] || 0,
                 })).sort((a, b) => b.points - a.points));
             }
             // ===== KPI達成率ランキング（今月、自分の部署のメインKPI） =====
