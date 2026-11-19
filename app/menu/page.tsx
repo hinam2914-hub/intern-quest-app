@@ -42,7 +42,6 @@ const CATS: Cat[] = [
     {
         key: "rank", title: "実績・成長", img: "/menu/icon_rank.webp", items: [
             { icon: "🏆", label: "ランキング", path: "/ranking" },
-            { icon: "📜", label: "ポイント・獲得履歴", path: "/history" },
             { icon: "🎖️", label: "バッジ・称号", path: "/badges" },
         ]
     },
