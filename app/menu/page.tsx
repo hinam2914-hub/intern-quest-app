@@ -25,7 +25,6 @@ const CATS: Cat[] = [
             { icon: "🧠", label: "思考クエスト", path: "/thinking" },
             { icon: "📋", label: "日報", path: "/report" },
             { icon: "💌", label: "サンキュー", path: "/thanks" },
-            { icon: "📊", label: "最近の活動", path: "/mypage" },
         ]
     },
     {
