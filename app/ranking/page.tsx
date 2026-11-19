@@ -76,7 +76,6 @@ const TABS: { key: TabKey; em: string; label: string }[] = [
     { key: "test", em: "📚", label: "テスト" },
     { key: "advice", em: "💡", label: "アドバイス送信" },
     { key: "learn", em: "📚", label: "学習" },
-    { key: "kpi", em: "📊", label: "KPI" },
     { key: "sales_month", em: "💰", label: "販売(今月)" },
     { key: "sales_total", em: "💰", label: "販売(累計)" },
     { key: "job_rank", em: "🎓", label: "就活ランク" },
@@ -451,25 +450,6 @@ export default function RankingPage() {
                     points: learnCounts[row.id] || 0,
                 })).sort((a, b) => b.points - a.points));
             }
-            // ===== KPI達成率ランキング（今月、自分の部署のメインKPI） =====
-            const now = new Date();
-            const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-            const { data: allProfilesKpi } = await supabase.from("profiles").select("id, name, avatar_url, is_active, department_id").eq("is_active", true);
-            const { data: kpiThisMonth } = await supabase.from("monthly_kpi").select("user_id, department_id, target, result").eq("year_month", thisMonth);
-            const kpiByUser: { [uid: string]: number } = {};
-            (allProfilesKpi || []).forEach((p: { id: string; department_id: string | null }) => {
-                if (!p.department_id) { kpiByUser[p.id] = 0; return; }
-                const myKpi = (kpiThisMonth || []).find((k: { user_id: string; department_id: string; target: number; result: number }) => k.user_id === p.id && k.department_id === p.department_id);
-                if (!myKpi || !myKpi.target || myKpi.target <= 0) { kpiByUser[p.id] = 0; return; }
-                kpiByUser[p.id] = Math.round((myKpi.result / myKpi.target) * 100);
-            });
-            setKpiUsers((allProfilesKpi || []).map((row: { id: string; name: string; avatar_url: string; is_active: boolean }) => ({
-                id: row.id,
-                name: row.name,
-                avatar_url: row.avatar_url,
-                is_active: row.is_active,
-                points: kpiByUser[row.id] || 0,
-            })).sort((a, b) => b.points - a.points));
             // ===== 販売額ランキング（今月） =====
             const nowSales = new Date();
             const monthStart = `${nowSales.getFullYear()}-${String(nowSales.getMonth() + 1).padStart(2, "0")}-01`;
