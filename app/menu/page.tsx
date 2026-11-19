@@ -49,7 +49,6 @@ const CATS: Cat[] = [
         key: "commu", title: "仲間・コミュニケーション", img: "/home/icon_thanks.webp", items: [
             { icon: "💌", label: "サンキューの送受信履歴", path: "/thanks" },
             { icon: "🧑‍🏫", label: "メンター報告", path: "/mentor-report" },
-            { icon: "📣", label: "応援掲示板", path: "/cheer" },
             { icon: "🐟", label: "メダカBOX", path: "/medaka" },
             { icon: "📄", label: "MTGレポート", path: "/mtg-report" },
             { icon: "📚", label: "MTG議事録まとめ", path: "/mtg-box" },

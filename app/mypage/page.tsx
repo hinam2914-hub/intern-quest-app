@@ -866,87 +866,6 @@ export default function MyPage() {
         const newTotalEarned = (pointRow as any)?.total_earned || newPoints;
         setPoints(newPoints);
         setTotalEarned(newTotalEarned);
-        // みんなの最近の達成
-        try {
-          const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
-          const { data: phRows } = await supabase.from("points_history").select("user_id,reason,created_at").gt("change", 0).gte("created_at", d7).order("created_at", { ascending: false }).limit(1000);
-          const LABEL = (r: string): { text: string; icon: string } | null => {
-            if (r.includes("challenge_complete")) return { text: "ライフチャレンジを達成", icon: "🎯" };
-            if (r.includes("es_first_completed")) return { text: "ESを完成させた", icon: "📝" };
-            if (r.includes("thinking_ippon_received")) return { text: "IPPONを獲得", icon: "🎤" };
-            if (r.startsWith("course_受講")) return { text: "講座を受講", icon: "🎓" };
-            if (r.startsWith("course_講師")) return { text: "講師デビュー", icon: "🧑‍🏫" };
-            if (r.includes("recruit_入社")) return { text: "新メンバーを入社に導いた", icon: "🎉" };
-            if (r.includes("recruit_採用面談")) return { text: "採用面談を実施", icon: "🤝" };
-            if (r.includes("avatar_")) return { text: "新しいアバターを手に入れた", icon: "👗" };
-            if (r.includes("kpi")) return { text: "月間KPIを達成", icon: "🏆" };
-            if (r === "thanks_received") return { text: "サンキューをもらった", icon: "💌" };
-            if (r === "content_complete") return { text: "学習コンテンツを完了", icon: "📚" };
-            if (r.startsWith("thinking_post")) return { text: "思考クエストに挑戦", icon: "🧠" };
-            if (r === "recruit_dm") return { text: "採用DMを送った", icon: "📨" };
-            if (r.includes("入社")) return { text: "新メンバーを入社に導いた", icon: "🎉" };
-            if (r.includes("メンツナ")) return { text: "メンツナを実施", icon: "🤝" };
-            if (r.includes("面談")) return { text: "面談を実施", icon: "🗣️" };
-            if (r.includes("タスク報告書")) return { text: "タスクをやり切った", icon: "✅" };
-            if (r.startsWith("written_evaluation")) return { text: "記述テストで評価された", icon: "✍️" };
-            if (r === "anniversary_gacha") return { text: "記念ガチャを回した", icon: "🎰" };
-            if (r.includes("badge")) return { text: "バッジを獲得", icon: "🎖️" };
-            if (r.includes("mtg")) return { text: "MTG報告を提出", icon: "📄" };
-            if (r.includes("medaka")) return { text: "メダカBOXに投稿", icon: "🐟" };
-            if (r.includes("sales")) return { text: "売上を記録", icon: "💰" };
-            return null;
-          };
-          const picked = (phRows || []).map((p: any) => ({ uid: p.user_id, created_at: p.created_at, ...LABEL(p.reason || "") })).filter((p: any) => p.text);
-          const uniqA: any[] = [];
-          const seenA = new Set<string>();
-          for (const p of picked) {
-            const key = p.uid + p.text;
-            if (seenA.has(key)) continue;
-            seenA.add(key);
-            uniqA.push(p);
-            if (uniqA.length >= 12) break;
-          }
-          if (uniqA.length > 0) {
-            const ids = [...new Set(uniqA.map((u: any) => u.uid))];
-            const { data: profsA } = await supabase.from("profiles").select("id,name").in("id", ids);
-            const nameMapA: Record<string, string> = {};
-            (profsA || []).forEach((pr: any) => { nameMapA[pr.id] = pr.name; });
-            const achList = uniqA.map((u: any) => {
-              const diff = Math.floor((Date.now() - new Date(u.created_at).getTime()) / 3600000);
-              const when = diff < 1 ? "さっき" : diff < 24 ? `${diff}時間前` : `${Math.floor(diff / 24)}日前`;
-              return { name: nameMapA[u.uid] || "メンバー", text: u.text, icon: u.icon, when, key: u.text + "_" + (u.created_at || "").slice(0, 10), uid: u.uid };
-            });
-            setAchievements(achList);
-            // リアクションとコメント取得
-            const keys = achList.map((a: any) => a.key);
-            const [{ data: reacts }, { data: cmts }] = await Promise.all([
-              supabase.from("achievement_reactions").select("*").in("target_key", keys),
-              supabase.from("achievement_comments").select("*").in("target_key", keys).order("created_at"),
-            ]);
-            const rMap: Record<string, { emoji: string; count: number; mine: boolean }[]> = {};
-            (reacts || []).forEach((r: any) => {
-              const k = r.target_user_id + "|" + r.target_key;
-              rMap[k] = rMap[k] || [];
-              const found = rMap[k].find(x => x.emoji === r.emoji);
-              if (found) { found.count++; if (r.user_id === user.id) found.mine = true; }
-              else rMap[k].push({ emoji: r.emoji, count: 1, mine: r.user_id === user.id });
-            });
-            setAchReactions(rMap);
-            const cIds = [...new Set((cmts || []).map((c: any) => c.user_id))];
-            const cNames: Record<string, string> = {};
-            if (cIds.length) {
-              const { data: cp } = await supabase.from("profiles").select("id,name").in("id", cIds);
-              (cp || []).forEach((p: any) => { cNames[p.id] = p.name; });
-            }
-            const cMap: Record<string, { name: string; body: string }[]> = {};
-            (cmts || []).forEach((c: any) => {
-              const k = c.target_user_id + "|" + c.target_key;
-              cMap[k] = cMap[k] || [];
-              cMap[k].push({ name: cNames[c.user_id] || "メンバー", body: c.body });
-            });
-            setAchComments(cMap);
-          }
-        } catch (e) { console.error("achievements", e); }
 
         // ページを開いたら必ずエフェクト発火（0pt以上なら）
         if (newPoints > 0) {
@@ -2093,43 +2012,6 @@ const handleRoutineCheck = async (routineId: string) => {
                 )}
 
                 {openDetail === "activity" && (<section className="mp-panel mp-detail"><div className="mp-ribbon">最近の活動<small>RECENT ACTIVITY</small></div>
-                {/* ===== みんなの最近の達成 ===== */}
-                {achievements.length > 0 && (
-                    <div style={{ marginTop: 16, padding: "16px 0 14px 18px", borderRadius: 16, background: isLightBg ? "rgba(255,255,255,0.8)" : "rgba(52,211,153,0.07)", border: `1px solid ${isLightBg ? "rgba(0,0,0,0.06)" : "rgba(52,211,153,0.22)"}` }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingRight: 18 }}>
-                            <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: isLightBg ? "#8b5cf6" : "#6ee7b7" }}>🎉 最近の活躍</span>
-                            <span onClick={() => router.push("/cheer")} style={{ fontSize: 11.5, fontWeight: 800, color: "#8b5cf6", cursor: "pointer" }}>みんなの活躍をもっと見る →</span>
-                        </div>
-                        <div style={{ display: "flex", gap: 10, overflowX: "auto", overflowY: "visible", paddingRight: 18, paddingTop: 10, paddingBottom: 4 }}>
-                            {achievements.slice(0, 3).map((a, i) => {
-                                const mapKey = a.uid + "|" + a.key;
-                                const reacts = achReactions[mapKey] || [];
-                                const total = reacts.reduce((sum, r) => sum + r.count, 0);
-                                const isHot = i === 0 && total > 0;
-                                return (
-                                    <div key={i} onClick={() => router.push("/cheer")} style={{ minWidth: 200, maxWidth: 220, flexShrink: 0, cursor: "pointer", padding: "12px 14px", borderRadius: 14, position: "relative", background: isLightBg ? "#fff" : "rgba(0,0,0,0.22)", border: `1.5px solid ${isHot ? "rgba(249,115,22,.45)" : isLightBg ? "rgba(139,92,246,0.2)" : "rgba(255,255,255,0.1)"}`, boxShadow: isHot ? "0 0 14px rgba(249,115,22,.18)" : "none" }}>
-                                        {isHot && <span style={{ position: "absolute", top: -9, left: 10, zIndex: 2, whiteSpace: "nowrap", padding: "2px 9px", borderRadius: 10, background: "linear-gradient(135deg,#f97316,#ec4899)", fontSize: 9.5, fontWeight: 900, color: "#fff" }}>🔥 HOT</span>}
-                                        <div style={{ fontSize: 10.5, color: textMuted, marginBottom: 5, textAlign: "right" }}>{a.when}</div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
-                                            <span style={{ fontSize: 20 }}>{a.icon}</span>
-                                            <div style={{ minWidth: 0 }}>
-                                                <div style={{ fontSize: 11, color: textMuted }}>{a.name}さんが</div>
-                                                <div style={{ fontSize: 12.5, fontWeight: 900, color: textPrimary, lineHeight: 1.35 }}>{a.text}</div>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                                            {["👏", "🔥", "🎉"].map(em => {
-                                                const r = reacts.find(x => x.emoji === em);
-                                                return <span key={em} style={{ fontSize: 11, fontWeight: 800, color: textMuted }}>{em}{r ? r.count : 0}</span>;
-                                            })}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
                 </section>)}
                 {openDetail === "profile" && (<div className="mp-detail-raw">
                 {/* ===== 成長マップ要約カード ===== */}
