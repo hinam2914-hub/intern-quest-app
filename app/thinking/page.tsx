@@ -2,7 +2,7 @@
 // Intern Quest 2.0｜思考の試練（THINKING GUILD）。HOME と同じ明るい世界観（青空・大理石・ロイヤルブルー×金）。
 // 6種類の思考力を曜日替わりで鍛える。日曜は大喜利グランプリ（既存機能をそのまま維持）。
 // ポイントは従来ルールのまま：1問につき初回投稿のみ +5pt（points_history の reason で重複防止）、
-// 「なるほど／IPPON」を受けた人に +3pt。新しい付与量は追加していない。
+// 「なるほど／IPPON」を受けた人に +5pt（like_points.sql の thinking_vote がサーバー側で付与。未導入の環境では従来の +3pt）。
 // 出題は thinking_schedule（日付→問題の固定記録）を最優先。テーブル未作成の環境でも従来の
 // last_shown_date 方式にフォールバックして動く。設定は app/lib/thinking2.ts に集約。
 import { useEffect, useState, useCallback } from "react";
@@ -312,6 +312,10 @@ export default function ThinkingPage() {
     /** なるほど／IPPON（従来ロジックのまま：1人1票・付け替え、受けた人に+3pt） */
     const handleVote = async (answerId: string, answerOwner: string) => {
         if (answerOwner === userId) return;
+        // サーバー側で処理（もらった人に+5pt。同じ回答への押し直しでは増えない）。関数が未導入の環境だけ従来の処理に戻す
+        const { error: rpcErr } = await supabase.rpc("thinking_vote", { p_answer: String(answerId) });
+        if (!rpcErr) { if (question) await loadAnswers(question, userId); return; }
+        if (rpcErr.code !== "PGRST202" && rpcErr.code !== "42883") { setMessage("送信できませんでした。もう一度お試しください"); setTimeout(() => setMessage(""), 3000); return; }
         if (myVote === answerId) {
             await supabase.from("thinking_ippon").delete().eq("answer_id", answerId).eq("user_id", userId);
         } else {

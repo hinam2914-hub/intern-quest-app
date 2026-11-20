@@ -121,6 +121,15 @@ export default function CheerPage() {
     try {
       const list = reactions[mk] || [];
       const f = list.find(r => r.emoji === emoji);
+      // サーバー側で処理（もらった人に+5pt。同じ投稿には1人1回分だけ）。関数が未導入の環境だけ従来の処理（ポイントなし）に戻す
+      const { data: rr, error: rpcErr } = await supabase.rpc("cheer_react", { p_target: uid, p_key: key, p_emoji: emoji });
+      if (!rpcErr) {
+        const on = !!(rr as any)?.reacted;
+        setReactions(prev => { const l = prev[mk] || []; const g = l.find(r => r.emoji === emoji);
+          return { ...prev, [mk]: on ? (g ? l.map(r => r.emoji === emoji ? { ...r, count: r.count + (r.mine ? 0 : 1), mine: true } : r) : [...l, { emoji, count: 1, mine: true }]) : l.map(r => r.emoji === emoji ? { ...r, count: Math.max(0, r.count - (r.mine ? 1 : 0)), mine: false } : r).filter(r => r.count > 0) }; });
+        return;
+      }
+      if (rpcErr.code !== "PGRST202" && rpcErr.code !== "42883") return;
       if (f?.mine) {
         const { error } = await supabase.from("achievement_reactions").delete().eq("target_user_id", uid).eq("target_key", key).eq("user_id", userId).eq("emoji", emoji);
         if (error) return;
@@ -234,6 +243,7 @@ export default function CheerPage() {
               <button key={c.k} type="button" className={"ch-cat" + (postCat === c.k ? " on" : "")} aria-pressed={postCat === c.k} onClick={() => setPostCat(c.k)}>{c.e} {c.l}</button>
             ))}
           </div>
+          <div className="ch-note">👏 リアクションをもらうと +5pt（同じ投稿には1人1回分）</div>
           <div className="ch-form">
             <input value={postBody} onChange={(e) => { setPostBody(e.target.value); if (postMsg) setPostMsg(null); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) submitPost(); }} placeholder={PLACEHOLDERS[Math.floor(Date.now() / 60000) % PLACEHOLDERS.length]} aria-label="達成したこと" disabled={posting} />
             <button type="button" className="ch-send" onClick={submitPost} disabled={posting || !postBody.trim()}>{posting ? "送信中…" : "成果をシェアする 🚀"}</button>
@@ -373,6 +383,7 @@ const CSS = `
 .ch-cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .ch-cat{min-height:44px;padding:7px 18px;border:2.5px solid #e2c98c;border-radius:999px;background:linear-gradient(180deg,#fff,#fbf2de);color:#5a4a22;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit;white-space:nowrap}
 .ch-cat.on{background:linear-gradient(180deg,#4a6ee8,#3a2fb5);border-color:#f5d77e;color:#fff;box-shadow:0 0 0 2px #2a2390,0 4px 10px rgba(16,47,112,.35)}
+.ch-note{margin:-4px 0 10px;font-size:12.5px;font-weight:800;color:#8a6a1e}
 .ch-form{display:flex;gap:10px;align-items:stretch}
 .ch-form input{flex:1;min-width:0;min-height:52px;padding:0 18px;border:2px solid #e2bf63;border-radius:14px;background:#fff;color:#23284a;font-size:16px;font-weight:600;outline:none;font-family:inherit;box-shadow:inset 0 2px 4px rgba(120,80,20,.08)}
 .ch-form input:focus,.ch-cmform input:focus{border-color:#2a4aa6;box-shadow:0 0 0 3px rgba(42,74,166,.16)}
