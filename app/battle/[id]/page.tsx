@@ -16,7 +16,7 @@ import AvatarLayered from "../../components/AvatarLayered";
 import type { AvatarConfig } from "../../lib/avatar/catalog";
 import {
     BATTLE_CONFIG, ELEMENTS, ELEMENT_ORDER, ADVANTAGE, WEAPONS, SKILLS, CHEST_IMG, loadWeaponShop, canUseWeapon, type WeaponShop,
-    calcDamage, castleElementOf, elementMultiplier, DEMO_ATTACK_KEY, readBattleLog, writeBattleLog,
+    calcDamage, levelMultiplier, levelMultLabel, castleElementOf, elementMultiplier, DEMO_ATTACK_KEY, readBattleLog, writeBattleLog,
     type WeaponDef, type SkillKey,
 } from "../../lib/battle";
 
@@ -60,6 +60,7 @@ export default function BattlePage() {
     const weapon = useMemo(() => WEAPONS.find((w) => w.key === weaponKey) || WEAPONS[0], [weaponKey]);
     const oppElement = useMemo(() => (oppId ? castleElementOf(oppId) : "fire"), [oppId]);
     const attacksLeft = Math.max(0, BATTLE_CONFIG.attacksPerDay - attacksUsed);
+    const lvMult = me && opp ? levelMultiplier(me.level, opp.level) : 1;   // レベル差補正（実際のダメージはサーバーが同じ式で計算する）
 
     useEffect(() => {
         const load = async () => {
@@ -142,7 +143,7 @@ export default function BattlePage() {
             if (d.won) setLoot(Number(d.loot || 0));
             if (d.won) setShieldUntil(new Date(Date.now() + BATTLE_CONFIG.shieldHours * 3600 * 1000).toISOString());
         } else {
-            const res = calcDamage(weapon, oppElement);
+            const res = calcDamage(weapon, oppElement, Math.random, lvMult);
             const dmg = boosted ? res.dmg * 2 : res.dmg;
             const extra = burnLeft > 0 ? BATTLE_CONFIG.burnDamage : 0;
             const used = attacksUsed + 1;
@@ -268,6 +269,7 @@ export default function BattlePage() {
                         {/* 敵城HP */}
                         <div className="bt-hpwrap">
                             <div className="bt-hplabel">敵の城HP <b>{hp} / {BATTLE_CONFIG.castleBaseHp}</b>{burnLeft > 0 && <span className="bt-burn">🔥やけど{burnLeft}</span>}</div>
+                            {lvMult < 0.995 && me && opp && <div className="bt-lvmult">レベル差補正 <b>{levelMultLabel(lvMult)}</b>（相手 Lv.{opp.level}／自分 Lv.{me.level}）与えるダメージが減ります</div>}
                             <div className="bt-hpbar"><div className="bt-hpfill" style={{ width: (hp / BATTLE_CONFIG.castleBaseHp) * 100 + "%", background: hp > 50 ? "linear-gradient(90deg,#4ade80,#22c55e)" : hp > 20 ? "linear-gradient(90deg,#fbbf24,#f59e0b)" : "linear-gradient(90deg,#f87171,#ef4444)" }} /></div>
                         </div>
 
@@ -425,6 +427,7 @@ const CSS = `
 .bt-vs-mark{font-size:21px;font-weight:900;color:#fde68a;text-shadow:0 2px 8px rgba(0,0,0,.4);flex-shrink:0}
 .bt-stage{position:relative;margin-top:12px;height:400px;border-radius:20px;border:3px solid #fcd34d;overflow:hidden;background:linear-gradient(180deg,#8ecdf3 0%,#aedcf7 45%,#cfeafc 100%);box-shadow:0 8px 24px rgba(23,42,99,.25)}
 .bt-hpwrap{position:absolute;top:12px;right:14px;width:min(46%,250px);z-index:6}
+.bt-lvmult{font-size:10.5px;font-weight:800;color:#1e3a8a;background:rgba(219,234,254,.95);border:1.5px solid #93c5fd;border-top:0;padding:3px 8px;line-height:1.5}.bt-lvmult b{color:#b91c1c}
 .bt-hplabel{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:900;color:#7f1d1d;background:rgba(255,255,255,.9);border:1.5px solid #fca5a5;border-radius:8px 8px 0 0;padding:3px 8px}
 .bt-burn{color:#dc2626;font-size:9.5px}
 .bt-hpbar{height:13px;background:rgba(60,20,20,.75);border:1.5px solid #fca5a5;border-top:none;border-radius:0 0 8px 8px;overflow:hidden}

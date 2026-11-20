@@ -109,7 +109,17 @@ export const BATTLE_CONFIG = {
     guardCut: 0.5,           // 防御UP時の被ダメージ倍率
     shieldHours: 12,         // 城破壊後の保護シールド時間（Phase 2）
     hpRegenPerHour: 5,       // 城HPの自然回復/時（Phase 2）
+    levelStep: 0.1,          // レベル差補正：1レベルごとの強さの増え方（battle_server.sql の battle_level_mult と同じ値）
 } as const;
+
+/** レベル差補正：自分のレベルが相手より低いほど、与えるダメージが減る（同じか高いときは×1.0のまま。増えはしない）。
+ *  強さ＝1＋levelStep×(Lv−1) として、自分の強さ÷相手の強さ。サーバー側 battle_level_mult と同じ計算 */
+export function levelMultiplier(myLevel: number, oppLevel: number): number {
+    const k = (lv: number) => 1 + BATTLE_CONFIG.levelStep * (Math.max(1, lv) - 1);
+    return Math.min(1, k(myLevel) / k(oppLevel));
+}
+/** 補正の表示用（×0.05 など。小さいときは小数2桁） */
+export const levelMultLabel = (m: number) => "×" + (m >= 0.995 ? "1.0" : m < 0.1 ? m.toFixed(2) : m.toFixed(1));
 
 export type DamageResult = {
     dmg: number;
@@ -120,7 +130,7 @@ export type DamageResult = {
 };
 
 /** ダメージ計算（Phase 1 はクライアントのデモ用。Phase 2 で同一ロジックをサーバー側に実装し、クライアント値は信用しない） */
-export function calcDamage(weapon: WeaponDef, defElement: ElementKey, rand: () => number = Math.random): DamageResult {
+export function calcDamage(weapon: WeaponDef, defElement: ElementKey, rand: () => number = Math.random, levelMult = 1): DamageResult {
     const mult = elementMultiplier(weapon.element, defElement);
     const crit = rand() < BATTLE_CONFIG.critRate + weapon.critBonus;
     const skillFired = weapon.skill && rand() < weapon.skillRate ? weapon.skill : null;
@@ -130,7 +140,7 @@ export function calcDamage(weapon: WeaponDef, defElement: ElementKey, rand: () =
         const v = 1 + (rand() * 2 - 1) * BATTLE_CONFIG.variance;
         total += weapon.atk * mult * (crit ? BATTLE_CONFIG.critMult : 1) * v;
     }
-    return { dmg: Math.max(1, Math.round(total)), mult, crit, skillFired, hits };
+    return { dmg: Math.max(1, Math.round(total * levelMult)), mult, crit, skillFired, hits };
 }
 
 /** 城の属性：user id から決定的に割り当てる（Phase 1 の仮仕様。Phase 2 で防衛設定から選択可能にする） */

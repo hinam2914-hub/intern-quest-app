@@ -17,7 +17,7 @@ import { JOBS, type JobKey } from "../onboarding/job/page";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import CheerTeaser from "../components/CheerTeaser";
 import {
-    BATTLE_CONFIG, ELEMENTS, ADVANTAGE, WEAPONS, SKILLS, loadWeaponShop, canUseWeapon, type WeaponShop, loadLootConfig, lootRateFor, type LootConfig,
+    BATTLE_CONFIG, levelMultiplier, levelMultLabel, ELEMENTS, ADVANTAGE, WEAPONS, SKILLS, loadWeaponShop, canUseWeapon, type WeaponShop, loadLootConfig, lootRateFor, type LootConfig,
     castleElementOf, elementMultiplier, readBattleLog, CHEST_IMG, type ElementKey, type WeaponDef, type BattleLog,
 } from "../lib/battle";
 
@@ -57,9 +57,9 @@ function recommendWeapons(castleEl: ElementKey) {
 }
 
 /** 攻略難易度：最強武器での必要攻撃回数から算出（HP・倍率はBATTLE_CONFIG準拠） */
-function difficultyOf(castleEl: ElementKey) {
+function difficultyOf(castleEl: ElementKey, lvMult = 1) {
     const best = recommendWeapons(castleEl)[0];
-    const hits = Math.ceil(BATTLE_CONFIG.castleBaseHp / best.dmg);
+    const hits = Math.ceil(BATTLE_CONFIG.castleBaseHp / Math.max(1, best.dmg * lvMult));
     const star = hits <= 1 ? 1 : hits === 2 ? 2 : hits === 3 ? 3 : hits <= 5 ? 4 : 5;
     const label = ["", "とても簡単", "簡単", "普通", "難しい", "非常に難しい"][star];
     return { star, label, hits, best };
@@ -229,7 +229,8 @@ export default function IslandsGuildPage() {
         // ×0.5しか通らない属性＝城の属性が一方的に有利を取る属性（光⇔闇のような相互有利ペアには存在しない）
         const resist = ADVANTAGE[sel.element].find((e) => elementMultiplier(e, sel.element) < 1) ?? null;
         const recs = recommendWeapons(sel.element);
-        const dif = difficultyOf(sel.element);
+        const lvMult = levelMultiplier(myLevel, sel.level);
+        const dif = difficultyOf(sel.element, lvMult);
         const castle = getCastleStage(sel.totalEarned);
         const advice: string[] = [
             `この城は${ELEMENTS[weak].name}属性の攻撃に弱い（ダメージ×${BATTLE_CONFIG.multAdvantage.toFixed(1)}）。「${recs[0].w.name}」で攻めると有利です`,
@@ -237,9 +238,10 @@ export default function IslandsGuildPage() {
         if (resist) advice.push(`${ELEMENTS[resist].name}属性の攻撃は×${BATTLE_CONFIG.multDisadvantage.toFixed(1)}しか通らないので避けましょう`);
         else advice.push(`${ELEMENTS[sel.element].name}と${ELEMENTS[weak].name}はたがいに有利。${ELEMENTS[weak].name}武器なら大ダメージが狙えます`);
         advice.push(`城HP${BATTLE_CONFIG.castleBaseHp}を削るには「${dif.best.w.name}」で約${dif.hits}回の攻撃が必要（1日${BATTLE_CONFIG.attacksPerDay}回まで）`);
+        if (lvMult < 0.995) advice.push(`相手のほうがレベルが高いので、与えるダメージが${levelMultLabel(lvMult)}になります（相手 Lv.${sel.level}／自分 Lv.${myLevel}）`);
         if (recs[0].w.skill) advice.push(`「${recs[0].w.name}」は確率で${SKILLS[recs[0].w.skill!].name}（${SKILLS[recs[0].w.skill!].desc}）が発動します`);
-        return { weak, resist, recs, dif, castle, advice };
-    }, [sel]);
+        return { weak, resist, recs, dif, castle, advice, lvMult };
+    }, [sel, myLevel]);
 
     // ===== クエスト提案（実在報酬のみ） =====
     const questRecs = useMemo(() => {
@@ -397,6 +399,7 @@ export default function IslandsGuildPage() {
                                 <div className="gx-row"><span>弱点属性</span><b style={{ color: ELEMENTS[guide.weak].color }}><ElIco k={guide.weak} size={14} /> {ELEMENTS[guide.weak].name}（×{BATTLE_CONFIG.multAdvantage.toFixed(1)}）</b></div>
                                 {guide.resist && <div className="gx-row"><span>通りにくい属性</span><b style={{ color: "#94a3b8" }}><ElIco k={guide.resist} size={14} /> {ELEMENTS[guide.resist].name}（×{BATTLE_CONFIG.multDisadvantage.toFixed(1)}）</b></div>}
                                 <div className="gx-row"><span>城HP</span><b>{BATTLE_CONFIG.castleBaseHp}</b></div>
+                                <div className="gx-row"><span>レベル差補正</span><b style={{ color: guide.lvMult < 0.995 ? "#b91c1c" : undefined }}>{levelMultLabel(guide.lvMult)}{guide.lvMult < 0.995 ? "（相手のほうがレベルが高い）" : "（補正なし）"}</b></div>
                                 <div className="gx-row"><span>推奨武器</span><b><WIco w={guide.recs[0].w} size={20} /> {guide.recs[0].w.name}</b></div>
                             </div>
 
@@ -461,6 +464,7 @@ export default function IslandsGuildPage() {
                             <div className="gx-rows">
                                 <div className="gx-row"><span>城の基本HP</span><b>{BATTLE_CONFIG.castleBaseHp}</b></div>
                                 <div className="gx-row"><span>攻撃回数</span><b>1日 {BATTLE_CONFIG.attacksPerDay}回まで</b></div>
+                                <div className="gx-row"><span>レベル差補正</span><b>自分のレベルが相手より低いほど、与えるダメージが減る</b></div>
                                 <div className="gx-row"><span>クリティカル</span><b>×{BATTLE_CONFIG.critMult}</b></div>
                                 <div className="gx-row"><span>勝利報酬</span><b>{loot?.enabled ? (isSelf ? `相手の所持ポイントの${Math.round(loot.rate_low * 100)}〜${Math.round(loot.rate_high * 100)}%（上限${loot.cap_points}pt）` : `この相手なら所持ポイントの${Math.round(lootRateFor(loot, myLevel, sel.level) * 100)}%（上限${loot.cap_points}pt）`) : "なし"}</b></div>
                                 {loot?.enabled && <div className="gx-row"><span>奪える割合</span><b>格上（Lv差{loot.level_gap}以上）{Math.round(loot.rate_high * 100)}%／同格 {Math.round(loot.rate_same * 100)}%／格下 {Math.round(loot.rate_low * 100)}%</b></div>}
