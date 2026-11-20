@@ -10,9 +10,9 @@
 
 import type { JobKey } from "../../onboarding/job/page";
 
-export type Layer = "hair_back" | "body" | "outfit_back" | "outfit_front" | "head_back" | "hair_front" | "head" | "cape" | "weapon" | "accessory";
+export type Layer = "hair_back" | "body" | "outfit_back" | "outfit_front" | "head_back" | "hair_front" | "head" | "cape" | "weapon" | "accessory" | "accessory_back";
 /** 描画順（下→上）。マントは衣装の背面側に入る想定だが、素材の作り方で前にも出せるよう独立レイヤーにする */
-export const LAYER_ORDER: Layer[] = ["cape", "hair_back", "body", "outfit_back", "outfit_front", "head_back", "hair_front", "head", "weapon", "accessory"];
+export const LAYER_ORDER: Layer[] = ["cape", "accessory_back", "hair_back", "body", "outfit_back", "outfit_front", "head_back", "hair_front", "head", "weapon", "accessory"];
 
 export type Base = "f" | "m";
 export type Part = { id: string; label: string; src: string | null; swatch?: string };
@@ -49,45 +49,45 @@ const none = (label = "なし"): Part => ({ id: "none", label, src: "" });
 export const GEAR: Record<JobKey, JobGear> = {
     knight: {
         outfit: [{ id: "knight_default", label: "ナイトの鎧", src: "ok" }],
-        head: [none()],  // 肩装飾は廃止（素材の左右非対称が解消できないため）
-        cape: [none(), { id: "knight_cape", label: "青のマント", src: "ok" }],
+        head: [none(), { id: "knight_circlet", label: "銀のサークレット", src: "ok" }],  // 肩装飾は廃止（素材の左右非対称が解消できないため）
+        cape: [none(), { id: "knight_cape", label: "青のマント", src: "ok" }, { id: "knight_cape_red", label: "赤のマント", src: "ok" }],
         weapon: [none(), { id: "knight_sword", label: "剣", src: "ok" }, { id: "knight_sword_shield", label: "剣と盾", src: "ok" }, { id: "knight_greatsword", label: "大剣", src: "ok" }],
-        accessory: [none(), { id: "knight_ribbon_blue", label: "青リボン", src: "ok" }, { id: "knight_ribbon_white", label: "白リボン", src: "ok" }, { id: "knight_star", label: "星の飾り", src: "ok" }],
+        accessory: [none(), { id: "knight_ribbon_blue", label: "青リボン", src: "ok" }, { id: "knight_ribbon_white", label: "白リボン", src: "ok" }, { id: "knight_star", label: "星の飾り", src: "ok" }, { id: "knight_medal", label: "金の勲章", src: "ok" }],
     },
     mage: {
         outfit: [{ id: "mage_default", label: "魔法使いのローブ", src: "ok" }],
         head: [none(), { id: "mage_hat_star", label: "帽子（星リボン）", src: "ok" }],  // 魔法帽子・月のチャームは廃止（被り方が合わないため）
-        cape: [none(), { id: "mage_cape", label: "紫のマント", src: "ok" }],
+        cape: [none(), { id: "mage_cape", label: "紫のマント", src: "ok" }, { id: "mage_cape_navy", label: "星空のマント", src: "ok" }],
         weapon: [none(), { id: "mage_staff", label: "杖（基本）", src: "ok" }, { id: "mage_staff_star", label: "杖（星）", src: "ok" }, { id: "mage_staff_moon", label: "杖（月）", src: "ok" }, { id: "mage_staff_crystal", label: "杖（水晶）", src: "ok" }],
-        accessory: [none(), { id: "mage_ribbon", label: "リボン", src: "ok" }, { id: "mage_book", label: "魔導書", src: "ok" }, { id: "mage_glasses", label: "メガネ", src: "ok" }],
+        accessory: [none(), { id: "mage_ribbon", label: "リボン", src: "ok" }, { id: "mage_book", label: "魔導書", src: "ok" }, { id: "mage_glasses", label: "メガネ", src: "ok" }, { id: "mage_pendant", label: "紫のペンダント", src: "ok" }],
     },
     archer: {
         outfit: [{ id: "archer_default", label: "アーチャーの軽装", src: "ok" }],
         head: [none(), { id: "archer_hat", label: "羽根付き帽子", src: "ok" }],
-        cape: [none(), { id: "archer_cape", label: "緑のマント", src: "ok" }],
+        cape: [none(), { id: "archer_cape", label: "緑のマント", src: "ok" }, { id: "archer_cape_brown", label: "旅人のマント", src: "ok" }],
         weapon: [none(), { id: "archer_bow", label: "弓（基本）", src: "ok" }, { id: "archer_bow_alt", label: "弓（別デザイン）", src: "ok" }, { id: "archer_bow_gold", label: "白金の弓", src: "ok" }, { id: "archer_crossbow", label: "クロスボウ", src: "ok" }],
-        accessory: [none(), { id: "archer_leaf", label: "葉のブローチ", src: "ok" }, { id: "archer_pouch", label: "腰ポーチ", src: "ok" }, { id: "archer_quiver", label: "矢筒", src: "ok" }, { id: "archer_flower", label: "花飾り", src: "ok" }],
+        accessory: [none(), { id: "archer_leaf", label: "葉のブローチ", src: "ok" }, { id: "archer_pouch", label: "腰ポーチ", src: "ok" }, { id: "archer_quiver", label: "矢筒", src: "ok" }, { id: "archer_flower", label: "花飾り", src: "ok" }, { id: "archer_feather", label: "羽根飾り", src: "ok" }],
     },
     healer: {
         outfit: [{ id: "healer_default", label: "ヒーラーの衣装", src: "ok" }],
-        head: [none(), { id: "healer_hat", label: "聖帽", src: "ok" }],
-        cape: [none(), { id: "healer_cape", label: "白のマント", src: "ok" }],
+        head: [none(), { id: "healer_hat", label: "聖帽", src: "ok" }, { id: "healer_halo", label: "天使の輪", src: "ok" }],
+        cape: [none(), { id: "healer_cape", label: "白のマント", src: "ok" }, { id: "healer_cape_pink", label: "ピンクのマント", src: "ok" }],
         weapon: [none(), { id: "healer_staff", label: "杖（基本）", src: "ok" }, { id: "healer_staff_flower", label: "杖（花）", src: "ok" }, { id: "healer_staff_moon", label: "杖（月）", src: "ok" }, { id: "healer_staff_wing", label: "杖（翼）", src: "ok" }, { id: "healer_staff_crystal", label: "杖（水晶）", src: "ok" }],
         accessory: [none(), { id: "healer_ribbon", label: "リボン", src: "ok" }, { id: "healer_cross", label: "十字架の飾り", src: "ok" }, { id: "healer_book", label: "聖書", src: "ok" }, { id: "healer_glasses", label: "メガネ", src: "ok" }],
     },
     rogue: {
         outfit: [{ id: "rogue_default", label: "ローグの軽装", src: "ok" }],
-        head: [none()],  // フードは廃止（髪型との相性問題のため）
-        cape: [none(), { id: "rogue_cape", label: "黒のマント", src: "ok" }],
-        weapon: [none(), { id: "rogue_daggers", label: "短剣（二刀）", src: "ok" }, { id: "rogue_knives", label: "投げナイフ", src: "ok" }],
+        head: [none(), { id: "rogue_bandana", label: "赤いバンダナ", src: "ok" }],  // フードは廃止（髪型との相性問題のため）
+        cape: [none(), { id: "rogue_cape", label: "黒のマント", src: "ok" }, { id: "rogue_cape_crimson", label: "深紅のマント", src: "ok" }],
+        weapon: [none(), { id: "rogue_daggers", label: "短剣（二刀）", src: "ok" }, { id: "rogue_knives", label: "投げナイフ", src: "ok" }, { id: "rogue_katana", label: "刀", src: "ok" }, { id: "rogue_claw", label: "鉤爪", src: "ok" }],
         accessory: [none(), { id: "rogue_scarf", label: "スカーフ", src: "ok" }, { id: "rogue_brooch", label: "ブローチ", src: "ok" }, { id: "rogue_pendant", label: "ペンダント", src: "ok" }, { id: "rogue_armband", label: "アームバンド", src: "ok" }],
     },
     paladin: {
         outfit: [{ id: "paladin_default", label: "パラディンの聖鎧", src: "ok" }],
         head: [none(), { id: "paladin_tiara", label: "ティアラ", src: "ok" }, { id: "paladin_crown", label: "冠", src: "ok" }, { id: "paladin_feather", label: "羽飾り", src: "ok" }],
-        cape: [none(), { id: "paladin_cape", label: "青のマント", src: "ok" }],
+        cape: [none(), { id: "paladin_cape", label: "青のマント", src: "ok" }, { id: "paladin_cape_white", label: "白のマント", src: "ok" }],
         weapon: [none(), { id: "paladin_sword", label: "聖剣（基本）", src: "ok" }, { id: "paladin_sword_shield", label: "聖剣と盾", src: "ok" }, { id: "paladin_sword_deco", label: "聖剣（装飾）", src: "ok" }],
-        accessory: [none(), { id: "paladin_clasp", label: "マント留め", src: "ok" }, { id: "paladin_cross", label: "十字架のペンダント", src: "ok" }, { id: "paladin_medal", label: "勲章", src: "ok" }],
+        accessory: [none(), { id: "paladin_clasp", label: "マント留め", src: "ok" }, { id: "paladin_cross", label: "十字架のペンダント", src: "ok" }, { id: "paladin_medal", label: "勲章", src: "ok" }, { id: "paladin_wing", label: "白い羽", src: "ok" }],
     },
 };
 
@@ -121,7 +121,10 @@ export const GEAR_READY = new Set<string>([]);
 export const HEAD_BEHIND_HAIR = new Set<string>([]);  // 後ろ配置は髪に埋もれたため不使用（前被りに戻した）
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "44";
+export const ASSET_V = "45";
+
+/** 体の「後ろ」に描くアクセサリー（背中の羽など）。マントより前、髪・体より後ろ */
+export const ACCESSORY_BEHIND = new Set<string>(["paladin_wing"]);
 
 /** 被ると髪を帽子の中に収める頭装備。帽子より上にはみ出す髪を <id>__hairmask.png で隠す（＝ちゃんと被って見える） */
 export const HEAD_HAIR_MASK = new Set<string>(["mage_hat_star"]);
@@ -155,10 +158,13 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
     const headGear = gear(g.head, c.head, "head");
     const behind = HEAD_BEHIND_HAIR.has(c.head);
     const none = { src: "", missing: false };
+    const accGear = gear(g.accessory, c.accessory, "accessory");
+    const accBehind = ACCESSORY_BEHIND.has(c.accessory);
     const parts: Record<Layer, { src: string | null; missing: boolean }> = {
         cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !(hair?.src && colorOk) }, body, outfit_back: out("back"), outfit_front: out("front"),
         head_back: behind ? headGear : none,
-        hair_front: { src: hairSrc("front"), missing: !(hair?.src && colorOk) }, head: behind ? none : headGear, weapon: gear(g.weapon, c.weapon, "weapon"), accessory: gear(g.accessory, c.accessory, "accessory"),
+        hair_front: { src: hairSrc("front"), missing: !(hair?.src && colorOk) }, head: behind ? none : headGear, weapon: gear(g.weapon, c.weapon, "weapon"),
+        accessory: accBehind ? none : accGear, accessory_back: accBehind ? accGear : none,
     };
     // 帽子を被っている間、髪レイヤーにマスクを掛ける（帽子画像が表示できるときだけ）
     const hairMask = HEAD_HAIR_MASK.has(c.head) && headGear.src ? `/avatar/head/${c.head}__hairmask.png?v=${ASSET_V}` : undefined;
