@@ -13,6 +13,7 @@ type Sub = {
     mtg_attended: boolean | null;
     event_no_cancel: boolean | null;
     review: string | null;
+    admin_comment?: string | null;   // 管理者からのコメント・差し戻し理由（列が無い環境では常に空）
     created_at: string;
     name?: string;
 };
@@ -62,13 +63,17 @@ export default function JourneyTab() {
     const [showApproved, setShowApproved] = useState(false);
     const [filter, setFilter] = useState<Filter>("all");
     const [menuOpen, setMenuOpen] = useState<string | null>(null);
+    // コメント／却下の入力欄（どの提出に対して開いているか）
+    const [box, setBox] = useState<{ id: string; mode: "comment" | "reject"; text: string } | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [showRejected, setShowRejected] = useState(false);
     const [roster, setRoster] = useState<{ title: string; people: { name: string; date: string }[] } | null>(null);
     const [userMax, setUserMax] = useState<Record<string, { name: string; max: number; dates: Record<number, string> }>>({});
 
     const load = async () => {
         setLoading(true);
         const [{ data: subRows }, { data: userRows }] = await Promise.all([
-            supabase.from("journey_submissions").select("id, user_id, step_no, status, scheduled_date, review, created_at, mtg_date, event_date, mtg_attended, event_no_cancel").in("step_no", [1, 2, 3, 4, 5]).order("created_at", { ascending: false }),
+            supabase.from("journey_submissions").select("*").in("step_no", [1, 2, 3, 4, 5]).order("created_at", { ascending: false }),
             supabase.from("profiles").select("id, name").eq("is_active", true),
         ]);
         const nameMap: Record<string, string> = {};
@@ -105,6 +110,41 @@ export default function JourneyTab() {
         await load();
     };
 
+    // admin_comment 列が無い（SQL未実行）かどうか
+    const noCommentCol = (e: any) => !!e && (e.code === "PGRST204" || e.code === "42703" || String(e.message || "").includes("admin_comment"));
+    const notify = async (s: Sub, title: string, message: string, icon: string) => {
+        const { error } = await supabase.from("notifications").insert({ user_id: s.user_id, type: "journey", title, message, link: "/skill-board?journey=1", icon });
+        return !error;
+    };
+
+    /** コメントを送る：本人に通知し、提出にも残す（状態は変えない） */
+    const sendComment = async (s: Sub, text: string) => {
+        const t = text.trim(); if (!t || busy) return;
+        setBusy(true);
+        const { error } = await supabase.from("journey_submissions").update({ admin_comment: t }).eq("id", s.id);
+        const kept = !error;
+        if (error && !noCommentCol(error)) { setBusy(false); alert("コメントの保存に失敗: " + error.message); return; }
+        const sent = await notify(s, "💬 冒険マップにコメントが届きました", "「" + STEP_LABEL[s.step_no] + "」：" + t, "💬");
+        setBusy(false); setBox(null);
+        if (!sent) alert("コメントは保存しましたが、本人への通知に失敗しました");
+        else if (!kept) alert("本人に通知しました。（journey_review.sql が未実行のため、コメントは通知にだけ残ります）");
+        await load();
+    };
+
+    /** 却下（差し戻し）：承認待ち → 差し戻し。理由は必須。ポイントは動かない（承認前なので付与していない） */
+    const reject = async (s: Sub, text: string) => {
+        const t = text.trim(); if (!t || busy) return;
+        if (s.status !== "pending") { alert("却下できるのは承認待ちの提出だけです"); return; }
+        setBusy(true);
+        let { error } = await supabase.from("journey_submissions").update({ status: "rejected", admin_comment: t }).eq("id", s.id);
+        if (noCommentCol(error)) ({ error } = await supabase.from("journey_submissions").update({ status: "rejected" }).eq("id", s.id));
+        if (error) { setBusy(false); alert("却下に失敗: " + error.message); return; }
+        const sent = await notify(s, "↩ 冒険マップの提出が差し戻されました", "「" + STEP_LABEL[s.step_no] + "」：" + t + "（直してもう一度送ってください）", "↩");
+        setBusy(false); setBox(null);
+        if (!sent) alert("却下しましたが、本人への通知に失敗しました");
+        await load();
+    };
+
     const revoke = async (s: Sub) => {
         setMenuOpen(null);
         if (!confirm(s.name + " さんの「" + STEP_LABEL[s.step_no] + "」の承認を取り消しますか？")) return;
@@ -117,6 +157,7 @@ export default function JourneyTab() {
 
     const pending = subs.filter(s => s.status === "pending");
     const approved = subs.filter(s => s.status === "approved");
+    const rejected = subs.filter(s => s.status === "rejected");
 
     const doneAll = doneByStep[5] || 0;
     const inProgress = new Set(subs.map(s => s.user_id)).size;
@@ -168,10 +209,13 @@ export default function JourneyTab() {
                     </div>
                     {/* 右アクション */}
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, position: "relative" }}>
-                        <button onClick={() => alert("コメント機能は準備中です")} style={{ padding: "7px 14px", borderRadius: 999, border: "1px solid rgba(167,139,250,.35)", cursor: "pointer", background: "transparent", color: "#a78bfa", fontSize: 12, fontWeight: 800 }}>💬</button>
+                        <button title="コメントを送る" onClick={() => setBox(box?.id === s.id && box.mode === "comment" ? null : { id: s.id, mode: "comment", text: "" })} style={{ padding: "7px 14px", borderRadius: 999, border: "1px solid rgba(167,139,250,.35)", cursor: "pointer", background: "transparent", color: "#a78bfa", fontSize: 12, fontWeight: 800 }}>💬</button>
                         {s.status === "pending"
                             ? <button onClick={() => approve(s)} style={{ padding: "8px 18px", borderRadius: 999, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #34d399, #10b981)", color: "#fff", fontSize: 12.5, fontWeight: 800, boxShadow: "0 2px 12px rgba(52,211,153,.35)" }}>✔ 承認</button>
-                            : <span style={{ fontSize: 12, fontWeight: 800, color: "#34d399" }}>✔ 承認済み</span>}
+                            : s.status === "rejected"
+                                ? <span style={{ fontSize: 12, fontWeight: 800, color: "#f87171" }}>↩ 差し戻し済み</span>
+                                : <span style={{ fontSize: 12, fontWeight: 800, color: "#34d399" }}>✔ 承認済み</span>}
+                        {s.status === "pending" && <button onClick={() => setBox(box?.id === s.id && box.mode === "reject" ? null : { id: s.id, mode: "reject", text: "" })} style={{ padding: "7px 14px", borderRadius: 999, border: "1px solid rgba(248,113,113,.5)", cursor: "pointer", background: "transparent", color: "#f87171", fontSize: 12.5, fontWeight: 800 }}>↩ 却下</button>}
                         <button onClick={() => setMenuOpen(menuOpen === s.id ? null : s.id)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", cursor: "pointer", background: "transparent", color: "#8b8fa8", fontSize: 16, fontWeight: 900 }}>⋯</button>
                         {menuOpen === s.id && (
                             <div style={{ position: "absolute", top: "110%", right: 0, zIndex: 10, background: "#1a1830", border: "1px solid rgba(139,92,246,.3)", borderRadius: 12, padding: 6, boxShadow: "0 8px 24px rgba(0,0,0,.5)" }}>
@@ -183,6 +227,23 @@ export default function JourneyTab() {
                 </div>
                 {/* 提出内容 */}
                 {s.review && <div style={{ fontSize: 13, color: "#c2b8ee", lineHeight: 1.7, whiteSpace: "pre-wrap", padding: "12px 14px", borderRadius: 14, background: "rgba(0,0,0,.25)", border: "1px solid rgba(255,255,255,.04)" }}>{s.review}</div>}
+                {/* 管理者からのコメント・差し戻し理由 */}
+                {s.admin_comment && (
+                    <div style={{ marginTop: 8, fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", padding: "10px 14px", borderRadius: 14, background: s.status === "rejected" ? "rgba(248,113,113,.1)" : "rgba(167,139,250,.1)", border: "1px solid " + (s.status === "rejected" ? "rgba(248,113,113,.3)" : "rgba(167,139,250,.3)"), color: s.status === "rejected" ? "#fca5a5" : "#d8ccff" }}>
+                        <b style={{ marginRight: 8 }}>{s.status === "rejected" ? "↩ 差し戻し理由" : "💬 送ったコメント"}</b>{s.admin_comment}
+                    </div>
+                )}
+                {/* コメント／却下の入力欄 */}
+                {box?.id === s.id && (
+                    <div style={{ marginTop: 10, padding: 12, borderRadius: 14, background: "rgba(0,0,0,.3)", border: "1px solid " + (box.mode === "reject" ? "rgba(248,113,113,.4)" : "rgba(167,139,250,.4)") }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: box.mode === "reject" ? "#fca5a5" : "#c4b5fd", marginBottom: 6 }}>{box.mode === "reject" ? "↩ 却下する理由（必須）：本人に通知され、もう一度提出できる状態に戻ります" : "💬 コメント：本人に通知されます（承認・却下はしません）"}</div>
+                        <textarea autoFocus value={box.text} onChange={(e) => setBox({ ...box, text: e.target.value })} rows={3} placeholder={box.mode === "reject" ? "例：感想が短いので、学んだことを3つ書いてください" : "例：いいね！次のSTEPも期待してます"} style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,.15)", background: "rgba(0,0,0,.35)", color: "#f9fafb", fontSize: 14, lineHeight: 1.6, resize: "vertical", outline: "none", fontFamily: "inherit" }} />
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+                            <button onClick={() => setBox(null)} disabled={busy} style={{ padding: "8px 16px", borderRadius: 999, border: "1px solid rgba(255,255,255,.15)", cursor: "pointer", background: "transparent", color: "#c2b8ee", fontSize: 12.5, fontWeight: 800 }}>やめる</button>
+                            <button onClick={() => (box.mode === "reject" ? reject(s, box.text) : sendComment(s, box.text))} disabled={busy || !box.text.trim()} style={{ padding: "8px 18px", borderRadius: 999, border: "none", cursor: busy || !box.text.trim() ? "not-allowed" : "pointer", opacity: busy || !box.text.trim() ? 0.5 : 1, background: box.mode === "reject" ? "linear-gradient(135deg,#f87171,#dc2626)" : "linear-gradient(135deg,#a78bfa,#7c5cf0)", color: "#fff", fontSize: 12.5, fontWeight: 800 }}>{busy ? "送信中…" : box.mode === "reject" ? "↩ 却下して通知する" : "💬 コメントを送る"}</button>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };
@@ -193,6 +254,7 @@ export default function JourneyTab() {
 
     const filteredPending = applyFilter(pending);
     const filteredApproved = applyFilter(approved);
+    const filteredRejected = filter === "pending" || filter === "approved" ? [] : applyFilter(rejected);
 
     return (
         <div style={{ padding: "8px 0" }}>
@@ -258,6 +320,17 @@ export default function JourneyTab() {
                 </button>
                 {showApproved && (filteredApproved.length === 0 ? <div style={{ fontSize: 13, color: "#6b7280" }}>まだありません</div> : filteredApproved.map(feedCard))}
             </div>
+
+            {/* 差し戻し済み（折りたたみ）：本人が出し直すと承認待ちに戻る */}
+            {filteredRejected.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                    <button onClick={() => setShowRejected(!showRejected)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, border: "1px solid rgba(255,255,255,.08)", cursor: "pointer", background: "rgba(255,255,255,.03)", color: "#c2b8ee", fontSize: 13, fontWeight: 800, marginBottom: 12 }}>
+                        <span style={{ color: "#f87171" }}>↩ 差し戻し済み</span>
+                        <span>{showRejected ? "▲" : "▼"} {filteredRejected.length}件</span>
+                    </button>
+                    {showRejected && filteredRejected.map(feedCard)}
+                </div>
+            )}
 
             {/* 名簿モーダル */}
             {roster && (

@@ -42,7 +42,7 @@ export function useJourney() {
             const [{ data: challenges }, { data: subs }, { data: jsubs }, { data: jcontents }, { data: ccomps }, { data: tattempts }, { data: prof }] = await Promise.all([
                 supabase.from("rookie_challenges").select("id, block, title").eq("is_active", true),
                 supabase.from("rookie_submissions").select("challenge_id, status").eq("user_id", user.id).eq("status", "approved"),
-                supabase.from("journey_submissions").select("step_no, status, scheduled_date, review, mtg_attended, mtg_date, event_no_cancel, event_date").eq("user_id", user.id).in("step_no", [1, 2, 3, 4, 5, 7]),
+                supabase.from("journey_submissions").select("*").eq("user_id", user.id).in("step_no", [1, 2, 3, 4, 5, 7]),
                 supabase.from("contents").select("id, title, journey_step").gt("journey_step", 0).eq("is_active", true),
                 supabase.from("content_completions").select("content_id").eq("user_id", user.id),
                 supabase.from("test_attempts").select("test_key, passed").eq("user_id", user.id).eq("passed", true),
@@ -70,7 +70,7 @@ export function useJourney() {
             setRookieDone(done);
             setRookieTotal(total);
             const subMap: Record<number, any> = {};
-            (jsubs || []).forEach((r: any) => { subMap[r.step_no] = { status: r.status || "none", review: r.review || "", scheduled_date: r.scheduled_date || "", mtg_attended: !!r.mtg_attended, mtg_date: r.mtg_date || "", event_no_cancel: !!r.event_no_cancel, event_date: r.event_date || "" }; });
+            (jsubs || []).forEach((r: any) => { subMap[r.step_no] = { status: r.status || "none", review: r.review || "", scheduled_date: r.scheduled_date || "", mtg_attended: !!r.mtg_attended, mtg_date: r.mtg_date || "", event_no_cancel: !!r.event_no_cancel, event_date: r.event_date || "", admin_comment: r.admin_comment || "" }; });
             setSubs(subMap);
             setLoading(false);
         };
@@ -153,7 +153,7 @@ export function useJourney() {
             if (!error) setSalesLicensed(true);
         })();
     }, [userId, step6Done, salesLicensed]);
-    const EMPTY = { status: "none", review: "", scheduled_date: "", mtg_attended: false, mtg_date: "", event_no_cancel: false, event_date: "" };
+    const EMPTY = { status: "none", review: "", scheduled_date: "", mtg_attended: false, mtg_date: "", event_no_cancel: false, event_date: "", admin_comment: "" };
     const subOf = (no: number) => subs[no] || EMPTY;
     const saveSub = (no: number, st: any) => setSubs(prev => ({ ...prev, [no]: { ...(prev[no] || EMPTY), ...st } }));
     // 今いるSTEP（最初の「今ここ」。全部完了なら最後のSTEP）
@@ -163,10 +163,10 @@ export function useJourney() {
 export type Journey = ReturnType<typeof useJourney>;
 
 /** STEPの詳細カード（申請・日付入力・コンテンツ・テスト）。冒険マップ単独ページ時代のものをそのまま使う */
-export function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, doneContentIds, onOpenContent, passedTests, onGoTest, b1ok }: { step: Step; state: StepState; onCta: (path: string) => void; sub: { status: string; review: string; scheduled_date: string; mtg_attended?: boolean; mtg_date?: string; event_no_cancel?: boolean; event_date?: string }; userId: string; onSaved: (st: any) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void; passedTests: Set<string>; onGoTest: (path: string) => void; b1ok: boolean }) {
+export function StepCard({ step, state, onCta, sub, userId, onSaved, stepContents, doneContentIds, onOpenContent, passedTests, onGoTest, b1ok }: { step: Step; state: StepState; onCta: (path: string) => void; sub: { status: string; review: string; scheduled_date: string; mtg_attended?: boolean; mtg_date?: string; event_no_cancel?: boolean; event_date?: string; admin_comment?: string }; userId: string; onSaved: (st: any) => void; stepContents: Record<number, any[]>; doneContentIds: Set<string>; onOpenContent: (id: string) => void; passedTests: Set<string>; onGoTest: (path: string) => void; b1ok: boolean }) {
     const isNow = state === "now";
     const isLock = state === "lock";
-    const [reviewText, setReviewText] = useState("");
+    const [reviewText, setReviewText] = useState(sub.status === "rejected" ? sub.review || "" : "");   // 差し戻しの時は前の感想から直せる
     const [sending, setSending] = useState(false);
     const isDone = state === "done";
     return (
@@ -190,6 +190,17 @@ export function StepCard({ step, state, onCta, sub, userId, onSaved, stepContent
             )}
             {isNow && <div style={{ textAlign: "center", background: "#dcfce7", borderRadius: 12, padding: "8px 10px", fontWeight: 900, color: "#166534", fontSize: 13, marginBottom: 12 }}>📍 今ここ</div>}
             {isLock && !step.unlock && <div style={{ fontSize: 12.5, color: "#b45309", background: "#fef3c7", borderRadius: 10, padding: "8px 12px", marginBottom: 12 }}>🔒 前のSTEPをクリアするとここに来られます</div>}
+            {/* 管理者からの差し戻し・コメント */}
+            {!isLock && sub.status === "rejected" && (
+                <div style={{ fontSize: 13, lineHeight: 1.7, color: "#991b1b", background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 12, padding: "10px 12px", marginBottom: 12, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                    <b style={{ display: "block", marginBottom: 2 }}>↩ 差し戻されました。直してもう一度送ってください</b>{sub.admin_comment}
+                </div>
+            )}
+            {!isLock && sub.status !== "rejected" && sub.admin_comment && (
+                <div style={{ fontSize: 13, lineHeight: 1.7, color: "#3730a3", background: "#eef2ff", border: "1.5px solid #c7d2fe", borderRadius: 12, padding: "10px 12px", marginBottom: 12, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                    <b style={{ display: "block", marginBottom: 2 }}>💬 管理者からのコメント</b>{sub.admin_comment}
+                </div>
+            )}
 
             {/* 必修チップ（STEP3など） */}
             {step.musts && !isLock && (
