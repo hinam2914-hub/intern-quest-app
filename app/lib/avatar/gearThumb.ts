@@ -57,4 +57,7 @@ export const GEAR_BOX: Record<string, [string, number, number, number, number, n
     rogue_brooch: ["accessory", 457, 505, 110, 148, 1024, 1024],
     rogue_pendant: ["accessory", 449, 476, 126, 95, 1024, 1024],
     rogue_scarf: ["accessory", 415, 474, 262, 92, 1024, 1024],
+    archer_bow_gold: ["weapon", 229, 318, 212, 640, 1024, 1024],
+    archer_crossbow: ["weapon", 208, 672, 303, 300, 1024, 1024],
+    knight_greatsword: ["weapon", 243, 448, 184, 520, 1024, 1024],
 };

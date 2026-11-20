@@ -77,14 +77,19 @@ export type WeaponDef = {
     desc: string;
 };
 
-// 指示書§6の初期武器6種。atk などの数値は仮バランス（このファイルで後から調整可能）
+// 武器10種。値段が高い段ほど攻撃力が高い（0pt:30 ／ 300pt:36〜42 ／ 400pt:44 ／ 600pt:48 ／ 800pt:52）。
+// 数値を変えるときは battle_server.sql の battle_attack 内の表と battle_weapon_prices も同じ値にする（ダメージはサーバー側の値で決まる）
 export const WEAPONS: WeaponDef[] = [
     { key: "wood_sword",  name: "木の剣",    emoji: "🗡️", img: "/battle/weapons/wood_sword.webp", element: null,      atk: 30, skill: null,     skillRate: 0,    critBonus: 0,    desc: "はじまりの剣。属性なし" },
     { key: "fire_sword",  name: "炎の剣",    emoji: "🔥", img: "/battle/weapons/fire_sword.webp", element: "fire",    atk: 42, skill: "burn",   skillRate: 0.35, critBonus: 0,    desc: "確率でやけどを付与する" },
     { key: "thunder_bow", name: "雷の弓",    emoji: "🏹", img: "/battle/weapons/thunder_bow.webp", element: "thunder", atk: 36, skill: "double", skillRate: 0.30, critBonus: 0,    desc: "確率で2回攻撃が発動する" },
     { key: "ice_staff",   name: "氷の杖",    emoji: "❄️", img: "/battle/weapons/ice_staff.webp", element: "water",   atk: 40, skill: "freeze", skillRate: 0.30, critBonus: 0,    desc: "確率で相手を凍結させる" },
-    { key: "holy_staff",  name: "聖なる杖",  emoji: "✨", img: "/battle/weapons/holy_staff.webp", element: "light",   atk: 38, skill: "heal",   skillRate: 0.30, critBonus: 0,    desc: "確率で自分の城を回復する" },
-    { key: "dark_dagger", name: "闇の短剣",  emoji: "🌙", img: "/battle/weapons/dark_dagger.webp", element: "dark",    atk: 40, skill: null,     skillRate: 0,    critBonus: 0.15, desc: "クリティカル率が高い" },
+    { key: "holy_staff",  name: "聖なる杖",  emoji: "✨", img: "/battle/weapons/holy_staff.webp", element: "light",   atk: 44, skill: "heal",   skillRate: 0.30, critBonus: 0,    desc: "確率で自分の城を回復する" },
+    { key: "dark_dagger", name: "闇の短剣",  emoji: "🌙", img: "/battle/weapons/dark_dagger.webp", element: "dark",    atk: 44, skill: null,     skillRate: 0,    critBonus: 0.15, desc: "クリティカル率が高い" },
+    { key: "wind_spear",    name: "風の槍",       emoji: "🍃", img: "/battle/weapons/wind_spear.webp",    element: "wind",    atk: 48, skill: "double", skillRate: 0.30, critBonus: 0,    desc: "確率で2回攻撃が発動する" },
+    { key: "ice_sword",     name: "氷の剣",       emoji: "🧊", img: "/battle/weapons/ice_sword.webp",     element: "water",   atk: 48, skill: null,     skillRate: 0,    critBonus: 0.15, desc: "クリティカル率が高い" },
+    { key: "thunder_spear", name: "雷の槍",       emoji: "⚡", img: "/battle/weapons/thunder_spear.webp", element: "thunder", atk: 52, skill: "double", skillRate: 0.35, critBonus: 0,    desc: "高い確率で2回攻撃が発動する" },
+    { key: "fire_hammer",   name: "炎のハンマー", emoji: "🔨", img: "/battle/weapons/fire_hammer.webp",   element: "fire",    atk: 52, skill: "burn",   skillRate: 0.40, critBonus: 0,    desc: "高い確率でやけどを付与する" },
 ];
 
 // バトル全体の調整値（Phase 2 以降もこの値を正とする）

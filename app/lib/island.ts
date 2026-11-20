@@ -21,11 +21,12 @@ export const TREE_EMOJI: Record<string, string> = { tree_sakura: "🌸", tree_ya
 export const DECO_EMOJI: Record<string, string> = { deco_funsui: "⛲", deco_bench: "🪑", deco_gaitou: "💡", deco_yukidaruma: "⛄", deco_torii: "⛩️" };
 export const SKY_EMOJI: Record<string, string> = { sky_niji: "🌈", sky_chocho: "🦋", sky_fuusen: "🎈" };
 export const ANIMAL_EMOJI: Record<string, string> = { animal_neko: "🐈", animal_inu: "🐕", animal_usagi: "🐇", animal_tori: "🐦" };
-export const ANIMAL_NAME: Record<string, string> = { animal_neko: "ねこ", animal_inu: "いぬ", animal_usagi: "うさぎ", animal_tori: "ことり" };
+export const ANIMAL_NAME: Record<string, string> = { animal_neko: "ねこ", animal_inu: "いぬ", animal_usagi: "うさぎ", animal_tori: "ことり", animal_risu: "りす" };
 
 /** 夜の島（みんなの島・プロフィール）の地面グラデーション */
 export const GROUND_BG: Record<string, string> = {
     ground_hanabatake: "linear-gradient(180deg, #86efac, #4ade80)",
+    ground_sakura: "linear-gradient(180deg, #a7f3a0, #6ee7a0)",
     ground_yukihara: "linear-gradient(180deg, #f8fafc, #cbd5e1)",
     ground_sunahama: "linear-gradient(180deg, #fde68a, #f59e0b)",
     ground_momiji: "linear-gradient(180deg, #fdba74, #ea580c)",
@@ -33,17 +34,18 @@ export const GROUND_BG: Record<string, string> = {
 /** 昼の島（home）の上面グラデーション */
 export const GROUND_TOP: Record<string, string> = {
     ground_hanabatake: "linear-gradient(180deg, #a3e88a, #6cc255)",
+    ground_sakura: "linear-gradient(180deg, #a9ea8c, #74c85a)",
     ground_yukihara: "linear-gradient(180deg, #f4f9ff, #d3e3f2)",
     ground_sunahama: "linear-gradient(180deg, #fbe6a8, #ecc264)",
     ground_momiji: "linear-gradient(180deg, #f6b878, #e07d3a)",
 };
 
 /** 画像があるアイテム（島の描画・飾りつけ画面・ショップ一覧で使用）。素材はすべてChatGPT制作の画像をそのまま使う */
-export const TREE_IMG: Record<string, string> = { tree_sakura: "/island/trees/tree_sakura.png", tree_yashi: "/island/trees/tree_yashi.webp", tree_momiji: "/island/trees/tree_momiji.webp", tree_momi: "/island/trees/tree_momi.webp", tree_kadan: "/island/trees/tree_kadan.webp" };
-export const DECO_IMG: Record<string, string> = { deco_funsui: "/island/deco/deco_funsui.png", deco_bench: "/island/deco/deco_bench.webp", deco_gaitou: "/island/deco/deco_gaitou.webp", deco_torii: "/island/deco/deco_torii.webp", deco_yukidaruma: "/island/deco/deco_yukidaruma.webp", deco_fuusha: "/island/deco/deco_fuusha.webp", deco_takarabako: "/island/deco/deco_takarabako.webp" };
-export const SKY_IMG: Record<string, string> = { sky_niji: "/island/sky/sky_niji.png", sky_chocho: "/island/sky/sky_chocho.webp", sky_fuusen: "/island/sky/sky_fuusen.webp", sky_hikari: "/island/sky/sky_hikari.webp" };
-export const GROUND_IMG: Record<string, string> = { ground_hanabatake: "/island/ground/ground_hanabatake.png", ground_yukihara: "/island/ground/ground_yukihara.webp", ground_sunahama: "/island/ground/ground_sunahama.webp", ground_momiji: "/island/ground/ground_momiji.webp", ground_ishidatami: "/island/ground/ground_ishidatami.webp", ground_mahoujin: "/island/ground/ground_mahoujin.webp" };
-export const ANIMAL_IMG: Record<string, string> = { animal_neko: "/island/animals/cat.png", animal_inu: "/island/animals/dog.png", animal_usagi: "/island/animals/animal_usagi.webp", animal_tori: "/island/animals/animal_tori.webp" };
+export const TREE_IMG: Record<string, string> = { tree_sakura: "/island/trees/tree_sakura.png", tree_yashi: "/island/trees/tree_yashi.webp", tree_momiji: "/island/trees/tree_momiji.webp", tree_momi: "/island/trees/tree_momi.webp", tree_kadan: "/island/trees/tree_kadan.webp", tree_himawari: "/island/trees/tree_himawari.webp" };
+export const DECO_IMG: Record<string, string> = { deco_funsui: "/island/deco/deco_funsui.png", deco_bench: "/island/deco/deco_bench.webp", deco_gaitou: "/island/deco/deco_gaitou.webp", deco_torii: "/island/deco/deco_torii.webp", deco_yukidaruma: "/island/deco/deco_yukidaruma.webp", deco_fuusha: "/island/deco/deco_fuusha.webp", deco_takarabako: "/island/deco/deco_takarabako.webp", deco_ido: "/island/deco/deco_ido.webp", deco_kanban: "/island/deco/deco_kanban.webp", deco_takibi: "/island/deco/deco_takibi.webp", deco_tent: "/island/deco/deco_tent.webp", deco_hata: "/island/deco/deco_hata.webp" };
+export const SKY_IMG: Record<string, string> = { sky_niji: "/island/sky/sky_niji.webp", sky_chocho: "/island/sky/sky_chocho.webp", sky_fuusen: "/island/sky/sky_fuusen.webp", sky_hikari: "/island/sky/sky_hikari.webp", sky_kikyuu: "/island/sky/sky_kikyuu.webp", sky_hoshi: "/island/sky/sky_hoshi.webp" };
+export const GROUND_IMG: Record<string, string> = { ground_hanabatake: "/island/ground/ground_hanabatake.webp", ground_yukihara: "/island/ground/ground_yukihara.webp", ground_sunahama: "/island/ground/ground_sunahama.webp", ground_momiji: "/island/ground/ground_momiji.webp", ground_ishidatami: "/island/ground/ground_ishidatami.webp", ground_mahoujin: "/island/ground/ground_mahoujin.webp", ground_sakura: "/island/ground/ground_sakura.webp" };
+export const ANIMAL_IMG: Record<string, string> = { animal_neko: "/island/animals/animal_neko.webp", animal_inu: "/island/animals/dog.png", animal_usagi: "/island/animals/animal_usagi.webp", animal_tori: "/island/animals/animal_tori.webp", animal_risu: "/island/animals/animal_risu.webp" };
 export const ITEM_IMG: Record<string, string> = { ...TREE_IMG, ...DECO_IMG, ...SKY_IMG, ...GROUND_IMG, ...ANIMAL_IMG };
 
 /** 地面画像のうち「島の土台ごと描かれている」もの（上面＋岩の側面）。この地面のときは、CSSで描く土台の代わりに画像をそのまま島として表示する */
@@ -69,7 +71,8 @@ export function categoryOf(key: string): IslandCategory | null {
 const BASE_W: Record<string, number> = {
     tree_sakura: 34, tree_yashi: 30, tree_momiji: 34, tree_momi: 26, tree_kadan: 26,
     deco_funsui: 25, deco_bench: 26, deco_gaitou: 13, deco_torii: 27, deco_yukidaruma: 17, deco_fuusha: 24, deco_takarabako: 16, deco_hata: 13,
-    animal_neko: 14, animal_inu: 14, animal_usagi: 12, animal_tori: 10,
+    animal_neko: 14, animal_inu: 14, animal_usagi: 12, animal_tori: 10, animal_risu: 13,
+    tree_himawari: 24, deco_ido: 22, deco_kanban: 15, deco_takibi: 17, deco_tent: 27,
 };
 export function baseWidthOf(key: string): number { return BASE_W[key] || (categoryOf(key) === "tree" ? 28 : categoryOf(key) === "animal" ? 13 : 20); }
 /** 島の上面（だ円）の中に収める */

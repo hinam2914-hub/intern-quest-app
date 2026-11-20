@@ -51,7 +51,7 @@ export const GEAR: Record<JobKey, JobGear> = {
         outfit: [{ id: "knight_default", label: "ナイトの鎧", src: "ok" }],
         head: [none()],  // 肩装飾は廃止（素材の左右非対称が解消できないため）
         cape: [none(), { id: "knight_cape", label: "青のマント", src: "ok" }],
-        weapon: [none(), { id: "knight_sword", label: "剣", src: "ok" }, { id: "knight_sword_shield", label: "剣と盾", src: "ok" }],
+        weapon: [none(), { id: "knight_sword", label: "剣", src: "ok" }, { id: "knight_sword_shield", label: "剣と盾", src: "ok" }, { id: "knight_greatsword", label: "大剣", src: "ok" }],
         accessory: [none(), { id: "knight_ribbon_blue", label: "青リボン", src: "ok" }, { id: "knight_ribbon_white", label: "白リボン", src: "ok" }, { id: "knight_star", label: "星の飾り", src: "ok" }],
     },
     mage: {
@@ -65,7 +65,7 @@ export const GEAR: Record<JobKey, JobGear> = {
         outfit: [{ id: "archer_default", label: "アーチャーの軽装", src: "ok" }],
         head: [none(), { id: "archer_hat", label: "羽根付き帽子", src: "ok" }],
         cape: [none(), { id: "archer_cape", label: "緑のマント", src: "ok" }],
-        weapon: [none(), { id: "archer_bow", label: "弓（基本）", src: "ok" }, { id: "archer_bow_alt", label: "弓（別デザイン）", src: "ok" }],
+        weapon: [none(), { id: "archer_bow", label: "弓（基本）", src: "ok" }, { id: "archer_bow_alt", label: "弓（別デザイン）", src: "ok" }, { id: "archer_bow_gold", label: "白金の弓", src: "ok" }, { id: "archer_crossbow", label: "クロスボウ", src: "ok" }],
         accessory: [none(), { id: "archer_leaf", label: "葉のブローチ", src: "ok" }, { id: "archer_pouch", label: "腰ポーチ", src: "ok" }, { id: "archer_quiver", label: "矢筒", src: "ok" }, { id: "archer_flower", label: "花飾り", src: "ok" }],
     },
     healer: {
