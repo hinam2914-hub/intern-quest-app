@@ -1,5 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+// 応援掲示板（王国の応援ギルド）。見た目を変えただけで、データは従来のまま：
+// ・載るもの＝直近7日の「自動の達成」（points_history の理由から判定）＋本人の投稿（cheer_posts）。新しい順で最大120件
+// ・MVP＝リアクション合計がいちばん多い1件（0件なら出さない）。HOT＝その次の3件
+// ・リアクション＝achievement_reactions、コメント＝achievement_comments、投稿＝cheer_posts（どれも保存先・形式は不変）
+// ・画像は既存素材だけを使う（背景・青い飾り板・王冠・巻物・小旗など）。新しい画像は足していない
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { CHEER_LABEL as LABEL } from "../lib/cheer";
@@ -29,6 +34,10 @@ export default function CheerPage() {
   const [postBody, setPostBody] = useState("");
   const [postCat, setPostCat] = useState("sales");
   const [posting, setPosting] = useState(false);
+  const [postMsg, setPostMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busyKeys, setBusyKeys] = useState<Record<string, boolean>>({});   // 押した直後のリアクション（連打での二重処理を防ぐ）
+  const lock = useRef<Record<string, boolean>>({});
+  const [shown, setShown] = useState(20);
 
   const load = async (uid: string) => {
     const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
@@ -106,35 +115,49 @@ export default function CheerPage() {
   const toggle = async (uid: string, key: string, emoji: string) => {
     if (!userId) return;
     const mk = uid + "|" + key;
-    const list = reactions[mk] || [];
-    const f = list.find(r => r.emoji === emoji);
-    if (f?.mine) {
-      await supabase.from("achievement_reactions").delete().eq("target_user_id", uid).eq("target_key", key).eq("user_id", userId).eq("emoji", emoji);
-      setReactions({ ...reactions, [mk]: list.map(r => r.emoji === emoji ? { ...r, count: Math.max(0, r.count - 1), mine: false } : r).filter(r => r.count > 0) });
-    } else {
-      await supabase.from("achievement_reactions").insert({ target_user_id: uid, target_key: key, user_id: userId, emoji });
-      setReactions({ ...reactions, [mk]: f ? list.map(r => r.emoji === emoji ? { ...r, count: r.count + 1, mine: true } : r) : [...list, { emoji, count: 1, mine: true }] });
+    const lk = mk + "|" + emoji;
+    if (lock.current[lk]) return;          // 処理中の同じボタンは受け付けない
+    lock.current[lk] = true; setBusyKeys(b => ({ ...b, [lk]: true }));
+    try {
+      const list = reactions[mk] || [];
+      const f = list.find(r => r.emoji === emoji);
+      if (f?.mine) {
+        const { error } = await supabase.from("achievement_reactions").delete().eq("target_user_id", uid).eq("target_key", key).eq("user_id", userId).eq("emoji", emoji);
+        if (error) return;
+        setReactions(prev => { const l = prev[mk] || []; return { ...prev, [mk]: l.map(r => r.emoji === emoji ? { ...r, count: Math.max(0, r.count - 1), mine: false } : r).filter(r => r.count > 0) }; });
+      } else {
+        const { error } = await supabase.from("achievement_reactions").insert({ target_user_id: uid, target_key: key, user_id: userId, emoji });
+        if (error) return;
+        setReactions(prev => { const l = prev[mk] || []; const g = l.find(r => r.emoji === emoji); return { ...prev, [mk]: g ? l.map(r => r.emoji === emoji ? { ...r, count: r.count + 1, mine: true } : r) : [...l, { emoji, count: 1, mine: true }] }; });
+      }
+    } finally {
+      lock.current[lk] = false; setBusyKeys(b => { const n = { ...b }; delete n[lk]; return n; });
     }
   };
   const send = async (uid: string, key: string) => {
     const mk = uid + "|" + key;
     const body = (input[mk] || "").trim();
-    if (!body || !userId) return;
-    await supabase.from("achievement_comments").insert({ target_user_id: uid, target_key: key, user_id: userId, body });
-    setComments({ ...comments, [mk]: [...(comments[mk] || []), { name: myName || "あなた", body }] });
-    setInput({ ...input, [mk]: "" });
+    if (!body || !userId || lock.current["c|" + mk]) return;
+    lock.current["c|" + mk] = true;
+    try {
+      const { error } = await supabase.from("achievement_comments").insert({ target_user_id: uid, target_key: key, user_id: userId, body });
+      if (error) { alert("コメントを送れませんでした。もう一度お試しください。"); return; }
+      setComments(prev => ({ ...prev, [mk]: [...(prev[mk] || []), { name: myName || "あなた", body }] }));
+      setInput(prev => ({ ...prev, [mk]: "" }));
+    } finally { lock.current["c|" + mk] = false; }
   };
   const submitPost = async () => {
     const body = postBody.trim();
     if (!body || posting || !userId) return;
-    setPosting(true);
-    await supabase.from("cheer_posts").insert({ user_id: userId, body, category: postCat });
+    setPosting(true); setPostMsg(null);
+    const { error } = await supabase.from("cheer_posts").insert({ user_id: userId, body, category: postCat });
+    if (error) { setPosting(false); setPostMsg({ ok: false, text: "シェアできませんでした。入力はそのまま残っています。もう一度お試しください。" }); return; }
     setPostBody("");
     await load(userId);
-    setPosting(false);
+    setPosting(false); setPostMsg({ ok: true, text: "成果をシェアしました！" });
   };
 
-  if (loading) return <div style={{ minHeight: "100vh", background: "#0a0a14", display: "flex", alignItems: "center", justifyContent: "center", color: "#8b8fa8" }}>読み込み中...</div>;
+  if (loading) return <main className="ch-root ch-loading"><style>{CSS}</style>読み込み中…</main>;
 
   const filtered = tab === "all" ? items : items.filter(i => i.cat === tab);
   const sorted = [...items].sort((a, b) => rTotal(b) - rTotal(a));
@@ -142,92 +165,97 @@ export default function CheerPage() {
   const hot = sorted.filter(i => rTotal(i) > 0 && i !== mvp).slice(0, 3);
   // 顔アイコン：①本人のアバター ②職業キャラ ③昔の固定アバター画像 ④人型マーク（アプリ共通の優先順）
   const AV = (a: Item, size: number) => (
-    <AvatarFace src={a.face} size={size} border="2px solid rgba(139,92,246,.4)" fallback={a.avatar
-      ? <img src={`/avatars/${a.avatar}.png`} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", objectPosition: "top", background: "#1e1b3a", border: "2px solid rgba(139,92,246,.4)" }} />
-      : <div style={{ width: size, height: size, borderRadius: "50%", background: "#1e1b3a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.5, border: "2px solid rgba(139,92,246,.4)" }}>👤</div>} />
+    <AvatarFace src={a.face} size={size} border="2.5px solid #E2BF63" fallback={a.avatar
+      ? <img src={`/avatars/${a.avatar}.png`} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", objectPosition: "top", background: "#dbeafe", border: "2.5px solid #E2BF63", boxSizing: "border-box" }} />
+      : <div style={{ width: size, height: size, borderRadius: "50%", background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.5, border: "2.5px solid #E2BF63", boxSizing: "border-box" }}>👤</div>} />
   );
-
-  const CARD: React.CSSProperties = { background: "rgba(18,16,40,.8)", border: "1px solid rgba(139,92,246,.25)", borderRadius: 16 };
+  const CATS = [{ k: "sales", l: "営業成果", e: "💼" }, { k: "learn", l: "学習", e: "📖" }, { k: "other", l: "その他", e: "✨" }];
 
   return (
-    <div style={{ minHeight: "100vh", color: "#e5e7eb", padding: "0 0 80px", position: "relative" }}>
-      <div style={{ position: "fixed", inset: 0, background: "linear-gradient(165deg, #0c0a1e, #08081a 60%)", zIndex: -1 }} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 20px", position: "sticky", top: 0, background: "rgba(8,8,26,.92)", backdropFilter: "blur(10px)", borderBottom: "1px solid rgba(139,92,246,.2)", zIndex: 10 }}>
-        <span style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>📣 応援掲示板 <span style={{ fontSize: 11.5, fontWeight: 700, color: "#a78bfa", marginLeft: 6 }}>みんなの活躍を応援しよう！</span></span>
-        <button onClick={() => router.push("/mypage")} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,.15)", background: "rgba(255,255,255,.05)", color: "#9ca3af", fontWeight: 800, fontSize: 12, cursor: "pointer" }}>← 戻る</button>
-      </div>
+    <main className="ch-root">
+      <style>{CSS}</style>
+      <div className="ch-wrap">
+        {/* ヘッダー */}
+        <header className="ch-head">
+          <div className="ch-title">
+            <img src="/career/card_emblem.webp" alt="" />
+            <h1>応援掲示板</h1>
+            <p>みんなの活躍を応援しよう！</p>
+          </div>
+          <button className="ch-back" onClick={() => (window.history.length > 1 ? router.back() : router.push("/islands"))}>← 戻る</button>
+        </header>
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "18px 16px", display: "flex", flexDirection: "column", gap: 18 }}>
         {/* MVP */}
         {mvp && (
-          <div style={{ ...CARD, background: "linear-gradient(135deg, rgba(139,92,246,.2), rgba(18,16,40,.9))", border: "1px solid rgba(167,139,250,.45)", padding: "22px 24px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 3, color: "#e9d5ff", marginBottom: 8, textShadow: "0 0 10px rgba(139,92,246,.8)" }}>👑 TODAY'S MVP</div>
-              {AV(mvp, 72)}
-              <div style={{ marginTop: 8, padding: "3px 12px", borderRadius: 20, background: "linear-gradient(135deg,#8b5cf6,#6366f1)", fontSize: 10.5, fontWeight: 900, color: "#fff" }}>本日のMVP</div>
+          <section className="ch-mvp">
+            <i className="ch-gem" aria-hidden />
+            <div className="ch-mvp-l">
+              <div className="ch-mvp-tag">👑 TODAY&apos;S MVP</div>
+              <div className="ch-mvp-av">
+                <img className="crown" src="/tests/crown.webp" alt="" />
+                {AV(mvp, 92)}
+              </div>
+              <div className="ch-mvp-pill">本日のMVP</div>
             </div>
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", marginBottom: 5, textShadow: "0 0 18px rgba(167,139,250,.6)" }}>🏆 {mvp.text}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#c4b5fd", marginBottom: 10 }}>🌿 {mvp.name} さん 🌿</div>
-              <div style={{ fontSize: 13, color: "#8b8fa8" }}>応援数 <span style={{ fontSize: 26, fontWeight: 900, color: "#34d399", textShadow: "0 0 12px rgba(52,211,153,.5)" }}>{rTotal(mvp)}</span></div>
+            <div className="ch-mvp-r">
+              <div className="ch-mvp-text">🏆 {mvp.text}</div>
+              <div className="ch-mvp-name">🌿 {mvp.name} さん 🌿</div>
+              <div className="ch-mvp-cnt"><span>応援数</span><b>{rTotal(mvp)}</b></div>
             </div>
-          </div>
+          </section>
         )}
 
         {/* HOT */}
         {hot.length > 0 && (
-          <div>
-            <div style={{ fontSize: 13.5, fontWeight: 900, color: "#f9a8d4", marginBottom: 10 }}>🔥 HOT！みんなが注目している活躍</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+          <section>
+            <div className="ch-h2"><h2>🔥 HOT！みんなが注目している活躍</h2></div>
+            <div className="ch-hot">
               {hot.map((h, i) => (
-                <div key={h.key} style={{ ...CARD, padding: "14px 14px", border: `1px solid ${i === 0 ? "rgba(251,191,36,.5)" : "rgba(139,92,246,.35)"}` }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 6, background: i === 0 ? "#f59e0b" : "#6d28d9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: "#fff", flexShrink: 0 }}>{i + 1}</div>
-                    {AV(h, 42)}
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 11.5, color: "#c7c9dd" }}>{h.name} さん</div>
-                      <div style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", lineHeight: 1.35 }}>{h.text}</div>
-                    </div>
+                <div key={h.uid + "|" + h.key} className={"ch-hot-c" + (i === 0 ? " top" : "")}>
+                  <div className="ch-hot-h">
+                    <span className="no">{i + 1}</span>
+                    {AV(h, 44)}
+                    <div className="tx"><small>{h.name} さん</small><b>{h.text}</b></div>
                   </div>
-                  <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-                    {(reactions[h.uid + "|" + h.key] || []).map(r => (
-                      <span key={r.emoji} style={{ fontSize: 11.5, fontWeight: 800, color: "#c7c9dd", padding: "3px 8px", borderRadius: 12, background: "rgba(255,255,255,.06)" }}>{r.emoji} {r.count}</span>
-                    ))}
+                  <div className="ch-hot-r">
+                    {(reactions[h.uid + "|" + h.key] || []).map(r => <span key={r.emoji}>{r.emoji} {r.count}</span>)}
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
         {/* 投稿フォーム */}
-        <div style={{ ...CARD, padding: "16px 18px" }}>
-          <div style={{ fontSize: 14, fontWeight: 900, color: "#a78bfa", marginBottom: 10, textShadow: "0 0 8px rgba(139,92,246,.4)" }}>⚔️ クエスト達成報告</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-            {[{ k: "sales", l: "💼 営業成果" }, { k: "learn", l: "📖 学習" }, { k: "other", l: "✨ その他" }].map(c => (
-              <button key={c.k} onClick={() => setPostCat(c.k)} style={{ padding: "6px 13px", borderRadius: 16, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 800, background: postCat === c.k ? "linear-gradient(135deg,#8b5cf6,#6366f1)" : "rgba(255,255,255,.06)", color: postCat === c.k ? "#fff" : "#9ca3af" }}>{c.l}</button>
+        <section className="ch-panel">
+          <div className="ch-ph"><img src="/tests/challenge.webp" alt="" /><h2>クエスト達成報告</h2></div>
+          <div className="ch-cats" role="group" aria-label="カテゴリ">
+            {CATS.map(c => (
+              <button key={c.k} type="button" className={"ch-cat" + (postCat === c.k ? " on" : "")} aria-pressed={postCat === c.k} onClick={() => setPostCat(c.k)}>{c.e} {c.l}</button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input value={postBody} onChange={(e) => setPostBody(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitPost()} placeholder={PLACEHOLDERS[Math.floor(Date.now() / 60000) % PLACEHOLDERS.length]} style={{ flex: 1, padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,.12)", background: "rgba(0,0,0,.3)", color: "#f9fafb", fontSize: 13.5, outline: "none" }} />
-            <button onClick={submitPost} disabled={posting} style={{ padding: "11px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 900, background: "linear-gradient(135deg,#8b5cf6,#6366f1)", color: "#fff", opacity: posting ? 0.6 : 1 }}>{posting ? "送信中..." : "成果をシェアする 🚀"}</button>
+          <div className="ch-form">
+            <input value={postBody} onChange={(e) => { setPostBody(e.target.value); if (postMsg) setPostMsg(null); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) submitPost(); }} placeholder={PLACEHOLDERS[Math.floor(Date.now() / 60000) % PLACEHOLDERS.length]} aria-label="達成したこと" disabled={posting} />
+            <button type="button" className="ch-send" onClick={submitPost} disabled={posting || !postBody.trim()}>{posting ? "送信中…" : "成果をシェアする 🚀"}</button>
           </div>
-        </div>
+          {postMsg && <div className={"ch-msg " + (postMsg.ok ? "ok" : "ng")} role="status">{postMsg.ok ? "✓ " : ""}{postMsg.text}</div>}
+        </section>
 
         {/* 成長ログ */}
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 900, color: "#a78bfa" }}>📜 みんなの成長ログ</div>
-            <div style={{ display: "flex", gap: 6 }}>
-              {[{ k: "all", l: "すべて" }, { k: "sales", l: "営業成果" }, { k: "learn", l: "学習" }, { k: "other", l: "その他" }].map(t => (
-                <button key={t.k} onClick={() => setTab(t.k as any)} style={{ padding: "6px 12px", borderRadius: 14, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 800, background: tab === t.k ? "rgba(139,92,246,.35)" : "rgba(255,255,255,.05)", color: tab === t.k ? "#e9d5ff" : "#8b8fa8" }}>{t.l}</button>
+        <section>
+          <div className="ch-h2 bar">
+            <img src="/rookie/section_quill.webp" alt="" />
+            <h2>みんなの成長ログ</h2>
+            <div className="ch-filter" role="group" aria-label="絞り込み">
+              {[{ k: "all", l: "すべて" }, ...CATS].map(t => (
+                <button key={t.k} type="button" className={tab === t.k ? "on" : ""} aria-pressed={tab === t.k} onClick={() => { setTab(t.k as any); setShown(20); }}>{t.l}</button>
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: "58vh", overflowY: "auto", paddingRight: 6 }}>
+          <div className="ch-list">
             {filtered.length === 0 ? (
-              <div style={{ textAlign: "center", color: "#6b7280", fontSize: 13, padding: 30 }}>まだ投稿がありません</div>
-            ) : filtered.map((a) => {
+              <div className="ch-empty">まだ投稿がありません</div>
+            ) : filtered.slice(0, shown).map((a) => {
               const mk = a.uid + "|" + a.key;
               const rs = reactions[mk] || [];
               const cs = comments[mk] || [];
@@ -236,58 +264,184 @@ export default function CheerPage() {
               const total = rs.reduce((sum, r) => sum + r.count, 0);
               const isHotCard = total >= 3;
               return (
-                <div key={mk} style={{ ...CARD, padding: "13px 15px", position: "relative", border: `1px solid ${isHotCard ? catSt.color + "88" : "rgba(139,92,246,.25)"}`, boxShadow: isHotCard ? `0 0 14px ${catSt.color}33` : "none" }}>
-                  {isHotCard && <span style={{ position: "absolute", top: -9, right: 12, padding: "2px 10px", borderRadius: 10, background: "linear-gradient(135deg,#f97316,#ec4899)", fontSize: 9.5, fontWeight: 900, color: "#fff" }}>🔥 HOT</span>}
-                  <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 11, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: catSt.color + "22", border: `1px solid ${catSt.color}55` }}>
-                      <span style={{ fontSize: 16, lineHeight: 1 }}>{a.icon}</span>
-                      <span style={{ fontSize: 7.5, fontWeight: 900, color: catSt.color, marginTop: 1 }}>{catSt.label}</span>
-                    </div>
-                    {AV(a, 38)}
-                    <span style={{ flex: 1, fontSize: 13, color: "#e5e7eb", lineHeight: 1.5, minWidth: 0 }}>
-                      <strong style={{ fontWeight: 800, color: "#c4b5fd" }}>{a.name}</strong> さんが <strong style={{ fontWeight: 800 }}>{a.text}</strong>
-                    </span>
-                    <span style={{ fontSize: 10.5, color: "#6b7280", flexShrink: 0 }}>{a.when}</span>
+                <article key={mk} className={"ch-card" + (isHotCard ? " hot" : "")}>
+                  {isHotCard && <span className="ch-hotbadge">🔥 HOT</span>}
+                  <div className="ch-card-h">
+                    <span className={"ch-badge c-" + (CAT_STYLE[a.cat] ? a.cat : "other")}>{a.icon} {catSt.label}</span>
+                    <time>{a.when}</time>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
+                  <div className="ch-card-b">
+                    {AV(a, 44)}
+                    <p><strong className="nm">{a.name}</strong> さんが <strong>{a.text}</strong></p>
+                  </div>
+                  <div className="ch-reacts">
                     {EMOJIS.map(em => {
                       const r = rs.find(x => x.emoji === em);
                       return (
-                        <button key={em} onClick={() => toggle(a.uid, a.key, em)} onMouseEnter={(e) => { (e.target as HTMLElement).style.transform = "scale(1.12)"; }} onMouseLeave={(e) => { (e.target as HTMLElement).style.transform = "scale(1)"; }} style={{ padding: "5px 12px", borderRadius: 20, cursor: "pointer", fontSize: 13, fontWeight: 800, transition: "transform .12s ease, box-shadow .12s ease", border: `1.5px solid ${r?.mine ? "rgba(167,139,250,.7)" : "rgba(255,255,255,.12)"}`, background: r?.mine ? "rgba(139,92,246,.3)" : "rgba(255,255,255,.03)", color: "#e5e7eb", boxShadow: r?.mine ? "0 0 8px rgba(139,92,246,.35)" : "none" }}>
-                          {em}{r && r.count > 0 ? ` ${r.count}` : ""}
+                        <button key={em} type="button" className={"ch-re" + (r?.mine ? " mine" : "")} aria-pressed={!!r?.mine} aria-label={`${em} で応援${r?.mine ? "（応援済み）" : ""}`} disabled={!!busyKeys[mk + "|" + em]} onClick={() => toggle(a.uid, a.key, em)}>
+                          <span>{em}</span>{r && r.count > 0 ? <b>{r.count}</b> : null}
                         </button>
                       );
                     })}
-                    <button onClick={() => setOpen(isOpen ? null : mk)} style={{ padding: "4px 10px", borderRadius: 18, cursor: "pointer", fontSize: 12, fontWeight: 700, border: "1px solid rgba(255,255,255,.1)", background: "transparent", color: "#8b8fa8" }}>
-                      💬{cs.length > 0 ? ` ${cs.length}` : ""}
+                    <button type="button" className={"ch-re cm" + (isOpen ? " mine" : "")} aria-expanded={isOpen} aria-label="コメント" onClick={() => setOpen(isOpen ? null : mk)}>
+                      <span>💬</span>{cs.length > 0 ? <b>{cs.length}</b> : null}
                     </button>
                   </div>
                   {(isOpen || cs.length > 0) && (
-                    <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 6 }}>
-                      {cs.map((c, ci) => (
-                        <div key={ci} style={{ fontSize: 12, color: "#e5e7eb", padding: "7px 11px", borderRadius: 9, background: "rgba(255,255,255,.05)" }}>
-                          <strong style={{ fontWeight: 800, color: "#c4b5fd" }}>{c.name}</strong>: {c.body}
-                        </div>
-                      ))}
+                    <div className="ch-cms">
+                      {cs.map((c, ci) => <div key={ci} className="ch-cm"><strong>{c.name}</strong>: {c.body}</div>)}
                       {isOpen && (
-                        <div style={{ display: "flex", gap: 6 }}>
-                          <input value={input[mk] || ""} onChange={(e) => setInput({ ...input, [mk]: e.target.value })} onKeyDown={(e) => e.key === "Enter" && send(a.uid, a.key)} placeholder="応援コメントを送る" style={{ flex: 1, padding: "8px 12px", borderRadius: 9, border: "1px solid rgba(255,255,255,.12)", background: "rgba(0,0,0,.3)", color: "#f9fafb", fontSize: 12.5, outline: "none" }} />
-                          <button onClick={() => send(a.uid, a.key)} style={{ padding: "8px 15px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 800, background: "linear-gradient(135deg,#8b5cf6,#6366f1)", color: "#fff" }}>送信</button>
+                        <div className="ch-cmform">
+                          <input value={input[mk] || ""} onChange={(e) => setInput({ ...input, [mk]: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) send(a.uid, a.key); }} placeholder="応援コメントを送る" aria-label="応援コメント" />
+                          <button type="button" onClick={() => send(a.uid, a.key)} disabled={!(input[mk] || "").trim()}>送信</button>
                         </div>
                       )}
                     </div>
                   )}
-                </div>
+                </article>
               );
             })}
+            {filtered.length > shown && <button type="button" className="ch-more" onClick={() => setShown(shown + 20)}>もっと見る（残り{filtered.length - shown}件）</button>}
           </div>
-        </div>
+        </section>
 
-        <div style={{ ...CARD, textAlign: "center", padding: "18px", background: "linear-gradient(135deg, rgba(49,32,95,.5), rgba(16,14,42,.85))" }}>
-          <div style={{ fontSize: 12, color: "#c7c9dd", marginBottom: 4 }}>一人ひとりの挑戦が、チーム全体の力になります。</div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: "#c4b5fd" }}>さあ、今日も一緒に最高の未来へ進もう！🚀</div>
-        </div>
+        {/* フッター */}
+        <footer className="ch-foot">
+          <p>一人ひとりの挑戦が、チーム全体の力になります。</p>
+          <b>さあ、今日も一緒に最高の未来へ進もう！🚀</b>
+        </footer>
       </div>
-    </div>
+
+      <div className="ch-nav">
+        <div className="band" />
+        {[{ k: "home", l: "ホーム", h: "/home", img: "/home/nav_home_active.webp" }, { k: "rank", l: "ランキング", h: "/ranking", img: "/home/nav_trophy.webp" }, { k: "house", l: "おうち", h: "/mypage", img: "/home/nav_house.webp" }, { k: "menu", l: "メニュー", h: "/menu", img: "" }].map((t) => (
+          <button key={t.k} onClick={() => router.push(t.h)}>{t.img ? <img src={t.img} alt="" /> : <span>☰</span>}<i>{t.l}</i></button>
+        ))}
+      </div>
+    </main>
   );
 }
+
+const CSS = `
+.ch-root{min-height:100vh;min-height:100dvh;overflow-x:clip;background:url(/home/bg_mobile.webp) center top / cover no-repeat fixed,#bfe3f5;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:#23284a;padding:12px 10px calc(108px + env(safe-area-inset-bottom));box-sizing:border-box}
+@media (min-width:700px){ .ch-root{background-image:url(/home/bg_pc.webp);padding-top:20px} }
+.ch-root *{box-sizing:border-box}
+.ch-loading{display:flex;align-items:center;justify-content:center;font-weight:900;color:#17397d}
+.ch-wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.ch-head{display:flex;align-items:center;gap:12px}
+.ch-title{flex:1;min-width:0;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 26px 10px 16px;background:linear-gradient(180deg,#fffefa,#f8eed8);border:3px solid #e2bf63;border-radius:20px;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 4px rgba(226,191,99,.35),0 8px 18px rgba(16,47,112,.3)}
+.ch-title img{width:44px;height:auto;flex-shrink:0;margin:-18px 0 -14px;filter:drop-shadow(0 3px 5px rgba(16,47,112,.35))}
+.ch-title h1{margin:0;font-size:clamp(22px,5.6vw,32px);font-weight:900;color:#17307a;letter-spacing:.08em;white-space:nowrap}
+.ch-title p{margin:0;padding-left:14px;border-left:2px solid #e2c98c;font-size:clamp(12.5px,3.3vw,16px);font-weight:800;color:#2a4aa6}
+.ch-back{flex-shrink:0;min-height:48px;padding:8px 20px;border:3px solid #f5d77e;border-radius:14px;background:linear-gradient(180deg,#3b78e0,#1746b0 55%,#12358f);color:#fff;font-size:15px;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:inset 0 2px 0 rgba(255,255,255,.3),0 6px 14px rgba(16,47,112,.4);white-space:nowrap}
+.ch-mvp{position:relative;display:flex;align-items:center;gap:26px;padding:22px 30px 20px;background:radial-gradient(ellipse at 80% 20%,rgba(255,236,170,.55),rgba(255,236,170,0) 55%),linear-gradient(180deg,#fffefa,#f6e9c8);border:4px solid #e2bf63;border-radius:24px;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 5px rgba(226,191,99,.4),0 12px 28px rgba(16,47,112,.35)}
+.ch-gem{position:absolute;left:50%;top:-14px;width:24px;height:24px;transform:translateX(-50%) rotate(45deg);background:linear-gradient(135deg,#8fd0ff,#2f6ad1 55%,#17397d);border:2.5px solid #f1cf6b;border-radius:4px;box-shadow:0 2px 6px rgba(16,47,112,.4)}
+.ch-mvp-l{flex-shrink:0;display:flex;flex-direction:column;align-items:center}
+.ch-mvp-tag{padding:5px 18px;background:linear-gradient(180deg,#2a4aa6,#172f78);border:2px solid #f1cf6b;border-radius:999px;color:#fff;font-size:14px;font-weight:900;letter-spacing:.12em;white-space:nowrap;box-shadow:0 4px 10px rgba(16,47,112,.3)}
+.ch-mvp-av{position:relative;margin-top:34px}
+.ch-mvp-av .crown{position:absolute;left:50%;top:-40px;width:64px;height:auto;transform:translateX(-50%);z-index:2;filter:drop-shadow(0 3px 5px rgba(16,47,112,.35));pointer-events:none}
+.ch-mvp-pill{margin-top:-10px;position:relative;z-index:2;padding:4px 20px;background:linear-gradient(180deg,#3b78e0,#1746b0);border:2px solid #f5d77e;border-radius:999px;color:#fff;font-size:12.5px;font-weight:900;box-shadow:0 3px 8px rgba(16,47,112,.3)}
+.ch-mvp-r{flex:1;min-width:0}
+.ch-mvp-text{font-size:clamp(18px,4.2vw,26px);font-weight:900;color:#17307a;line-height:1.4;overflow-wrap:anywhere}
+.ch-mvp-name{margin-top:6px;font-size:17px;font-weight:900;color:#1746b0}
+.ch-mvp-cnt{display:inline-flex;align-items:center;margin-top:12px;border:2px solid #e2bf63;border-radius:999px;background:#fff;overflow:hidden;box-shadow:0 3px 8px rgba(16,47,112,.18)}
+.ch-mvp-cnt span{padding:6px 14px;font-size:14px;font-weight:900;color:#3a2f12}
+.ch-mvp-cnt b{padding:2px 22px;background:linear-gradient(180deg,#2a4aa6,#172f78);color:#ffd95e;font-size:26px;font-weight:900;line-height:1.3}
+.ch-h2{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ch-h2 h2{margin:0;padding:6px 18px;background:rgba(255,253,246,.95);border:2px solid #e2bf63;border-radius:999px;font-size:15px;font-weight:900;color:#9a3412;box-shadow:0 4px 10px rgba(16,47,112,.18)}
+.ch-h2.bar{flex-wrap:wrap;padding:8px 12px 8px 8px;background:linear-gradient(180deg,#2a4aa6,#172f78);border:2.5px solid #f1cf6b;border-radius:16px;box-shadow:0 6px 14px rgba(16,47,112,.3)}
+.ch-h2.bar img{width:40px;height:auto;margin:-10px 0 -8px;flex-shrink:0}
+.ch-h2.bar h2{flex:1;min-width:0;padding:0 4px;background:none;border:none;box-shadow:none;color:#fff;font-size:17px;letter-spacing:.05em;white-space:nowrap}
+.ch-filter{display:flex;gap:6px;flex-wrap:wrap}
+.ch-filter button{min-height:40px;padding:6px 15px;border:2px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(255,255,255,.1);color:#e7ecff;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;white-space:nowrap}
+.ch-filter button.on{background:linear-gradient(180deg,#5a9bf5,#2f6ad1);border-color:#f5d77e;color:#fff;box-shadow:0 0 0 2px rgba(245,215,126,.35)}
+.ch-hot{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.ch-hot-c{padding:12px 14px;background:linear-gradient(180deg,#fffefb,#fbf2de);border:2.5px solid #ecd9a6;border-radius:16px;box-shadow:0 4px 10px rgba(16,47,112,.16);min-width:0}
+.ch-hot-c.top{border-color:#f0b63c}
+.ch-hot-h{display:flex;align-items:center;gap:10px}
+.ch-hot-h .no{flex-shrink:0;width:26px;height:26px;border-radius:8px;background:#2a4aa6;color:#fff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.ch-hot-c.top .no{background:#e69a12}
+.ch-hot-h .tx{min-width:0}
+.ch-hot-h small{display:block;font-size:12px;font-weight:800;color:#7a6a45}
+.ch-hot-h b{display:block;font-size:13.5px;font-weight:900;color:#17307a;line-height:1.4;overflow-wrap:anywhere}
+.ch-hot-r{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ch-hot-r span{padding:2px 9px;border-radius:999px;background:#f6e7bd;font-size:12px;font-weight:900;color:#5a4a22}
+.ch-panel{padding:18px 24px 20px;background:linear-gradient(180deg,#fffdf6,#f8eed8);border:3px solid #e2bf63;border-radius:22px;box-shadow:inset 0 0 0 2px #fff,0 10px 24px rgba(16,47,112,.28)}
+.ch-ph{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.ch-ph img{width:44px;height:44px;object-fit:contain;margin:-6px 0;filter:drop-shadow(0 2px 4px rgba(16,47,112,.25))}
+.ch-ph h2{margin:0;font-size:19px;font-weight:900;color:#17307a;letter-spacing:.04em}
+.ch-cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.ch-cat{min-height:44px;padding:7px 18px;border:2.5px solid #e2c98c;border-radius:999px;background:linear-gradient(180deg,#fff,#fbf2de);color:#5a4a22;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit;white-space:nowrap}
+.ch-cat.on{background:linear-gradient(180deg,#4a6ee8,#3a2fb5);border-color:#f5d77e;color:#fff;box-shadow:0 0 0 2px #2a2390,0 4px 10px rgba(16,47,112,.35)}
+.ch-form{display:flex;gap:10px;align-items:stretch}
+.ch-form input{flex:1;min-width:0;min-height:52px;padding:0 18px;border:2px solid #e2bf63;border-radius:14px;background:#fff;color:#23284a;font-size:16px;font-weight:600;outline:none;font-family:inherit;box-shadow:inset 0 2px 4px rgba(120,80,20,.08)}
+.ch-form input:focus,.ch-cmform input:focus{border-color:#2a4aa6;box-shadow:0 0 0 3px rgba(42,74,166,.16)}
+.ch-form input::placeholder,.ch-cmform input::placeholder{color:#a79f8e}
+.ch-send{flex-shrink:0;min-height:52px;padding:8px 24px;border:3px solid #f5d77e;border-radius:14px;background:linear-gradient(180deg,#3b78e0,#1746b0 55%,#12358f);color:#fff;font-size:15.5px;font-weight:900;cursor:pointer;font-family:inherit;white-space:nowrap;box-shadow:inset 0 2px 0 rgba(255,255,255,.3),0 6px 14px rgba(16,47,112,.35)}
+.ch-send:disabled{background:linear-gradient(180deg,#9aa6c2,#74819f);border-color:#ddd6bf;cursor:not-allowed;box-shadow:none}
+.ch-msg{margin-top:10px;padding:9px 14px;border-radius:12px;font-size:13.5px;font-weight:900;line-height:1.6}
+.ch-msg.ok{background:#e3f7e8;border:2px solid #9bd8ab;color:#14602f}
+.ch-msg.ng{background:#fff5f5;border:2px solid #f0a9b5;color:#9f1d38}
+.ch-list{display:flex;flex-direction:column;gap:10px}
+.ch-empty{padding:30px 16px;text-align:center;font-size:14px;font-weight:800;color:#6b5a33;background:rgba(255,253,246,.95);border:2px dashed #e2c98c;border-radius:16px}
+.ch-card{position:relative;padding:14px 20px 14px;background:linear-gradient(180deg,#fffefb,#fdf6e6);border:2.5px solid #e2bf63;border-radius:18px;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px rgba(226,191,99,.3),0 5px 12px rgba(16,47,112,.16);min-width:0}
+.ch-card.hot{border-color:#f0a23c;box-shadow:inset 0 0 0 2px #fff,0 0 0 3px rgba(240,162,60,.25),0 5px 12px rgba(16,47,112,.16)}
+.ch-hotbadge{position:absolute;top:-11px;right:16px;padding:2px 12px;border-radius:999px;background:linear-gradient(135deg,#f97316,#ec4899);border:2px solid #fff;color:#fff;font-size:11px;font-weight:900}
+.ch-card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.ch-badge{padding:3px 12px;border-radius:999px;border:1.5px solid #f5d77e;color:#fff;font-size:12px;font-weight:900;white-space:nowrap;background:linear-gradient(180deg,#5a63e6,#3a2fb5)}
+.ch-badge.c-sales{background:linear-gradient(180deg,#3b78e0,#1746b0)}
+.ch-badge.c-learn{background:linear-gradient(180deg,#22a6c4,#0e7490)}
+.ch-card-h time{font-size:12px;font-weight:800;color:#8a7a55;white-space:nowrap}
+.ch-card-b{display:flex;align-items:center;gap:12px}
+.ch-card-b p{margin:0;min-width:0;flex:1;font-size:15px;line-height:1.7;color:#2c3147;overflow-wrap:anywhere;white-space:pre-wrap}
+.ch-card-b strong{font-weight:900;color:#17307a}
+.ch-card-b .nm{color:#1746b0}
+.ch-reacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ch-re{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:46px;height:46px;padding:0 10px;border:2.5px solid #e2c98c;border-radius:999px;background:radial-gradient(circle at 35% 30%,#fff,#f6ecd2);cursor:pointer;font-family:inherit;box-shadow:0 3px 6px rgba(120,80,20,.18);transition:transform .12s}
+.ch-re span{font-size:19px;line-height:1}
+.ch-re b{font-size:13.5px;font-weight:900;color:#5a4a22}
+.ch-re:active{transform:scale(.94)}
+.ch-re.mine{background:radial-gradient(circle at 35% 30%,#6f9df2,#1f55c0);border-color:#f5d77e;box-shadow:0 0 0 2px #1746b0,0 3px 8px rgba(16,47,112,.4)}
+.ch-re.mine b{color:#fff}
+.ch-re:disabled{opacity:.6;cursor:wait}
+.ch-re.cm{border-color:#b9c6ee}
+.ch-cms{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.ch-cm{padding:8px 12px;border-radius:12px;background:#f3ecd6;font-size:13.5px;line-height:1.6;color:#2c3147;overflow-wrap:anywhere}
+.ch-cm strong{font-weight:900;color:#1746b0}
+.ch-cmform{display:flex;gap:8px}
+.ch-cmform input{flex:1;min-width:0;min-height:46px;padding:0 14px;border:2px solid #e2c98c;border-radius:12px;background:#fff;color:#23284a;font-size:16px;outline:none;font-family:inherit}
+.ch-cmform button{flex-shrink:0;min-height:46px;padding:6px 18px;border:2px solid #f5d77e;border-radius:12px;background:linear-gradient(180deg,#3b78e0,#1746b0);color:#fff;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit}
+.ch-cmform button:disabled{opacity:.5;cursor:not-allowed}
+.ch-more{align-self:center;min-height:46px;padding:8px 26px;border:2.5px solid #7f95d6;border-radius:999px;background:#fff;color:#17397d;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 3px 8px rgba(16,47,112,.2)}
+.ch-foot{position:relative;padding:18px 20px 20px;text-align:center;background:linear-gradient(180deg,#2a4aa6,#172f78 60%,#12266a);border:3px solid #f1cf6b;border-radius:20px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.16),0 8px 18px rgba(16,47,112,.35);color:#fff}
+.ch-foot::before,.ch-foot::after{content:"";position:absolute;top:50%;width:14px;height:14px;transform:translateY(-50%) rotate(45deg);background:linear-gradient(135deg,#8fd0ff,#2f6ad1);border:2px solid #f1cf6b;border-radius:3px}
+.ch-foot::before{left:-9px}.ch-foot::after{right:-9px}
+.ch-foot p{margin:0 0 4px;font-size:13.5px;font-weight:700;color:#dbe6ff}
+.ch-foot b{display:block;font-size:clamp(15px,3.6vw,20px);font-weight:900;letter-spacing:.04em;text-shadow:0 2px 4px rgba(10,25,70,.6)}
+.ch-root button:focus-visible{outline:3px solid #2a4aa6;outline-offset:2px}
+.ch-nav{position:fixed;left:0;bottom:0;width:100%;max-width:100vw;z-index:50;display:flex;height:calc(86px + env(safe-area-inset-bottom));padding:0 10px calc(10px + env(safe-area-inset-bottom));overflow:hidden}
+.ch-nav .band{position:absolute;inset:6px 8px calc(8px + env(safe-area-inset-bottom));background:url(/home/nav_bar.webp);background-size:100% 100%;pointer-events:none}
+.ch-nav button{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding-bottom:calc(17px + env(safe-area-inset-bottom));background:transparent;border:none;cursor:pointer;color:#fff;font-family:inherit}
+.ch-nav img{height:30px}
+.ch-nav span{font-size:20px;line-height:30px}
+.ch-nav i{font-style:normal;font-size:10.5px;font-weight:800}
+@media (max-width:640px){
+  .ch-wrap{gap:14px}
+  .ch-title{padding:8px 12px 8px 10px;gap:4px 10px;border-radius:16px}
+  .ch-title img{width:34px;margin:-10px 0 -8px}
+  .ch-title p{flex-basis:100%;padding-left:0;border-left:none}
+  .ch-back{padding:8px 13px;font-size:14px}
+  .ch-mvp{flex-direction:column;gap:12px;padding:22px 14px 18px;text-align:center}
+  .ch-mvp-r{width:100%}
+  .ch-panel{padding:14px 13px 16px;border-radius:18px}
+  .ch-form{flex-direction:column}
+  .ch-send{width:100%}
+  .ch-h2.bar h2{flex-basis:calc(100% - 60px)}
+  .ch-filter{width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .ch-filter::-webkit-scrollbar{display:none}
+  .ch-filter button{flex:1 0 auto}
+  .ch-card{padding:13px 13px 12px;border-radius:16px}
+  .ch-card-b{align-items:flex-start}
+  .ch-foot{padding:16px 16px 18px}
+}
+`;
