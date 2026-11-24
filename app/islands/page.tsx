@@ -352,7 +352,7 @@ export default function IslandsGuildPage() {
                             </div>
 
                             <div className="gx-btns">
-                                <button className="gx-btn gx-btn-visit" onClick={() => router.push("/profile/" + sel.id)}>🏰 島を訪問<span>ホームを見る</span></button>
+                                <button className="gx-btn gx-btn-visit" onClick={() => router.push("/profile/" + sel.id + "?from=battle")}>🏰 島を訪問<span>ホームを見る</span></button>
                                 {!isSelf && <button className="gx-btn gx-btn-battle" onClick={() => router.push("/battle/" + sel.id)}>⚔️ バトルに挑む<span>城を攻めよう</span></button>}
                                 {!isSelf && (target?.id === sel.id
                                     ? <button className="gx-btn gx-btn-target gx-btn-target-on" onClick={clearTarget}><img src={GUILD_IMG.target} alt="" style={{ width: 18, height: 18, verticalAlign: "-3px" }} /> 攻略目標 設定中<span>タップで解除</span></button>

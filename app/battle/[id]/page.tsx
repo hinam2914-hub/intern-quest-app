@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { getLevel } from "../../lib/island";
+import AvatarFace from "../../components/AvatarFace";
 import { getCastleStage } from "../../lib/castle";
 import { JOBS, type JobKey } from "../../onboarding/job/page";
 import AvatarLayered from "../../components/AvatarLayered";
@@ -229,7 +230,7 @@ export default function BattlePage() {
                 {/* ===== 左：自分の情報 ===== */}
                 <aside className="bt-left">
                     <div className="bt-panel bt-mecard">
-                        <img className="bt-meface" src={`/jobs/${me.job}.webp`} alt="" />
+                        <AvatarFace src={{ job: me.job, cfg: me.cfg }} size={62} border="2.5px solid #fcd34d" />
                         <div>
                             <div className="bt-mename">{me.name}</div>
                             <div className="bt-mejob">{jobName(me.job)} <b>Lv.{me.level}</b></div>
@@ -254,13 +255,13 @@ export default function BattlePage() {
                     {/* VS ヘッダー */}
                     <div className="bt-vs">
                         <div className="bt-vs-side">
-                            <img src={`/jobs/${me.job}.webp`} alt="" />
+                            <AvatarFace src={{ job: me.job, cfg: me.cfg }} size={44} border="2px solid #fcd34d" />
                             <div><div className="bt-vs-name">自分の島 <b>Lv.{me.level}</b></div><div className="bt-vs-pt">⭐ バトルポイント —</div></div>
                         </div>
                         <div className="bt-vs-mark">VS</div>
                         <div className="bt-vs-side bt-vs-right">
                             <div><div className="bt-vs-name">{opp.name}の島 <b>Lv.{opp.level}</b></div><div className="bt-vs-pt">⭐ バトルポイント —</div></div>
-                            <img src={`/jobs/${opp.job}.webp`} alt="" />
+                            <AvatarFace src={{ job: opp.job, cfg: opp.cfg }} size={44} border="2px solid #fcd34d" />
                         </div>
                     </div>
 
