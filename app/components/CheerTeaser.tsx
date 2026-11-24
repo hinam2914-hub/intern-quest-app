@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { CHEER_LABEL, cheerWhen } from "../lib/cheer";
-import AvatarFace, { faceSourceOf, type FaceSource } from "./AvatarFace";
+import AvatarFace, { OldAvatarFace, unifiedFaceSource, type FaceSource } from "./AvatarFace";
 
-type Row = { key: string; uid: string; face: FaceSource | null; name: string; icon: string; text: string; when: string; manual: boolean; reacts: number; comments: number };
+type Row = { key: string; uid: string; face: FaceSource | null; old: string | null; name: string; icon: string; text: string; when: string; manual: boolean; reacts: number; comments: number };
 
 export default function CheerTeaser({ limit = 3 }: { limit?: number }) {
   const router = useRouter();
@@ -36,9 +36,9 @@ export default function CheerTeaser({ limit = 3 }: { limit?: number }) {
           keys.length ? supabase.from("achievement_reactions").select("target_user_id,target_key").in("target_key", keys) : Promise.resolve({ data: [] as any[] }),
           keys.length ? supabase.from("achievement_comments").select("target_user_id,target_key").in("target_key", keys) : Promise.resolve({ data: [] as any[] }),
         ]);
-        const nameOf: Record<string, string> = {}; const faceOf: Record<string, FaceSource> = {}; (profs || []).forEach((p: any) => { nameOf[p.id] = p.name; faceOf[p.id] = faceSourceOf(p); });
+        const nameOf: Record<string, string> = {}; const faceOf: Record<string, FaceSource> = {}; const oldOf: Record<string, string | null> = {}; (profs || []).forEach((p: any) => { nameOf[p.id] = p.name; faceOf[p.id] = unifiedFaceSource(p); oldOf[p.id] = p.avatar_config?.id || null; });
         const cnt = (list: any[] | null, t: any) => (list || []).filter((r: any) => r.target_key === t.key && r.target_user_id === t.uid).length;
-        if (alive) setRows(top.map((t) => ({ key: t.uid + "|" + t.key, uid: t.uid, face: faceOf[t.uid] || null, name: nameOf[t.uid] || "メンバー", icon: t.icon, text: t.text, when: cheerWhen(t.created_at), manual: t.manual, reacts: cnt(rs as any, t), comments: cnt(cs as any, t) })));
+        if (alive) setRows(top.map((t) => ({ key: t.uid + "|" + t.key, uid: t.uid, face: faceOf[t.uid] || null, old: oldOf[t.uid] || null, name: nameOf[t.uid] || "メンバー", icon: t.icon, text: t.text, when: cheerWhen(t.created_at), manual: t.manual, reacts: cnt(rs as any, t), comments: cnt(cs as any, t) })));
       } catch { if (alive) setRows([]); }
     })();
     return () => { alive = false; };
@@ -59,7 +59,7 @@ export default function CheerTeaser({ limit = 3 }: { limit?: number }) {
           {rows.map((r) => (
             <button key={r.key} onClick={() => router.push("/cheer")} style={{ textAlign: "left", display: "flex", gap: 9, alignItems: "flex-start", padding: "10px 12px", borderRadius: 14, border: "2px solid #ecd9a6", background: "linear-gradient(180deg,#fffefa,#fbf2de)", cursor: "pointer", fontFamily: "inherit", color: "inherit", minWidth: 0 }}>
               <span style={{ position: "relative", flexShrink: 0, display: "block", width: 44, height: 44 }}>
-                <AvatarFace src={r.face} size={44} border="2px solid #E2BF63" fallback={<span style={{ width: 44, height: 44, borderRadius: "50%", background: "#dbeafe", border: "2px solid #E2BF63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxSizing: "border-box" }} aria-hidden>👤</span>} />
+                <AvatarFace src={r.face} size={44} border="2px solid #E2BF63" fallback={r.old ? <OldAvatarFace id={r.old} size={44} border="2px solid #E2BF63" /> : <span style={{ width: 44, height: 44, borderRadius: "50%", background: "#dbeafe", border: "2px solid #E2BF63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxSizing: "border-box" }} aria-hidden>👤</span>} />
                 <span style={{ position: "absolute", right: -5, bottom: -5, width: 22, height: 22, borderRadius: "50%", background: "#fff", border: "1.5px solid #E2BF63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, lineHeight: 1 }} aria-hidden>{r.icon}</span>
               </span>
               <span style={{ minWidth: 0, flex: 1 }}>

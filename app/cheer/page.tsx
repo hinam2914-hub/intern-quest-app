@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { CHEER_LABEL as LABEL } from "../lib/cheer";
-import AvatarFace, { faceSourceOf, type FaceSource } from "../components/AvatarFace";
+import AvatarFace, { OldAvatarFace, unifiedFaceSource, type FaceSource } from "../components/AvatarFace";
 
 type Item = { name: string; text: string; sub: string; icon: string; when: string; key: string; uid: string; avatar: string | null; face: FaceSource | null; cat: string; ts: number };
 
@@ -59,7 +59,7 @@ export default function CheerPage() {
     const profMap: Record<string, { name: string; avatar: string | null; face: FaceSource }> = {};
     if (ids.length) {
       const { data: profs } = await supabase.from("profiles").select("id,name,avatar_config,job_class").in("id", ids);
-      (profs || []).forEach((p: any) => { profMap[p.id] = { name: p.name, avatar: p.avatar_config?.id || null, face: faceSourceOf(p) }; });
+      (profs || []).forEach((p: any) => { profMap[p.id] = { name: p.name, avatar: p.avatar_config?.id || null, face: unifiedFaceSource(p) }; });
     }
     const list: Item[] = merged.map((u: any) => {
       const diff = Math.floor((Date.now() - new Date(u.created_at).getTime()) / 3600000);
@@ -175,7 +175,7 @@ export default function CheerPage() {
   // 顔アイコン：①本人のアバター ②職業キャラ ③昔の固定アバター画像 ④人型マーク（アプリ共通の優先順）
   const AV = (a: Item, size: number) => (
     <AvatarFace src={a.face} size={size} border="2.5px solid #E2BF63" fallback={a.avatar
-      ? <img src={`/avatars/${a.avatar}.png`} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", objectPosition: "top", background: "#dbeafe", border: "2.5px solid #E2BF63", boxSizing: "border-box" }} />
+      ? <OldAvatarFace id={a.avatar} size={size} border="2.5px solid #E2BF63" />
       : <div style={{ width: size, height: size, borderRadius: "50%", background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.5, border: "2.5px solid #E2BF63", boxSizing: "border-box" }}>👤</div>} />
   );
   const CATS = [{ k: "sales", l: "営業成果", e: "💼" }, { k: "learn", l: "学習", e: "📖" }, { k: "other", l: "その他", e: "✨" }];
