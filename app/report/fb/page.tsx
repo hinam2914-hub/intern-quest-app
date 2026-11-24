@@ -55,10 +55,10 @@ function FbInner() {
             <div className="fq-wrap">
                 <button className="fq-back" onClick={() => router.back()} aria-label="戻る">←</button>
                 <div className="fq-panel">
-                <div className="fq-title"><img src="/home/title_plate.webp" alt="" /><h1>FBリクエスト</h1></div>
+                <div className="fq-title"><img src="/home/title_plate.webp" alt="" /><h1><img src="/fb/icon_letter.webp" alt="" />FBリクエスト</h1></div>
                 {done ? (
                     <div className="fq-done" role="status">
-                        <img src="/home/check_done.webp" alt="" />
+                        <img src="/fb/icon_letter.webp" alt="" />
                         <b>{pickedName ? `${pickedName}さんに届けました` : "メンターに届けました"}</b>
                         <span>相手に通知を送りました。返事が来たら通知でお知らせします</span>
                     </div>
@@ -67,10 +67,11 @@ function FbInner() {
                         <h2 className="fq-h">誰にお願いしますか？</h2>
                         <div role="radiogroup" aria-label="FBをお願いする相手">
                             <button type="button" role="radio" aria-checked={pick === "any"} className={"fq-any" + (pick === "any" ? " on" : "")} onClick={() => setPick("any")}>
+                                <img className="ic" src="/fb/icon_dice.webp" alt="" />
                                 <span className="tx"><b>おまかせ</b><small>手の空いているメンターにお願いする</small></span>
                                 <i className="fq-radio" aria-hidden />
                             </button>
-                            <input className="fq-search" value={q} onChange={e => setQ(e.target.value)} placeholder="名前で探す" aria-label="メンターを名前で探す" />
+                            <div className="fq-searchbox"><img src="/fb/icon_search.webp" alt="" /><input className="fq-search" value={q} onChange={e => setQ(e.target.value)} placeholder="名前で探す" aria-label="メンターを名前で探す" /></div>
                             <div className="fq-list">
                                 {shown.map(p => (
                                     <button type="button" key={p.id} role="radio" aria-checked={pick === p.id} className={"fq-person" + (pick === p.id ? " on" : "")} onClick={() => setPick(p.id)}>
@@ -89,7 +90,7 @@ function FbInner() {
                         <div className="fq-sendbar">
                             {err && <div role="alert" className="fq-err">{err}</div>}
                             <button type="button" className="fq-send" onClick={send} disabled={sending}>
-                                {sending && <i className="fq-spin" aria-hidden />}<span>{sending ? "送信中..." : pickedName ? `${pickedName}さんにFBをお願いする` : "FBをお願いする"}</span>
+                                {sending ? <i className="fq-spin" aria-hidden /> : <img src="/fb/icon_send.webp" alt="" />}<span>{sending ? "送信中..." : pickedName ? `${pickedName}さんにFBをお願いする` : "FBをお願いする"}</span>
                             </button>
                         </div>
                     </>
@@ -110,7 +111,12 @@ const CSS = `
 .fq-panel{margin:34px auto 0;max-width:820px;background:linear-gradient(180deg,#fffdf6,#fbf3df);border:4px solid #e2bf63;border-radius:34px;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 4px rgba(226,191,99,.45),0 16px 36px rgba(16,47,112,.32);padding:0 34px 22px}
 .fq-title{position:relative;width:min(100%,430px);margin:-34px auto 0;container-type:inline-size}
 .fq-title img{display:block;width:100%;height:auto;filter:drop-shadow(0 6px 12px rgba(16,47,112,.35))}
-.fq-title h1{position:absolute;inset:0;margin:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:clamp(16px,7cqw,29px);font-weight:900;letter-spacing:.08em;text-shadow:0 2px 4px rgba(4,10,40,.6);white-space:nowrap}
+.fq-title h1{position:absolute;inset:0;margin:0;display:flex;align-items:center;justify-content:center;gap:.4em;color:#fff;font-size:clamp(16px,7cqw,29px);font-weight:900;letter-spacing:.08em;text-shadow:0 2px 4px rgba(4,10,40,.6);white-space:nowrap}
+.fq-title h1 img{position:static;width:1.5em;height:auto;filter:drop-shadow(0 2px 3px rgba(4,10,40,.5))}
+.fq-any .ic{width:46px;height:46px;object-fit:contain;flex-shrink:0}
+.fq-searchbox{position:relative;margin:12px 0 8px}
+.fq-searchbox img{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:22px;height:22px;object-fit:contain;pointer-events:none}
+.fq-send img{width:30px;height:30px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 2px rgba(4,10,40,.4))}
 .fq-h{margin:16px 0 10px;font-size:16px;font-weight:900;color:#17307a;display:flex;align-items:center;gap:8px}
 .fq-h.quill img{width:32px;height:32px;object-fit:contain}
 .fq-any,.fq-person{width:100%;display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;font-family:inherit;color:#17307a;border-radius:999px;border:2px solid rgba(201,169,78,.55);background:linear-gradient(180deg,#fffefb,#f8efd9);padding:6px 20px 6px 10px;min-height:60px;box-shadow:0 2px 5px rgba(120,90,30,.12)}
@@ -124,7 +130,7 @@ const CSS = `
 .fq-radio{flex-shrink:0;width:28px;height:28px;border-radius:50%;border:2.5px solid #9aa3bd;background:#fff;box-sizing:border-box;position:relative}
 .on .fq-radio{border-color:#fff;background:linear-gradient(180deg,#3f7bf0,#1f4fc8);box-shadow:0 2px 5px rgba(31,79,200,.4)}
 .on .fq-radio::after{content:"";position:absolute;left:8px;top:3px;width:6px;height:12px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
-.fq-search{width:100%;box-sizing:border-box;margin:12px 0 8px;min-height:48px;padding:10px 20px;border-radius:999px;border:2px solid rgba(201,169,78,.6);background:#fffefb;color:#17307a;font-size:16px;font-weight:700;font-family:inherit;box-shadow:inset 0 2px 4px rgba(120,90,30,.1)}
+.fq-search{width:100%;box-sizing:border-box;margin:0;min-height:48px;padding:10px 20px 10px 48px;border-radius:999px;border:2px solid rgba(201,169,78,.6);background:#fffefb;color:#17307a;font-size:16px;font-weight:700;font-family:inherit;box-shadow:inset 0 2px 4px rgba(120,90,30,.1)}
 .fq-search::placeholder,.fq-ta::placeholder{color:#8a8fa6;font-weight:600}
 .fq-list{display:grid;gap:7px;max-height:336px;overflow-y:auto;padding:2px 4px 4px 2px;overscroll-behavior:contain}
 .fq-none{font-size:13.5px;font-weight:700;color:#3a4a75;padding:10px 8px}
