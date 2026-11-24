@@ -15,6 +15,7 @@ function FbInner() {
     const [focus, setFocus] = useState("");
     const [sending, setSending] = useState(false);
     const [done, setDone] = useState(false);
+    const [err, setErr] = useState("");
 
     useEffect(() => {
         (async () => {
@@ -30,7 +31,14 @@ function FbInner() {
         setSending(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { router.push("/login"); return; }
-        await supabase.from("fb_requests").insert({ user_id: user.id, submission_id: sid, thinking_session_id: tsid, target: pick === "any" ? "any" : "mentor", focus: focus.trim() || null, assignee_id: pick === "any" ? null : pick });
+        const { data: row, error } = await supabase.from("fb_requests").insert({ user_id: user.id, submission_id: sid, thinking_session_id: tsid, target: pick === "any" ? "any" : "mentor", focus: focus.trim() || null, assignee_id: pick === "any" ? null : pick }).select("id").single();
+        if (error || !row) { setSending(false); setErr("送信できませんでした。通信を確認して、もう一度お試しください。"); return; }
+        // お願いされた人に通知する（サーバー側の関数。未導入の環境では、指名した相手にだけ直接通知を入れる）
+        const { error: nErr } = await supabase.rpc("fb_request_notify", { p_request: (row as any).id });
+        if (nErr && pick !== "any") {
+            const { data: me } = await supabase.from("profiles").select("name").eq("id", user.id).single();
+            await supabase.from("notifications").insert({ user_id: pick, type: "fb", title: "FBリクエストが届きました", message: `${(me as any)?.name || "メンバー"}さんから日報のFBをお願いされています。${focus.trim() ? "「" + focus.trim().slice(0, 60) + "」" : ""}`, link: "/fb/inbox?r=" + (row as any).id, icon: "💌" });
+        }
         setDone(true);
         setSending(false);
         setTimeout(() => router.push("/home"), 1600);
@@ -50,7 +58,7 @@ function FbInner() {
                     <div style={{ textAlign: "center", padding: "60px 0" }}>
                         <div style={{ fontSize: 64 }}>🕊️</div>
                         <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginTop: 10 }}>{pickedName ? `${pickedName}さんに届けました` : "メンターに届けました"}</div>
-                        <div style={{ fontSize: 13, color: "#c4b5fd", marginTop: 6 }}>返事が来たら島でお知らせします</div>
+                        <div style={{ fontSize: 13, color: "#c4b5fd", marginTop: 6 }}>相手に通知を送りました。返事が来たら通知でお知らせします</div>
                     </div>
                 ) : (
                     <>
@@ -72,6 +80,7 @@ function FbInner() {
                         <div style={{ fontSize: 13, color: "#c4b5fd", marginBottom: 8 }}>特に見てほしいこと（任意）</div>
                         <textarea value={focus} onChange={e => setFocus(e.target.value.slice(0, 200))} placeholder="例：アポが取れなかった原因について、自分の考え方が合っているか見てほしいです。" style={{ width: "100%", minHeight: 110, borderRadius: 14, padding: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 14, resize: "vertical", boxSizing: "border-box" }} />
                         <div style={{ textAlign: "right", fontSize: 11, color: "#6b7280", marginTop: 4 }}>{focus.length}/200</div>
+                        {err && <div role="alert" style={{ marginTop: 12, padding: "10px 12px", borderRadius: 12, background: "rgba(248,113,113,.15)", border: "1px solid rgba(248,113,113,.5)", color: "#fecaca", fontSize: 13, fontWeight: 700 }}>{err}</div>}
                         <button onClick={send} disabled={sending} style={{ width: "100%", marginTop: 16, padding: "14px 0", borderRadius: 14, border: "none", background: "linear-gradient(90deg,#8b5cf6,#a78bfa)", color: "#fff", fontSize: 15, fontWeight: 900, cursor: "pointer", boxShadow: "0 8px 24px rgba(139,92,246,0.45)" }}>{sending ? "送信中..." : pickedName ? `${pickedName}さんにFBをお願いする` : "FBをお願いする"}</button>
                     </>
                 )}

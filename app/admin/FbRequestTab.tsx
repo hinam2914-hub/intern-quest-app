@@ -67,7 +67,9 @@ export default function FbRequestTab() {
         setSaving(true);
         const { data: { user } } = await supabase.auth.getUser();
         await supabase.from("fb_requests").update({ fb_good: draft.good.trim() || null, fb_think: draft.think.trim() || null, fb_next: draft.next.trim() || null, issue_quest: draft.issue, status: "done", responder_id: user?.id || null, responded_at: new Date().toISOString() }).eq("id", r.id);
-        try { await supabase.from("notifications").insert({ user_id: r.user_id, title: draft.issue ? "💌 メンターから新しいクエストが届きました！" : "💌 メンターからFBが届きました", body: (draft.next || draft.good || draft.think).slice(0, 80), type: "fb" }); } catch { }
+        // お願いした人に通知する（サーバー側の関数。未導入の環境では直接通知を入れる）
+        { const { error: nErr } = await supabase.rpc("fb_response_notify", { p_request: r.id });
+          if (nErr) await supabase.from("notifications").insert({ user_id: r.user_id, type: "fb", title: draft.issue ? "メンターから新しいクエストが届きました" : "メンターからFBが届きました", message: (draft.next || draft.good || draft.think).slice(0, 80), link: "/report?fb=" + r.id, icon: "💌" }); }
         setSaving(false); setOpen(null); load();
     };
 

@@ -18,6 +18,7 @@ export default function FbInboxPage() {
     const [showReport, setShowReport] = useState<string | null>(null);
     const [draft, setDraft] = useState({ good: "", think: "", next: "", issue: true });
     const [saving, setSaving] = useState(false);
+    const [focusId, setFocusId] = useState<string | null>(null);
 
     const load = async (uid: string) => {
         const { data } = await supabase.from("fb_requests").select("*").or(`assignee_id.eq.${uid},and(target.eq.any,assignee_id.is.null)`).order("created_at", { ascending: false }).limit(100);
@@ -39,9 +40,16 @@ export default function FbInboxPage() {
             if (!user) { router.push("/login"); return; }
             setMeId(user.id);
             const { data: prof } = await supabase.from("profiles").select("fb_mentor").eq("id", user.id).single();
-            const ok = !!(prof as any)?.fb_mentor;
+            // FBメンター、または自分あてに指名されたリクエストがある人が見られる
+            const { count: mine } = await supabase.from("fb_requests").select("id", { count: "exact", head: true }).eq("assignee_id", user.id);
+            const ok = !!(prof as any)?.fb_mentor || (mine || 0) > 0;
             setAllowed(ok);
-            if (ok) load(user.id);
+            if (ok) {
+                await load(user.id);
+                // 通知から来たとき（?r=リクエストID）：そのリクエストの入力欄を開いた状態にする
+                const rid = new URLSearchParams(window.location.search).get("r");
+                if (rid) { setFocusId(rid); setTimeout(() => document.getElementById("fbreq-" + rid)?.scrollIntoView({ behavior: "smooth", block: "center" }), 300); }
+            }
         })();
     }, []);
 
@@ -51,10 +59,20 @@ export default function FbInboxPage() {
         if (draft.issue && !draft.next.trim()) { alert("クエストとして発行するには NEXT QUEST が必要です"); return; }
         setSaving(true);
         await supabase.from("fb_requests").update({ fb_good: draft.good.trim() || null, fb_think: draft.think.trim() || null, fb_next: draft.next.trim() || null, issue_quest: draft.issue, status: "done", responder_id: meId, responded_at: new Date().toISOString() }).eq("id", r.id);
-        try { await supabase.from("notifications").insert({ user_id: r.user_id, title: draft.issue ? "💌 メンターから新しいクエストが届きました！" : "💌 メンターからFBが届きました", body: (draft.next || draft.good || draft.think).slice(0, 80), type: "fb" }); } catch { }
+        // お願いした人に通知する（サーバー側の関数。未導入の環境では直接通知を入れる）
+        { const { error: nErr } = await supabase.rpc("fb_response_notify", { p_request: r.id });
+          if (nErr) await supabase.from("notifications").insert({ user_id: r.user_id, type: "fb", title: draft.issue ? "メンターから新しいクエストが届きました" : "メンターからFBが届きました", message: (draft.next || draft.good || draft.think).slice(0, 80), link: "/report?fb=" + r.id, icon: "💌" }); }
         setSaving(false); setOpen(null); load(meId);
     };
 
+    // 通知から開いたリクエスト：未対応なら入力欄を開く／返信済みなら「返信済み」タブを見せる
+    useEffect(() => {
+        if (!focusId) return;
+        const r = reqs.find(x => x.id === focusId); if (!r) return;
+        if (r.status === "pending") { setTab("pending"); setOpen(r.id); setDraft({ good: "", think: "", next: "", issue: true }); if (r.content) setShowReport(r.id); }
+        else setTab("done");
+        setFocusId(null);
+    }, [focusId, reqs]);
     const list = reqs.filter(r => r.status === tab);
     const ta: React.CSSProperties = { width: "100%", minHeight: 70, borderRadius: 12, padding: 10, background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 13.5, boxSizing: "border-box", resize: "vertical" };
     const btn = (active: boolean): React.CSSProperties => ({ padding: "7px 14px", borderRadius: 10, border: active ? "1.5px solid #a78bfa" : "1px solid rgba(255,255,255,0.1)", background: active ? "rgba(139,92,246,0.25)" : "rgba(255,255,255,0.05)", color: active ? "#c4b5fd" : "#9ca3af", fontWeight: 800, fontSize: 12.5, cursor: "pointer" });
@@ -67,7 +85,7 @@ export default function FbInboxPage() {
                     <div style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>💌 届いたFBリクエスト</div>
                 </div>
                 <div style={{ fontSize: 12.5, color: "#8b8fa8", marginBottom: 16, paddingLeft: 34 }}>GOOD / THINK / NEXT QUEST の3つで返す。発行ONにすると本人の島にクエストとして届く</div>
-                {allowed === false && <div style={{ color: "#f87171", fontSize: 14, padding: 20, textAlign: "center" }}>このページはFBメンターのみ見られます</div>}
+                {allowed === false && <div style={{ color: "#f87171", fontSize: 14, padding: 20, textAlign: "center" }}>あなたあてのFBリクエストはまだありません</div>}
                 {allowed && (
                     <>
                         <RecommendSkillBox />
@@ -77,7 +95,7 @@ export default function FbInboxPage() {
                         </div>
                         {list.length === 0 && <div style={{ color: "#6b7280", fontSize: 13, padding: 24, textAlign: "center" }}>{tab === "pending" ? "今は届いていません" : "まだありません"}</div>}
                         {list.map(r => (
-                            <div key={r.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 16, marginBottom: 12 }}>
+                            <div key={r.id} id={"fbreq-" + r.id} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 16, marginBottom: 12 }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                     <div><span style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>{r.name}</span><span style={{ fontSize: 11, color: "#8b8fa8", marginLeft: 8 }}>{r.assignee_id === meId ? "あなたを指名" : "おまかせ"}</span></div>
                                     <span style={{ fontSize: 11, color: "#6b7280" }}>{ago(r.created_at)}</span>
