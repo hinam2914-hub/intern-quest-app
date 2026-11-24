@@ -49,7 +49,7 @@ const GROUPS: Group[] = [
             { key: "course", label: "講座スタンプ" },
             { key: "required_check", label: "必修チェック" },
             { key: "rookie", label: "一人前チャレンジ", badge: "pendingRookie" },
-            { key: "fb_requests", label: "FBリクエスト", badge: "pendingFb" },
+            { key: "fb_requests", label: "FBリクエスト" },
             { key: "skill_check", label: "スキル認定", badge: "pendingSkill" },
             { key: "journey", label: "冒険マップ進捗", badge: "pendingJourney" },
             { key: "script_practice", label: "スクリプト練習" },
