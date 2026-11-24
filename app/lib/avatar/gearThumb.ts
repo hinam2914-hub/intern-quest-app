@@ -60,6 +60,7 @@ export const GEAR_BOX: Record<string, [string, number, number, number, number, n
     archer_bow_gold: ["weapon", 229, 318, 212, 640, 1024, 1024],
     archer_crossbow: ["weapon", 208, 672, 303, 300, 1024, 1024],
     knight_greatsword: ["weapon", 243, 448, 184, 520, 1024, 1024],
+    knight_lance: ["weapon", 217, 127, 194, 807, 1024, 1024],
     rogue_katana: ["weapon", 284, 500, 117, 460, 1024, 1024],
     rogue_cape_crimson: ["cape", 224, 447, 581, 467, 1024, 1024],
     healer_cape_pink: ["cape", 212, 450, 594, 466, 1024, 1024],

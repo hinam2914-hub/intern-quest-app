@@ -51,7 +51,7 @@ export const GEAR: Record<JobKey, JobGear> = {
         outfit: [{ id: "knight_default", label: "ナイトの鎧", src: "ok" }],
         head: [none(), { id: "knight_circlet", label: "銀のサークレット", src: "ok" }],  // 肩装飾は廃止（素材の左右非対称が解消できないため）
         cape: [none(), { id: "knight_cape", label: "青のマント", src: "ok" }, { id: "knight_cape_red", label: "赤のマント", src: "ok" }],
-        weapon: [none(), { id: "knight_sword", label: "剣", src: "ok" }, { id: "knight_sword_shield", label: "剣と盾", src: "ok" }, { id: "knight_greatsword", label: "大剣", src: "ok" }],
+        weapon: [none(), { id: "knight_sword", label: "剣", src: "ok" }, { id: "knight_sword_shield", label: "剣と盾", src: "ok" }, { id: "knight_greatsword", label: "大剣", src: "ok" }, { id: "knight_lance", label: "槍", src: "ok" }],
         accessory: [none(), { id: "knight_ribbon_blue", label: "青リボン", src: "ok" }, { id: "knight_ribbon_white", label: "白リボン", src: "ok" }, { id: "knight_star", label: "星の飾り", src: "ok" }, { id: "knight_medal", label: "金の勲章", src: "ok" }],
     },
     mage: {
