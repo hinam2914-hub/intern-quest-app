@@ -43,7 +43,7 @@ export const EYE_COLOR: Part[] = [
 /** 納品済みの目のパーツ（<目の形>__<色>）。ファイルは public/avatar/eyes/<id>__<color>.png（男女共通・1024×1024） */
 export const EYES_READY = new Set<string>(["tare__brown"]);
 /** 「目のない素体」が納品済みの組み合わせ（<base>__<skin>）。ここに無い肌の色では、目は最初の目のまま */
-export const EYES_BODY_READY = new Set<string>(["f__light", "m__light", "f__fair", "f__tan", "m__tan", "f__deep", "m__deep"]);
+export const EYES_BODY_READY = new Set<string>(["f__light", "m__light", "f__fair", "m__fair", "f__tan", "m__tan", "f__deep", "m__deep"]);
 /** その性別・肌の色で、目を選べるか */
 export const eyesSelectable = (base: Base, skin: string) => EYES_BODY_READY.has(`${base}__${skin}`);
 /** 実際に重ねる目（選べない組み合わせ・未納品のときは null＝最初の目のまま） */
