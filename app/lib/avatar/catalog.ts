@@ -43,9 +43,12 @@ export const EYES: Part[] = [
 ];
 export const EYE_COLOR: Part[] = [
     { id: "brown", label: "ブラウン", src: "ok", swatch: "#8a4a1e" },
+    { id: "black", label: "ブラック", src: "ok", swatch: "#2b1d1a" },
+    { id: "blue", label: "ブルー", src: "ok", swatch: "#2f6fd6" },
+    { id: "green", label: "グリーン", src: "ok", swatch: "#3e9b5a" },
 ];
 /** 納品済みの目のパーツ（<目の形>__<色>）。ファイルは public/avatar/eyes/<id>__<color>.png（男女共通・1024×1024） */
-export const EYES_READY = new Set<string>(["tare__brown", "maru__brown", "tsuri__brown", "jito__brown", "kire__brown"]);
+export const EYES_READY = new Set<string>(["tare__brown", "tare__black", "tare__blue", "tare__green", "maru__brown", "maru__black", "maru__blue", "maru__green", "tsuri__brown", "tsuri__black", "tsuri__blue", "tsuri__green", "jito__brown", "jito__black", "jito__blue", "jito__green", "kire__brown", "kire__black", "kire__blue", "kire__green"]);
 /** 「目のない素体」が納品済みの組み合わせ（<base>__<skin>）。ここに無い肌の色では、目は最初の目のまま */
 export const EYES_BODY_READY = new Set<string>(["f__light", "m__light", "f__fair", "m__fair", "f__tan", "m__tan", "f__deep", "m__deep"]);
 /** その性別・肌の色で、目を選べるか */
@@ -148,7 +151,7 @@ export const GEAR_READY = new Set<string>([]);
 export const HEAD_BEHIND_HAIR = new Set<string>([]);  // 後ろ配置は髪に埋もれたため不使用（前被りに戻した）
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "48";
+export const ASSET_V = "49";
 
 /** 体の「後ろ」に描くアクセサリー（背中の羽など）。マントより前、髪・体より後ろ */
 export const ACCESSORY_BEHIND = new Set<string>(["paladin_wing"]);
