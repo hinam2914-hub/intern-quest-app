@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 import AvatarLayered from "@/app/components/AvatarLayered";
-import { GEAR, HAIR, HAIR_COLOR, SKIN, EYES, EYE_COLOR, EYES_READY, eyesSelectable, DEFAULT_PRESET, defaultConfig, type AvatarConfig, type Base, type Part } from "@/app/lib/avatar/catalog";
+import { GEAR, HAIR, HAIR_COLOR, SKIN, EYES, eyeColorsFor, eyesSelectable, DEFAULT_PRESET, defaultConfig, type AvatarConfig, type Base, type Part } from "@/app/lib/avatar/catalog";
 import { JOBS, type JobKey } from "../job/page";
 
 const STEPS = ["登録", "冒険者情報", "職業", "アバター", "確認", "ライセンス", "初回クエスト"];
@@ -241,8 +241,8 @@ export default function AvatarCustomizePage() {
                                         {eyesSelectable(cfg.base, cfg.skin) ? (
                                             <>
                                                 <Opts list={EYES} value={cfg.eyes || "default"} onPick={(v) => set("eyes", v)} />
-                                                {(cfg.eyes || "default") !== "default" && EYE_COLOR.filter((c) => EYES_READY.has(`${cfg.eyes}__${c.id}`)).length > 1 && (
-                                                    <div style={{ marginTop: 8 }}><Opts list={EYE_COLOR.filter((c) => EYES_READY.has(`${cfg.eyes}__${c.id}`))} value={cfg.eyeColor || "brown"} onPick={(v) => set("eyeColor", v)} swatch /></div>
+                                                {eyeColorsFor(cfg.eyes).length > 1 && (
+                                                    <div style={{ marginTop: 8 }}><Opts list={eyeColorsFor(cfg.eyes)} value={eyeColorsFor(cfg.eyes).some((c) => c.id === cfg.eyeColor) ? (cfg.eyeColor as string) : "brown"} onPick={(v) => set("eyeColor", v)} swatch /></div>
                                                 )}
                                             </>
                                         ) : <div style={{ fontSize: 12, fontWeight: 700, opacity: .75 }}>この肌の色では、目の種類はまだ選べません（準備中）</div>}

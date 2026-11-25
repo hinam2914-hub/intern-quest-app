@@ -48,16 +48,23 @@ export const EYE_COLOR: Part[] = [
     { id: "green", label: "グリーン", src: "ok", swatch: "#3e9b5a" },
 ];
 /** 納品済みの目のパーツ（<目の形>__<色>）。ファイルは public/avatar/eyes/<id>__<color>.png（男女共通・1024×1024） */
-export const EYES_READY = new Set<string>(["tare__brown", "tare__black", "tare__blue", "tare__green", "maru__brown", "maru__black", "maru__blue", "maru__green", "tsuri__brown", "tsuri__black", "tsuri__blue", "tsuri__green", "jito__brown", "jito__black", "jito__blue", "jito__green", "kire__brown", "kire__black", "kire__blue", "kire__green"]);
+export const EYES_READY = new Set<string>(["tare__brown", "tare__black", "tare__blue", "tare__green", "maru__brown", "maru__black", "maru__blue", "maru__green", "tsuri__brown", "tsuri__black", "tsuri__blue", "tsuri__green", "jito__brown", "jito__black", "jito__blue", "jito__green", "kire__brown", "kire__black", "kire__blue", "kire__green", "pacchiri__black", "pacchiri__blue", "pacchiri__green"]);
 /** 「目のない素体」が納品済みの組み合わせ（<base>__<skin>）。ここに無い肌の色では、目は最初の目のまま */
 export const EYES_BODY_READY = new Set<string>(["f__light", "m__light", "f__fair", "m__fair", "f__tan", "m__tan", "f__deep", "m__deep"]);
 /** その性別・肌の色で、目を選べるか */
 export const eyesSelectable = (base: Base, skin: string) => EYES_BODY_READY.has(`${base}__${skin}`);
-/** 実際に重ねる目（選べない組み合わせ・未納品のときは null＝最初の目のまま） */
+/** 目の絵のファイル名に使う名前（「ぱっちり」は pacchiri。ブラウンのぱっちりは素体に描き込まれた最初の目なので絵は無い） */
+const eyeFile = (eyes?: string) => (!eyes || eyes === "default" ? "pacchiri" : eyes);
+/** その目の形で選べる瞳の色（ブラウンは必ず選べる） */
+export const eyeColorsFor = (eyes?: string): Part[] =>
+    EYE_COLOR.filter((c) => c.id === "brown" || EYES_READY.has(`${eyeFile(eyes)}__${c.id}`));
+/** 実際に重ねる目（選べない組み合わせ・未納品のとき、ぱっちり×ブラウンのときは null＝最初の目のまま） */
 export function activeEyes(c: { base: Base; skin: string; eyes?: string; eyeColor?: string }): string | null {
-    if (!c.eyes || c.eyes === "default" || !eyesSelectable(c.base, c.skin)) return null;
-    const key = `${c.eyes}__${c.eyeColor || "brown"}`;
-    return EYES_READY.has(key) ? key : EYES_READY.has(`${c.eyes}__brown`) ? `${c.eyes}__brown` : null;
+    if (!eyesSelectable(c.base, c.skin)) return null;
+    const f = eyeFile(c.eyes);
+    const key = `${f}__${c.eyeColor || "brown"}`;
+    if (EYES_READY.has(key)) return key;
+    return EYES_READY.has(`${f}__brown`) ? `${f}__brown` : null;
 }
 
 export const HAIR: Record<Base, Part[]> = {
@@ -151,7 +158,7 @@ export const GEAR_READY = new Set<string>([]);
 export const HEAD_BEHIND_HAIR = new Set<string>([]);  // 後ろ配置は髪に埋もれたため不使用（前被りに戻した）
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "49";
+export const ASSET_V = "50";
 
 /** 体の「後ろ」に描くアクセサリー（背中の羽など）。マントより前、髪・体より後ろ */
 export const ACCESSORY_BEHIND = new Set<string>(["paladin_wing"]);
