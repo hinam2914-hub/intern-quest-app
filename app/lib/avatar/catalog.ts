@@ -48,23 +48,25 @@ export const EYE_COLOR: Part[] = [
     { id: "green", label: "グリーン", src: "ok", swatch: "#3e9b5a" },
 ];
 /** 納品済みの目のパーツ（<目の形>__<色>）。ファイルは public/avatar/eyes/<id>__<color>.png（男女共通・1024×1024） */
-export const EYES_READY = new Set<string>(["tare__brown", "tare__black", "tare__blue", "tare__green", "maru__brown", "maru__black", "maru__blue", "maru__green", "tsuri__brown", "tsuri__black", "tsuri__blue", "tsuri__green", "jito__brown", "jito__black", "jito__blue", "jito__green", "kire__brown", "kire__black", "kire__blue", "kire__green", "pacchiri__black", "pacchiri__blue", "pacchiri__green"]);
+export const EYES_READY = new Set<string>(["tare__brown", "tare__black", "tare__blue", "tare__green", "maru__brown", "maru__black", "maru__blue", "maru__green", "tsuri__brown", "tsuri__black", "tsuri__blue", "tsuri__green", "jito__brown", "jito__black", "jito__blue", "jito__green", "kire__brown", "kire__black", "kire__blue", "kire__green"]);
 /** 「目のない素体」が納品済みの組み合わせ（<base>__<skin>）。ここに無い肌の色では、目は最初の目のまま */
 export const EYES_BODY_READY = new Set<string>(["f__light", "m__light", "f__fair", "m__fair", "f__tan", "m__tan", "f__deep", "m__deep"]);
 /** その性別・肌の色で、目を選べるか */
 export const eyesSelectable = (base: Base, skin: string) => EYES_BODY_READY.has(`${base}__${skin}`);
-/** 目の絵のファイル名に使う名前（「ぱっちり」は pacchiri。ブラウンのぱっちりは素体に描き込まれた最初の目なので絵は無い） */
-const eyeFile = (eyes?: string) => (!eyes || eyes === "default" ? "pacchiri" : eyes);
+/** 「ぱっちり」（素体に描き込まれた最初の目）で選べる瞳の色。ブラウンは素体そのまま。
+ *  ほかの色は、素体の目の「瞳の部分だけ」色を変えた絵を素体の上に重ねる：public/avatar/eyes/pacchiri__<色>__<base>__<skin>.png */
+export const PACCHIRI_COLORS = new Set<string>(["black", "blue", "green"]);
+const isPacchiri = (eyes?: string) => !eyes || eyes === "default";
 /** その目の形で選べる瞳の色（ブラウンは必ず選べる） */
 export const eyeColorsFor = (eyes?: string): Part[] =>
-    EYE_COLOR.filter((c) => c.id === "brown" || EYES_READY.has(`${eyeFile(eyes)}__${c.id}`));
-/** 実際に重ねる目（選べない組み合わせ・未納品のとき、ぱっちり×ブラウンのときは null＝最初の目のまま） */
-export function activeEyes(c: { base: Base; skin: string; eyes?: string; eyeColor?: string }): string | null {
+    EYE_COLOR.filter((c) => c.id === "brown" || (isPacchiri(eyes) ? PACCHIRI_COLORS.has(c.id) : EYES_READY.has(`${eyes}__${c.id}`)));
+/** 実際に重ねる目。null＝最初の目のまま。noBody=true のときは「目のない素体」を使う（ぱっちりの色違いは今の素体の上に重ねる） */
+export function activeEyes(c: { base: Base; skin: string; eyes?: string; eyeColor?: string }): { src: string; noBody: boolean } | null {
+    const col = c.eyeColor || "brown";
+    if (isPacchiri(c.eyes)) return PACCHIRI_COLORS.has(col) ? { src: `/avatar/eyes/pacchiri__${col}__${c.base}__${c.skin}.png`, noBody: false } : null;
     if (!eyesSelectable(c.base, c.skin)) return null;
-    const f = eyeFile(c.eyes);
-    const key = `${f}__${c.eyeColor || "brown"}`;
-    if (EYES_READY.has(key)) return key;
-    return EYES_READY.has(`${f}__brown`) ? `${f}__brown` : null;
+    const key = EYES_READY.has(`${c.eyes}__${col}`) ? `${c.eyes}__${col}` : EYES_READY.has(`${c.eyes}__brown`) ? `${c.eyes}__brown` : null;
+    return key ? { src: `/avatar/eyes/${key}.png`, noBody: true } : null;
 }
 
 export const HAIR: Record<Base, Part[]> = {
@@ -158,7 +160,7 @@ export const GEAR_READY = new Set<string>([]);
 export const HEAD_BEHIND_HAIR = new Set<string>([]);  // 後ろ配置は髪に埋もれたため不使用（前被りに戻した）
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "50";
+export const ASSET_V = "52";
 
 /** 体の「後ろ」に描くアクセサリー（背中の羽など）。マントより前、髪・体より後ろ */
 export const ACCESSORY_BEHIND = new Set<string>(["paladin_wing"]);
@@ -192,14 +194,14 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
     const bodyReady = BODY_READY.has(`${c.base}__${c.skin}`);
     const none = { src: "", missing: false };
     const eyeKey = bodyReady ? activeEyes(c) : null;   // 目を替えるときは「目のない素体」を使い、その上に目のパーツを重ねる
-    const body = { src: bodyReady ? `/avatar/${eyeKey ? "body_noeyes" : "body"}/${c.base}__${c.skin}.png` : null, missing: !bodyReady };
+    const body = { src: bodyReady ? `/avatar/${eyeKey?.noBody ? "body_noeyes" : "body"}/${c.base}__${c.skin}.png` : null, missing: !bodyReady };
     // フード等は髪の「後ろ」のレイヤーに描く（髪はそのまま表示）
     const headGear = gear(g.head, c.head, "head");
     const behind = HEAD_BEHIND_HAIR.has(c.head);
     const accGear = gear(g.accessory, c.accessory, "accessory");
     const accBehind = ACCESSORY_BEHIND.has(c.accessory);
     const parts: Record<Layer, { src: string | null; missing: boolean }> = {
-        cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !(hair?.src && colorOk) }, body, eyes: eyeKey ? { src: `/avatar/eyes/${eyeKey}.png`, missing: false } : none, outfit_back: out("back"), outfit_front: out("front"),
+        cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !(hair?.src && colorOk) }, body, eyes: eyeKey ? { src: eyeKey.src, missing: false } : none, outfit_back: out("back"), outfit_front: out("front"),
         head_back: behind ? headGear : none,
         hair_front: { src: hairSrc("front"), missing: !(hair?.src && colorOk) }, head: behind ? none : headGear, weapon: gear(g.weapon, c.weapon, "weapon"),
         accessory: accBehind ? none : accGear, accessory_back: accBehind ? accGear : none,
