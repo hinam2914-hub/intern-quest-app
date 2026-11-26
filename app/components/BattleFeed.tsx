@@ -8,7 +8,7 @@ import { WEAPONS } from "../lib/battle";
 import { cheerWhen } from "../lib/cheer";
 import AvatarFace, { unifiedFaceSource, type FaceSource } from "./AvatarFace";
 
-type Row = { id: string; attacker_id: string; defender_id: string; weapon_key: string; damage: number; hp_after: number; is_crit: boolean; won: boolean; created_at: string };
+type Row = { id: string; attacker_id: string; defender_id: string; weapon_key: string; damage: number; hp_after: number; is_crit: boolean; won: boolean; loot?: number | null; created_at: string };
 type Who = { name: string; face: FaceSource };
 
 export default function BattleFeed() {
@@ -54,6 +54,7 @@ export default function BattleFeed() {
                             <div className="bf-tx">
                                 <b>{nameOf(r.attacker_id)}さんが、{nameOf(r.defender_id)}さんの城{r.won ? "を落としました" : "を攻撃"}</b>
                                 <small>{wp ? wp.name + "で " : ""}{r.damage}ダメージ{r.is_crit ? "（クリティカル）" : ""}{r.won ? "" : `　城の残りHP ${r.hp_after}`}</small>
+                                {r.won && (r.loot || 0) > 0 && <em className="bf-loot">{r.loot}pt うばいました</em>}
                             </div>
                             <time>{cheerWhen(r.created_at)}</time>
                         </li>
@@ -76,6 +77,7 @@ export default function BattleFeed() {
 .bf-tx b{font-size:13.5px;font-weight:900;color:#17307a;overflow-wrap:anywhere;line-height:1.45}
 .bf-row.won .bf-tx b{color:#8a4a08}
 .bf-tx small{font-size:12px;font-weight:700;color:#5a6488}
+.bf-loot{align-self:flex-start;font-style:normal;margin-top:2px;padding:1px 10px;border-radius:999px;background:#fff;border:1.5px solid #e2bf63;font-size:12.5px;font-weight:900;color:#a8690a}
 .bf-row time{flex-shrink:0;font-size:11.5px;font-weight:700;color:#6b7591;white-space:nowrap}
 .bf-more{display:block;margin:10px auto 0}
 .bf-h button:focus-visible,.bf-more:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
