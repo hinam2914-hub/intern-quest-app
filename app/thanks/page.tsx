@@ -8,11 +8,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { formatJSTShort } from "../lib/date";
 import { createNotification } from "../lib/createNotification";
-import AvatarLayered from "../components/AvatarLayered";
+import AvatarFace, { unifiedFaceSource, type FaceSource } from "../components/AvatarFace";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import { JOBS, type JobKey } from "../onboarding/job/page";
 
-type UserOption = { id: string; name: string; avatar_url: string | null; deptName: string; layered: { cfg: AvatarConfig; job: JobKey } | null; active: boolean };
+type UserOption = { id: string; name: string; avatar_url: string | null; deptName: string; layered: { cfg: AvatarConfig; job: JobKey } | null; face: FaceSource; active: boolean };
 type ThanksRow = { id: string; from_user_id: string; to_user_id: string; message: string; reason?: string | null; created_at: string };
 
 const REASONS = ["助けてもらった", "教えてもらった", "挑戦を応援してくれた", "一緒に頑張ってくれた", "その他"];
@@ -132,7 +132,7 @@ export default function ThanksPage() {
             const all: UserOption[] = (profs || []).map((p: any) => {
                 const ac = p.avatar_config, jc = p.job_class;
                 const layered = ac?.type === "layered" && jc && JOBS.some((j) => j.key === jc) ? { cfg: ac as AvatarConfig, job: jc as JobKey } : null;
-                return { id: p.id, name: p.name || "名前未設定", avatar_url: p.avatar_url || null, deptName: dmap[p.department_id] || "", layered, active: p.is_active !== false };
+                return { id: p.id, name: p.name || "名前未設定", avatar_url: p.avatar_url || null, deptName: dmap[p.department_id] || "", layered, face: unifiedFaceSource(p), active: p.is_active !== false };
             });
             setMyName(all.find((u) => u.id === user.id)?.name || "");
             setMeUser(all.find((u) => u.id === user.id) || null);
@@ -196,16 +196,8 @@ export default function ThanksPage() {
         setAllList((data as any) || []);
     };
 
-    const Face = ({ u, size }: { u: UserOption; size: number }) => u.layered ? (
-        <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", position: "relative", background: "radial-gradient(circle at 50% 35%, #fdfbf2, #efe6d2)", flexShrink: 0, border: "2px solid #e2bf63", boxSizing: "border-box" }}>
-            <div style={{ position: "absolute", left: "-25%", top: "-27%", width: "151%" }}><AvatarLayered config={u.layered.cfg} job={u.layered.job} showFallback={false} /></div>
-        </div>
-    ) : u.avatar_url ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={u.avatar_url} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", objectPosition: "top", flexShrink: 0, border: "2px solid #e2bf63", boxSizing: "border-box", background: "#fff" }} />
-    ) : (
-        <div style={{ width: size, height: size, borderRadius: "50%", background: "linear-gradient(135deg,#9db7e8,#5d7fc9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.4, fontWeight: 900, color: "#fff", flexShrink: 0 }}>{u.name.charAt(0)}</div>
-    );
+    // 顔アイコンは全員アバターの顔でそろえる（アバター未作成の人は初期アバター。写真は使わない）
+    const Face = ({ u, size }: { u: UserOption; size: number }) => <AvatarFace src={u.face} size={size} border="2px solid #e2bf63" />;
 
     const rows = tab === "all" ? (allList || []) : list.filter((r) => (tab === "sent" ? r.from_user_id === myId : r.to_user_id === myId));
     const selected = userOf(toUserId);
