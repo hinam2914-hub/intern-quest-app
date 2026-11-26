@@ -7,7 +7,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { CHEER_LABEL as LABEL } from "../lib/cheer";
+import { CHEER_LABEL as LABEL, loadCheerExtras } from "../lib/cheer";
+import { STAGES } from "../lib/stages";
 import BattleFeed from "../components/BattleFeed";
 import AvatarFace, { OldAvatarFace, unifiedFaceSource, type FaceSource } from "../components/AvatarFace";
 
@@ -42,11 +43,16 @@ export default function CheerPage() {
 
   const load = async (uid: string) => {
     const d7 = new Date(Date.now() - 7 * 86400000).toISOString();
-    const [{ data: ph }, { data: posts }] = await Promise.all([
+    const stageName = (id: string) => STAGES.find((x) => x.id === id)?.name || null;
+    const [{ data: ph }, { data: posts }, extras] = await Promise.all([
       supabase.from("points_history").select("user_id,reason,created_at").gt("change", 0).gte("created_at", d7).order("created_at", { ascending: false }).limit(400),
       supabase.from("cheer_posts").select("*").gte("created_at", d7).order("created_at", { ascending: false }).limit(100),
+      loadCheerExtras(supabase, d7, stageName),
     ]);
-    const auto = (ph || []).map((p: any) => ({ uid: p.user_id, created_at: p.created_at, manual: false, body: "", ...LABEL(p.reason || "") })).filter((p: any) => p.text);
+    const auto: any[] = [
+      ...(ph || []).map((p: any) => ({ uid: p.user_id, created_at: p.created_at, manual: false, body: "", ...LABEL(p.reason || "") })).filter((p: any) => p.text),
+      ...extras.map((e) => ({ ...e, manual: false, body: "" })),
+    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     const uniq: any[] = [];
     const seen = new Set<string>();
     for (const p of auto) {
@@ -55,7 +61,7 @@ export default function CheerPage() {
       seen.add(k); uniq.push(p);
     }
     const manual = (posts || []).map((p: any) => ({ uid: p.user_id, created_at: p.created_at, manual: true, text: p.body, icon: p.category === "sales" ? "💼" : p.category === "learn" ? "📖" : "✨", cat: p.category || "other", postId: p.id }));
-    const merged = [...uniq, ...manual].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 120);
+    const merged = [...uniq, ...manual].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 200);
     const ids = [...new Set(merged.map((u: any) => u.uid))];
     const profMap: Record<string, { name: string; avatar: string | null; face: FaceSource }> = {};
     if (ids.length) {
