@@ -452,7 +452,7 @@ const CSS = `
 .pr-title img{display:block;width:100%;height:auto;filter:drop-shadow(0 6px 12px rgba(16,47,112,.3))}
 .pr-title h1{position:absolute;left:13%;right:13%;top:27%;bottom:45%;margin:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:clamp(14px,5.6cqw,28px);font-weight:900;letter-spacing:.1em;text-shadow:0 2px 4px rgba(8,24,70,.6);white-space:nowrap}
 .pr-hero{display:grid;grid-template-columns:minmax(0,250px) minmax(0,1fr) minmax(0,360px);gap:16px;align-items:center;margin-top:6px}
-.pr-avatar{position:relative;width:100%;max-width:250px;margin:0 auto;padding-bottom:25.3%}
+.pr-avatar{position:relative;width:100%;max-width:250px;margin:0 auto;padding-bottom:min(25.3%,63px)}
 .pr-ped{position:absolute;left:0;bottom:0;width:100%;height:auto;display:block;filter:drop-shadow(0 10px 12px rgba(16,47,112,.3))}
 .pr-avbody{position:relative;z-index:1;width:86%;margin:0 auto;aspect-ratio:1024 / 1224;display:flex;align-items:flex-end;justify-content:center}
 .pr-avimg{display:block;width:100%;height:auto;max-height:92%;object-fit:contain;border-radius:20px;margin-bottom:4%}
@@ -586,7 +586,7 @@ const CSS = `
   .pr-back{position:static;transform:none;align-self:flex-start}
   .pr-title{margin:0 auto}
   .pr-hero{grid-template-columns:minmax(0,1fr);gap:10px}
-  .pr-avatar{max-width:190px}
+  .pr-avatar{max-width:190px;padding-bottom:48px}
   .pr-card{padding:14px}
   .pr-card-top{flex-direction:column}
   .pr-island-in{max-width:320px}
