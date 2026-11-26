@@ -195,7 +195,10 @@ export default function ProfilePage() {
     const job = profile.job_class && JOBS.some((j) => j.key === profile.job_class) ? (profile.job_class as JobKey) : null;
     const ac = profile.avatar_config;
     const cfg = job && ac?.type === "layered" ? (ac as AvatarConfig) : null;
-    const oldAvatarId: string = typeof ac?.id === "string" && ac.id ? ac.id : "girl_bob_brown";
+    // アバター未設定で職業も選んでいない人：6職業の最初のキャラクターから1つを出す（人ごとに固定。開くたびには変わらない）
+    const JOB_KEYS = ["knight", "mage", "archer", "healer", "rogue", "paladin"];
+    let seed = 0; for (let i = 0; i < userId.length; i++) seed = (seed * 31 + userId.charCodeAt(i)) >>> 0;
+    const defaultJob = JOB_KEYS[seed % JOB_KEYS.length];
     const lic = profile.licenses || {};
     const licenses = [
         lic.ip ? { img: "license_ip.png", label: "IP免許" } : null,
@@ -236,7 +239,7 @@ export default function ProfilePage() {
                         <div className="pr-avbody">
                         {cfg && job ? <AvatarLayered config={cfg} job={job} size="100%" />
                             : job ? <img src={`/jobs/${job}.webp`} alt="" className="pr-avimg" />
-                            : <img src={`/avatars/${oldAvatarId}.png`} alt="" className="pr-avimg" />}
+                            : <img src={`/jobs/${defaultJob}.webp`} alt="" className="pr-avimg" />}
                         </div>
                     </div>
 
