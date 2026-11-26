@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { CHEER_LABEL as LABEL } from "../lib/cheer";
+import BattleFeed from "../components/BattleFeed";
 import AvatarFace, { OldAvatarFace, unifiedFaceSource, type FaceSource } from "../components/AvatarFace";
 
 type Item = { name: string; text: string; sub: string; icon: string; when: string; key: string; uid: string; avatar: string | null; face: FaceSource | null; cat: string; ts: number };
@@ -234,6 +235,9 @@ export default function CheerPage() {
             </div>
           </section>
         )}
+
+        {/* 島バトルの履歴（全員ぶん） */}
+        <BattleFeed />
 
         {/* 投稿フォーム */}
         <section className="ch-panel">
