@@ -113,7 +113,7 @@ export default function GrowthPage() {
             </div>
           </div>
           <div className="gm-type">
-            <img src="/home/title_plate.webp" alt="" />
+            <img src="/growth/type_plate.webp" alt="" />
             <div className="in"><small>今のあなた</small><b>{hasType ? typeName : "診断はこれから"}</b></div>
             <p>{hasType ? typeCatch : "プロフィール（MBTI・学歴など）を入力すると、タイプが表示されます"}</p>
           </div>
@@ -128,7 +128,12 @@ export default function GrowthPage() {
               {AXIS_META.map((_, i) => { const [x, y] = xy(i, 1); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#d4a63d" strokeOpacity=".45" strokeWidth="1" />; })}
               <polygon points={poly((i) => Math.max(0, Math.min(1, vals[i] / 20)))} fill="rgba(137,85,219,.38)" stroke="#8955db" strokeWidth="2.5" strokeLinejoin="round" />
               {vals.map((v, i) => { const [x, y] = xy(i, Math.max(0, Math.min(1, v / 20))); return <g key={i}><circle cx={x} cy={y} r="5.5" fill="#fff" stroke="#8955db" strokeWidth="2.5" /><circle cx={x - 1.2} cy={y - 1.2} r="1.6" fill="#d9c6ff" /></g>; })}
-              {AXIS_META.map((a, i) => { const [x, y] = xy(i, 1.3); const anchor = Math.abs(x - cx) < 5 ? "middle" : x > cx ? "start" : "end"; return <text key={i} x={x} y={y} textAnchor={anchor} dominantBaseline="middle" className="lb">{a.name} <tspan className="num">{vals[i]}</tspan></text>; })}
+              {AXIS_META.map((a, i) => {
+                // ラベル＝アイコン＋名前＋数値。幅はおおよその値で見積もって、頂点の外側に収まるように置く
+                const [x, y] = xy(i, 1.26); const w = 24 + 30 + 6 + String(vals[i]).length * 10;
+                const left = Math.abs(x - cx) < 5 ? x - w / 2 : x > cx ? x : x - w;
+                return <g key={i}><image href={`/growth/icon_${a.key}.webp`} x={left} y={y - 11} width="22" height="22" preserveAspectRatio="xMidYMid meet" /><text x={left + 26} y={y + 1} dominantBaseline="middle" className="lb">{a.name} <tspan className="num">{vals[i]}</tspan></text></g>;
+              })}
             </svg>
           </section>
 
@@ -169,8 +174,8 @@ export default function GrowthPage() {
 }
 
 const CSS = `
-.gm-root{min-height:100vh;min-height:100dvh;background:#cfe6ff url(/home/bg_mobile.webp) center top/cover fixed;color:#172b50;font-family:inherit;overflow-x:clip;padding-bottom:36px}
-@media (min-width:700px){ .gm-root{background-image:url(/home/bg_pc.webp)} }
+.gm-root{min-height:100vh;min-height:100dvh;background:#cfe6ff url(/growth/bg_mobile.webp) center top/cover fixed;color:#172b50;font-family:inherit;overflow-x:clip;padding-bottom:36px}
+@media (min-width:700px){ .gm-root{background-image:url(/growth/bg_pc.webp)} }
 .gm-load{min-height:100vh;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#173c8a}
 .gm-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:10px 16px;background:linear-gradient(180deg,#173c8a,#10265d);border-bottom:3px solid #d4a63d;box-shadow:0 4px 12px rgba(16,38,93,.35)}
 .gm-back{min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #d4a63d;background:linear-gradient(180deg,#fffdf6,#f3e6c4);color:#7a5a12;font-size:13.5px;font-weight:900;cursor:pointer;font-family:inherit;flex-shrink:0}
@@ -184,12 +189,12 @@ const CSS = `
 .gm-avatar .body{position:relative;z-index:1;width:86%;margin:0 auto;aspect-ratio:1024 / 1224;display:flex;align-items:flex-end;justify-content:center}
 .gm-avatar .body>img{display:block;width:100%;max-height:92%;object-fit:contain;margin-bottom:4%}
 .gm-mk{margin-bottom:38%;min-height:44px;padding:6px 14px;border-radius:999px;border:2px solid #d4a63d;background:#fffdf6;color:#173c8a;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit}
-.gm-type{position:relative;width:min(100%,620px);margin:0 auto;container-type:inline-size;text-align:center}
+.gm-type{position:relative;width:min(100%,640px);margin:0 auto;container-type:inline-size;text-align:center}
 .gm-type>img{display:block;width:100%;height:auto;filter:drop-shadow(0 8px 14px rgba(16,38,93,.4))}
-.gm-type .in{position:absolute;left:12%;right:12%;top:0;aspect-ratio:1200 / 321;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:9.2cqw 0 3.4cqw;color:#fff;text-shadow:0 2px 4px rgba(4,10,40,.6)}
-.gm-type small{font-size:clamp(9px,2.3cqw,14px);font-weight:800;letter-spacing:.2em;color:#ffe6a0}
-.gm-type b{font-size:clamp(14px,5cqw,32px);font-weight:900;letter-spacing:.06em;line-height:1.2;color:#ffe6a0;overflow-wrap:anywhere}
-.gm-type p{display:inline-block;margin:-2.5cqw auto 0;position:relative;max-width:92%;padding:7px 22px;border-radius:999px;background:linear-gradient(180deg,#fffdf6,#f6e7bd);border:2px solid #d4a63d;box-shadow:0 4px 10px rgba(16,38,93,.25);font-size:clamp(12.5px,2.9cqw,17px);font-weight:900;color:#173c8a;line-height:1.5}
+.gm-type .in{position:absolute;left:0;right:0;top:0;aspect-ratio:1400 / 463;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:11.6cqw 22cqw 4.6cqw;color:#fff;text-shadow:0 2px 4px rgba(4,10,40,.6)}
+.gm-type small{font-size:clamp(10px,2.6cqw,16px);font-weight:800;letter-spacing:.2em;color:#ffe6a0}
+.gm-type b{font-size:clamp(15px,6.2cqw,40px);font-weight:900;letter-spacing:.06em;line-height:1.2;color:#ffe6a0;overflow-wrap:anywhere}
+.gm-type p{display:inline-block;margin:-4.2cqw auto 0;position:relative;max-width:92%;padding:7px 22px;border-radius:999px;background:linear-gradient(180deg,#fffdf6,#f6e7bd);border:2px solid #d4a63d;box-shadow:0 4px 10px rgba(16,38,93,.25);font-size:clamp(12.5px,2.9cqw,17px);font-weight:900;color:#173c8a;line-height:1.5}
 .gm-mid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch}
 .gm-right{display:flex;flex-direction:column;gap:16px;min-width:0}
 .gm-right .gm-panel{flex:1}
