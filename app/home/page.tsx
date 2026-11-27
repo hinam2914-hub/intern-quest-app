@@ -499,8 +499,8 @@ export default function HomePage() {
         {/* 重要なお知らせ（未読のときだけ・スマホ／タブレットのみ） */}
         <NewsImportantCard news={news} />
 
-        {/* シーズンイベント（開催前〜開催中だけ出る） */}
-        <SeasonEventCard />
+        {/* シーズンイベント：HOMEには何も表示しない（表示はマイページの限定イベントとイベントページ）。ボーナスと達成報酬の受け取りだけ裏で行う */}
+        <SeasonEventCard silent />
 
         {/* ES・ロードマップが未記入／途中の人にだけ出す案内 */}
         <CareerDocNudge />

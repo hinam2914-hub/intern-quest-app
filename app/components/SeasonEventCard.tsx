@@ -60,7 +60,8 @@ export function SeasonEventBanner() {
     );
 }
 
-export default function SeasonEventCard({ onActive }: { onActive?: (on: boolean) => void } = {}) {
+/** silent=true：画面には何も出さず、イベントボーナスと達成報酬の受け取り（サーバー側の event_sync）だけ行う。HOME用 */
+export default function SeasonEventCard({ onActive, silent }: { onActive?: (on: boolean) => void; silent?: boolean } = {}) {
     const router = useRouter();
     const [ev, setEv] = useState<Ev | null>(null);
     const [open, setOpen] = useState(false);
@@ -75,7 +76,7 @@ export default function SeasonEventCard({ onActive }: { onActive?: (on: boolean)
         })();
         return () => { alive = false; };
     }, []);
-    if (!ev) return null;
+    if (!ev || silent) return null;
 
     const now = Date.now();
     const period = `${md(ev.starts_at)}〜${md(ev.ends_at, -1000)}`;
