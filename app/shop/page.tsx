@@ -4,7 +4,7 @@
 // ・島＝既存の island_items / island_purchases をそのまま利用（購入は申請→管理者の承認でポイント減算、という従来の流れ）。設置は profiles.island_config
 // ・旧「景品」「アバター」タブは画面から外しただけで、データ（shop_items / point_requests / avatar_items / avatar_purchases）には触れない
 // ・使うポイントは user_points.points（育成ポイント）。累計pt・バトルの戦績とは別
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { ELEMENTS, SKILLS, loadWeaponShop, listedWeapons, weaponAtk, saleState, saleLabel, needsEventJoin, loadEventJoin, EVENT_BUY_RULE, type WeaponDef, type WeaponShop } from "../lib/battle";
@@ -55,6 +55,18 @@ export default function ShopPage() {
     const [done, setDone] = useState<{ title: string; sub: string; img: string | null; emoji: string; gear?: string; go?: "avatar" | "edit" } | null>(null);  // 購入完了の演出
 
     useEffect(() => { try { if (new URLSearchParams(window.location.search).get("tab") === "island") setTab("island"); } catch {} }, []);
+    // ほかのページからの直リンク：/shop?open=<武器のキー か 島アイテムの css_key> で、その品の詳細をひらく（1回だけ）
+    const openedRef = useRef(false);
+    useEffect(() => {
+        if (openedRef.current || loading) return;
+        let key: string | null = null;
+        try { key = new URLSearchParams(window.location.search).get("open"); } catch {}
+        if (!key) { openedRef.current = true; return; }
+        const w = listedWeapons(shop).find((x) => x.key === key);
+        if (w) { openedRef.current = true; setTab("gear"); setAskAt(0); setSelW(w); return; }
+        const it = islandItems.find((x) => x.css_key === key);
+        if (it) { openedRef.current = true; setTab("island"); setAskAt(0); setSelI(it); }
+    }, [loading, shop, islandItems]);
 
     useEffect(() => {
         const load = async () => {

@@ -115,7 +115,7 @@ export default function SeasonEventCard({ onActive, silent }: { onActive?: (on: 
     const rwState = (own: boolean, ok: boolean) => own ? { t: "✓ 獲得済み", c: "own" } : ev.status === "upcoming" ? { t: "開催前", c: "" } : ok ? { t: "まもなく届きます", c: "can" } : { t: "未達成", c: "" };
     const hatS = rwState(hatOwn, achieved >= 1), capeS = rwState(capeOwn, achieved >= 2);
     const granted = [...(ev.gear_granted || []).map((k) => (k === "event_santa_hat" ? "サンタ帽" : "聖夜のマント")), ...(ev.weapon_granted ? ["聖夜の杖"] : [])];
-    const DECO = [["/island/deco/deco_santa.webp", "サンタ"], ["/island/animals/animal_tonakai.webp", "トナカイ"], ["/island/trees/tree_xmas.webp", "クリスマスツリー"], ["/island/deco/deco_present.webp", "プレゼントの山"]];
+    const DECO = [["/island/deco/deco_santa.webp", "サンタ", "deco_santa"], ["/island/animals/animal_tonakai.webp", "トナカイ", "animal_tonakai"], ["/island/trees/tree_xmas.webp", "ツリー", "tree_xmas"], ["/island/deco/deco_present.webp", "プレゼント", "deco_present"]];
     const BUY = "買えるのは、期間中に学習コンテンツを1本以上見て完了報告を出した人か、学習メインルートをすでに全部修了している人です。";
 
     return (
@@ -143,10 +143,11 @@ export default function SeasonEventCard({ onActive, silent }: { onActive?: (on: 
                 <div className="sev-rw">
                     <section className="sev-rc">
                         <h4>限定武器</h4>
-                        <button className="sev-item big" onClick={() => setDetail(detail === "weapon" ? null : "weapon")} aria-expanded={detail === "weapon"}>
+                        <button className="sev-item big" onClick={() => router.push("/shop?tab=gear&open=wisdom_staff")}>
                             <span className="im"><img src="/battle/weapons/wisdom_staff.webp" alt="" /></span>
                             <span className="nm">聖夜の杖</span>
                             <span className={"st " + (ev.weapon_owned ? "own" : "")}>{ev.weapon_owned ? "✓ 獲得済み" : "未所持"}</span>
+                            <span className="go">ショップで見る →</span>
                         </button>
                     </section>
                     <section className="sev-rc">
@@ -162,19 +163,20 @@ export default function SeasonEventCard({ onActive, silent }: { onActive?: (on: 
                     </section>
                     <section className="sev-rc">
                         <h4>島の限定デコ</h4>
-                        <button className="sev-item big" onClick={() => setDetail(detail === "deco" ? null : "deco")} aria-expanded={detail === "deco"}>
-                            <span className="sev-deco">{DECO.map(([src, n]) => <img key={n} src={src} alt={n} />)}</span>
-                            <span className="nm">サンタ・トナカイ・ツリー・プレゼント</span>
-                            <span className="st">期間中だけショップに登場</span>
-                        </button>
+                        <div className="sev-deco">
+                            {DECO.map(([src, n, key]) => (
+                                <button key={key} className="sev-di" onClick={() => router.push(`/shop?tab=island&open=${key}`)} aria-label={`${n}をショップで見る`}>
+                                    <span className="im"><img src={src} alt="" /></span><span className="dn">{n}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <button className="sev-item" onClick={() => router.push("/shop?tab=island")}><span className="st">期間中だけショップに登場</span><span className="go">ショップで見る →</span></button>
                     </section>
                 </div>
                 {detail && (
                     <div className="sev-dt" role="region">
-                        {detail === "weapon" && <><b>聖夜の杖（島バトルの武器）</b><p>学習コンテンツを1本修了するごとに攻撃力+1（40→最大60）。この杖で城を落とすと、奪えるポイントが1.5倍。</p><p>期間中だけショップで800pt。{BUY}「学習メインルート制覇」か「ES完成」を達成した人は、無料でもらえます。</p>{!ev.weapon_owned && <button className="sev-mini" onClick={() => router.push("/shop")}>ショップで見る →</button>}</>}
-                        {detail === "hat" && <><b>サンタ帽（アバターの頭装備）</b><p>達成条件：「学習メインルート（STEP1〜6）制覇」か「ES完成」のどちらか。達成すると自動で届き、どの職業でも着けられます。</p>{hatOwn && <button className="sev-mini" onClick={() => router.push("/onboarding/avatar?from=mypage")}>アバター編集で着ける →</button>}</>}
-                        {detail === "cape" && <><b>聖夜のマント（アバターのマント）</b><p>達成条件：「学習メインルート（STEP1〜6）制覇」と「ES完成」の両方。達成すると自動で届き、どの職業でも着けられます。</p>{capeOwn && <button className="sev-mini" onClick={() => router.push("/onboarding/avatar?from=mypage")}>アバター編集で着ける →</button>}</>}
-                        {detail === "deco" && <><b>島に置けるクリスマスの飾り</b><p>サンタ・クリスマスツリー・トナカイ・プレゼントの山が、期間中だけショップの「島」に並びます。買った飾りは、イベントが終わっても島に置けます。</p><p>{BUY}</p><button className="sev-mini" onClick={() => router.push("/shop")}>ショップで見る →</button></>}
+                        {detail === "hat" && <><b>サンタ帽（アバターの頭装備）</b><p>達成条件：「学習メインルート（STEP1〜6）制覇」か「ES完成」のどちらか。達成すると自動で届き、どの職業でも着けられます。</p>{hatOwn ? <button className="sev-mini" onClick={() => router.push("/onboarding/avatar?from=mypage")}>アバター編集で着ける →</button> : ev.status === "running" && <button className="sev-mini" onClick={() => router.push(next.href)}>条件を進める →</button>}</>}
+                        {detail === "cape" && <><b>聖夜のマント（アバターのマント）</b><p>達成条件：「学習メインルート（STEP1〜6）制覇」と「ES完成」の両方。達成すると自動で届き、どの職業でも着けられます。</p>{capeOwn ? <button className="sev-mini" onClick={() => router.push("/onboarding/avatar?from=mypage")}>アバター編集で着ける →</button> : ev.status === "running" && <button className="sev-mini" onClick={() => router.push(next.href)}>条件を進める →</button>}</>}
                     </div>
                 )}
 
@@ -274,8 +276,13 @@ const CSS = `
 .sev-item .im::before{left:14%;top:14%}
 .sev-item .im::after{right:12%;bottom:20%;animation-delay:1.3s}
 @keyframes sevTw{0%,100%{transform:scale(.3);opacity:.2}50%{transform:scale(1.25);opacity:1}}
-.sev-deco{display:flex;align-items:flex-end;justify-content:center;gap:2px;width:100%;height:132px}
-.sev-deco img{flex:1;min-width:0;max-height:100%;object-fit:contain;filter:drop-shadow(0 5px 6px rgba(40,60,120,.25))}
+.sev-deco{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;width:100%}
+.sev-di{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:2px 0 4px;border:none;background:transparent;cursor:pointer;font-family:inherit;border-radius:10px}
+.sev-di:active{transform:scale(.96)}
+.sev-di .im{display:flex;align-items:flex-end;justify-content:center;width:100%;height:104px}
+.sev-di .im img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 5px 6px rgba(40,60,120,.25))}
+.sev-di .dn{font-size:10.5px;font-weight:900;color:#17397d;line-height:1.3;text-align:center}
+.sev-item .go{font-size:11.5px;font-weight:900;color:#fff;background:linear-gradient(180deg,#4b7ae0,#1d3f96);border:1.5px solid #e2bf63;border-radius:999px;padding:4px 12px;margin-top:2px}
 .sev-item .nm{font-size:12.5px;font-weight:900;color:#17397d;background:linear-gradient(180deg,#fffaf0,#f3e3bd);border:1.5px solid #dcc27a;border-radius:6px;padding:2px 12px;max-width:100%;overflow-wrap:anywhere;text-align:center;line-height:1.4}
 .sev-item .st{font-size:11px;font-weight:900;color:#8a7a5c}
 .sev-item .st.own{color:#1e7a45}
