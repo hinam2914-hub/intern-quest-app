@@ -12,7 +12,19 @@ type Ev = {
 };
 const md = (iso: string, shift = 0) => { const d = new Date(new Date(iso).getTime() + 9 * 3600e3 + shift); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
 
-export default function SeasonEventCard() {
+/** いまのシーズンイベントの状態だけを軽く調べる（バッジ表示用）。未導入・開催なしは null */
+export async function seasonEventBadge(): Promise<"開催中！" | "まもなく開催" | null> {
+    try {
+        const { data, error } = await supabase.from("season_events").select("starts_at, ends_at").eq("is_active", true).order("starts_at").limit(5);
+        if (error || !data) return null;
+        const now = Date.now();
+        if ((data as any[]).some((e) => new Date(e.starts_at).getTime() <= now && now < new Date(e.ends_at).getTime())) return "開催中！";
+        if ((data as any[]).some((e) => now < new Date(e.starts_at).getTime())) return "まもなく開催";
+    } catch { /* 未導入 */ }
+    return null;
+}
+
+export default function SeasonEventCard({ onActive }: { onActive?: (on: boolean) => void } = {}) {
     const router = useRouter();
     const [ev, setEv] = useState<Ev | null>(null);
     const [open, setOpen] = useState(false);
@@ -22,7 +34,7 @@ export default function SeasonEventCard() {
             try {
                 const { data, error } = await supabase.rpc("event_sync");
                 if (error || !data || !(data as Ev).active) return;
-                if (alive) setEv(data as Ev);
+                if (alive) { setEv(data as Ev); onActive?.(true); }
             } catch { /* イベント未導入 */ }
         })();
         return () => { alive = false; };
@@ -82,7 +94,7 @@ const CSS = `
 .sev-period b{margin-left:8px;color:#ffe9a8}
 .sev-name{font-size:19px;font-weight:900;letter-spacing:.04em;margin-top:6px;text-shadow:0 2px 0 rgba(10,25,70,.5)}
 .sev-sub{font-size:12.5px;font-weight:800;color:#e6eeff;margin-top:2px}
-.sev-sub b{color:#ffe08a;font-size:15px}
+.sev-sub b{color:#ffe08a;font-size:15px;white-space:nowrap}
 .sev-new{margin-top:9px;background:rgba(255,233,168,.16);border:1.5px solid #ffe08a;border-radius:12px;padding:7px 10px;font-size:12.5px;font-weight:800;color:#fff7d6}
 .sev-new b{color:#ffe08a;font-size:15px}
 .sev-prog{margin-top:9px;background:rgba(10,25,70,.3);border:1px solid rgba(255,233,168,.35);border-radius:12px;padding:8px 10px}

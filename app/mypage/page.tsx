@@ -15,6 +15,7 @@ import ProfileCard2 from "../components/ProfileCard2";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import { JOBS, type JobKey } from "../onboarding/job/page";
 import { MYPAGE_CSS } from "./theme";
+import SeasonEventCard, { seasonEventBadge } from "../components/SeasonEventCard";
 
 type PointHistory = {
     id?: string;
@@ -529,6 +530,9 @@ export default function MyPage() {
     const [avatarCfg, setAvatarCfg] = useState<AvatarConfig | null>(null);
     const [jobClass, setJobClass] = useState<JobKey | null>(null);
     const [openDetail, setOpenDetail] = useState<"profile" | "collection" | "activity" | "event" | null>(null);
+    const [seasonBadge, setSeasonBadge] = useState<string | null>(null);   // シーズンイベントの状態（開催中！／まもなく開催）
+    const [seasonOn, setSeasonOn] = useState(false);
+    useEffect(() => { seasonEventBadge().then(setSeasonBadge); }, []);
     const [name, setName] = useState("");
     const [inputName, setInputName] = useState("");
     const [myKpis, setMyKpis] = useState<{ deptName: string; target: number; result: number; rate: number; pts: number; approved: boolean }[]>([]);
@@ -1984,7 +1988,7 @@ const handleRoutineCheck = async (routineId: string) => {
                         <div className="mp-tiles">
                             {([["profile", "🪪", "基本プロフィール"], ["collection", "⭐", "冒険者コレクション"], ["activity", "📋", "最近の活動"], ["event", "🎁", "限定イベント"]] as const).map(([k, ic, lab]) => (
                                 <button key={k} className={"mp-tile" + (openDetail === k ? " on" : "") + (k === "event" ? " ev" : "")} onClick={() => setOpenDetail(openDetail === k ? null : k)}>
-                                    {k === "event" && (pendingSurveys.length > 0 || myKpis.length > 0) && <span className="mp-tile-badge">開催中！</span>}
+                                    {k === "event" && (seasonBadge || pendingSurveys.length > 0 || myKpis.length > 0) && <span className="mp-tile-badge">{seasonBadge || "開催中！"}</span>}
                                     <span className="mp-tile-ic">{ic}</span><span className="mp-tile-l">{lab}</span>
                                 </button>
                             ))}
@@ -2004,7 +2008,8 @@ const handleRoutineCheck = async (routineId: string) => {
                 {openDetail === "event" && (
                     <section className="mp-panel mp-detail mp-event">
                         <div className="mp-ribbon">限定イベント</div>
-                        {pendingSurveys.length === 0 && myKpis.length === 0 && <div className="mp-empty">現在開催中のイベントはありません</div>}
+                        <SeasonEventCard onActive={setSeasonOn} />
+                        {!seasonOn && pendingSurveys.length === 0 && myKpis.length === 0 && <div className="mp-empty">現在開催中のイベントはありません</div>}
                         {pendingSurveys.map((s) => <button key={s.id} className="mp-kv-row mp-link" onClick={() => router.push("/surveys")}><span>📝 {s.title}</span><b>+{s.reward_points}pt</b></button>)}
                         {myKpis.map((k, i) => <div key={i} className="mp-kv-row"><span>📈 {k.deptName}</span><b>{k.result}/{k.target}（{k.rate}%）{k.approved ? " ✓" : ""}</b></div>)}
                         <button className="mp-smallbtn" onClick={() => router.push("/kpi")}>KPIを入力する →</button>
