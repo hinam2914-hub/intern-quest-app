@@ -111,7 +111,7 @@ export default function SeasonEventCard({ onActive }: { onActive?: (on: boolean)
             </div>
 
             {ev.status === "running" && <button className="sev-btn" onClick={() => router.push(next.href)}>▶ 次の一手：{next.label}</button>}
-            {ev.status === "upcoming" && <button className="sev-btn ghost" onClick={() => router.push("/learn")}>学習コンテンツを先に見ておく</button>}
+            {ev.status === "upcoming" && <div className="sev-wait">{md(ev.starts_at)}の0時にスタート！ はじまったら、ここに「次の一手」が出ます</div>}
 
             {ev.weapon_ready && !ev.weapon_owned && <button className="sev-btn ghost" onClick={() => router.push("/shop")}>限定武器「聖夜の杖」を見る</button>}
 
@@ -148,6 +148,7 @@ const CSS = `
 .sev-bar{height:8px;border-radius:999px;background:rgba(10,25,70,.5);overflow:hidden;margin:3px 0 5px}
 .sev-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ffd76e,#f0b429)}
 .sev-btn{display:block;width:100%;min-height:46px;margin-top:10px;padding:10px 12px;border-radius:999px;border:2px solid #fff3c9;background:linear-gradient(180deg,#ffe9a8,#f0c04f);color:#4a3206;font-size:13.5px;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 4px 0 #a97c16}
+.sev-wait{margin-top:9px;font-size:12.5px;font-weight:800;color:#ffe08a;line-height:1.6;text-align:center}
 .sev-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #a97c16}
 .sev-btn.ghost{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,233,168,.7);box-shadow:none}
 .sev-more{display:block;margin:8px auto 0;border:none;background:none;color:#dbe7ff;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit;padding:6px 10px}

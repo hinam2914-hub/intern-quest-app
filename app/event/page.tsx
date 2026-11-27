@@ -69,7 +69,7 @@ export default function EventPage() {
                         <b>{ev.status === "running" ? `あと${daysLeft}日` : ev.status === "upcoming" ? `あと${daysTo}日で開始` : "終了しました"}</b>
                     </div>
                     {ev.status === "running" && <button className="evp-cta" onClick={() => router.push(next.href)}>▶ 次の一手：{next.label}</button>}
-                    {ev.status === "upcoming" && <button className="evp-cta" onClick={() => router.push("/learn")}>学習コンテンツを先に見ておく</button>}
+                    {ev.status === "upcoming" && <div className="evp-wait">{md(ev.starts_at)}の0時にスタート！<span>はじまったら、ここに「次の一手」ボタンが出ます。ポイント{m}倍になるのは、開始してから達成したぶんです。</span></div>}
                 </div>
 
                 {ev.status !== "upcoming" && ev.new_points > 0 && <div className="evp-note" role="status">イベントボーナス <b>+{ev.new_points}pt</b> を受け取りました</div>}
@@ -161,6 +161,8 @@ const CSS = `
 .evp-period{display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:10px;background:rgba(10,25,70,.35);border:1px solid rgba(255,233,168,.45);border-radius:999px;padding:7px 16px;font-size:13px;font-weight:900}
 .evp-period b{color:#ffe08a}
 .evp-cta{display:block;width:100%;min-height:50px;margin-top:14px;padding:12px 14px;border-radius:999px;border:2px solid #fff3c9;background:linear-gradient(180deg,#ffe9a8,#f0c04f);color:#4a3206;font-size:14.5px;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 5px 0 #a97c16}
+.evp-wait{margin-top:14px;border-radius:16px;border:1.5px solid rgba(255,233,168,.6);background:rgba(10,25,70,.3);padding:11px 14px;font-size:15px;font-weight:900;color:#ffe08a}
+.evp-wait span{display:block;margin-top:3px;font-size:12px;font-weight:700;line-height:1.7;color:#e6eeff}
 .evp-cta:active{transform:translateY(3px);box-shadow:0 2px 0 #a97c16}
 .evp-note{border-radius:14px;border:2px solid #e2bf63;background:linear-gradient(180deg,#fffbe6,#fdeeb8);padding:10px 14px;font-size:13.5px;font-weight:800;color:#5a3d08;text-align:center}
 .evp-note b{color:#b45309;font-size:16px}
