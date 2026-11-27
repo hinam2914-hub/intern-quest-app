@@ -10,6 +10,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { COURSES, hasCourse, sortByCourse } from "../lib/learnCourse";
 
 type Content = {
     id: string;
@@ -20,6 +21,9 @@ type Content = {
     body: string | null;
     category?: string | null;
     is_required?: boolean;
+    course_code?: string | null;
+    course_no?: number | null;
+    created_at?: string | null;
 };
 type Completion = {
     id: string;
@@ -146,6 +150,25 @@ const CSS = `
 .lr-req .st{flex:none;font-size:10.5px;font-weight:900;border-radius:999px;padding:4px 10px}
 .lr-req .st.done{background:rgba(46,157,95,.14);color:#1e7a45;border:1px solid rgba(46,157,95,.4)}
 .lr-req .st.pend{background:rgba(232,154,29,.14);color:#a06a00;border:1px solid rgba(232,154,29,.45)}
+.lr-req .st.yet{background:rgba(120,110,90,.1);color:#8a7a5c;border:1px solid rgba(160,140,100,.35)}
+.lr-req .no{flex:none;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:900;color:#17397d;background:#fff;border:1.5px solid #c9a24a}
+.lr-req .no.done{background:#2e9d5f;border-color:#2e9d5f;color:#fff}
+.lr-cnote{font-size:12px;font-weight:800;color:#8a6a3a;margin-bottom:6px}
+.lr-cs{border-bottom:1px solid rgba(190,160,110,.3)}
+.lr-cs:last-child{border-bottom:none}
+.lr-cs.sep{border-top:2px dashed rgba(190,160,110,.55);margin-top:6px;padding-top:6px}
+.lr-cs .hd{display:flex;align-items:center;gap:10px;width:100%;padding:11px 4px;border:none;background:transparent;cursor:pointer;font-family:inherit;text-align:left}
+.lr-cs .lb{flex:none;min-width:54px;text-align:center;font-size:10.5px;font-weight:900;color:#fff;background:linear-gradient(180deg,#4b7ae0,#1d3f96);border:1px solid #e2bf63;border-radius:999px;padding:4px 8px}
+.lr-cs.free .lb{background:linear-gradient(180deg,#f3dc9a,#d9b354);color:#5a3d08;border-color:#b98f2e}
+.lr-cs .mid{flex:1;min-width:0;display:block}
+.lr-cs .nm{display:block;font-size:14px;font-weight:900;color:#17397d}
+.lr-cs .nt{display:block;font-size:10.5px;font-weight:700;color:#8a7a5c;margin:1px 0 5px;overflow-wrap:anywhere}
+.lr-cs .bw{display:block;height:7px;border-radius:999px;background:rgba(23,57,125,.13);overflow:hidden}
+.lr-cs .bw .b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ffd76e,#f0b429);transition:width 1s ease}
+.lr-cs .ct{flex:none;font-size:12px;font-weight:900;color:#17397d}
+.lr-cs .ct.all{color:#1e7a45}
+.lr-cs .ar{flex:none;font-size:9px;color:#a08356}
+.lr-cs .ls{padding:0 0 8px}
 .lr-req .st.todo{background:linear-gradient(180deg,#4b7ae0,#1d3f96);color:#fff;border:1px solid #e2bf63}
 
 /* 教材カード（動画） */
@@ -219,6 +242,7 @@ function LearnPageInner() {
     const [message, setMessage] = useState("");
     const [catFilter, setCatFilter] = useState<string>("all");
     const [barOn, setBarOn] = useState(false);
+    const [openCourse, setOpenCourse] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -226,7 +250,7 @@ function LearnPageInner() {
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
             const { data: contentRows } = await supabase.from("contents").select("*").eq("is_active", true).order("created_at", { ascending: false });
-            const cs = (contentRows || []) as Content[];
+            const cs = sortByCourse((contentRows || []) as Content[]);
             setContents(cs);
             const { data: completionRows } = await supabase.from("content_completions").select("id,content_id, status, review, feedback, created_at").eq("user_id", user.id);
             setCompletions((completionRows || []) as Completion[]);
@@ -289,7 +313,17 @@ function LearnPageInner() {
     // 今日のおすすめ：未完了コンテンツから日替わり（既存ロジック維持）
     const undoneAll = contents.filter(notDone);
     const dayIndex = new Date().getDate();
-    const todayQuest = undoneAll.length > 0 ? undoneAll[dayIndex % undoneAll.length] : contents[0];
+    // 見る順番（コース）が入っていれば「次に見る1本」をコース順で出す。未設定なら従来の日替わり
+    const courseOn = hasCourse(contents);
+    const untouched = (c: Content) => { const st = getCompletion(c.id)?.status; return st !== "approved" && st !== "pending"; };
+    const courseRows = COURSES.map(cd => {
+        const list = contents.filter(c => c.course_code === cd.code);
+        const done = list.filter(c => getCompletion(c.id)?.status === "approved").length;
+        return { ...cd, list, done, next: list.find(untouched) || null };
+    }).filter(r => r.list.length > 0);
+    const nextRow = courseRows.find(r => r.kind === "main" && r.next) || courseRows.find(r => r.next) || null;
+    const todayQuest = courseOn && nextRow ? nextRow.next! : undoneAll.length > 0 ? undoneAll[dayIndex % undoneAll.length] : contents[0];
+    const nextPos = courseOn && nextRow ? `${nextRow.label} ${nextRow.name}・${nextRow.list.indexOf(nextRow.next!) + 1}/${nextRow.list.length}本目` : "";
 
     const requiredQuests = contents.filter(c => c.is_required);
 
@@ -363,7 +397,7 @@ function LearnPageInner() {
                 {/* C. 本日のおすすめクエスト */}
                 {todayQuest && (
                     <>
-                        <div className="lr-h"><span className="dia">◆</span>本日のおすすめクエスト<span className="dia">◆</span></div>
+                        <div className="lr-h"><span className="dia">◆</span>{nextPos ? "次に見る1本" : "本日のおすすめクエスト"}<span className="dia">◆</span></div>
                         <div className="lr-pn lr-rec">
                             <div className="body">
                                 <div className="th">
@@ -375,7 +409,7 @@ function LearnPageInner() {
                                     )}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    {todayQuest.category && <span className="cat">👑 {todayQuest.category}</span>}
+                                    {nextPos ? <span className="cat">🧭 {nextPos}</span> : todayQuest.category && <span className="cat">👑 {todayQuest.category}</span>}
                                     <div className="tt">{todayQuest.title}</div>
                                     <div className="meta">
                                         <span>{todayQuest.content_type === "video" ? "🎬 動画" : "📖 読み物"}</span>
@@ -386,6 +420,50 @@ function LearnPageInner() {
                                 </div>
                             </div>
                             <button className="lr-btn" onClick={() => openContent(todayQuest)}>▶ 今すぐ学習をはじめる</button>
+                        </div>
+                    </>
+                )}
+
+                {/* 学びのルート（見る順番） */}
+                {courseOn && (
+                    <>
+                        <div className="lr-h"><span className="dia">◆</span>学びのルート<span className="dia">◆</span></div>
+                        <div className="lr-pn">
+                            <div className="lr-cnote">STEP1から順に進もう。選択コースは好きなときに見てOK！</div>
+                            {courseRows.map((r, ri) => {
+                                const open = openCourse === r.code;
+                                const all = r.done >= r.list.length;
+                                return (
+                                    <div key={r.code} className={`lr-cs${r.kind === "free" ? " free" : ""}${ri > 0 && r.kind === "free" && courseRows[ri - 1].kind === "main" ? " sep" : ""}`}>
+                                        <button className="hd" onClick={() => setOpenCourse(open ? null : r.code)} aria-expanded={open}>
+                                            <span className="lb">{r.label}</span>
+                                            <span className="mid">
+                                                <span className="nm">{r.name}</span>
+                                                <span className="nt">{r.note}</span>
+                                                <span className="bw"><span className="b" style={{ width: barOn ? `${Math.round((r.done / r.list.length) * 100)}%` : 0 }} /></span>
+                                            </span>
+                                            <span className={`ct${all ? " all" : ""}`}>{all ? "✓ 修了" : `${r.done}/${r.list.length}`}</span>
+                                            <span className="ar">{open ? "▲" : "▼"}</span>
+                                        </button>
+                                        {open && (
+                                            <div className="ls">
+                                                {r.list.map((c, i) => {
+                                                    const st = getCompletion(c.id)?.status;
+                                                    const done = st === "approved"; const pending = st === "pending";
+                                                    const isNext = r.next?.id === c.id;
+                                                    return (
+                                                        <button key={c.id} className="lr-req" onClick={() => openContent(c)}>
+                                                            <span className={`no${done ? " done" : ""}`}>{done ? "✓" : i + 1}</span>
+                                                            <span className="tt"><span className="q">{c.content_type === "video" ? "動画" : "読み物"}</span>{c.title}</span>
+                                                            <span className={`st ${done ? "done" : pending ? "pend" : isNext ? "todo" : "yet"}`}>{done ? "完了" : pending ? "審査中" : isNext ? "次はこれ" : "未"}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </>
                 )}

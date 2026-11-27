@@ -1,9 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NodeState, JobState, Reco } from "../lib/skills";
 import { AREA_COLOR } from "./world";
 import { SKILL_DESC, condGuide } from "./guide";
+import { supabase } from "../lib/supabase";
+import { sortByCourse } from "../lib/learnCourse";
 
 const STAGE: Record<string, { icon: string; label: string }> = {
   learn: { icon: "📖", label: "LEARN" }, practice: { icon: "🧪", label: "PRACTICE" }, prove: { icon: "🏆", label: "PROVE" }, check: { icon: "🙋", label: "CHECK" },
@@ -18,6 +20,25 @@ export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCh
 }) {
   const router = useRouter();
   const [claimText, setClaimText] = useState(""); const [claimUrl, setClaimUrl] = useState("");
+  // 学習が条件のスキル：そのカテゴリで「次に見る1本」（学習コンテンツの順番どおり）を出す
+  const [nextLearn, setNextLearn] = useState<Record<string, { id: string; title: string }>>({});
+  const learnCats = node.conds.filter((c) => c.type === "content_category" && !c.done && c.param).map((c) => c.param as string).join("|");
+  useEffect(() => {
+    if (!learnCats) { setNextLearn({}); return; }
+    let alive = true;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser(); if (!user) return;
+      const [cs, cp] = await Promise.all([
+        supabase.from("contents").select("*").eq("is_active", true).in("category", learnCats.split("|")),
+        supabase.from("content_completions").select("content_id, status").eq("user_id", user.id),
+      ]);
+      const seen = new Set((cp.data ?? []).filter((r: any) => r.status === "approved" || r.status === "pending").map((r: any) => r.content_id));
+      const out: Record<string, { id: string; title: string }> = {};
+      sortByCourse((cs.data ?? []) as any[]).forEach((c: any) => { if (!seen.has(c.id) && !out[c.category]) out[c.category] = { id: c.id, title: c.title }; });
+      if (alive) setNextLearn(out);
+    })();
+    return () => { alive = false; };
+  }, [learnCats, node.id]);
   const hidden = node.is_hidden && node.status === "locked";
   const desc = hidden ? "" : (node.description || SKILL_DESC[node.id] || "");
   const color = AREA_COLOR[node.category] ?? "#8b5cf6";
@@ -66,7 +87,9 @@ export default function DetailPanel({ node, jobs, isMobile, onClose, onRequestCh
           <div key={st} style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: 2, color: "#64748b", marginBottom: 4 }}>{STAGE[st].icon} {STAGE[st].label}</div>
             {cs.map((c) => {
-              const g = condGuide(c); const go = !!g.href && !c.done && !hidden;
+              const g0 = condGuide(c); const nl = c.type === "content_category" && c.param ? nextLearn[c.param] : undefined;
+              const g = nl ? { how: `次はこれ：${nl.title}`, href: "/learn?open=" + nl.id, cta: "これを見る" } : g0;
+              const go = !!g.href && !c.done && !hidden;
               return (
                 <div key={c.id} onClick={go ? () => router.push(g.href!) : undefined} role={go ? "button" : undefined}
                   style={{ padding: "8px 10px", borderRadius: 10, background: c.done ? "#dcfce7" : "#fff", border: `1px solid ${c.done ? "#86efac" : go ? color + "66" : "#e2e8f0"}`, marginBottom: 6, cursor: go ? "pointer" : "default", boxShadow: go ? "0 2px 6px rgba(30,58,95,.06)" : "none" }}>
