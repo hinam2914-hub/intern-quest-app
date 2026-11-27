@@ -54,6 +54,7 @@ const GROUPS: Group[] = [
             { key: "journey", label: "冒険マップ進捗", badge: "pendingJourney" },
             { key: "script_practice", label: "スクリプト練習" },
             { key: "roadmap", label: "ロードマップ" },
+            { key: "career_docs", label: "ES・ロードマップ催促" },
             { key: "challenges", label: "チャレンジ", badge: "pendingChallenge" },
             { key: "thinking_manage", label: "思考クエスト" },
             { key: "questions_box", label: "質問クエスト" },

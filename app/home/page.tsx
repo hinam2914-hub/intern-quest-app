@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import MentorQuestEvent from "../components/MentorQuestEvent";
 import MentorInboxBanner from "../components/MentorInboxBanner";
 import TodayQuestCard from "../components/TodayQuestCard";
+import CareerDocNudge from "../components/CareerDocNudge";
+import SeasonEventCard from "../components/SeasonEventCard";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import TutorialMark from "../components/TutorialMark";
@@ -496,6 +498,12 @@ export default function HomePage() {
 
         {/* 重要なお知らせ（未読のときだけ・スマホ／タブレットのみ） */}
         <NewsImportantCard news={news} />
+
+        {/* シーズンイベント（開催前〜開催中だけ出る） */}
+        <SeasonEventCard />
+
+        {/* ES・ロードマップが未記入／途中の人にだけ出す案内 */}
+        <CareerDocNudge />
 
         {/* D. ルクの案内（タップで今日のおすすめへ。ルクをなでると喜ぶ＝既存のなでなで機能） */}
         <div className="hq-luku" style={{ animation: "popIn 0.5s ease-out 0.5s both" }}>

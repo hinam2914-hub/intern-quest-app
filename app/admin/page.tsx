@@ -30,6 +30,7 @@ import RecruitTab from "./RecruitTab";
 import RequiredCheckTab from "./RequiredCheckTab";
 import RookieTab from "./RookieTab";
 import FbRequestTab from "./FbRequestTab";
+import CareerDocTab from "./CareerDocTab";
 import SkillCheckTab from "./SkillCheckTab";
 import ScriptPracticeTab from "./ScriptPracticeTab";
 import CourseManageTab from "./CourseManageTab";
@@ -140,7 +141,7 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"today" | "week" | "month">("today");
     const [loading, setLoading] = useState(true);
     const [expandedReport, setExpandedReport] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"required_check" | "rookie" | "fb_requests" | "skill_check" | "script_practice" | "home" | "dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box" | "recruit" | "course" | "avatar_shop" | "island_shop" | "gear_shop" | "journey">("home");
+    const [activeTab, setActiveTab] = useState<"required_check" | "rookie" | "fb_requests" | "career_docs" | "skill_check" | "script_practice" | "home" | "dashboard" | "users" | "announce" | "survey" | "kpi" | "contents" | "requests" | "teams" | "monthly_kpi" | "kpi_dashboard" | "dept_stats" | "resources" | "challenges" | "shop" | "mtg" | "wiki" | "career" | "manager_test" | "es" | "kkc" | "sibyl" | "tests" | "advice" | "talent_archive" | "companies" | "task_management" | "roadmap" | "reports" | "thanks_history" | "routine_check" | "mtg_report" | "report_analytics" | "report_eval" | "sales" | "schedule" | "urgent" | "medaka_manage" | "mentor_report" | "badge" | "thinking_manage" | "questions_box" | "recruit" | "course" | "avatar_shop" | "island_shop" | "gear_shop" | "journey">("home");
     const [scheduleTargetUser, setScheduleTargetUser] = useState<string | null>(null);
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -2164,6 +2165,7 @@ export default function AdminPage() {
                 {activeTab === "required_check" && <RequiredCheckTab />}
                 {activeTab === "rookie" && <RookieTab />}
                 {activeTab === "fb_requests" && <FbRequestTab />}
+                {activeTab === "career_docs" && <CareerDocTab />}
                 {activeTab === "skill_check" && <SkillCheckTab />}
                 {activeTab === "script_practice" && <ScriptPracticeTab />}
                 {activeTab === "course" && <CourseManageTab />}
