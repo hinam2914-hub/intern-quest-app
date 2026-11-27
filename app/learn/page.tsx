@@ -153,6 +153,13 @@ const CSS = `
 .lr-req .st.yet{background:rgba(120,110,90,.1);color:#8a7a5c;border:1px solid rgba(160,140,100,.35)}
 .lr-req .no{flex:none;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:900;color:#17397d;background:#fff;border:1.5px solid #c9a24a}
 .lr-req .no.done{background:#2e9d5f;border-color:#2e9d5f;color:#fff}
+/* 長い一覧は、その枠の中だけでスクロールする（ページ全体は長くしない） */
+.lr-scroll{max-height:min(64vh,620px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-right:6px;scrollbar-width:thin;scrollbar-color:#c9a24a rgba(190,160,110,.18);outline:none}
+.lr-scroll::-webkit-scrollbar{width:8px}
+.lr-scroll::-webkit-scrollbar-track{background:rgba(190,160,110,.18);border-radius:999px}
+.lr-scroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#e2bf63,#c9a24a);border-radius:999px}
+.lr-scroll:focus-visible{box-shadow:0 0 0 2px rgba(75,122,224,.5);border-radius:10px}
+.lr-cs .ls.lr-scroll{max-height:min(48vh,420px)}
 .lr-cnote{font-size:12px;font-weight:800;color:#8a6a3a;margin-bottom:6px}
 .lr-cs{border-bottom:1px solid rgba(190,160,110,.3)}
 .lr-cs:last-child{border-bottom:none}
@@ -446,7 +453,7 @@ function LearnPageInner() {
                                             <span className="ar">{open ? "▲" : "▼"}</span>
                                         </button>
                                         {open && (
-                                            <div className="ls">
+                                            <div className="ls lr-scroll" tabIndex={0}>
                                                 {r.list.map((c, i) => {
                                                     const st = getCompletion(c.id)?.status;
                                                     const done = st === "approved"; const pending = st === "pending";
@@ -521,7 +528,7 @@ function LearnPageInner() {
                         <div className="ph">🎬 {catFilter === "all" ? "おすすめ動画" : `${catFilter} の動画`}
                             {catFilter !== "all" && <button onClick={() => setCatFilter("all")} style={{ marginLeft: "auto", border: "none", background: "none", color: "#17397d", fontWeight: 900, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>すべて表示 ✕</button>}
                         </div>
-                        <div className="lr-vgrid">
+                        <div className="lr-vgrid lr-scroll" tabIndex={0}>
                             {videos.map(content => {
                                 const comp = getCompletion(content.id);
                                 const done = comp?.status === "approved";
@@ -551,6 +558,7 @@ function LearnPageInner() {
                 {articles.length > 0 && (
                     <div className="lr-pn" style={{ marginTop: 14 }}>
                         <div className="ph">📜 {catFilter === "all" ? "読み物コンテンツ" : `${catFilter} の読み物`}</div>
+                        <div className="lr-scroll" tabIndex={0}>
                         {articles.map(content => {
                             const comp = getCompletion(content.id);
                             const done = comp?.status === "approved";
@@ -570,6 +578,7 @@ function LearnPageInner() {
                                 </button>
                             );
                         })}
+                        </div>
                     </div>
                 )}
 
