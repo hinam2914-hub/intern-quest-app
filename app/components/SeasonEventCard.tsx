@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabase";
 
 type Ev = {
     active: boolean; key: string; name: string; subtitle: string | null; status: "upcoming" | "running" | "ended";
-    starts_at: string; ends_at: string; multiplier: number; new_points: number; bonus_total: number;
+    starts_at: string; ends_at: string; multiplier: number; rookie_bonus?: number; new_points: number; bonus_total: number;
     counts: Record<string, number>; main_done: number; main_total: number; es_done: boolean;
 };
 const md = (iso: string, shift = 0) => { const d = new Date(new Date(iso).getTime() + 9 * 3600e3 + shift); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
@@ -47,7 +47,7 @@ export default function SeasonEventCard() {
                 <span className="sev-period">{period}{ev.status === "running" && <b>あと{daysLeft}日</b>}{ev.status === "upcoming" && <b>あと{daysTo}日で開始</b>}</span>
             </div>
             <div className="sev-name">{ev.name}</div>
-            <div className="sev-sub">学習コンテンツ・ES・テストのポイントが <b>{ev.multiplier}倍</b></div>
+            <div className="sev-sub">学習・ES・テスト・チャレンジのポイントが <b>{ev.multiplier}倍</b></div>
 
             {ev.status !== "upcoming" && ev.new_points > 0 && <div className="sev-new" role="status">イベントボーナス <b>+{ev.new_points}pt</b> を受け取りました</div>}
 
@@ -65,9 +65,9 @@ export default function SeasonEventCard() {
             {open && (
                 <div className="sev-rule">
                     <p><b>期間</b>：{period}</p>
-                    <p><b>ポイント{ev.multiplier}倍</b>：期間中に、学習コンテンツの完了報告が承認されたとき／ESを初めて完成させたとき／テストに合格したとき、いつものポイントと同じ額がボーナスで付きます。ボーナスはHOMEを開いたときに自動で受け取ります。</p>
+                    <p><b>ポイント{ev.multiplier}倍</b>：期間中に、学習コンテンツの完了報告が承認されたとき／ESを初めて完成させたとき／テストに合格したとき／チャレンジが承認されたとき、いつものポイントと同じ額がボーナスで付きます。{(ev.rookie_bonus || 0) > 0 && `一人前チャレンジは、期間中に提出して承認された1項目ごとに +${ev.rookie_bonus}pt が付きます。`}ボーナスはHOMEを開いたときに自動で受け取ります。</p>
                     <p><b>達成報酬（限定装備）</b>：「学習メインルート制覇」か「ES完成」のどちらかで1つ、両方でもう1つ。装備は準備中で、できあがり次第お知らせします。</p>
-                    {ev.status !== "upcoming" && <p><b>ボーナスの内訳</b>：学習 {c.content || 0}本／ES {c.es || 0}件／テスト {c.test || 0}件</p>}
+                    {ev.status !== "upcoming" && <p><b>ボーナスの内訳</b>：学習 {c.content || 0}本／ES {c.es || 0}件／テスト {c.test || 0}件／チャレンジ {c.challenge || 0}件{(ev.rookie_bonus || 0) > 0 ? `／一人前チャレンジ ${c.rookie || 0}項目` : ""}</p>}
                 </div>
             )}
         </div>
