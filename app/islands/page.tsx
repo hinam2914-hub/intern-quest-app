@@ -3,7 +3,7 @@
 // ・島とアバターはHOMEと同じ描画（DayIslandScene / AvatarLayered）を再利用し、育成状態と完全一致させる
 // ・攻略情報（弱点属性・推奨武器・難易度）は app/lib/battle.ts の実計算だけを使う（UI独自の相性表を持たない）
 // ・クエスト提案は実在報酬のみ：チャレンジ=challenges.points／思考クエスト=+5pt/問／学習=+2pt/完了承認
-// ・バトルランクとシーズンは未実装のため全員「未ランク」。攻略目標はDB承認前のためブラウザ内保存（localStorage）
+// ・バトルランクは app/lib/battleRank.ts（攻撃回数・落城数の累計）。シーズンは未実装。攻略目標はDB承認前のためブラウザ内保存（localStorage）
 // ・読み取り専用ページ：DBへの書き込みは一切しない
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import { getCastleStage } from "../lib/castle";
 import { JOBS, type JobKey } from "../onboarding/job/page";
 import type { AvatarConfig } from "../lib/avatar/catalog";
 import CheerTeaser from "../components/CheerTeaser";
+import { loadBattleStats, rankOf, NO_STAT, type BattleStat } from "../lib/battleRank";
 import {
     BATTLE_CONFIG, levelMultiplier, levelMultLabel, ELEMENTS, ADVANTAGE, WEAPONS, SKILLS, loadWeaponShop, canUseWeapon, type WeaponShop, loadLootConfig, lootRateFor, type LootConfig,
     castleElementOf, elementMultiplier, readBattleLog, CHEST_IMG, type ElementKey, type WeaponDef, type BattleLog,
@@ -75,6 +76,8 @@ const WIco = ({ w, size = 40 }: { w: WeaponDef; size?: number }) =>
 export default function IslandsGuildPage() {
     const router = useRouter();
     const [islands, setIslands] = useState<GIsland[]>([]);
+    const [bstats, setBstats] = useState<Record<string, BattleStat>>({});   // バトル実績（未導入・履歴なしは空＝全員 未ランク）
+    const statOf = (id: string) => bstats[id] || NO_STAT;
     const [loading, setLoading] = useState(true);
     const [myId, setMyId] = useState("");
     const [myPoints, setMyPoints] = useState(0);
@@ -98,6 +101,7 @@ export default function IslandsGuildPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) { router.push("/login"); return; }
             setMyId(user.id);
+            loadBattleStats(supabase).then(setBstats);
             const [{ data: profiles }, { data: points }, { data: jsubs }, { data: chs }, { data: mySubs }] = await Promise.all([
                 supabase.from("profiles").select("id, name, streak, avatar_config, island_config, licenses, job_class").eq("is_active", true),
                 supabase.from("user_points").select("id, points, total_earned"),
@@ -305,7 +309,7 @@ export default function IslandsGuildPage() {
                                     <span className="gx-card-mid">
                                         <span className="gx-card-name">{i.name}{i.id === myId && <i className="gx-you">自分</i>}</span>
                                         <span className="gx-card-sub">Lv.{i.level}・{jobName(i.job)}</span>
-                                        <span className="gx-card-sub2"><span className="gx-rank"><img src={GUILD_IMG.rankNone} alt="" />未ランク</span><span style={{ color: ELEMENTS[i.element].color, fontWeight: 900 }}><ElIco k={i.element} size={12} /> {ELEMENTS[i.element].name}</span></span>
+                                        <span className="gx-card-sub2"><span className="gx-rank" style={{ color: rankOf(statOf(i.id).bp).color }}><img src={rankOf(statOf(i.id).bp).img} alt="" />{rankOf(statOf(i.id).bp).name}</span><span style={{ color: ELEMENTS[i.element].color, fontWeight: 900 }}><ElIco k={i.element} size={12} /> {ELEMENTS[i.element].name}</span></span>
                                     </span>
                                     <span className="gx-card-castle">
                                         <img src={castle.img} alt="" />
@@ -333,7 +337,7 @@ export default function IslandsGuildPage() {
                                     <div className="gx-sel-chips">
                                         <span className="gx-pill gx-pill-lv">Lv.{sel.level}</span>
                                         <span className="gx-pill gx-pill-job">{jobName(sel.job)}</span>
-                                        <span className="gx-pill gx-pill-rank"><img src={GUILD_IMG.rankNone} alt="" style={{ width: 16, height: 16 }} />未ランク</span>
+                                        <span className="gx-pill gx-pill-rank" style={{ color: rankOf(statOf(sel.id).bp).color }}><img src={rankOf(statOf(sel.id).bp).img} alt="" style={{ width: 16, height: 16 }} />{rankOf(statOf(sel.id).bp).name}</span>
                                         <span className="gx-pill" style={{ color: ELEMENTS[sel.element].color, borderColor: ELEMENTS[sel.element].color }}><ElIco k={sel.element} size={13} /> {ELEMENTS[sel.element].name}属性の城</span>
                                     </div>
                                     <div className="gx-sel-meta">🔥 連続 {sel.streak}日 ／ 🏰 城 第{getCastleStage(sel.totalEarned).stage}段階 ／ 📍 {STEP_TITLE[sel.stepNo] || STEP_TITLE[0]}</div>
@@ -394,7 +398,7 @@ export default function IslandsGuildPage() {
                             <div className="gx-sec">🧭 攻略サマリー</div>
                             <div className="gx-rows">
                                 <div className="gx-row"><span>攻略難易度</span><b><span className="gx-stars">{"★".repeat(guide.dif.star)}<i>{"★".repeat(5 - guide.dif.star)}</i></span> <em className="gx-dif">{guide.dif.label}</em></b></div>
-                                <div className="gx-row"><span>バトルランク</span><b><img src={GUILD_IMG.rankNone} alt="" style={{ width: 18, height: 18, verticalAlign: "-4px" }} /> 未ランク</b></div>
+                                <div className="gx-row"><span>バトルランク</span><b style={{ color: rankOf(statOf(sel.id).bp).color }}><img src={rankOf(statOf(sel.id).bp).img} alt="" style={{ width: 18, height: 18, verticalAlign: "-4px" }} /> {rankOf(statOf(sel.id).bp).name}<small style={{ marginLeft: 6, fontSize: 11, color: "#8a7a5c" }}>{statOf(sel.id).bp} BP</small></b></div>
                                 <div className="gx-row"><span>城の属性</span><b style={{ color: ELEMENTS[sel.element].color }}><ElIco k={sel.element} size={14} /> {ELEMENTS[sel.element].name}</b></div>
                                 <div className="gx-row"><span>弱点属性</span><b style={{ color: ELEMENTS[guide.weak].color }}><ElIco k={guide.weak} size={14} /> {ELEMENTS[guide.weak].name}（×{BATTLE_CONFIG.multAdvantage.toFixed(1)}）</b></div>
                                 {guide.resist && <div className="gx-row"><span>通りにくい属性</span><b style={{ color: "#94a3b8" }}><ElIco k={guide.resist} size={14} /> {ELEMENTS[guide.resist].name}（×{BATTLE_CONFIG.multDisadvantage.toFixed(1)}）</b></div>}
@@ -497,7 +501,7 @@ export default function IslandsGuildPage() {
                                 <div className="gx-row"><span>冒険STEP</span><b>{STEP_TITLE[sel.stepNo] || STEP_TITLE[0]}</b></div>
                                 <div className="gx-row"><span>連続記録</span><b>🔥 {sel.streak}日</b></div>
                                 <div className="gx-row"><span>城の成長段階</span><b>第{getCastleStage(sel.totalEarned).stage}段階 / 5{getCastleStage(sel.totalEarned).isMax && "（MAX）"}</b></div>
-                                <div className="gx-row"><span>バトル実績</span><b>未ランク（ランク戦は準備中）</b></div>
+                                <div className="gx-row"><span>バトル実績</span><b>{statOf(sel.id).attacks === 0 ? "まだ攻撃していません" : `攻撃 ${statOf(sel.id).attacks}回・落城 ${statOf(sel.id).wins}回`}</b></div>
                             </div>
                             {(sel.licenses.ip || sel.licenses.cb || sel.licenses.sales) && (
                                 <>

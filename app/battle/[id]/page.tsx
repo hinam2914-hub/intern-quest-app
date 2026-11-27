@@ -11,6 +11,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { getLevel } from "../../lib/island";
 import AvatarFace from "../../components/AvatarFace";
+import { loadBattleStats, rankOf, nextRank, NO_STAT, type BattleStat } from "../../lib/battleRank";
 import { getCastleStage } from "../../lib/castle";
 import { JOBS, type JobKey } from "../../onboarding/job/page";
 import AvatarLayered from "../../components/AvatarLayered";
@@ -35,6 +36,8 @@ export default function BattlePage() {
     const oppId = String(params?.id || "");
 
     const [me, setMe] = useState<Who | null>(null);
+    const [bstats, setBstats] = useState<Record<string, BattleStat>>({});
+    const statOf = (id: string) => bstats[id] || NO_STAT;
     const [opp, setOpp] = useState<Who | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -89,6 +92,7 @@ export default function BattlePage() {
                 };
             };
             setMe(mk(user.id)); setOpp(mk(oppId));
+            loadBattleStats(supabase).then(setBstats);
             // 城の状態をサーバーから取得（HP・シールド・今日の残り攻撃回数）。関数が無ければ端末内デモにフォールバック
             const { data: st, error: stErr } = await supabase.rpc("battle_castle_state", { p_defender: oppId });
             if (!stErr && st) {
@@ -237,9 +241,10 @@ export default function BattlePage() {
                         </div>
                     </div>
                     <div className="bt-panel">
-                        <div className="bt-row"><span>🪙 バトルポイント</span><b>ー</b></div>
-                        <div className="bt-row"><span>💎 バトルコイン</span><b>ー</b></div>
-                        <div className="bt-row"><span>🗡️ 装備中の武器</span><b>{weapon.name}</b></div>
+                        <div className="bt-row"><span>🏅 バトルランク</span><b style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><img src={rankOf(statOf(me.id).bp).img} alt="" style={{ width: 18, height: 18 }} />{rankOf(statOf(me.id).bp).name}</b></div>
+                        <div className="bt-row"><span>⭐ バトルポイント</span><b>{statOf(me.id).bp} BP</b></div>
+                        {nextRank(statOf(me.id).bp) && <div className="bt-rknext">{nextRank(statOf(me.id).bp)!.rank.name}まで あと {nextRank(statOf(me.id).bp)!.left} BP（攻撃 +1・落城 +10）</div>}
+                                                <div className="bt-row"><span>🗡️ 装備中の武器</span><b>{weapon.name}</b></div>
                         <div className="bt-row"><span>⚡ 残り攻撃回数</span><b className={attacksLeft === 0 ? "bt-zero" : ""}>{attacksLeft} / {BATTLE_CONFIG.attacksPerDay} 回</b></div>
                     </div>
                     <div className="bt-panel bt-menu">
@@ -256,11 +261,11 @@ export default function BattlePage() {
                     <div className="bt-vs">
                         <div className="bt-vs-side">
                             <AvatarFace src={{ job: me.job, cfg: me.cfg }} size={44} border="2px solid #fcd34d" />
-                            <div><div className="bt-vs-name">自分の島 <b>Lv.{me.level}</b></div><div className="bt-vs-pt">⭐ バトルポイント —</div></div>
+                            <div><div className="bt-vs-name">自分の島 <b>Lv.{me.level}</b></div><div className="bt-vs-pt">⭐ <span className="bt-vs-rk">{rankOf(statOf(me.id).bp).name}・</span>{statOf(me.id).bp} BP</div></div>
                         </div>
                         <div className="bt-vs-mark">VS</div>
                         <div className="bt-vs-side bt-vs-right">
-                            <div><div className="bt-vs-name">{opp.name}の島 <b>Lv.{opp.level}</b></div><div className="bt-vs-pt">⭐ バトルポイント —</div></div>
+                            <div><div className="bt-vs-name">{opp.name}の島 <b>Lv.{opp.level}</b></div><div className="bt-vs-pt">⭐ <span className="bt-vs-rk">{rankOf(statOf(opp.id).bp).name}・</span>{statOf(opp.id).bp} BP</div></div>
                             <AvatarFace src={{ job: opp.job, cfg: opp.cfg }} size={44} border="2px solid #fcd34d" />
                         </div>
                     </div>
@@ -420,10 +425,11 @@ const CSS = `
 .bt-vs{display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(180deg,#1e3a8a,#25449c);border:2px solid #fcd34d;border-radius:16px;padding:8px 14px;color:#fff;box-shadow:0 6px 18px rgba(23,42,99,.35)}
 .bt-vs-side{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
 .bt-vs-side>div{min-width:0}
-.bt-vs-side img{width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:top;border:2px solid #fcd34d;background:#dbeafe}
+.bt-rknext{font-size:10.5px;font-weight:800;color:#8a7a5c;padding:2px 0 4px;line-height:1.5}
+.bt-vs-side>img{width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:top;border:2px solid #fcd34d;background:#dbeafe}
 .bt-vs-name{font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bt-vs-name b{color:#fde68a}
-.bt-vs-pt{font-size:10.5px;font-weight:800;color:#bfdbfe;margin-top:1px}
+.bt-vs-pt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;font-weight:800;color:#bfdbfe;margin-top:1px}
 .bt-vs-right{text-align:right}
 .bt-vs-mark{font-size:21px;font-weight:900;color:#fde68a;text-shadow:0 2px 8px rgba(0,0,0,.4);flex-shrink:0}
 .bt-stage{position:relative;margin-top:12px;height:400px;border-radius:20px;border:3px solid #fcd34d;overflow:hidden;background:linear-gradient(180deg,#8ecdf3 0%,#aedcf7 45%,#cfeafc 100%);box-shadow:0 8px 24px rgba(23,42,99,.25)}
@@ -491,7 +497,8 @@ const CSS = `
 .bt-legend{display:flex;gap:10px;margin-top:9px;font-size:10.5px;font-weight:900;flex-wrap:wrap}
 .bt-wdesc{font-size:11px;font-weight:700;color:#6b5a33;margin-top:6px;line-height:1.6;background:rgba(255,255,255,.6);border-radius:8px;padding:7px 9px}
 @media (max-width:980px){
-  .bt-grid{grid-template-columns:1fr}
+  .bt-grid{grid-template-columns:minmax(0,1fr)}
+  .bt-grid>*{min-width:0}
   .bt-left{order:3}
   .bt-center{order:1}
   .bt-right{order:2}
@@ -503,7 +510,8 @@ const CSS = `
   .bt-pop-crit{font-size:36px}
   .bt-demo-badge{margin-left:0}
   .bt-vs{padding:8px 10px}
-  .bt-vs-side img{width:38px;height:38px}
+  .bt-vs-rk{display:none}
+  .bt-vs-side>img{width:38px;height:38px}
   .bt-vs-name{font-size:11.5px}
 }
 @media (prefers-reduced-motion: reduce){
