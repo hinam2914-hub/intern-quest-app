@@ -207,6 +207,42 @@ export default function ShopPage() {
     const IImg = ({ it, size }: { it: IslandItem; size: number }) => ISLAND_IMG[it.css_key] ? <img src={ISLAND_IMG[it.css_key]} alt={it.name} style={{ width: size, height: size, objectFit: "contain" }} /> : <span style={{ fontSize: size * 0.66 }}>{it.emoji || "🎁"}</span>;
     const El = ({ k }: { k: keyof typeof ELEMENTS }) => { const e = ELEMENTS[k]; return <span style={{ color: e.color, fontWeight: 900 }}>{e.img ? <img src={e.img} alt="" style={{ width: 14, height: 14, verticalAlign: "-2px" }} /> : e.emoji} {e.name}</span>; };
 
+    // カード1枚の描画（通常の段と「期間限定」の段の両方で使う）
+    const islandCard = (it: IslandItem) => {
+            const st = iState(it);
+            const canBuy = st.kind === "buy" || st.kind === "more"; const short = st.kind === "short" || st.kind === "more-short";
+            return (
+                <button key={it.id} className={"sp-card sp-st-" + (st.kind === "short" ? "short" : st.kind)} onClick={() => { setAskAt(0); setSelI(it); }}>
+                    {st.placed > 0 ? <span className="sp-ribbon on">✓ 設置中{st.max > 1 ? ` ${st.placed}個` : ""}</span>
+                        : st.have > 0 ? <span className="sp-ribbon">✓ 所持{st.max > 1 ? ` ${st.have}/${st.max}` : "済み"}</span> : null}
+                    {st.kind === "pending" && <span className="sp-ribbon wait">⏳ 承認待ち</span>}
+                    {rare(it.rarity) && <span className={"sp-rare sp-rare-" + rare(it.rarity)!.toLowerCase()}>{rare(it.rarity)}</span>}
+                    {iSale(it) !== "always" && st.have === 0 && st.kind !== "pending" && <span className="sp-ribbon" style={{ background: "linear-gradient(180deg,#f472b6,#be185d)" }}>期間限定</span>}
+                    <span className="sp-card-img"><IImg it={it} size={104} /></span>
+                    <span className="sp-card-name">{it.name}</span>
+                    <span className="sp-card-sub">{it.max_owned && it.max_owned > 1 ? `${it.max_owned}個まで持てる` : "1つ持てばOK"}</span>
+                    {st.kind === "soon" ? <span className="sp-price have">{st.label}</span> : canBuy || short || st.kind === "pending"
+                        ? <span className={"sp-price" + (short ? " short" : "")}>🪙 {it.price.toLocaleString()}pt{short && <i>{st.label}</i>}</span>
+                        : <span className="sp-price have">飾りつけで使える</span>}
+                </button>
+            );
+    };
+    const weaponCard = (w: WeaponDef) => {
+            const st = wState(w);
+            return (
+                <button key={w.key} className={"sp-card sp-st-" + st.kind} onClick={() => { setAskAt(0); setSelW(w); }}>
+                    {st.kind === "owned" && <span className="sp-ribbon">✓ {st.label}</span>}
+                    {w.limited && st.kind !== "owned" && <span className="sp-ribbon" style={{ background: "linear-gradient(180deg,#f472b6,#be185d)" }}>期間限定</span>}
+                    <span className="sp-card-img"><WImg w={w} size={112} /></span>
+                    <span className="sp-card-name">{w.name}</span>
+                    <span className="sp-card-sub">攻撃 {w.limited ? `${w.atk}〜${w.limited.atkMax}` : w.atk}・{w.element ? <El k={w.element} /> : "無属性"}</span>
+                    {st.kind === "soon" || st.kind === "join" ? <span className="sp-price have">{st.kind === "join" ? `🪙 ${st.price.toLocaleString()}pt・参加者のみ` : st.label}</span> : shop.enabled && st.price > 0 && !shop.owned.has(w.key)
+                        ? <span className={"sp-price" + (st.kind === "short" ? " short" : "")}>🪙 {st.price.toLocaleString()}pt{st.kind === "short" && <i>{st.label}</i>}</span>
+                        : <span className="sp-price have">{st.kind === "free" ? "使用可能" : "島バトルで使える"}</span>}
+                </button>
+            );
+    };
+
     return (
         <div className="sp-root">
             <style>{CSS}</style>
@@ -257,23 +293,13 @@ export default function ShopPage() {
                             );
                         })}
                         {shop.enabled && (<>
+                        {listedWeapons(shop).some((w) => w.limited) && (<>
+                        <div className="sp-sec sp-sec-ltd">❄ 期間限定<i>冬の学び祭のあいだだけ手に入る武器</i></div>
+                        <div className="sp-grid sp-grid-ltd">{listedWeapons(shop).filter((w) => w.limited).map(weaponCard)}</div>
+                        </>)}
                         <div className="sp-sec">⚔️ 島バトルの武器</div>
                         <div className="sp-grid">
-                            {listedWeapons(shop).map((w) => {
-                                const st = wState(w);
-                                return (
-                                    <button key={w.key} className={"sp-card sp-st-" + st.kind} onClick={() => { setAskAt(0); setSelW(w); }}>
-                                        {st.kind === "owned" && <span className="sp-ribbon">✓ {st.label}</span>}
-                                        {w.limited && st.kind !== "owned" && <span className="sp-ribbon" style={{ background: "linear-gradient(180deg,#f472b6,#be185d)" }}>期間限定</span>}
-                                        <span className="sp-card-img"><WImg w={w} size={112} /></span>
-                                        <span className="sp-card-name">{w.name}</span>
-                                        <span className="sp-card-sub">攻撃 {w.limited ? `${w.atk}〜${w.limited.atkMax}` : w.atk}・{w.element ? <El k={w.element} /> : "無属性"}</span>
-                                        {st.kind === "soon" || st.kind === "join" ? <span className="sp-price have">{st.kind === "join" ? `🪙 ${st.price.toLocaleString()}pt・参加者のみ` : st.label}</span> : shop.enabled && st.price > 0 && !shop.owned.has(w.key)
-                                            ? <span className={"sp-price" + (st.kind === "short" ? " short" : "")}>🪙 {st.price.toLocaleString()}pt{st.kind === "short" && <i>{st.label}</i>}</span>
-                                            : <span className="sp-price have">{st.kind === "free" ? "使用可能" : "島バトルで使える"}</span>}
-                                    </button>
-                                );
-                            })}
+                            {listedWeapons(shop).filter((w) => !w.limited).map(weaponCard)}
                         </div>
                         </>)}
                         <button className="sp-link" onClick={() => router.push("/onboarding/avatar?from=mypage&tab=gear")}>
@@ -287,32 +313,25 @@ export default function ShopPage() {
                 {tab === "island" && (
                     <>
                         {islandItems.length === 0 && <div className="sp-info">まだ島のアイテムがありません</div>}
+                        {/* 期間限定の段：販売期間があるアイテムは、種類に関係なくここにまとめる（販売が終わったものは、持っている人にだけ見せる） */}
+                        {(() => {
+                            const ltd = islandItems.filter((it) => iSale(it) !== "always" && !(iSale(it) === "after" && !ownedIsland.includes(it.id)));
+                            if (!ltd.length) return null;
+                            return (
+                                <section>
+                                    <div className="sp-sec sp-sec-ltd">❄ 期間限定<i>冬の学び祭のあいだだけ買える飾り</i></div>
+                                    <div className="sp-grid sp-grid-ltd">{ltd.map(islandCard)}</div>
+                                </section>
+                            );
+                        })()}
                         {CATS.map((c) => {
-                            const list = islandItems.filter((it) => it.category === c.key && !(iSale(it) === "after" && !ownedIsland.includes(it.id)));   // 販売が終わった期間限定品は、持っている人にだけ見せる
+                            const list = islandItems.filter((it) => it.category === c.key && iSale(it) === "always");   // 販売が終わった期間限定品は、持っている人にだけ見せる
                             if (!list.length) return null;
                             return (
                                 <section key={c.key}>
                                     <div className="sp-sec">{c.label}<i>{c.key === "ground" ? "島全体の地面を1種類えらべます" : `島に${PLACE_LIMIT[c.key]}個まで置けます`}</i></div>
                                     <div className="sp-grid">
-                                        {list.map((it) => {
-                                            const st = iState(it);
-                                            const canBuy = st.kind === "buy" || st.kind === "more"; const short = st.kind === "short" || st.kind === "more-short";
-                                            return (
-                                                <button key={it.id} className={"sp-card sp-st-" + (st.kind === "short" ? "short" : st.kind)} onClick={() => { setAskAt(0); setSelI(it); }}>
-                                                    {st.placed > 0 ? <span className="sp-ribbon on">✓ 設置中{st.max > 1 ? ` ${st.placed}個` : ""}</span>
-                                                        : st.have > 0 ? <span className="sp-ribbon">✓ 所持{st.max > 1 ? ` ${st.have}/${st.max}` : "済み"}</span> : null}
-                                                    {st.kind === "pending" && <span className="sp-ribbon wait">⏳ 承認待ち</span>}
-                                                    {rare(it.rarity) && <span className={"sp-rare sp-rare-" + rare(it.rarity)!.toLowerCase()}>{rare(it.rarity)}</span>}
-                                                    {iSale(it) !== "always" && st.have === 0 && st.kind !== "pending" && <span className="sp-ribbon" style={{ background: "linear-gradient(180deg,#f472b6,#be185d)" }}>期間限定</span>}
-                                                    <span className="sp-card-img"><IImg it={it} size={104} /></span>
-                                                    <span className="sp-card-name">{it.name}</span>
-                                                    <span className="sp-card-sub">{it.max_owned && it.max_owned > 1 ? `${it.max_owned}個まで持てる` : "1つ持てばOK"}</span>
-                                                    {st.kind === "soon" ? <span className="sp-price have">{st.label}</span> : canBuy || short || st.kind === "pending"
-                                                        ? <span className={"sp-price" + (short ? " short" : "")}>🪙 {it.price.toLocaleString()}pt{short && <i>{st.label}</i>}</span>
-                                                        : <span className="sp-price have">飾りつけで使える</span>}
-                                                </button>
-                                            );
-                                        })}
+                                        {list.map(islandCard)}
                                     </div>
                                 </section>
                             );
@@ -468,6 +487,7 @@ const CSS = `
 .sp-main{max-width:1040px;margin:0 auto;background:rgba(255,249,237,.95);border:3px solid #D9A441;border-radius:0 0 22px 22px;padding:18px 16px 20px;box-shadow:0 10px 30px rgba(16,47,112,.25)}
 .sp-sec{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(180deg,#2f6ad1,#1454B8);border:2px solid #F5D77E;border-radius:999px;padding:5px 18px;color:#fff;font-size:13.5px;font-weight:900;margin:6px 0 12px;box-shadow:0 3px 10px rgba(16,47,112,.3)}
 .sp-sec i{font-style:normal;font-size:10px;font-weight:800;color:#dbe7ff}
+.sp-grid-ltd{padding:14px;margin:-4px -6px 22px;border-radius:20px;border:2px solid #f3a9b4;background:linear-gradient(180deg,rgba(226,85,99,.2),rgba(179,32,47,.12))}
 .sp-info{background:rgba(219,234,254,.7);border:1.5px solid #93c5fd;border-radius:12px;padding:10px 13px;font-size:12px;font-weight:800;color:#1e3a8a;margin-bottom:12px}
 .sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px;margin-bottom:18px}
 .sp-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 10px 12px;border-radius:18px;cursor:pointer;text-align:center;border:3px solid #D9A441;background:radial-gradient(ellipse at 50% 28%,#fffef8 0%,#fbf0d4 62%,#f1dfb2 100%);box-shadow:inset 0 0 0 3px rgba(255,255,255,.7),inset 0 0 0 4px rgba(217,164,65,.35),0 5px 12px rgba(120,80,20,.18);transition:transform .15s,box-shadow .15s;overflow:hidden}
@@ -539,6 +559,8 @@ const CSS = `
 .sp-main{max-width:1180px;margin-top:-26px;padding:54px 30px 26px;border-radius:14px;background:linear-gradient(180deg,rgba(38,52,104,.93),rgba(27,38,82,.95));border:3px solid #E8C876;box-shadow:0 0 0 2px #9c7430,inset 0 0 0 2px rgba(232,200,118,.35),0 14px 36px rgba(10,20,60,.45)}
 .sp-sec{background:none;border:none;box-shadow:none;padding:0;color:#f6dc9a;font-size:15px;letter-spacing:2px}
 .sp-sec i{color:#c9d3f2}
+.sp-sec.sp-sec-ltd{color:#ffd0d6}
+.sp-sec.sp-sec-ltd i{color:#ffe3e7}
 .sp-info{background:rgba(255,255,255,.12);border-color:rgba(232,200,118,.6);color:#fff}
 .sp-grid{grid-template-columns:repeat(4,1fr);gap:20px}
 .sp-card{border:3px solid #e9d6a6;border-radius:14px;padding:16px 12px 12px;background:radial-gradient(ellipse at 50% 34%,#ffffff 0%,#f4f1fa 45%,#fbf4e3 100%);box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 3px rgba(217,164,65,.45),0 6px 14px rgba(8,14,44,.4)}
