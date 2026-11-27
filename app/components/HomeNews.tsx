@@ -9,6 +9,9 @@ import { supabase } from "../lib/supabase";
 import { categoryInfo, newsDate, safeLink, NEWS_IMG, type News } from "../lib/news";
 
 /** 自分宛ての通知（既存の notifications テーブル：島バトルで攻撃された、テストの再挑戦など）。通知ページと同じデータ */
+/** お知らせの詳細の一番上に出す絵（飛び先ごと）。イベントの告知にメインビジュアルを出す */
+const NEWS_HERO: Record<string, string> = { "/event": "/event/winter_main_s.webp" };
+
 export type Notice = { id: string; type: string; title: string; message: string; link: string | null; icon: string | null; is_read: boolean; created_at: string };
 export type NewsState = {
     list: News[]; unread: number; isUnread: (id: string) => boolean;
@@ -186,6 +189,7 @@ export function NewsLayer({ news }: { news: NewsState }) {
                 {news.view === "detail" && n && c && (
                     <div className="hn-scroll hn-detail">
                         <div className="hn-meta"><img className="hn-cat sm" src={c.img} alt="" /><i style={{ color: c.color }}>{c.label}</i><time>{newsDate(n.publish_at)}</time></div>
+                        {n.link_url && NEWS_HERO[n.link_url] && <img className="hn-hero" src={NEWS_HERO[n.link_url]} alt="" width={960} height={640} />}
                         <h3>{n.title}</h3>
                         <p>{n.content}</p>
                         {n.link_url && <button className="hn-link" onClick={() => { const u = n.link_url!; news.close(); router.push(u); }}>詳しく見る →</button>}
@@ -239,6 +243,7 @@ const CSS = `
 .hn-tabs i{font-style:normal;min-width:18px;height:18px;box-sizing:border-box;padding:0 5px;border-radius:999px;background:#e11d48;color:#fff;font-size:10.5px;display:inline-flex;align-items:center;justify-content:center}
 .hn-cat.emo{display:flex;align-items:center;justify-content:center;font-size:28px}
 .hn-scroll{overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch}
+.hn-hero{display:block;width:100%;height:auto;border-radius:14px;border:2px solid #e2bf63;margin:4px 0 6px;box-shadow:0 4px 12px rgba(16,47,112,.18)}
 .hn-detail h3{margin:8px 0 10px;font-size:19px;font-weight:900;color:#17397d;line-height:1.45;overflow-wrap:anywhere}
 .hn-detail p{margin:0;font-size:14.5px;line-height:1.85;color:#3b3524;white-space:pre-wrap;overflow-wrap:anywhere}
 .hn-detail .hn-meta{font-size:12px}

@@ -59,11 +59,12 @@ export default function EventPage() {
                 {back}
                 {/* ヒーロー */}
                 <div className="evp-hero">
+                    {/* メインビジュアル（イベント名は絵の中に入っている） */}
+                    <img className="evp-main" src="/event/winter_main.webp" alt={ev.name} width={1536} height={1024} />
                     <div className="evp-tags">
-                        <span className="evp-season">❄ WINTER EVENT</span>
                         <span className="evp-tag">{ev.status === "upcoming" ? "まもなく開催" : ev.status === "running" ? "開催中" : "終了"}</span>
                     </div>
-                    <h1>{ev.name}</h1>
+                    <h1 className="evp-sr">{ev.name}</h1>
                     <p className="evp-lead">クリスマスと年末の、冬だけのシーズンイベント。<br />学習・ES・テスト・チャレンジのポイントが <b>{m}倍</b>！</p>
                     <div className="evp-period">{md(ev.starts_at)} 〜 {md(ev.ends_at, -1000)}
                         <b>{ev.status === "running" ? `あと${daysLeft}日` : ev.status === "upcoming" ? `あと${daysTo}日で開始` : "終了しました"}</b>
@@ -165,7 +166,9 @@ const CSS = `
 @media (min-width:768px){.evp-root{background-image:url(/home/bg_pc.webp);padding:22px 20px 60px}}
 .evp-col{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 .evp-back{align-self:flex-start;min-height:40px;padding:8px 16px;border-radius:999px;border:2px solid #e2bf63;background:#fffdf4;color:#17397d;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 3px 8px rgba(20,40,100,.18)}
-.evp-hero{border-radius:22px;border:3px solid #e2bf63;background:linear-gradient(180deg,#2f5fc4,#1d3f96 55%,#172f78);color:#fff;padding:18px 18px 16px;text-align:center;box-shadow:0 0 0 3px rgba(255,255,255,.4),0 12px 26px rgba(16,47,112,.32),inset 0 2px 0 rgba(255,255,255,.22)}
+.evp-hero{border-radius:22px;border:3px solid #e2bf63;background:linear-gradient(180deg,#2f5fc4,#1d3f96 55%,#172f78);color:#fff;padding:0 18px 16px;text-align:center;overflow:hidden;box-shadow:0 0 0 3px rgba(255,255,255,.4),0 12px 26px rgba(16,47,112,.32),inset 0 2px 0 rgba(255,255,255,.22)}
+.evp-main{display:block;width:calc(100% + 36px);max-width:none;height:auto;margin:0 -18px 14px;border-bottom:3px solid #e2bf63}
+.evp-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .evp-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .evp-season{font-size:10.5px;font-weight:900;letter-spacing:.12em;background:linear-gradient(180deg,#e25563,#b3202f);border:1px solid #ffd9dd;border-radius:999px;padding:4px 11px}
 .evp-tag{font-size:11px;font-weight:900;color:#5a3d08;background:linear-gradient(180deg,#ffe9a8,#f0c04f);border:1px solid #fff3c9;border-radius:999px;padding:4px 12px}

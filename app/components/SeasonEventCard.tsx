@@ -91,12 +91,11 @@ export default function SeasonEventCard({ onActive, silent }: { onActive?: (on: 
     return (
         <div className="sev">
             <style>{CSS}</style>
+            <img className="sev-main" src="/event/winter_main_s.webp" alt={ev.name} width={960} height={640} />
             <div className="sev-top">
                 <span className="sev-tag">{ev.status === "upcoming" ? "まもなく開催" : ev.status === "running" ? "開催中" : "終了"}</span>
-                <span className="sev-season">❄ WINTER EVENT</span>
                 <span className="sev-period">{period}{ev.status === "running" && <b>あと{daysLeft}日</b>}{ev.status === "upcoming" && <b>あと{daysTo}日で開始</b>}</span>
             </div>
-            <div className="sev-name">{ev.name}</div>
             <div className="sev-sub">学習・ES・テスト・チャレンジのポイントが <b>{ev.multiplier}倍</b></div>
 
             {ev.status !== "upcoming" && ev.new_points > 0 && <div className="sev-new" role="status">イベントボーナス <b>+{ev.new_points}pt</b> を受け取りました</div>}
@@ -134,7 +133,8 @@ export default function SeasonEventCard({ onActive, silent }: { onActive?: (on: 
 }
 
 const CSS = `
-.sev{width:100%;box-sizing:border-box;margin-top:14px;border-radius:18px;border:2.5px solid #e2bf63;background:linear-gradient(180deg,#2f5fc4,#1d3f96 55%,#172f78);color:#fff;padding:12px 14px 10px;box-shadow:0 8px 20px rgba(16,47,112,.3),inset 0 2px 0 rgba(255,255,255,.22)}
+.sev{width:100%;box-sizing:border-box;margin-top:14px;border-radius:18px;border:2.5px solid #e2bf63;background:linear-gradient(180deg,#2f5fc4,#1d3f96 55%,#172f78);color:#fff;padding:0 14px 10px;overflow:hidden;box-shadow:0 8px 20px rgba(16,47,112,.3),inset 0 2px 0 rgba(255,255,255,.22)}
+.sev-main{display:block;width:calc(100% + 28px);max-width:none;height:auto;margin:0 -14px 10px;border-bottom:2.5px solid #e2bf63}
 .sev-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sev-tag{font-size:10.5px;font-weight:900;color:#5a3d08;background:linear-gradient(180deg,#ffe9a8,#f0c04f);border:1px solid #fff3c9;border-radius:999px;padding:3px 10px}
 .sev-season{font-size:10px;font-weight:900;letter-spacing:.12em;color:#fff;background:linear-gradient(180deg,#e25563,#b3202f);border:1px solid #ffd9dd;border-radius:999px;padding:3px 9px}
