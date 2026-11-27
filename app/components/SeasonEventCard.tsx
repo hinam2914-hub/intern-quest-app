@@ -108,7 +108,7 @@ export default function SeasonEventCard({ onActive, silent }: { onActive?: (on: 
                 <div className="sev-row"><span>学習メインルート（STEP1〜6）</span><b>{mainAll ? "✓ 制覇" : `${ev.main_done} / ${ev.main_total}本`}</b></div>
                 <div className="sev-bar"><i style={{ width: `${pct}%` }} /></div>
                 <div className="sev-row"><span>ES</span><b>{ev.es_done ? "✓ 完成" : "未完成"}</b></div>
-                {ev.weapon_ready && <div className="sev-row"><span>限定武器「聖夜の杖」</span><b>{ev.weapon_owned ? "✓ 所持" : ev.status === "running" ? (ev.joined ? "購入できます" : "参加すると購入可") : "未所持"}</b></div>}
+                {ev.weapon_ready && <div className="sev-row"><span>限定武器「聖夜の杖」</span><b>{ev.weapon_owned ? "✓ 所持" : ev.status === "running" ? (ev.joined ? "購入できます" : "学習を1本見ると購入可") : "未所持"}</b></div>}
                 {ev.status !== "upcoming" && <div className="sev-row"><span>これまでのイベントボーナス</span><b>+{ev.bonus_total}pt</b></div>}
             </div>
 
@@ -123,7 +123,7 @@ export default function SeasonEventCard({ onActive, silent }: { onActive?: (on: 
                 <div className="sev-rule">
                     <p><b>期間</b>：{period}</p>
                     <p><b>ポイント{ev.multiplier}倍</b>：期間中に、学習コンテンツの完了報告が承認されたとき／ESを初めて完成させたとき／テストに合格したとき／チャレンジが承認されたとき、いつものポイントと同じ額がボーナスで付きます。{(ev.rookie_bonus || 0) > 0 && `一人前チャレンジは、期間中に提出して承認された1項目ごとに +${ev.rookie_bonus}pt が付きます。`}ボーナスはHOMEを開いたときに自動で受け取ります。</p>
-                    {ev.weapon_ready && <p><b>限定武器「聖夜の杖」</b>：島バトルの武器。学習コンテンツを1本修了するごとに攻撃力+1（40→最大60）、この杖で城を落とすと奪えるポイントが1.5倍。期間中だけショップで買えます（買えるのはイベントに参加した人＝期間中に学習・ES・テスト・チャレンジのどれかを1つ以上達成した人だけ。買えば期間後も使えます）。「学習メインルート制覇」か「ES完成」を達成した人は無料でもらえます。</p>}
+                    {ev.weapon_ready && <p><b>限定武器「聖夜の杖」</b>：島バトルの武器。学習コンテンツを1本修了するごとに攻撃力+1（40→最大60）、この杖で城を落とすと奪えるポイントが1.5倍。期間中だけショップで買えます（買えるのは、期間中に学習コンテンツを1本以上見て完了報告を出した人か、学習メインルートをすでに全部修了している人だけ。買えば期間後も使えます）。「学習メインルート制覇」か「ES完成」を達成した人は無料でもらえます。</p>}
                     <p><b>達成報酬（限定装備）</b>：「学習メインルート制覇」か「ES完成」のどちらかでサンタ帽、両方で聖夜のマント。達成すると自動で届き、アバター編集で着けられます。</p>
                     {ev.status !== "upcoming" && <p><b>ボーナスの内訳</b>：学習 {c.content || 0}本／ES {c.es || 0}件／テスト {c.test || 0}件／チャレンジ {c.challenge || 0}件{(ev.rookie_bonus || 0) > 0 ? `／一人前チャレンジ ${c.rookie || 0}項目` : ""}</p>}
                 </div>

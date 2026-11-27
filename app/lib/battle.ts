@@ -77,6 +77,12 @@ export type WeaponDef = {
     desc: string;
     /** 期間限定の武器（イベント）。攻撃力が変わる・特殊な効果を持つ。値はサーバー側（battle_server.sql）と同じにする */
     limited?: { atkMax: number; lootMult: number; special: string };
+    /** この武器で攻撃すると、自分の城に付く保護シールドの時間（サーバー側 battle_server.sql と同じ値にする） */
+    selfShieldHours?: number;
+    /** この武器で攻撃すると、自分の城が回復するHP */
+    selfHeal?: number;
+    /** 持っているだけで効く効果の説明（金庫の盾） */
+    passive?: string;
 };
 
 // 武器10種。値段が高い段ほど攻撃力が高い（0pt:30 ／ 300pt:36〜42 ／ 400pt:44 ／ 600pt:48 ／ 800pt:52）。
@@ -92,6 +98,15 @@ export const WEAPONS: WeaponDef[] = [
     { key: "ice_sword",     name: "氷の剣",       emoji: "🧊", img: "/battle/weapons/ice_sword.webp",     element: "water",   atk: 48, skill: null,     skillRate: 0,    critBonus: 0.15, desc: "クリティカル率が高い" },
     { key: "thunder_spear", name: "雷の槍",       emoji: "⚡", img: "/battle/weapons/thunder_spear.webp", element: "thunder", atk: 52, skill: "double", skillRate: 0.35, critBonus: 0,    desc: "高い確率で2回攻撃が発動する" },
     { key: "fire_hammer",   name: "炎のハンマー", emoji: "🔨", img: "/battle/weapons/fire_hammer.webp",   element: "fire",    atk: 52, skill: "burn",   skillRate: 0.40, critBonus: 0,    desc: "高い確率でやけどを付与する" },
+    // ▼ 盾シリーズ：攻めながら自分の城を守る。攻撃力は低め（数値はサーバー側 battle_server.sql と同じにする）。画像は納品待ち
+    { key: "wood_shield", name: "木の盾", emoji: "🛡️", img: null, element: null, atk: 30, skill: null, skillRate: 0, critBonus: 0,
+      desc: "はじめての盾。この盾で攻撃すると、自分の城に1時間の保護シールドが付く", selfShieldHours: 1 },
+    { key: "heal_shield", name: "癒しの盾", emoji: "💧", img: null, element: "water", atk: 34, skill: null, skillRate: 0, critBonus: 0,
+      desc: "城を立て直す盾。この盾で攻撃すると、自分の城のHPが20回復する", selfHeal: 20 },
+    { key: "vault_shield", name: "金庫の盾", emoji: "🔐", img: null, element: "thunder", atk: 32, skill: null, skillRate: 0, critBonus: 0,
+      desc: "ポイントを守る盾。持っているだけで、城を落とされたときに奪われるポイントが半分になる", passive: "持っているだけで、奪われるポイントが半分" },
+    { key: "guard_shield", name: "守りの盾", emoji: "🛡️", img: null, element: "light", atk: 36, skill: null, skillRate: 0, critBonus: 0,
+      desc: "攻めながら守れる盾。この盾で攻撃すると、自分の城に3時間の保護シールドが付く（その間は攻撃されない）", selfShieldHours: 3 },
     // ▼ 期間限定（12月イベント「冬の学び祭」＝クリスマス・年末の冬イベント）。キーは wisdom_staff のまま。学習コンテンツを修了した本数だけ攻撃力が上がる。
     { key: "wisdom_staff", name: "聖夜の杖", emoji: "🎄", img: "/battle/weapons/wisdom_staff.webp", element: null, atk: 40, skill: null, skillRate: 0, critBonus: 0,
       desc: "学ぶほど強くなる、冬のイベント限定の杖。学習コンテンツを1本修了するごとに攻撃力+1（最大60）。この杖で城を落とすと、奪えるポイントが1.5倍",
@@ -188,9 +203,7 @@ export async function loadWeaponShop(sb: { from: (t: string) => any }, userId: s
         const sale: Record<string, { from: string | null; until: string | null }> = {};
         const needEvent: Record<string, string> = {};
         (pr as any[]).forEach((r) => { prices[r.weapon_key] = Number(r.price); if (r.sale_from || r.sale_until) sale[r.weapon_key] = { from: r.sale_from || null, until: r.sale_until || null }; if (r.require_event) needEvent[r.weapon_key] = String(r.require_event); });
-        // 参加しているイベント（イベントボーナスを1回でも受け取っているもの）。購入できるかの判定はサーバー側でもう一度行う
-        const joined = new Set<string>();
-        if (Object.keys(needEvent).length > 0) { try { const { data: jb } = await sb.from("season_event_bonus").select("event_key").eq("user_id", userId); ((jb || []) as any[]).forEach((r) => joined.add(r.event_key)); } catch {} }
+        const joined = await loadEventJoin(sb, Object.values(needEvent));
         // 学習コンテンツを修了した本数（聖夜の杖の攻撃力の表示用。実際のダメージはサーバー側で数え直す）
         let learned = 0;
         try { const { data: cc } = await sb.from("content_completions").select("content_id").eq("user_id", userId).eq("status", "approved"); learned = new Set(((cc || []) as any[]).map((r) => r.content_id)).size; } catch {}
@@ -200,7 +213,8 @@ export async function loadWeaponShop(sb: { from: (t: string) => any }, userId: s
 /** その武器を使えるか（ショップ未導入なら全部使える／価格0は全員使える） */
 export const canUseWeapon = (shop: WeaponShop, key: string) => {
     if (WEAPONS.find((w) => w.key === key)?.limited) return shop.enabled && shop.owned.has(key);   // 期間限定の武器は、持っている人だけ
-    return !shop.enabled || (shop.prices[key] ?? 0) === 0 || shop.owned.has(key);
+    if (shop.enabled && !(key in shop.prices)) return false;   // サーバーにまだ登録されていない武器は使えない
+    return !shop.enabled || shop.prices[key] === 0 || shop.owned.has(key);
 };
 /** 期間限定の武器の販売状態：always＝いつでも／before＝販売前／on＝販売中／after＝販売終了 */
 export function saleState(shop: WeaponShop, key: string): "always" | "before" | "on" | "after" {
@@ -210,11 +224,22 @@ export function saleState(shop: WeaponShop, key: string): "always" | "before" | 
     if (s.until && now >= new Date(s.until).getTime()) return "after";
     return "on";
 }
-/** イベント参加者だけが買える武器で、まだ参加していないとき true */
+/** 期間限定の品を買える条件を満たしているイベントのキー（サーバー側の event_can_buy で判定：期間中に学習コンテンツを1本以上見たか、学習メインルートを制覇ずみ）。
+ *  ここは表示用で、実際に買えるかどうかは購入のときにサーバー側でもう一度確かめる */
+export async function loadEventJoin(sb: any, keys: string[]): Promise<Set<string>> {
+    const out = new Set<string>();
+    for (const k of [...new Set(keys.filter(Boolean))]) {
+        try { const { data, error } = await sb.rpc("event_can_buy", { p_event: k }); if (!error && data === true) out.add(k); } catch {}
+    }
+    return out;
+}
+export const EVENT_BUY_RULE = "買えるのは、期間中に学習コンテンツを1本以上見て完了報告を出した人か、学習メインルート（STEP1〜6）をすでに全部修了している人です";
+/** 買える人が決まっている武器で、まだ条件を満たしていないとき true */
 export const needsEventJoin = (shop: WeaponShop, key: string) => !!shop.needEvent?.[key] && !shop.joined?.has(shop.needEvent[key]);
 /** 画面に並べる武器。期間限定の武器は、サーバーに登録済みで「持っている／販売前／販売中」のときだけ出す */
 export function listedWeapons(shop: WeaponShop): WeaponDef[] {
-    return WEAPONS.filter((w) => !w.limited || (shop.enabled && w.key in shop.prices && (shop.owned.has(w.key) || saleState(shop, w.key) !== "after")));
+    return WEAPONS.filter((w) => (!shop.enabled || w.key in shop.prices)   // サーバーに登録済みの武器だけ（サーバー未導入の環境では全部）
+        && (!w.limited || (shop.enabled && (shop.owned.has(w.key) || saleState(shop, w.key) !== "after"))));
 }
 /** その人にとっての攻撃力（聖夜の杖は学習の本数で変わる） */
 export const weaponAtk = (w: WeaponDef, shop?: WeaponShop | null) => w.limited ? Math.min(w.limited.atkMax, w.atk + (shop?.learned ?? 0)) : w.atk;

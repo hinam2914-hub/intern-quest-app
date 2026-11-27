@@ -83,7 +83,7 @@ export default function EventPage() {
                     <div className="evp-kv"><span>学習メインルート（STEP1〜6）</span><b>{mainAll ? "✓ 制覇" : `${ev.main_done} / ${ev.main_total}本`}</b></div>
                     <div className="evp-bar"><i style={{ width: `${pct}%` }} /></div>
                     <div className="evp-kv"><span>ES</span><b>{ev.es_done ? "✓ 完成" : "未完成"}</b></div>
-                    <div className="evp-kv"><span>イベントへの参加</span><b>{ev.status === "upcoming" ? "開始前" : ev.joined ? "✓ 参加ずみ" : "まだ参加していません"}</b></div>
+                    <div className="evp-kv"><span>期間限定の品を買える条件</span><b>{ev.joined ? "✓ 満たしています" : ev.status === "upcoming" ? "開始前" : "まだ満たしていません"}</b></div>
                     {ev.status !== "upcoming" && <div className="evp-kv"><span>これまでのイベントボーナス</span><b>+{ev.bonus_total}pt</b></div>}
                 </section>
 
@@ -123,16 +123,28 @@ export default function EventPage() {
                             <ul>
                                 <li><b>学ぶほど強くなる</b>：学習コンテンツを1本修了するごとに攻撃力+1（40→最大60）</li>
                                 <li><b>奪えるポイント1.5倍</b>：この杖で城を落としたとき</li>
-                                <li><b>買い方</b>：期間中だけショップで800pt。買えるのはイベントに参加した人だけ（期間中に学習・ES・テスト・チャレンジのどれかを1つ以上達成）</li>
+                                <li><b>買い方</b>：期間中だけショップで800pt。買えるのは、期間中に学習コンテンツを1本以上見て完了報告を出した人か、学習メインルートをすでに全部修了している人だけ</li>
                                 <li><b>無料でもらえる</b>：「学習メインルート制覇」か「ES完成」を達成した人</li>
                                 <li>手に入れた杖は、イベントが終わっても使えます</li>
                             </ul>
                         </div>
-                        <div className="evp-kv"><span>あなたの状況</span><b>{ev.weapon_owned ? "✓ 持っています" : ev.status !== "running" ? "未所持" : ev.joined ? "ショップで買えます" : "参加すると買えます"}</b></div>
+                        <div className="evp-kv"><span>あなたの状況</span><b>{ev.weapon_owned ? "✓ 持っています" : ev.status !== "running" ? "未所持" : ev.joined ? "ショップで買えます" : "学習コンテンツを1本見ると買えます"}</b></div>
                         {!ev.weapon_owned && <button className="evp-sub" onClick={() => router.push("/shop")}>ショップで聖夜の杖を見る →</button>}
                         {ev.weapon_owned && <button className="evp-sub" onClick={() => router.push("/islands")}>島バトルで使う →</button>}
                     </section>
                 )}
+
+                {/* 島の飾り */}
+                <section className="evp-pn">
+                    <h2>島に置けるクリスマスの飾り</h2>
+                    <div className="evp-deco">
+                        {[["/island/deco/deco_santa.webp", "サンタ"], ["/island/trees/tree_xmas.webp", "クリスマスツリー"], ["/island/animals/animal_tonakai.webp", "トナカイ"], ["/island/deco/deco_present.webp", "プレゼントの山"]].map(([src, name]) => (
+                            <div key={name}><img src={src} alt="" /><span>{name}</span></div>
+                        ))}
+                    </div>
+                    <p className="evp-small">期間中だけショップの「島」に並びます。買った飾りは、イベントが終わっても島に置けます。買えるのは、期間中に学習コンテンツを1本以上見て完了報告を出した人か、学習メインルートをすでに全部修了している人だけです。</p>
+                    <button className="evp-sub" onClick={() => router.push("/shop")}>ショップを見る →</button>
+                </section>
 
                 {/* 達成報酬 */}
                 <section className="evp-pn">
@@ -213,6 +225,10 @@ const CSS = `
 .evp-wp ul{margin:0;padding-left:18px;flex:1;min-width:0}
 .evp-wp li{font-size:12.5px;font-weight:700;line-height:1.7;color:#5b4a23}
 .evp-wp li b{color:#17397d}
+.evp-deco{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.evp-deco div{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.evp-deco img{width:100%;height:84px;object-fit:contain}
+.evp-deco span{font-size:11px;font-weight:900;color:#17397d;text-align:center;line-height:1.3}
 .evp-rw{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .evp-rwc{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;padding:10px;border-radius:14px;border:2px solid #cdb87e;background:#fffef8}
 .evp-rwc.own{border-color:#2e9d5f;background:#f1fbf4}

@@ -146,6 +146,8 @@ export default function BattlePage() {
             const d = data as any;
             r = { dmg: d.damage, mult: Number(d.mult), crit: !!d.crit, skill: (d.skill as SkillKey) || null, hits: d.hits, next: d.hp_after, used: BATTLE_CONFIG.attacksPerDay - d.attacks_left, boostedNow: false, burnTick: false };
             if (d.won) setLoot(Number(d.loot || 0));
+            if (d.self_hp != null && weapon.selfHeal) setTimeout(() => pushBanner(`自分の城のHPが回復！（いま ${d.self_hp}）`, "#34d399", "💧"), 900);
+            if (d.self_shield_until && weapon.selfShieldHours) setTimeout(() => pushBanner(`自分の城に${weapon.selfShieldHours}時間のシールド！`, "#38bdf8", "🛡️"), 900);
             if (d.won) setShieldUntil(new Date(Date.now() + BATTLE_CONFIG.shieldHours * 3600 * 1000).toISOString());
         } else {
             const res = calcDamage(weapon, oppElement, Math.random, lvMult);

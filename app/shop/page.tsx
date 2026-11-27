@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { ELEMENTS, SKILLS, loadWeaponShop, listedWeapons, weaponAtk, saleState, saleLabel, needsEventJoin, type WeaponDef, type WeaponShop } from "../lib/battle";
+import { ELEMENTS, SKILLS, loadWeaponShop, listedWeapons, weaponAtk, saleState, saleLabel, needsEventJoin, loadEventJoin, EVENT_BUY_RULE, type WeaponDef, type WeaponShop } from "../lib/battle";
 import { ITEM_IMG, ISLAND_CATS, PLACE_LIMIT, placedOf, skyListOf } from "../lib/island";
 import { GEAR, ASSET_V } from "../lib/avatar/catalog";
 import { GEAR_BOX } from "../lib/avatar/gearThumb";
@@ -20,7 +20,9 @@ const SLOTS: { key: string; label: string }[] = [
 ];
 /** 関数がまだ無い（shop_instant_buy.sql 未実行）ときのエラーかどうか */
 const noFn = (e: any) => !!e && (e.code === "PGRST202" || e.code === "42883" || /could not find the function|does not exist/i.test(e.message || ""));
-type IslandItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string; max_owned?: number; sale_from?: string | null; sale_until?: string | null };
+type IslandItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string; max_owned?: number; sale_from?: string | null; sale_until?: string | null; require_event?: string | null };
+/** 盾（守りの効果を持つ武器） */
+const isShield = (w: WeaponDef) => !!(w.selfShieldHours || w.selfHeal || w.passive);
 // 期間限定の島アイテム：before＝販売前／on＝販売中／after＝販売終了／always＝いつでも
 const iSale = (it: IslandItem): "always" | "before" | "on" | "after" => { if (!it.sale_from && !it.sale_until) return "always"; const n = Date.now(); if (it.sale_from && n < new Date(it.sale_from).getTime()) return "before"; if (it.sale_until && n >= new Date(it.sale_until).getTime()) return "after"; return "on"; };
 const iSaleMd = (iso: string, shift = 0) => { const d = new Date(new Date(iso).getTime() + 9 * 3600e3 + shift); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
@@ -35,6 +37,7 @@ export default function ShopPage() {
     const [tab, setTab] = useState<"gear" | "island">("gear");
     const [shop, setShop] = useState<WeaponShop>({ enabled: false, prices: {}, owned: new Set() });
     const [islandItems, setIslandItems] = useState<IslandItem[]>([]);
+    const [evJoin, setEvJoin] = useState<Set<string>>(new Set());   // 期間限定の品を買える条件を満たしているイベント（表示用。購入時にサーバーでもう一度確認）
     const [ownedIsland, setOwnedIsland] = useState<string[]>([]);
     const [pendingIsland, setPendingIsland] = useState<string[]>([]);
     const [islandConfig, setIslandConfig] = useState<Record<string, any>>({});
@@ -79,6 +82,7 @@ export default function ShopPage() {
             setIslandConfig(((profRow as any)?.island_config || {}) as Record<string, any>);
             // 画像がまだ無いアイテムは並べない（絵文字で代用しない）
             setIslandItems(((isItems || []) as IslandItem[]).filter((it) => !!ITEM_IMG[it.css_key]));
+            loadEventJoin(supabase, ((isItems || []) as IslandItem[]).map((it) => it.require_event || "")).then(setEvJoin);
             setOwnedIsland((isPur || []).filter((p: any) => p.status === "approved").map((p: any) => p.item_id));
             setPendingIsland((isPur || []).filter((p: any) => p.status === "pending").map((p: any) => p.item_id));
             setShop(ws);
@@ -97,7 +101,7 @@ export default function ShopPage() {
         setBusy(false);
         if (error || !data) {
             const m = error?.message || "";
-            flash(false, m.includes("NOT_PARTICIPANT") ? "イベントに参加した人だけが買えます。学習・ES・テスト・チャレンジのどれかを1つ達成しよう" : m.includes("NOT_ON_SALE") ? "この武器は、いまは販売期間外です" : m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "この武器はすでに持っています" : "購入できませんでした。もう一度お試しください");
+            flash(false, m.includes("NOT_PARTICIPANT") ? EVENT_BUY_RULE : m.includes("NOT_ON_SALE") ? "この武器は、いまは販売期間外です" : m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "この武器はすでに持っています" : "購入できませんでした。もう一度お試しください");
             if (m.includes("ALREADY_OWNED")) setShop((s) => ({ ...s, owned: new Set([...s.owned, w.key]) }));
             return;
         }
@@ -148,7 +152,7 @@ export default function ShopPage() {
             setBusy(false);
             const m = error?.message || "";
             if (m.includes("ALREADY_OWNED")) setSelI(null);
-            flash(false, m.includes("NOT_ON_SALE") ? "このアイテムは、いまは販売期間外です" : m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "これ以上は持てません" : "購入できませんでした。もう一度お試しください");
+            flash(false, m.includes("NOT_PARTICIPANT") ? EVENT_BUY_RULE : m.includes("NOT_ON_SALE") ? "このアイテムは、いまは販売期間外です" : m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "これ以上は持てません" : "購入できませんでした。もう一度お試しください");
             return;
         }
         const { error: e2 } = await supabase.from("island_purchases").insert({ user_id: userId, item_id: it.id, status: "pending" });
@@ -166,7 +170,7 @@ export default function ShopPage() {
         if (shop.owned.has(w.key)) return { kind: "owned", label: "所持済み", price };
         if (saleState(shop, w.key) === "before") return { kind: "soon", label: `${saleLabel(shop, w.key).split("〜")[0]}から販売`, price };
         if (saleState(shop, w.key) === "after") return { kind: "soon", label: "販売終了", price };
-        if (needsEventJoin(shop, w.key)) return { kind: "join", label: "イベント参加で購入可", price };
+        if (needsEventJoin(shop, w.key)) return { kind: "join", label: "学習コンテンツを見ると買える", price };
         if (points < price) return { kind: "short", label: `あと ${(price - points).toLocaleString()}pt`, price };
         return { kind: "buy", label: "購入できます", price };
     };
@@ -191,6 +195,7 @@ export default function ShopPage() {
         if (have >= max) return { kind: "owned", label: "所持済み", ...extra };
         if (iSale(it) === "before") return { kind: "soon", label: `${iSaleMd(it.sale_from!)}から販売`, ...extra };
         if (iSale(it) === "after") return { kind: "soon", label: "販売終了", ...extra };
+        if (it.require_event && !evJoin.has(it.require_event)) return { kind: "join", label: "学習コンテンツを見ると買える", ...extra };
         if (points < it.price) return { kind: have ? "more-short" : "short", label: `あと ${(it.price - points).toLocaleString()}pt`, ...extra };
         return { kind: have ? "more" : "buy", label: "購入できます", ...extra };
     };
@@ -221,7 +226,7 @@ export default function ShopPage() {
                     <span className="sp-card-img"><IImg it={it} size={104} /></span>
                     <span className="sp-card-name">{it.name}</span>
                     <span className="sp-card-sub">{it.max_owned && it.max_owned > 1 ? `${it.max_owned}個まで持てる` : "1つ持てばOK"}</span>
-                    {st.kind === "soon" ? <span className="sp-price have">{st.label}</span> : canBuy || short || st.kind === "pending"
+                    {st.kind === "soon" ? <span className="sp-price have">{st.label}</span> : st.kind === "join" ? <span className="sp-price have">🪙 {it.price.toLocaleString()}pt・学習すると買える</span> : canBuy || short || st.kind === "pending"
                         ? <span className={"sp-price" + (short ? " short" : "")}>🪙 {it.price.toLocaleString()}pt{short && <i>{st.label}</i>}</span>
                         : <span className="sp-price have">飾りつけで使える</span>}
                 </button>
@@ -236,7 +241,7 @@ export default function ShopPage() {
                     <span className="sp-card-img"><WImg w={w} size={112} /></span>
                     <span className="sp-card-name">{w.name}</span>
                     <span className="sp-card-sub">攻撃 {w.limited ? `${w.atk}〜${w.limited.atkMax}` : w.atk}・{w.element ? <El k={w.element} /> : "無属性"}</span>
-                    {st.kind === "soon" || st.kind === "join" ? <span className="sp-price have">{st.kind === "join" ? `🪙 ${st.price.toLocaleString()}pt・参加者のみ` : st.label}</span> : shop.enabled && st.price > 0 && !shop.owned.has(w.key)
+                    {st.kind === "soon" || st.kind === "join" ? <span className="sp-price have">{st.kind === "join" ? `🪙 ${st.price.toLocaleString()}pt・学習すると買える` : st.label}</span> : shop.enabled && st.price > 0 && !shop.owned.has(w.key)
                         ? <span className={"sp-price" + (st.kind === "short" ? " short" : "")}>🪙 {st.price.toLocaleString()}pt{st.kind === "short" && <i>{st.label}</i>}</span>
                         : <span className="sp-price have">{st.kind === "free" ? "使用可能" : "島バトルで使える"}</span>}
                 </button>
@@ -299,8 +304,12 @@ export default function ShopPage() {
                         </>)}
                         <div className="sp-sec">⚔️ 島バトルの武器</div>
                         <div className="sp-grid">
-                            {listedWeapons(shop).filter((w) => !w.limited).map(weaponCard)}
+                            {listedWeapons(shop).filter((w) => !w.limited && !isShield(w)).map(weaponCard)}
                         </div>
+                        {listedWeapons(shop).some((w) => !w.limited && isShield(w)) && (<>
+                        <div className="sp-sec">🛡️ 盾<i>攻めながら自分の城を守る</i></div>
+                        <div className="sp-grid">{listedWeapons(shop).filter((w) => !w.limited && isShield(w)).map(weaponCard)}</div>
+                        </>)}
                         </>)}
                         <button className="sp-link" onClick={() => router.push("/onboarding/avatar?from=mypage&tab=gear")}>
                             <span style={{ fontSize: 26 }}>🧍</span>
@@ -357,14 +366,14 @@ export default function ShopPage() {
                             <div className="sp-stats">
                                 <div><span>属性</span><b>{w.element ? <El k={w.element} /> : "無属性"}</b></div>
                                 <div><span>攻撃力</span><b>{w.limited ? `いまのあなたは ${weaponAtk(w, shop)}（${w.atk}〜${w.limited.atkMax}）` : w.atk}</b></div>
-                                <div><span>特殊効果</span><b>{w.limited ? w.limited.special : w.skill ? `${SKILLS[w.skill].name}（発動率${Math.round(w.skillRate * 100)}%）` : w.critBonus > 0 ? `クリティカル率 +${Math.round(w.critBonus * 100)}%` : "なし"}</b></div>
-                                {shop.needEvent?.[w.key] && <div><span>買える人</span><b>イベントに参加した人だけ{needsEventJoin(shop, w.key) ? "（まだ参加していません）" : "（参加ずみ）"}</b></div>}
+                                <div><span>特殊効果</span><b>{w.limited ? w.limited.special : w.selfShieldHours ? `攻撃すると自分の城に${w.selfShieldHours}時間のシールド` : w.selfHeal ? `攻撃すると自分の城のHPが${w.selfHeal}回復` : w.passive ? w.passive : w.skill ? `${SKILLS[w.skill].name}（発動率${Math.round(w.skillRate * 100)}%）` : w.critBonus > 0 ? `クリティカル率 +${Math.round(w.critBonus * 100)}%` : "なし"}</b></div>
+                                {shop.needEvent?.[w.key] && <div><span>買える人</span><b>{needsEventJoin(shop, w.key) ? "まだ買えません（条件は下）" : "✓ あなたは買えます"}</b></div>}
                                 {w.limited && saleLabel(shop, w.key) && <div><span>販売期間</span><b>{saleLabel(shop, w.key)}（買えば期間後も使える）</b></div>}
                                 {shop.enabled && st.price > 0 && <div><span>必要ポイント</span><b>🪙 {st.price.toLocaleString()}pt</b></div>}
                                 <div><span>所持状況</span><b>{st.kind === "owned" ? st.label : st.kind === "free" ? "使用可能" : "未所持"}</b></div>
                             </div>
                             {st.kind === "soon" && <button className="sp-buy off" disabled>{st.label}</button>}
-                            {st.kind === "join" && <><div className="sp-after" style={{ lineHeight: 1.7 }}>期間中に、学習コンテンツ・ES・テスト・チャレンジのどれかを1つ達成すると買えるようになります。</div><button className="sp-buy alt" onClick={() => router.push("/learn")}>学習コンテンツの「次に見る1本」へ</button></>}
+                            {st.kind === "join" && <><div className="sp-after" style={{ lineHeight: 1.7 }}>{EVENT_BUY_RULE}。</div><button className="sp-buy alt" onClick={() => router.push("/learn")}>学習コンテンツの「次に見る1本」へ</button></>}
                             {st.kind === "buy" && askAt === 0 && <button className="sp-buy" onClick={() => setAskAt(Date.now())}>🪙 {st.price.toLocaleString()}pt で購入する</button>}
                             {st.kind === "buy" && askAt > 0 && (
                                 <div className="sp-ask">
@@ -438,6 +447,7 @@ export default function ShopPage() {
                             )}
                             {(st.kind === "buy" || st.kind === "more") && <div className="sp-after">購入後の残り：{(points - it.price).toLocaleString()}pt</div>}
                             {st.kind === "soon" && <button className="sp-buy off" disabled>{st.label}</button>}
+                            {st.kind === "join" && <><div className="sp-after" style={{ lineHeight: 1.7 }}>{EVENT_BUY_RULE}。</div><button className="sp-buy alt" onClick={() => router.push("/learn")}>学習コンテンツの「次に見る1本」へ</button></>}
                             {(st.kind === "short" || st.kind === "more-short") && <button className="sp-buy off" disabled>ポイントが足りません（{st.label}）</button>}
                             {st.kind === "pending" && <button className="sp-buy off" disabled>⏳ 承認をお待ちください</button>}
                             {st.have > 0 && <button className="sp-buy alt" style={{ marginTop: 8 }} onClick={() => router.push("/island/edit")}>🏝️ 飾りつけ画面で島に置く</button>}
