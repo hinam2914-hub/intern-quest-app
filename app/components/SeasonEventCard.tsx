@@ -9,7 +9,7 @@ type Ev = {
     active: boolean; key: string; name: string; subtitle: string | null; status: "upcoming" | "running" | "ended";
     starts_at: string; ends_at: string; multiplier: number; rookie_bonus?: number; new_points: number; bonus_total: number;
     counts: Record<string, number>; main_done: number; main_total: number; es_done: boolean;
-    weapon_ready?: boolean; weapon_owned?: boolean; weapon_granted?: boolean; joined?: boolean;
+    weapon_ready?: boolean; weapon_owned?: boolean; weapon_granted?: boolean; joined?: boolean; gear_granted?: string[];
 };
 const md = (iso: string, shift = 0) => { const d = new Date(new Date(iso).getTime() + 9 * 3600e3 + shift); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
 
@@ -102,6 +102,8 @@ export default function SeasonEventCard({ onActive }: { onActive?: (on: boolean)
 
             {ev.weapon_granted && <div className="sev-new" role="status">達成おめでとう！ 限定武器 <b>「聖夜の杖」</b> を受け取りました</div>}
 
+            {(ev.gear_granted || []).length > 0 && <div className="sev-new" role="status">達成おめでとう！ <b>{(ev.gear_granted || []).map((k) => k === "event_santa_hat" ? "サンタ帽" : "聖夜のマント").join("・")}</b> を受け取りました</div>}
+
             <div className="sev-prog">
                 <div className="sev-row"><span>学習メインルート（STEP1〜6）</span><b>{mainAll ? "✓ 制覇" : `${ev.main_done} / ${ev.main_total}本`}</b></div>
                 <div className="sev-bar"><i style={{ width: `${pct}%` }} /></div>
@@ -122,7 +124,7 @@ export default function SeasonEventCard({ onActive }: { onActive?: (on: boolean)
                     <p><b>期間</b>：{period}</p>
                     <p><b>ポイント{ev.multiplier}倍</b>：期間中に、学習コンテンツの完了報告が承認されたとき／ESを初めて完成させたとき／テストに合格したとき／チャレンジが承認されたとき、いつものポイントと同じ額がボーナスで付きます。{(ev.rookie_bonus || 0) > 0 && `一人前チャレンジは、期間中に提出して承認された1項目ごとに +${ev.rookie_bonus}pt が付きます。`}ボーナスはHOMEを開いたときに自動で受け取ります。</p>
                     {ev.weapon_ready && <p><b>限定武器「聖夜の杖」</b>：島バトルの武器。学習コンテンツを1本修了するごとに攻撃力+1（40→最大60）、この杖で城を落とすと奪えるポイントが1.5倍。期間中だけショップで買えます（買えるのはイベントに参加した人＝期間中に学習・ES・テスト・チャレンジのどれかを1つ以上達成した人だけ。買えば期間後も使えます）。「学習メインルート制覇」か「ES完成」を達成した人は無料でもらえます。</p>}
-                    <p><b>達成報酬（限定装備）</b>：「学習メインルート制覇」か「ES完成」のどちらかで1つ、両方でもう1つ。装備は準備中で、できあがり次第お知らせします。</p>
+                    <p><b>達成報酬（限定装備）</b>：「学習メインルート制覇」か「ES完成」のどちらかでサンタ帽、両方で聖夜のマント。達成すると自動で届き、アバター編集で着けられます。</p>
                     {ev.status !== "upcoming" && <p><b>ボーナスの内訳</b>：学習 {c.content || 0}本／ES {c.es || 0}件／テスト {c.test || 0}件／チャレンジ {c.challenge || 0}件{(ev.rookie_bonus || 0) > 0 ? `／一人前チャレンジ ${c.rookie || 0}項目` : ""}</p>}
                 </div>
             )}

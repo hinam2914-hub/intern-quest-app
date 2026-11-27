@@ -9,7 +9,7 @@ type Ev = {
     active: boolean; key: string; name: string; status: "upcoming" | "running" | "ended";
     starts_at: string; ends_at: string; multiplier: number; new_points: number; bonus_total: number;
     counts: Record<string, number>; main_done: number; main_total: number; es_done: boolean;
-    weapon_ready?: boolean; weapon_owned?: boolean; weapon_granted?: boolean; joined?: boolean;
+    weapon_ready?: boolean; weapon_owned?: boolean; weapon_granted?: boolean; joined?: boolean; gear_owned?: string[]; gear_granted?: string[];
 };
 const md = (iso: string, shift = 0) => { const d = new Date(new Date(iso).getTime() + 9 * 3600e3 + shift); return `${d.getUTCMonth() + 1}月${d.getUTCDate()}日`; };
 
@@ -74,6 +74,7 @@ export default function EventPage() {
 
                 {ev.status !== "upcoming" && ev.new_points > 0 && <div className="evp-note" role="status">イベントボーナス <b>+{ev.new_points}pt</b> を受け取りました</div>}
                 {ev.weapon_granted && <div className="evp-note" role="status">達成おめでとう！ 限定武器 <b>「聖夜の杖」</b> を受け取りました</div>}
+                {(ev.gear_granted || []).length > 0 && <div className="evp-note" role="status">達成おめでとう！ <b>{(ev.gear_granted || []).map((k) => k === "event_santa_hat" ? "サンタ帽" : "聖夜のマント").join("・")}</b> を受け取りました。アバター編集で着けられます</div>}
 
                 {/* あなたの進み具合 */}
                 <section className="evp-pn">
@@ -117,7 +118,7 @@ export default function EventPage() {
                     <section className="evp-pn">
                         <h2>イベント限定の武器「聖夜の杖」</h2>
                         <div className="evp-wp">
-                            <div className="evp-wpimg"><img src="/battle/weapons/wisdom_staff.webp" alt="" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} /><span>🎄</span></div>
+                            <div className="evp-wpimg"><img src="/battle/weapons/wisdom_staff.webp" alt="" /></div>
                             <ul>
                                 <li><b>学ぶほど強くなる</b>：学習コンテンツを1本修了するごとに攻撃力+1（40→最大60）</li>
                                 <li><b>奪えるポイント1.5倍</b>：この杖で城を落としたとき</li>
@@ -135,9 +136,22 @@ export default function EventPage() {
                 {/* 達成報酬 */}
                 <section className="evp-pn">
                     <h2>達成報酬（イベント限定の装備）</h2>
-                    <div className="evp-kv"><span>①「学習メインルート制覇」か「ES完成」のどちらか</span><b>{achieved >= 1 ? "✓ 達成" : "未達成"}</b></div>
-                    <div className="evp-kv"><span>② 両方とも達成</span><b>{achieved >= 2 ? "✓ 達成" : "未達成"}</b></div>
-                    <p className="evp-small">①でサンタ帽、②でクリスマスのマントがもらえます。装備は準備中で、できあがり次第お知らせして、達成した人に届けます。</p>
+                    <div className="evp-rw">
+                        {[{ k: "event_santa_hat", name: "サンタ帽", img: "/event/reward_hat.webp", cond: "「学習メインルート制覇」か「ES完成」のどちらか", ok: achieved >= 1 },
+                          { k: "event_xmas_cape", name: "聖夜のマント", img: "/event/reward_cape.webp", cond: "両方とも達成", ok: achieved >= 2 }].map((r) => {
+                            const own = (ev.gear_owned || []).includes(r.k);
+                            return (
+                                <div key={r.k} className={"evp-rwc" + (own ? " own" : "")}>
+                                    <div className="im"><img src={r.img} alt="" /></div>
+                                    <b>{r.name}</b>
+                                    <span>{r.cond}</span>
+                                    <em>{own ? "✓ 受け取りずみ" : ev.status === "upcoming" ? "開始前" : r.ok ? "まもなく届きます" : "未達成"}</em>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <p className="evp-small">達成すると、ホームかこのページを開いたときに自動で届きます。どの職業でも着けられて、イベントが終わっても使えます。</p>
+                    {(ev.gear_owned || []).length > 0 && <button className="evp-sub" onClick={() => router.push("/onboarding/avatar?from=home")}>アバター編集で着ける →</button>}
                 </section>
 
                 <button className="evp-back" style={{ alignSelf: "center", marginTop: 6 }} onClick={() => router.push("/home")}>← ホームへもどる</button>
@@ -196,6 +210,15 @@ const CSS = `
 .evp-wp ul{margin:0;padding-left:18px;flex:1;min-width:0}
 .evp-wp li{font-size:12.5px;font-weight:700;line-height:1.7;color:#5b4a23}
 .evp-wp li b{color:#17397d}
+.evp-rw{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.evp-rwc{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;padding:10px;border-radius:14px;border:2px solid #cdb87e;background:#fffef8}
+.evp-rwc.own{border-color:#2e9d5f;background:#f1fbf4}
+.evp-rwc .im{width:100%;height:120px;display:flex;align-items:center;justify-content:center}
+.evp-rwc .im img{max-width:100%;max-height:100%;object-fit:contain}
+.evp-rwc b{font-size:14px;font-weight:900;color:#17397d}
+.evp-rwc span{font-size:11px;font-weight:700;color:#8a7a5c;line-height:1.5}
+.evp-rwc em{font-style:normal;font-size:12px;font-weight:900;color:#b3202f}
+.evp-rwc.own em{color:#1e7a45}
 .evp-sub{display:block;width:100%;min-height:44px;margin-top:8px;padding:10px;border-radius:999px;border:2px solid #e2bf63;background:linear-gradient(180deg,#4b7ae0,#1d3f96);color:#fff;font-size:13.5px;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 4px 0 #12306e}
 .evp-sub:active{transform:translateY(3px);box-shadow:0 1px 0 #12306e}
 `;

@@ -10,9 +10,9 @@
 
 import type { JobKey } from "../../onboarding/job/page";
 
-export type Layer = "hair_back" | "body" | "eyes" | "outfit_back" | "outfit_front" | "head_back" | "hair_front" | "head" | "cape" | "weapon" | "accessory" | "accessory_back";
+export type Layer = "hair_back" | "body" | "eyes" | "outfit_back" | "outfit_front" | "head_back" | "hair_front" | "head" | "cape" | "cape_front" | "weapon" | "accessory" | "accessory_back";
 /** 描画順（下→上）。マントは衣装の背面側に入る想定だが、素材の作り方で前にも出せるよう独立レイヤーにする */
-export const LAYER_ORDER: Layer[] = ["cape", "accessory_back", "hair_back", "body", "eyes", "outfit_back", "outfit_front", "head_back", "hair_front", "head", "weapon", "accessory"];
+export const LAYER_ORDER: Layer[] = ["cape", "accessory_back", "hair_back", "body", "eyes", "outfit_back", "outfit_front", "cape_front", "head_back", "hair_front", "head", "weapon", "accessory"];
 
 export type Base = "f" | "m";
 export type Part = { id: string; label: string; src: string | null; swatch?: string };
@@ -138,6 +138,17 @@ export type AvatarConfig = {
     eyes?: string; eyeColor?: string;
     outfit: string; head: string; cape: string; weapon: string; accessory: string;
 };
+/** イベントの達成報酬の装備（どの職業でも着けられる共通の装備）。持っている人だけが選べる（買うことはできない）。
+ *  配るのはサーバー側（season_event.sql の event_sync）。gear_items の gear_key と同じIDにする */
+export const REWARD_GEAR: { head: Part[]; cape: Part[] } = {
+    head: [{ id: "event_santa_hat", label: "サンタ帽", src: "ok" }],
+    cape: [{ id: "event_xmas_cape", label: "聖夜のマント", src: "ok" }],
+};
+export const REWARD_ONLY = new Set<string>([...REWARD_GEAR.head, ...REWARD_GEAR.cape].map((p) => p.id));
+(Object.keys(GEAR) as JobKey[]).forEach((j) => { GEAR[j].head.push(...REWARD_GEAR.head); GEAR[j].cape.push(...REWARD_GEAR.cape); });
+/** えり・リボンなど、体の「前」にも重ねる部分があるマント（public/avatar/cape_front/<id>.png） */
+export const CAPE_FRONT = new Set<string>(["event_xmas_cape"]);
+
 export const DEFAULT_PRESET = { f: "girl_bob_brown", m: "boy_short_black" } as const;
 
 export function defaultConfig(job: JobKey, base: Base = "f", presetId?: string): AvatarConfig {
@@ -160,7 +171,7 @@ export const GEAR_READY = new Set<string>([]);
 export const HEAD_BEHIND_HAIR = new Set<string>([]);  // 後ろ配置は髪に埋もれたため不使用（前被りに戻した）
 
 /** 画像差し替え時にブラウザキャッシュを無効化するためのバージョン */
-export const ASSET_V = "52";
+export const ASSET_V = "53";
 
 /** 体の「後ろ」に描くアクセサリー（背中の羽など）。マントより前、髪・体より後ろ */
 export const ACCESSORY_BEHIND = new Set<string>(["paladin_wing"]);
@@ -201,7 +212,7 @@ export function resolveLayers(c: AvatarConfig, job: JobKey): { layer: Layer; src
     const accGear = gear(g.accessory, c.accessory, "accessory");
     const accBehind = ACCESSORY_BEHIND.has(c.accessory);
     const parts: Record<Layer, { src: string | null; missing: boolean }> = {
-        cape: gear(g.cape, c.cape, "cape"), hair_back: { src: hairSrc("back"), missing: !(hair?.src && colorOk) }, body, eyes: eyeKey ? { src: eyeKey.src, missing: false } : none, outfit_back: out("back"), outfit_front: out("front"),
+        cape: gear(g.cape, c.cape, "cape"), cape_front: CAPE_FRONT.has(c.cape) ? { src: `/avatar/cape_front/${c.cape}.png`, missing: false } : none, hair_back: { src: hairSrc("back"), missing: !(hair?.src && colorOk) }, body, eyes: eyeKey ? { src: eyeKey.src, missing: false } : none, outfit_back: out("back"), outfit_front: out("front"),
         head_back: behind ? headGear : none,
         hair_front: { src: hairSrc("front"), missing: !(hair?.src && colorOk) }, head: behind ? none : headGear, weapon: gear(g.weapon, c.weapon, "weapon"),
         accessory: accBehind ? none : accGear, accessory_back: accBehind ? accGear : none,

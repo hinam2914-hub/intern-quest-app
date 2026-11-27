@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 import AvatarLayered from "@/app/components/AvatarLayered";
-import { GEAR, HAIR, HAIR_COLOR, SKIN, EYES, eyeColorsFor, eyesSelectable, DEFAULT_PRESET, defaultConfig, type AvatarConfig, type Base, type Part } from "@/app/lib/avatar/catalog";
+import { GEAR, REWARD_ONLY, HAIR, HAIR_COLOR, SKIN, EYES, eyeColorsFor, eyesSelectable, DEFAULT_PRESET, defaultConfig, type AvatarConfig, type Base, type Part } from "@/app/lib/avatar/catalog";
 import { JOBS, type JobKey } from "../job/page";
 
 const STEPS = ["登録", "冒険者情報", "職業", "アバター", "確認", "ライセンス", "初回クエスト"];
@@ -91,14 +91,16 @@ export default function AvatarCustomizePage() {
             if (!user) { router.push("/login"); return; }
             setUserId(user.id);
             // 装備ショップ（テーブル未作成・行なしの場合は全装備が従来どおり無料のまま）
-            const [{ data: gi }, { data: gp }, { data: up }] = await Promise.all([
+            const [{ data: gi }, { data: gp }, { data: up }, { data: rw }] = await Promise.all([
                 supabase.from("gear_items").select("id, gear_key, name, price").eq("is_active", true),
                 supabase.from("gear_purchases").select("item_id, status").eq("user_id", user.id),
                 supabase.from("user_points").select("points").eq("id", user.id).maybeSingle(),
+                supabase.from("gear_items").select("id, gear_key").in("gear_key", [...REWARD_ONLY]),   // イベントの達成報酬（ショップには出さないので別に読む）
             ]);
             const items: Record<string, GearItem> = {};
             const keyOf: Record<string, string> = {};
             (gi || []).forEach((it: any) => { items[it.gear_key] = it; keyOf[it.id] = it.gear_key; });
+            (rw || []).forEach((it: any) => { keyOf[it.id] = it.gear_key; });
             setGearItems(items);
             setOwnedGear(new Set((gp || []).filter((p: any) => p.status === "approved").map((p: any) => keyOf[p.item_id]).filter(Boolean)));
             setPendingGear(new Set((gp || []).filter((p: any) => p.status === "pending").map((p: any) => keyOf[p.item_id]).filter(Boolean)));
@@ -133,7 +135,7 @@ export default function AvatarCustomizePage() {
         const s = { ...c };
         (["head", "cape", "weapon", "accessory"] as const).forEach((k) => {
             const v = s[k];
-            if (v !== "none" && gearItems[v] && !ownedGear.has(v)) s[k] = "none";
+            if (v !== "none" && (gearItems[v] || REWARD_ONLY.has(v)) && !ownedGear.has(v)) s[k] = "none";
         });
         if (job && gearItems[s.outfit] && !ownedGear.has(s.outfit)) s.outfit = GEAR[job].outfit[0].id;
         return s;
@@ -152,8 +154,10 @@ export default function AvatarCustomizePage() {
     const gear = job ? GEAR[job] : null;
 
     // 装備の販売状態：null=無料 or 購入済み（通常どおり選べる）
-    const paidOf = (id: string): { st: "locked" | "pending"; item: GearItem } | null => {
+    const paidOf = (id: string): { st: "locked" | "pending" | "reward"; item: GearItem } | null => {
         const it = gearItems[id];
+        // イベントの達成報酬は買えない。持っていない人には「イベント報酬」と出すだけ
+        if (REWARD_ONLY.has(id)) return ownedGear.has(id) ? null : { st: "reward", item: it || ({ id: "", gear_key: id, name: "", price: 0 } as any) };
         if (!it || id === "none" || ownedGear.has(id)) return null;
         return { st: pendingGear.has(id) ? "pending" : "locked", item: it };
     };
@@ -191,6 +195,7 @@ export default function AvatarCustomizePage() {
                 const click = () => {
                     if (!pd) { onPick(p.id); return; }
                     if (pd.st === "locked") setBuyGear(pd.item);
+                    if (pd.st === "reward") setMsg("🎁 これはイベントの達成報酬です。イベントページで条件を見てみよう");
                     // pending は承認待ちのため何もしない
                 };
                 return (
@@ -198,6 +203,7 @@ export default function AvatarCustomizePage() {
                         {swatch && p.swatch && <span className="av-sw" style={{ background: p.swatch }} />}{p.label}
                         {pd?.st === "locked" && <span className="av-lock">🔒 {pd.item.price.toLocaleString()}pt</span>}
                         {pd?.st === "pending" && <span className="av-pend">⏳ 審査待ち</span>}
+                        {pd?.st === "reward" && <span className="av-lock">🎁 イベント報酬</span>}
                     </button>
                 );
             })}

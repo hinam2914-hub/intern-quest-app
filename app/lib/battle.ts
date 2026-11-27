@@ -92,8 +92,8 @@ export const WEAPONS: WeaponDef[] = [
     { key: "ice_sword",     name: "氷の剣",       emoji: "🧊", img: "/battle/weapons/ice_sword.webp",     element: "water",   atk: 48, skill: null,     skillRate: 0,    critBonus: 0.15, desc: "クリティカル率が高い" },
     { key: "thunder_spear", name: "雷の槍",       emoji: "⚡", img: "/battle/weapons/thunder_spear.webp", element: "thunder", atk: 52, skill: "double", skillRate: 0.35, critBonus: 0,    desc: "高い確率で2回攻撃が発動する" },
     { key: "fire_hammer",   name: "炎のハンマー", emoji: "🔨", img: "/battle/weapons/fire_hammer.webp",   element: "fire",    atk: 52, skill: "burn",   skillRate: 0.40, critBonus: 0,    desc: "高い確率でやけどを付与する" },
-    // ▼ 期間限定（12月イベント「冬の学び祭」＝クリスマス・年末の冬イベント）。キーは wisdom_staff のまま。学習コンテンツを修了した本数だけ攻撃力が上がる。画像は納品待ち
-    { key: "wisdom_staff", name: "聖夜の杖", emoji: "🎄", img: null, element: null, atk: 40, skill: null, skillRate: 0, critBonus: 0,
+    // ▼ 期間限定（12月イベント「冬の学び祭」＝クリスマス・年末の冬イベント）。キーは wisdom_staff のまま。学習コンテンツを修了した本数だけ攻撃力が上がる。
+    { key: "wisdom_staff", name: "聖夜の杖", emoji: "🎄", img: "/battle/weapons/wisdom_staff.webp", element: null, atk: 40, skill: null, skillRate: 0, critBonus: 0,
       desc: "学ぶほど強くなる、冬のイベント限定の杖。学習コンテンツを1本修了するごとに攻撃力+1（最大60）。この杖で城を落とすと、奪えるポイントが1.5倍",
       limited: { atkMax: 60, lootMult: 1.5, special: "学習1本ごとに攻撃力+1（最大60）／奪えるポイント1.5倍" } },
 ];

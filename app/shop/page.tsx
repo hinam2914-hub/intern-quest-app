@@ -20,7 +20,10 @@ const SLOTS: { key: string; label: string }[] = [
 ];
 /** 関数がまだ無い（shop_instant_buy.sql 未実行）ときのエラーかどうか */
 const noFn = (e: any) => !!e && (e.code === "PGRST202" || e.code === "42883" || /could not find the function|does not exist/i.test(e.message || ""));
-type IslandItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string; max_owned?: number };
+type IslandItem = { id: string; name: string; category: string; emoji: string | null; css_key: string; price: number; rarity: string; max_owned?: number; sale_from?: string | null; sale_until?: string | null };
+// 期間限定の島アイテム：before＝販売前／on＝販売中／after＝販売終了／always＝いつでも
+const iSale = (it: IslandItem): "always" | "before" | "on" | "after" => { if (!it.sale_from && !it.sale_until) return "always"; const n = Date.now(); if (it.sale_from && n < new Date(it.sale_from).getTime()) return "before"; if (it.sale_until && n >= new Date(it.sale_until).getTime()) return "after"; return "on"; };
+const iSaleMd = (iso: string, shift = 0) => { const d = new Date(new Date(iso).getTime() + 9 * 3600e3 + shift); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
 const ISLAND_IMG: Record<string, string> = ITEM_IMG;
 const CATS = ISLAND_CATS;
 
@@ -145,7 +148,7 @@ export default function ShopPage() {
             setBusy(false);
             const m = error?.message || "";
             if (m.includes("ALREADY_OWNED")) setSelI(null);
-            flash(false, m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "これ以上は持てません" : "購入できませんでした。もう一度お試しください");
+            flash(false, m.includes("NOT_ON_SALE") ? "このアイテムは、いまは販売期間外です" : m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "これ以上は持てません" : "購入できませんでした。もう一度お試しください");
             return;
         }
         const { error: e2 } = await supabase.from("island_purchases").insert({ user_id: userId, item_id: it.id, status: "pending" });
@@ -186,6 +189,8 @@ export default function ShopPage() {
         const extra = { have, max, placed };
         if (pendingIsland.includes(it.id)) return { kind: "pending", label: "承認待ち", ...extra };
         if (have >= max) return { kind: "owned", label: "所持済み", ...extra };
+        if (iSale(it) === "before") return { kind: "soon", label: `${iSaleMd(it.sale_from!)}から販売`, ...extra };
+        if (iSale(it) === "after") return { kind: "soon", label: "販売終了", ...extra };
         if (points < it.price) return { kind: have ? "more-short" : "short", label: `あと ${(it.price - points).toLocaleString()}pt`, ...extra };
         return { kind: have ? "more" : "buy", label: "購入できます", ...extra };
     };
@@ -283,7 +288,7 @@ export default function ShopPage() {
                     <>
                         {islandItems.length === 0 && <div className="sp-info">まだ島のアイテムがありません</div>}
                         {CATS.map((c) => {
-                            const list = islandItems.filter((it) => it.category === c.key);
+                            const list = islandItems.filter((it) => it.category === c.key && !(iSale(it) === "after" && !ownedIsland.includes(it.id)));   // 販売が終わった期間限定品は、持っている人にだけ見せる
                             if (!list.length) return null;
                             return (
                                 <section key={c.key}>
@@ -298,10 +303,11 @@ export default function ShopPage() {
                                                         : st.have > 0 ? <span className="sp-ribbon">✓ 所持{st.max > 1 ? ` ${st.have}/${st.max}` : "済み"}</span> : null}
                                                     {st.kind === "pending" && <span className="sp-ribbon wait">⏳ 承認待ち</span>}
                                                     {rare(it.rarity) && <span className={"sp-rare sp-rare-" + rare(it.rarity)!.toLowerCase()}>{rare(it.rarity)}</span>}
+                                                    {iSale(it) !== "always" && st.have === 0 && st.kind !== "pending" && <span className="sp-ribbon" style={{ background: "linear-gradient(180deg,#f472b6,#be185d)" }}>期間限定</span>}
                                                     <span className="sp-card-img"><IImg it={it} size={104} /></span>
                                                     <span className="sp-card-name">{it.name}</span>
                                                     <span className="sp-card-sub">{it.max_owned && it.max_owned > 1 ? `${it.max_owned}個まで持てる` : "1つ持てばOK"}</span>
-                                                    {canBuy || short || st.kind === "pending"
+                                                    {st.kind === "soon" ? <span className="sp-price have">{st.label}</span> : canBuy || short || st.kind === "pending"
                                                         ? <span className={"sp-price" + (short ? " short" : "")}>🪙 {it.price.toLocaleString()}pt{short && <i>{st.label}</i>}</span>
                                                         : <span className="sp-price have">飾りつけで使える</span>}
                                                 </button>
@@ -399,6 +405,7 @@ export default function ShopPage() {
                             <div className="sp-stats">
                                 <div><span>種類</span><b>{CATS.find((c) => c.key === it.category)?.label || it.category}</b></div>
                                 <div><span>必要ポイント</span><b>🪙 {it.price.toLocaleString()}pt</b></div>
+                                {iSale(it) !== "always" && <div><span>販売期間</span><b>{it.sale_from ? iSaleMd(it.sale_from) : ""}〜{it.sale_until ? iSaleMd(it.sale_until, -1000) : ""}（買えば期間後も置ける）</b></div>}
                                 {rare(it.rarity) && <div><span>レアリティ</span><b>{rare(it.rarity)}</b></div>}
                                 <div><span>所持状況</span><b>{st.kind === "pending" ? "承認待ち" : st.have > 0 ? `所持 ${st.have}${st.max > 1 ? `/${st.max}個` : ""}` : "未所持"}{st.placed > 0 ? `・設置中${st.max > 1 ? ` ${st.placed}個` : ""}` : ""}</b></div>
                                 <div><span>設置できる数</span><b>{it.category === "ground" ? "1（島全体）" : `${st.max > 1 ? `持っている数まで（最大${st.max}個）` : "1"}`}</b></div>
@@ -411,6 +418,7 @@ export default function ShopPage() {
                                 </div>
                             )}
                             {(st.kind === "buy" || st.kind === "more") && <div className="sp-after">購入後の残り：{(points - it.price).toLocaleString()}pt</div>}
+                            {st.kind === "soon" && <button className="sp-buy off" disabled>{st.label}</button>}
                             {(st.kind === "short" || st.kind === "more-short") && <button className="sp-buy off" disabled>ポイントが足りません（{st.label}）</button>}
                             {st.kind === "pending" && <button className="sp-buy off" disabled>⏳ 承認をお待ちください</button>}
                             {st.have > 0 && <button className="sp-buy alt" style={{ marginTop: 8 }} onClick={() => router.push("/island/edit")}>🏝️ 飾りつけ画面で島に置く</button>}
