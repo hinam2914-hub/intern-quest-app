@@ -2012,7 +2012,6 @@ const handleRoutineCheck = async (routineId: string) => {
                         {!seasonOn && pendingSurveys.length === 0 && myKpis.length === 0 && <div className="mp-empty">現在開催中のイベントはありません</div>}
                         {pendingSurveys.map((s) => <button key={s.id} className="mp-kv-row mp-link" onClick={() => router.push("/surveys")}><span>📝 {s.title}</span><b>+{s.reward_points}pt</b></button>)}
                         {myKpis.map((k, i) => <div key={i} className="mp-kv-row"><span>📈 {k.deptName}</span><b>{k.result}/{k.target}（{k.rate}%）{k.approved ? " ✓" : ""}</b></div>)}
-                        <button className="mp-smallbtn" onClick={() => router.push("/kpi")}>KPIを入力する →</button>
                     </section>
                 )}
 
