@@ -98,14 +98,14 @@ export const WEAPONS: WeaponDef[] = [
     { key: "ice_sword",     name: "氷の剣",       emoji: "🧊", img: "/battle/weapons/ice_sword.webp",     element: "water",   atk: 48, skill: null,     skillRate: 0,    critBonus: 0.15, desc: "クリティカル率が高い" },
     { key: "thunder_spear", name: "雷の槍",       emoji: "⚡", img: "/battle/weapons/thunder_spear.webp", element: "thunder", atk: 52, skill: "double", skillRate: 0.35, critBonus: 0,    desc: "高い確率で2回攻撃が発動する" },
     { key: "fire_hammer",   name: "炎のハンマー", emoji: "🔨", img: "/battle/weapons/fire_hammer.webp",   element: "fire",    atk: 52, skill: "burn",   skillRate: 0.40, critBonus: 0,    desc: "高い確率でやけどを付与する" },
-    // ▼ 盾シリーズ：攻めながら自分の城を守る。攻撃力は低め（数値はサーバー側 battle_server.sql と同じにする）。画像は納品待ち
-    { key: "wood_shield", name: "木の盾", emoji: "🛡️", img: null, element: null, atk: 30, skill: null, skillRate: 0, critBonus: 0,
+    // ▼ 盾シリーズ：攻めながら自分の城を守る。攻撃力は低め（数値はサーバー側 battle_server.sql と同じにする）
+    { key: "wood_shield", name: "木の盾", emoji: "🛡️", img: "/battle/weapons/wood_shield.webp", element: null, atk: 30, skill: null, skillRate: 0, critBonus: 0,
       desc: "はじめての盾。この盾で攻撃すると、自分の城に1時間の保護シールドが付く", selfShieldHours: 1 },
-    { key: "heal_shield", name: "癒しの盾", emoji: "💧", img: null, element: "water", atk: 34, skill: null, skillRate: 0, critBonus: 0,
+    { key: "heal_shield", name: "癒しの盾", emoji: "💧", img: "/battle/weapons/heal_shield.webp", element: "water", atk: 34, skill: null, skillRate: 0, critBonus: 0,
       desc: "城を立て直す盾。この盾で攻撃すると、自分の城のHPが20回復する", selfHeal: 20 },
-    { key: "vault_shield", name: "金庫の盾", emoji: "🔐", img: null, element: "thunder", atk: 32, skill: null, skillRate: 0, critBonus: 0,
+    { key: "vault_shield", name: "金庫の盾", emoji: "🔐", img: "/battle/weapons/vault_shield.webp", element: "thunder", atk: 32, skill: null, skillRate: 0, critBonus: 0,
       desc: "ポイントを守る盾。持っているだけで、城を落とされたときに奪われるポイントが半分になる", passive: "持っているだけで、奪われるポイントが半分" },
-    { key: "guard_shield", name: "守りの盾", emoji: "🛡️", img: null, element: "light", atk: 36, skill: null, skillRate: 0, critBonus: 0,
+    { key: "guard_shield", name: "守りの盾", emoji: "🛡️", img: "/battle/weapons/guard_shield.webp", element: "light", atk: 36, skill: null, skillRate: 0, critBonus: 0,
       desc: "攻めながら守れる盾。この盾で攻撃すると、自分の城に3時間の保護シールドが付く（その間は攻撃されない）", selfShieldHours: 3 },
     // ▼ 期間限定（12月イベント「冬の学び祭」＝クリスマス・年末の冬イベント）。キーは wisdom_staff のまま。学習コンテンツを修了した本数だけ攻撃力が上がる。
     { key: "wisdom_staff", name: "聖夜の杖", emoji: "🎄", img: "/battle/weapons/wisdom_staff.webp", element: null, atk: 40, skill: null, skillRate: 0, critBonus: 0,
