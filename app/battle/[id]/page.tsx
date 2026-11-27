@@ -17,7 +17,7 @@ import { JOBS, type JobKey } from "../../onboarding/job/page";
 import AvatarLayered from "../../components/AvatarLayered";
 import type { AvatarConfig } from "../../lib/avatar/catalog";
 import {
-    BATTLE_CONFIG, ELEMENTS, ELEMENT_ORDER, ADVANTAGE, WEAPONS, SKILLS, CHEST_IMG, loadWeaponShop, canUseWeapon, type WeaponShop,
+    BATTLE_CONFIG, ELEMENTS, ELEMENT_ORDER, ADVANTAGE, WEAPONS, SKILLS, CHEST_IMG, loadWeaponShop, canUseWeapon, listedWeapons, weaponAtk, type WeaponShop,
     calcDamage, levelMultiplier, levelMultLabel, castleElementOf, elementMultiplier, DEMO_ATTACK_KEY, readBattleLog, writeBattleLog,
     type WeaponDef, type SkillKey,
 } from "../../lib/battle";
@@ -342,7 +342,7 @@ export default function BattlePage() {
                     <div className="bt-panel">
                         <div className="bt-ptitle">🗡️ 武器を選択</div>
                         <div className="bt-weapons">
-                            {WEAPONS.map((w) => canUseWeapon(wshop, w.key) ? (
+                            {listedWeapons(wshop).map((w) => canUseWeapon(wshop, w.key) ? (
                                 <button key={w.key} className={"bt-weapon" + (w.key === weaponKey ? " bt-weapon-on" : "")} onClick={() => setWeaponKey(w.key)}>
                                     <span className="bt-weapon-ico">{wIcon(w)}</span>
                                     <span className="bt-weapon-name">{w.name}</span>
@@ -385,7 +385,7 @@ export default function BattlePage() {
                     <div className="bt-panel">
                         <div className="bt-ptitle">📖 武器の効果（{weapon.name}）</div>
                         <div className="bt-wdetail">
-                            <div className="bt-row"><span>攻撃力</span><b>{weapon.atk}</b></div>
+                            <div className="bt-row"><span>攻撃力</span><b>{weaponAtk(weapon, wshop)}{weapon.limited ? `（最大${weapon.limited.atkMax}）` : ""}</b></div>
                             <div className="bt-row"><span>属性</span><b style={{ color: weapon.element ? ELEMENTS[weapon.element].color : "#94a3b8" }}>{weapon.element ? <>{elIcon(weapon.element, 13)} {ELEMENTS[weapon.element].name}</> : "無属性"}</b></div>
                             <div className="bt-row"><span>相手の城への相性</span><b>×{elementMultiplier(weapon.element, oppElement).toFixed(1)}</b></div>
                             <div className="bt-wdesc">{weapon.desc}{weapon.skill ? `（発動率${Math.round(weapon.skillRate * 100)}%）` : ""}</div>

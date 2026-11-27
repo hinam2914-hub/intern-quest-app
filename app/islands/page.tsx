@@ -48,7 +48,7 @@ const weakOf = (castleEl: ElementKey): ElementKey =>
 
 /** 推奨武器：期待ダメージ（atk×相性倍率）の高い順TOP3。battle.tsの実計算のみ */
 function recommendWeapons(castleEl: ElementKey) {
-    return WEAPONS
+    return WEAPONS.filter((w) => !w.limited)   // 期間限定の武器は人によって攻撃力が違うので、おすすめには出さない
         .map((w) => {
             const mult = elementMultiplier(w.element, castleEl);
             return { w, mult, dmg: Math.round(w.atk * mult) };

@@ -11,6 +11,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { COURSES, hasCourse, sortByCourse } from "../lib/learnCourse";
+import { SeasonEventBanner } from "../components/SeasonEventCard";
 
 type Content = {
     id: string;
@@ -375,6 +376,9 @@ function LearnPageInner() {
                     <img src="/home/title_plate.webp" alt="" width={1200} height={374} />
                     <div><span className="t1">📚 学習コンテンツ</span><span className="t2">知識を集め、力に変える冒険の図書館</span></div>
                 </div>
+
+                {/* シーズンイベントの案内（開催前〜開催中だけ） */}
+                <SeasonEventBanner />
 
                 {/* B. ルク＋学習進捗（実データ） */}
                 <div className="lr-two">

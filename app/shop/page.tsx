@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
-import { ELEMENTS, SKILLS, WEAPONS, loadWeaponShop, type WeaponDef, type WeaponShop } from "../lib/battle";
+import { ELEMENTS, SKILLS, loadWeaponShop, listedWeapons, weaponAtk, saleState, saleLabel, needsEventJoin, type WeaponDef, type WeaponShop } from "../lib/battle";
 import { ITEM_IMG, ISLAND_CATS, PLACE_LIMIT, placedOf, skyListOf } from "../lib/island";
 import { GEAR, ASSET_V } from "../lib/avatar/catalog";
 import { GEAR_BOX } from "../lib/avatar/gearThumb";
@@ -94,7 +94,7 @@ export default function ShopPage() {
         setBusy(false);
         if (error || !data) {
             const m = error?.message || "";
-            flash(false, m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "この武器はすでに持っています" : "購入できませんでした。もう一度お試しください");
+            flash(false, m.includes("NOT_PARTICIPANT") ? "イベントに参加した人だけが買えます。学習・ES・テスト・チャレンジのどれかを1つ達成しよう" : m.includes("NOT_ON_SALE") ? "この武器は、いまは販売期間外です" : m.includes("NO_POINTS") ? "ポイントが足りません" : m.includes("ALREADY_OWNED") ? "この武器はすでに持っています" : "購入できませんでした。もう一度お試しください");
             if (m.includes("ALREADY_OWNED")) setShop((s) => ({ ...s, owned: new Set([...s.owned, w.key]) }));
             return;
         }
@@ -161,6 +161,9 @@ export default function ShopPage() {
         if (!shop.enabled) return { kind: "free", label: "使用可能", price };
         if (price === 0) return { kind: "owned", label: "はじめから所持", price };
         if (shop.owned.has(w.key)) return { kind: "owned", label: "所持済み", price };
+        if (saleState(shop, w.key) === "before") return { kind: "soon", label: `${saleLabel(shop, w.key).split("〜")[0]}から販売`, price };
+        if (saleState(shop, w.key) === "after") return { kind: "soon", label: "販売終了", price };
+        if (needsEventJoin(shop, w.key)) return { kind: "join", label: "イベント参加で購入可", price };
         if (points < price) return { kind: "short", label: `あと ${(price - points).toLocaleString()}pt`, price };
         return { kind: "buy", label: "購入できます", price };
     };
@@ -251,15 +254,16 @@ export default function ShopPage() {
                         {shop.enabled && (<>
                         <div className="sp-sec">⚔️ 島バトルの武器</div>
                         <div className="sp-grid">
-                            {WEAPONS.map((w) => {
+                            {listedWeapons(shop).map((w) => {
                                 const st = wState(w);
                                 return (
                                     <button key={w.key} className={"sp-card sp-st-" + st.kind} onClick={() => { setAskAt(0); setSelW(w); }}>
                                         {st.kind === "owned" && <span className="sp-ribbon">✓ {st.label}</span>}
+                                        {w.limited && st.kind !== "owned" && <span className="sp-ribbon" style={{ background: "linear-gradient(180deg,#f472b6,#be185d)" }}>期間限定</span>}
                                         <span className="sp-card-img"><WImg w={w} size={112} /></span>
                                         <span className="sp-card-name">{w.name}</span>
-                                        <span className="sp-card-sub">攻撃 {w.atk}・{w.element ? <El k={w.element} /> : "無属性"}</span>
-                                        {shop.enabled && st.price > 0 && !shop.owned.has(w.key)
+                                        <span className="sp-card-sub">攻撃 {w.limited ? `${w.atk}〜${w.limited.atkMax}` : w.atk}・{w.element ? <El k={w.element} /> : "無属性"}</span>
+                                        {st.kind === "soon" || st.kind === "join" ? <span className="sp-price have">{st.kind === "join" ? `🪙 ${st.price.toLocaleString()}pt・参加者のみ` : st.label}</span> : shop.enabled && st.price > 0 && !shop.owned.has(w.key)
                                             ? <span className={"sp-price" + (st.kind === "short" ? " short" : "")}>🪙 {st.price.toLocaleString()}pt{st.kind === "short" && <i>{st.label}</i>}</span>
                                             : <span className="sp-price have">{st.kind === "free" ? "使用可能" : "島バトルで使える"}</span>}
                                     </button>
@@ -327,11 +331,15 @@ export default function ShopPage() {
                             <p className="sp-desc">{w.desc}</p>
                             <div className="sp-stats">
                                 <div><span>属性</span><b>{w.element ? <El k={w.element} /> : "無属性"}</b></div>
-                                <div><span>攻撃力</span><b>{w.atk}</b></div>
-                                <div><span>特殊効果</span><b>{w.skill ? `${SKILLS[w.skill].name}（発動率${Math.round(w.skillRate * 100)}%）` : w.critBonus > 0 ? `クリティカル率 +${Math.round(w.critBonus * 100)}%` : "なし"}</b></div>
+                                <div><span>攻撃力</span><b>{w.limited ? `いまのあなたは ${weaponAtk(w, shop)}（${w.atk}〜${w.limited.atkMax}）` : w.atk}</b></div>
+                                <div><span>特殊効果</span><b>{w.limited ? w.limited.special : w.skill ? `${SKILLS[w.skill].name}（発動率${Math.round(w.skillRate * 100)}%）` : w.critBonus > 0 ? `クリティカル率 +${Math.round(w.critBonus * 100)}%` : "なし"}</b></div>
+                                {shop.needEvent?.[w.key] && <div><span>買える人</span><b>イベントに参加した人だけ{needsEventJoin(shop, w.key) ? "（まだ参加していません）" : "（参加ずみ）"}</b></div>}
+                                {w.limited && saleLabel(shop, w.key) && <div><span>販売期間</span><b>{saleLabel(shop, w.key)}（買えば期間後も使える）</b></div>}
                                 {shop.enabled && st.price > 0 && <div><span>必要ポイント</span><b>🪙 {st.price.toLocaleString()}pt</b></div>}
                                 <div><span>所持状況</span><b>{st.kind === "owned" ? st.label : st.kind === "free" ? "使用可能" : "未所持"}</b></div>
                             </div>
+                            {st.kind === "soon" && <button className="sp-buy off" disabled>{st.label}</button>}
+                            {st.kind === "join" && <><div className="sp-after" style={{ lineHeight: 1.7 }}>期間中に、学習コンテンツ・ES・テスト・チャレンジのどれかを1つ達成すると買えるようになります。</div><button className="sp-buy alt" onClick={() => router.push("/learn")}>学習コンテンツの「次に見る1本」へ</button></>}
                             {st.kind === "buy" && askAt === 0 && <button className="sp-buy" onClick={() => setAskAt(Date.now())}>🪙 {st.price.toLocaleString()}pt で購入する</button>}
                             {st.kind === "buy" && askAt > 0 && (
                                 <div className="sp-ask">

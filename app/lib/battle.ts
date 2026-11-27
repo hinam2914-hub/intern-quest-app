@@ -75,6 +75,8 @@ export type WeaponDef = {
     skillRate: number;           // 発動率 0〜1
     critBonus: number;           // クリティカル率への加算
     desc: string;
+    /** 期間限定の武器（イベント）。攻撃力が変わる・特殊な効果を持つ。値はサーバー側（battle_server.sql）と同じにする */
+    limited?: { atkMax: number; lootMult: number; special: string };
 };
 
 // 武器10種。値段が高い段ほど攻撃力が高い（0pt:30 ／ 300pt:36〜42 ／ 400pt:44 ／ 600pt:48 ／ 800pt:52）。
@@ -90,6 +92,10 @@ export const WEAPONS: WeaponDef[] = [
     { key: "ice_sword",     name: "氷の剣",       emoji: "🧊", img: "/battle/weapons/ice_sword.webp",     element: "water",   atk: 48, skill: null,     skillRate: 0,    critBonus: 0.15, desc: "クリティカル率が高い" },
     { key: "thunder_spear", name: "雷の槍",       emoji: "⚡", img: "/battle/weapons/thunder_spear.webp", element: "thunder", atk: 52, skill: "double", skillRate: 0.35, critBonus: 0,    desc: "高い確率で2回攻撃が発動する" },
     { key: "fire_hammer",   name: "炎のハンマー", emoji: "🔨", img: "/battle/weapons/fire_hammer.webp",   element: "fire",    atk: 52, skill: "burn",   skillRate: 0.40, critBonus: 0,    desc: "高い確率でやけどを付与する" },
+    // ▼ 期間限定（12月イベント「冬の学び祭」＝クリスマス・年末の冬イベント）。キーは wisdom_staff のまま。学習コンテンツを修了した本数だけ攻撃力が上がる。画像は納品待ち
+    { key: "wisdom_staff", name: "聖夜の杖", emoji: "🎄", img: null, element: null, atk: 40, skill: null, skillRate: 0, critBonus: 0,
+      desc: "学ぶほど強くなる、冬のイベント限定の杖。学習コンテンツを1本修了するごとに攻撃力+1（最大60）。この杖で城を落とすと、奪えるポイントが1.5倍",
+      limited: { atkMax: 60, lootMult: 1.5, special: "学習1本ごとに攻撃力+1（最大60）／奪えるポイント1.5倍" } },
 ];
 
 // バトル全体の調整値（Phase 2 以降もこの値を正とする）
@@ -170,21 +176,54 @@ export function writeBattleLog(oppId: string, log: BattleLog) {
 
 /** 武器ショップの状態（価格表と自分の所持武器）。
  *  enabled=false は battle_server.sql が未適用の環境：その場合は従来どおり全武器を使用可能として扱う。 */
-export type WeaponShop = { enabled: boolean; prices: Record<string, number>; owned: Set<string> };
+export type WeaponShop = { enabled: boolean; prices: Record<string, number>; owned: Set<string>; sale?: Record<string, { from: string | null; until: string | null }>; learned?: number; needEvent?: Record<string, string>; joined?: Set<string> };
 export async function loadWeaponShop(sb: { from: (t: string) => any }, userId: string): Promise<WeaponShop> {
     try {
         const [{ data: pr, error: e1 }, { data: ow, error: e2 }] = await Promise.all([
-            sb.from("battle_weapon_prices").select("weapon_key, price"),
+            sb.from("battle_weapon_prices").select("*"),
             sb.from("battle_weapon_owned").select("weapon_key").eq("user_id", userId),
         ]);
         if (e1 || e2 || !pr || pr.length === 0) return { enabled: false, prices: {}, owned: new Set() };
         const prices: Record<string, number> = {};
-        (pr as any[]).forEach((r) => { prices[r.weapon_key] = Number(r.price); });
-        return { enabled: true, prices, owned: new Set(((ow || []) as any[]).map((r) => r.weapon_key)) };
+        const sale: Record<string, { from: string | null; until: string | null }> = {};
+        const needEvent: Record<string, string> = {};
+        (pr as any[]).forEach((r) => { prices[r.weapon_key] = Number(r.price); if (r.sale_from || r.sale_until) sale[r.weapon_key] = { from: r.sale_from || null, until: r.sale_until || null }; if (r.require_event) needEvent[r.weapon_key] = String(r.require_event); });
+        // 参加しているイベント（イベントボーナスを1回でも受け取っているもの）。購入できるかの判定はサーバー側でもう一度行う
+        const joined = new Set<string>();
+        if (Object.keys(needEvent).length > 0) { try { const { data: jb } = await sb.from("season_event_bonus").select("event_key").eq("user_id", userId); ((jb || []) as any[]).forEach((r) => joined.add(r.event_key)); } catch {} }
+        // 学習コンテンツを修了した本数（聖夜の杖の攻撃力の表示用。実際のダメージはサーバー側で数え直す）
+        let learned = 0;
+        try { const { data: cc } = await sb.from("content_completions").select("content_id").eq("user_id", userId).eq("status", "approved"); learned = new Set(((cc || []) as any[]).map((r) => r.content_id)).size; } catch {}
+        return { enabled: true, prices, owned: new Set(((ow || []) as any[]).map((r) => r.weapon_key)), sale, learned, needEvent, joined };
     } catch { return { enabled: false, prices: {}, owned: new Set() }; }
 }
 /** その武器を使えるか（ショップ未導入なら全部使える／価格0は全員使える） */
-export const canUseWeapon = (shop: WeaponShop, key: string) => !shop.enabled || (shop.prices[key] ?? 0) === 0 || shop.owned.has(key);
+export const canUseWeapon = (shop: WeaponShop, key: string) => {
+    if (WEAPONS.find((w) => w.key === key)?.limited) return shop.enabled && shop.owned.has(key);   // 期間限定の武器は、持っている人だけ
+    return !shop.enabled || (shop.prices[key] ?? 0) === 0 || shop.owned.has(key);
+};
+/** 期間限定の武器の販売状態：always＝いつでも／before＝販売前／on＝販売中／after＝販売終了 */
+export function saleState(shop: WeaponShop, key: string): "always" | "before" | "on" | "after" {
+    const s = shop.sale?.[key]; if (!s) return "always";
+    const now = Date.now();
+    if (s.from && now < new Date(s.from).getTime()) return "before";
+    if (s.until && now >= new Date(s.until).getTime()) return "after";
+    return "on";
+}
+/** イベント参加者だけが買える武器で、まだ参加していないとき true */
+export const needsEventJoin = (shop: WeaponShop, key: string) => !!shop.needEvent?.[key] && !shop.joined?.has(shop.needEvent[key]);
+/** 画面に並べる武器。期間限定の武器は、サーバーに登録済みで「持っている／販売前／販売中」のときだけ出す */
+export function listedWeapons(shop: WeaponShop): WeaponDef[] {
+    return WEAPONS.filter((w) => !w.limited || (shop.enabled && w.key in shop.prices && (shop.owned.has(w.key) || saleState(shop, w.key) !== "after")));
+}
+/** その人にとっての攻撃力（聖夜の杖は学習の本数で変わる） */
+export const weaponAtk = (w: WeaponDef, shop?: WeaponShop | null) => w.limited ? Math.min(w.limited.atkMax, w.atk + (shop?.learned ?? 0)) : w.atk;
+/** 販売期間の表示（例：12/1〜12/31） */
+export function saleLabel(shop: WeaponShop, key: string): string {
+    const s = shop.sale?.[key]; if (!s) return "";
+    const md = (iso: string, shift = 0) => { const d = new Date(new Date(iso).getTime() + 9 * 3600e3 + shift); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
+    return `${s.from ? md(s.from) : ""}〜${s.until ? md(s.until, -1000) : ""}`;
+}
 
 /** 勝利時の略奪の設定（サーバーの battle_loot_config テーブルと同じ形）。計算はサーバー側で行い、ここは画面の説明表示にだけ使う */
 export type LootConfig = { enabled: boolean; rate_high: number; rate_same: number; rate_low: number; level_gap: number; cap_points: number; protect_points: number };
